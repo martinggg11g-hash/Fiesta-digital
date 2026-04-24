@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { BrowserRouter as Router, Routes, Route, useNavigate, useParams, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useNavigate, useParams, Navigate, Link } from "react-router-dom";
 import {
   MapPin, Clock, Calendar, Palette, CheckCircle2, PartyPopper,
   ChevronDown, Plus, Upload, Type, LogOut, Edit2,
   Copy, ExternalLink, ArrowLeft, Save, Mail, Lock, Key, X,
-  Sparkles, Star, Image as ImageIcon, Layout, List, Trash2, UserPlus, Users, Settings, BarChart3
+  Sparkles, Star, Image as ImageIcon, Layout, List, Trash2, UserPlus, Users, Settings, BarChart3, ShieldCheck
 } from "lucide-react";
 
 /* ═══════════════════════════════════════════════════════════
@@ -52,7 +52,7 @@ import {
 })();
 
 /* ═══════════════════════════════════════════════════════════
-   CONSTANTES & DEFAULTS
+   DEFAULTS & HELPERS
 ═══════════════════════════════════════════════════════════ */
 const EMOJIS = ['🎂','🎈','🎉','🥳','🎁','🎊','👶','💍','🎓','✨','🌟','❤️','💖','🦖','🦄','⚽','🎮','👑','🌸','🍕','🍰','🥂','🍻','🎭','🎶','📸','🚗','💒','🏖️','🌈','🔥','💎','🎪','🎠','🎡','🦋','🌺','🎵','🏆'];
 
@@ -61,12 +61,6 @@ const THEMES = [
   { id:"rose",   name:"Rosa",    emoji:"🌸", bg1:"#150510", bg2:"#200a16", primary:"#e11d48", card:"#2a0e1a", text:"#fff1f3", muted:"#fda4af" },
   { id:"teal",   name:"Teal",    emoji:"🌊", bg1:"#020f10", bg2:"#031a1c", primary:"#0d9488", card:"#062020", text:"#f0fdfb", muted:"#5eead4" },
   { id:"amber",  name:"Ámbar",   emoji:"🔥", bg1:"#0f0800", bg2:"#1c1200", primary:"#d97706", card:"#1a1000", text:"#fffbeb", muted:"#fcd34d" },
-];
-
-const FONT_TITLES = [
-  { value:"'Pacifico', cursive",       label:"Pacifico" },
-  { value:"'Caveat', cursive",         label:"Caveat" },
-  { value:"'Playfair Display', serif", label:"Playfair" },
 ];
 
 const DEF = {
@@ -129,7 +123,7 @@ const Acc = ({ title, icon: Icon, iconColor="#7c3aed", children, defaultOpen=fal
 };
 
 /* ═══════════════════════════════════════════════════════════
-   VISTA DE INVITACIÓN (PREVIEW)
+   PREVIEW COMPONENT
 ═══════════════════════════════════════════════════════════ */
 const InvitePreview = ({ cfg }) => {
   const th = THEMES.find(t => t.id === cfg.theme) || THEMES[0];
@@ -178,7 +172,7 @@ const InvitePreview = ({ cfg }) => {
    PANTALLAS (VISTAS)
 ═══════════════════════════════════════════════════════════ */
 
-// --- LOGIN ---
+// --- LOGIN PARA SALONES ---
 const LoginScreen = ({ onLogin, users }) => {
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
@@ -186,11 +180,11 @@ const LoginScreen = ({ onLogin, users }) => {
 
   const handleSubmit = e => {
     e.preventDefault();
-    const found = users.find(u => u.email === email && u.pass === pass);
+    const found = users.find(u => u.email === email && u.pass === pass && u.role === "salon");
     if (found) {
       onLogin(found);
       navigate("/dashboard");
-    } else { alert("Email o Contraseña incorrectos. Revisá las credenciales de prueba abajo."); }
+    } else { alert("Email o Contraseña incorrectos."); }
   };
 
   return (
@@ -199,27 +193,56 @@ const LoginScreen = ({ onLogin, users }) => {
         <div style={{ textAlign:"center", marginBottom:40 }}>
            <div style={{ width:80, height:80, borderRadius:24, background:"linear-gradient(135deg,#6d28d9,#8b5cf6)", margin:"0 auto 20px", display:"flex", alignItems:"center", justifyContent:"center" }}><PartyPopper size={40} color="white" /></div>
            <h1 style={{ color:"white", fontFamily:"Syne", fontWeight:800, fontSize:32 }}>Fiesta<span style={{ color:"#a78bfa" }}>Digital</span></h1>
+           <p style={{ color: "#9b8ec4", fontSize: 13 }}>Acceso para Salones de Fiestas</p>
         </div>
         <div className="glass" style={{ padding:32, borderRadius:28 }}>
           <form onSubmit={handleSubmit}>
-            <Inp label="Email" value={email} onChange={setEmail} placeholder="admin@admin.com" />
+            <Inp label="Email" value={email} onChange={setEmail} placeholder="admin@ejemplo.com" />
             <Inp label="Contraseña" type="password" value={pass} onChange={setPass} placeholder="••••••" />
             <button type="submit" className="fd-btn" style={{ width:"100%", marginTop:10, padding:15, background:"#7c3aed", color:"white", border:"none", borderRadius:16, fontWeight:700, fontSize:16 }}>Ingresar al Panel</button>
           </form>
-          <div style={{ marginTop:24, padding:16, background:"rgba(255,255,255,0.05)", borderRadius:16, border:"1px solid rgba(255,255,255,0.1)", textAlign:"center", color:"#9b8ec4", fontSize:11 }}>
-            <p style={{ margin: "0 0 8px", fontWeight: 800, color: "#a78bfa", textTransform: "uppercase" }}>Credenciales de Prueba</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <p style={{ margin: 0 }}>🏠 Salón: <b>admin@admin.com</b> / <b>admin</b></p>
-              <p style={{ margin: 0 }}>👑 Dueño: <b>owner@fiestadigital.com</b> / <b>owner123</b></p>
-            </div>
-          </div>
         </div>
       </div>
     </div>
   );
 };
 
-// --- DASHBOARD (SALÓN O DUEÑO) ---
+// --- LOGIN PARA DUEÑO (RUTA SECRETA) ---
+const MasterLoginScreen = ({ onLogin, users }) => {
+  const [email, setEmail] = useState("");
+  const [pass, setPass] = useState("");
+  const navigate = useNavigate();
+
+  const handleSubmit = e => {
+    e.preventDefault();
+    const found = users.find(u => u.email === email && u.pass === pass && u.role === "owner");
+    if (found) {
+      onLogin(found);
+      navigate("/dashboard");
+    } else { alert("Acceso maestro denegado."); }
+  };
+
+  return (
+    <div className="fd" style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:"#1a103d" }}>
+      <div style={{ width:"100%", maxWidth:400, padding:20 }}>
+        <div style={{ textAlign:"center", marginBottom:40 }}>
+           <div style={{ width:64, height:64, borderRadius:20, background:"#7c3aed", margin:"0 auto 20px", display:"flex", alignItems:"center", justifyContent:"center" }}><ShieldCheck size={32} color="white" /></div>
+           <h1 style={{ color:"white", fontFamily:"Syne", fontWeight:800, fontSize:24 }}>Administración Central</h1>
+        </div>
+        <div className="glass" style={{ padding:32, borderRadius:28, border: "1px solid #7c3aed55" }}>
+          <form onSubmit={handleSubmit}>
+            <Inp label="Email Maestro" value={email} onChange={setEmail} />
+            <Inp label="Clave de Seguridad" type="password" value={pass} onChange={setPass} />
+            <button type="submit" className="fd-btn" style={{ width:"100%", marginTop:10, padding:15, background:"#7c3aed", color:"white", border:"none", borderRadius:16, fontWeight:700, fontSize:16 }}>Acceder al Core</button>
+          </form>
+          <p style={{ marginTop: 20, color: "#9b8ec4", fontSize: 11, textAlign: "center" }}>Uso exclusivo para propietarios de FiestaDigital</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- DASHBOARD ---
 const DashboardScreen = ({ user, users, invitations, onCreateNew, onRegister, onLogout }) => {
   const navigate = useNavigate();
   const [toast, setToast] = useState("");
@@ -252,7 +275,7 @@ const DashboardScreen = ({ user, users, invitations, onCreateNew, onRegister, on
       <nav style={{ background:"white", borderBottom:"1px solid #ede9ff", padding:"0 20px", height:60, display:"flex", alignItems:"center", justifyContent:"space-between", position:"sticky", top:0, zIndex:50 }}>
         <span style={{ fontFamily:"Syne", fontWeight:800, fontSize:20 }}>Fiesta<span style={{ color:"#7c3aed" }}>Digital</span></span>
         <div style={{ display:"flex", alignItems:"center", gap:15 }}>
-          <span style={{ fontWeight:700, fontSize:13 }}>{user.name} {isOwner && "👑"}</span>
+          <span style={{ fontWeight:700, fontSize:13, background: isOwner ? "#f5f3ff" : "transparent", padding: "4px 10px", borderRadius: 8, color: isOwner ? "#7c3aed" : "inherit" }}>{user.name} {isOwner && "👑"}</span>
           <button onClick={() => { onLogout(); navigate("/"); }} style={{ background:"#fee2e2", border:"none", padding:8, borderRadius:10, color:"#ef4444", cursor:"pointer" }}><LogOut size={18}/></button>
         </div>
       </nav>
@@ -260,35 +283,37 @@ const DashboardScreen = ({ user, users, invitations, onCreateNew, onRegister, on
       <div style={{ maxWidth:1100, margin:"0 auto", padding:"40px 20px" }}>
         
         {isOwner ? (
-          /* VISTA DEL DUEÑO (OSWALDO) */
           <div className="anim-up">
             <div style={{ display:"flex", justifyContent:"space-between", marginBottom:30 }}>
-              <h1 style={{ margin:0, fontFamily:"Syne", fontWeight:800 }}>Panel Maestro</h1>
-              <button onClick={() => setShowModal(true)} style={{ background:"#7c3aed", color:"white", border:"none", padding:"10px 20px", borderRadius:14, fontWeight:700, display:"flex", alignItems:"center", gap:8, cursor:"pointer" }}><UserPlus size={18}/> Crear Nuevo Salón</button>
+              <div>
+                <h1 style={{ margin:0, fontFamily:"Syne", fontWeight:800 }}>Master Admin</h1>
+                <p style={{ color: "#9b8ec4", margin: "5px 0 0" }}>Control total de la plataforma</p>
+              </div>
+              <button onClick={() => setShowModal(true)} style={{ background:"#7c3aed", color:"white", border:"none", padding:"10px 20px", borderRadius:14, fontWeight:700, display:"flex", alignItems:"center", gap:8, cursor:"pointer" }}><UserPlus size={18}/> Nuevo Salón</button>
             </div>
 
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(250px,1fr))", gap:20, marginBottom:40 }}>
                <div style={{ background:"white", padding:20, borderRadius:24, border:"1px solid #ede9ff" }}>
                   <div style={{ color:"#7c3aed", marginBottom:10 }}><Users size={24}/></div>
                   <div style={{ fontSize:24, fontWeight:800 }}>{salonUsers.length}</div>
-                  <div style={{ fontSize:13, color:"#9b8ec4", fontWeight:600 }}>Salones registrados</div>
+                  <div style={{ fontSize:13, color:"#9b8ec4", fontWeight:600 }}>Salones afiliados</div>
                </div>
                <div style={{ background:"white", padding:20, borderRadius:24, border:"1px solid #ede9ff" }}>
                   <div style={{ color:"#0d9488", marginBottom:10 }}><PartyPopper size={24}/></div>
                   <div style={{ fontSize:24, fontWeight:800 }}>{invitations.length}</div>
-                  <div style={{ fontSize:13, color:"#9b8ec4", fontWeight:600 }}>Invitaciones totales</div>
+                  <div style={{ fontSize:13, color:"#9b8ec4", fontWeight:600 }}>Total invitaciones</div>
                </div>
             </div>
 
-            <h2 style={{ fontSize:18, marginBottom:15 }}>Salones Activos</h2>
+            <h2 style={{ fontSize:18, marginBottom:15 }}>Gestión de Salones</h2>
             <div style={{ background:"white", borderRadius:24, border:"1px solid #ede9ff", overflow:"hidden" }}>
               <table style={{ width:"100%", borderCollapse:"collapse", fontSize:14 }}>
                 <thead style={{ background:"#faf8ff", borderBottom:"1px solid #ede9ff" }}>
                   <tr>
-                    <th style={{ textAlign:"left", padding:15 }}>Nombre</th>
-                    <th style={{ textAlign:"left", padding:15 }}>Email</th>
-                    <th style={{ textAlign:"left", padding:15 }}>Eventos</th>
-                    <th style={{ textAlign:"right", padding:15 }}>Acciones</th>
+                    <th style={{ textAlign:"left", padding:15 }}>Salón</th>
+                    <th style={{ textAlign:"left", padding:15 }}>Contacto</th>
+                    <th style={{ textAlign:"left", padding:15 }}>Activos</th>
+                    <th style={{ textAlign:"right", padding:15 }}>Estado</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -296,9 +321,9 @@ const DashboardScreen = ({ user, users, invitations, onCreateNew, onRegister, on
                     <tr key={s.email} style={{ borderBottom:"1px solid #f0eeff" }}>
                       <td style={{ padding:15, fontWeight:700 }}>{s.name}</td>
                       <td style={{ padding:15, color:"#9b8ec4" }}>{s.email}</td>
-                      <td style={{ padding:15 }}>{invitations.filter(i => i.salonId === s.email).length}</td>
+                      <td style={{ padding:15 }}>{invitations.filter(i => i.salonId === s.email).length} eventos</td>
                       <td style={{ padding:15, textAlign:"right" }}>
-                         <button style={{ background:"#f5f3ff", border:"none", padding:6, borderRadius:8, color:"#7c3aed", cursor:"pointer" }} title="Configurar"><Settings size={16}/></button>
+                         <span style={{ background:"#dcfce7", color: "#166534", padding: "4px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700 }}>PAGO AL DÍA</span>
                       </td>
                     </tr>
                   ))}
@@ -307,7 +332,6 @@ const DashboardScreen = ({ user, users, invitations, onCreateNew, onRegister, on
             </div>
           </div>
         ) : (
-          /* VISTA DEL SALÓN (CLIENTE) */
           <div className="anim-up">
             <div style={{ display:"flex", justifyContent:"space-between", marginBottom:30 }}>
               <h1 style={{ margin:0, fontFamily:"Syne", fontWeight:800 }}>Mis Invitaciones</h1>
@@ -333,19 +357,18 @@ const DashboardScreen = ({ user, users, invitations, onCreateNew, onRegister, on
         )}
       </div>
 
-      {/* MODAL PARA CREAR SALÓN (Sólo para el Owner) */}
       {showModal && (
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", backdropFilter:"blur(4px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:100 }}>
            <div className="anim-pop" style={{ background:"white", width:"90%", maxWidth:400, borderRadius:28, padding:30 }}>
               <div style={{ display:"flex", justifyContent:"space-between", marginBottom:20 }}>
-                 <h2 style={{ margin:0, fontSize:20 }}>Nuevo Salón</h2>
+                 <h2 style={{ margin:0, fontSize:20 }}>Registrar Salón</h2>
                  <button onClick={() => setShowModal(false)} style={{ background:"none", border:"none", cursor:"pointer" }}><X/></button>
               </div>
               <form onSubmit={handleCreateSalon}>
-                 <Inp label="Nombre del Salón" value={newSalon.name} onChange={v => setNewSalon({...newSalon, name:v})} placeholder="Ej: Salón Las Palmeras" />
-                 <Inp label="Email de Acceso" value={newSalon.email} onChange={v => setNewSalon({...newSalon, email:v})} placeholder="salon@mail.com" />
-                 <Inp label="Contraseña Temporal" value={newSalon.pass} onChange={v => setNewSalon({...newSalon, pass:v})} placeholder="123456" />
-                 <button type="submit" style={{ width:"100%", marginTop:10, padding:15, background:"#7c3aed", color:"white", border:"none", borderRadius:16, fontWeight:700 }}>Confirmar y Crear</button>
+                 <Inp label="Nombre del Salón" value={newSalon.name} onChange={v => setNewSalon({...newSalon, name:v})} />
+                 <Inp label="Email del Cliente" value={newSalon.email} onChange={v => setNewSalon({...newSalon, email:v})} />
+                 <Inp label="Contraseña Temporal" value={newSalon.pass} onChange={v => setNewSalon({...newSalon, pass:v})} />
+                 <button type="submit" style={{ width:"100%", marginTop:10, padding:15, background:"#7c3aed", color:"white", border:"none", borderRadius:16, fontWeight:700 }}>Activar Salón</button>
               </form>
            </div>
         </div>
@@ -372,11 +395,11 @@ const EditorScreen = ({ invitations, onSave }) => {
       </div>
       <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
         <div className="fd-sb" style={{ width:350, overflowY:"auto", padding:20, background:"white", borderRight:"1px solid #ede9ff" }}>
-          <Acc title="Datos Generales" icon={Type} defaultOpen>
+          <Acc title="Datos" icon={Type} defaultOpen>
             <Inp label="Nombre" value={cfg.honoreeName} onChange={v => setCfg({...cfg, honoreeName:v})} />
             <Inp label="Fecha" value={cfg.dateText} onChange={v => setCfg({...cfg, dateText:v})} />
           </Acc>
-          <Acc title="Colores" icon={Palette}>
+          <Acc title="Diseño" icon={Palette}>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:10 }}>
               {THEMES.map(th => (
                 <button key={th.id} onClick={() => setCfg({...cfg, theme:th.id, ...th})} style={{ padding:10, borderRadius:12, border: cfg.theme === th.id ? "2px solid #7c3aed" : "1px solid #ede9ff", background:"white", cursor:"pointer" }}>{th.emoji} {th.name}</button>
@@ -400,12 +423,12 @@ const PublicInviteScreen = ({ invitations }) => {
 };
 
 /* ═══════════════════════════════════════════════════════════
-   APP ROOT
+   APP ROOT (Rutas)
 ═══════════════════════════════════════════════════════════ */
 export default function App() {
   const [user, setUser] = useState(null);
   const [users, setUsers] = useState([
-    { name:"Oswaldo (Dueño)", email:"owner@fiestadigital.com", pass:"owner123", role:"owner" },
+    { name:"Oswaldo Core", email:"owner@fiestadigital.com", pass:"owner123", role:"owner" },
     { name:"Aventura Kids", email:"admin@admin.com", pass:"admin", role:"salon" }
   ]);
   const [invitations, setInvitations] = useState([
@@ -423,7 +446,12 @@ export default function App() {
   return (
     <Router>
       <Routes>
+        {/* Ruta para salones */}
         <Route path="/" element={<LoginScreen onLogin={setUser} users={users} />} />
+        
+        {/* RUTA SECRETA PARA EL DUEÑO (/master) */}
+        <Route path="/master" element={<MasterLoginScreen onLogin={setUser} users={users} />} />
+        
         <Route path="/dashboard" element={<DashboardScreen user={user} users={users} invitations={invitations} onCreateNew={handleCreate} onRegister={handleRegister} onLogout={() => setUser(null)} />} />
         <Route path="/editor/:id" element={<EditorScreen invitations={invitations} onSave={handleSave} />} />
         <Route path="/i/:salonSlug/:invId" element={<PublicInviteScreen invitations={invitations} />} />
