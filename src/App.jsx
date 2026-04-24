@@ -52,7 +52,7 @@ import {
 })();
 
 /* ═══════════════════════════════════════════════════════════
-   CONSTANTS & DEFAULTS
+   CONSTANTES & DEFAULTS
 ═══════════════════════════════════════════════════════════ */
 const EMOJIS = ['🎂','🎈','🎉','🥳','🎁','🎊','👶','💍','🎓','✨','🌟','❤️','💖','🦖','🦄','⚽','🎮','👑','🌸','🍕','🍰','🥂','🍻','🎭','🎶','📸','🚗','💒','🏖️','🌈','🔥','💎','🎪','🎠','🎡','🦋','🌺','🎵','🏆'];
 
@@ -190,7 +190,7 @@ const LoginScreen = ({ onLogin, users }) => {
     if (found) {
       onLogin(found);
       navigate("/dashboard");
-    } else { alert("Credenciales incorrectas."); }
+    } else { alert("Email o Contraseña incorrectos. Revisá las credenciales de prueba abajo."); }
   };
 
   return (
@@ -202,13 +202,16 @@ const LoginScreen = ({ onLogin, users }) => {
         </div>
         <div className="glass" style={{ padding:32, borderRadius:28 }}>
           <form onSubmit={handleSubmit}>
-            <Inp label="Email" value={email} onChange={setEmail} placeholder="admin@ejemplo.com" />
+            <Inp label="Email" value={email} onChange={setEmail} placeholder="admin@admin.com" />
             <Inp label="Contraseña" type="password" value={pass} onChange={setPass} placeholder="••••••" />
-            <button type="submit" className="fd-btn" style={{ width:"100%", marginTop:10, padding:15, background:"#7c3aed", color:"white", border:"none", borderRadius:16, fontWeight:700, fontSize:16 }}>Ingresar</button>
+            <button type="submit" className="fd-btn" style={{ width:"100%", marginTop:10, padding:15, background:"#7c3aed", color:"white", border:"none", borderRadius:16, fontWeight:700, fontSize:16 }}>Ingresar al Panel</button>
           </form>
-          <div style={{ marginTop:20, textAlign:"center", color:"#9b8ec4", fontSize:12 }}>
-            <p>Demo Admin: <b>admin@admin.com</b> / <b>admin</b></p>
-            <p>Owner Panel: <b>owner@fiestadigital.com</b> / <b>owner123</b></p>
+          <div style={{ marginTop:24, padding:16, background:"rgba(255,255,255,0.05)", borderRadius:16, border:"1px solid rgba(255,255,255,0.1)", textAlign:"center", color:"#9b8ec4", fontSize:11 }}>
+            <p style={{ margin: "0 0 8px", fontWeight: 800, color: "#a78bfa", textTransform: "uppercase" }}>Credenciales de Prueba</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <p style={{ margin: 0 }}>🏠 Salón: <b>admin@admin.com</b> / <b>admin</b></p>
+              <p style={{ margin: 0 }}>👑 Dueño: <b>owner@fiestadigital.com</b> / <b>owner123</b></p>
+            </div>
           </div>
         </div>
       </div>
@@ -319,7 +322,7 @@ const DashboardScreen = ({ user, users, invitations, onCreateNew, onRegister, on
                       <h3 style={{ margin:"0 0 10px", fontSize:16 }}>{inv.title}</h3>
                       <div style={{ display:"flex", gap:8 }}>
                         <button onClick={() => navigate(`/editor/${inv.id}`)} style={{ flex:1, background:"#1e1b40", color:"white", border:"none", padding:10, borderRadius:12, fontWeight:700, cursor:"pointer" }}>Editar</button>
-                        <button onClick={() => copy(inv.id)} style={{ width:40, border:"1px solid #ede9ff", borderRadius:12, cursor:"pointer" }}><Copy size={16}/></button>
+                        <button onClick={() => copy(inv.id)} style={{ width:40, border:"1.5px solid #ede9ff", borderRadius:12, cursor:"pointer" }}><Copy size={16}/></button>
                         <button onClick={() => window.open(`/i/${slugify(user.name)}/${inv.id}`)} style={{ width:40, border:"1.5px solid #ede9ff", borderRadius:12, cursor:"pointer" }}><ExternalLink size={16}/></button>
                       </div>
                    </div>
