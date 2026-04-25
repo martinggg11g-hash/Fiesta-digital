@@ -2,13 +2,13 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   MapPin, Clock, Calendar, Palette, CheckCircle2,
-  ChevronDown, Type, ArrowLeft, Save,
+  ChevronDown, Type, Edit2, ArrowLeft, Save, X,
   Star, Image as ImageIcon, Layout, List, Trash2, Loader2, Check,
   Video, Link as LinkIcon
 } from "lucide-react";
 
 /* ============================================================================
-   FUNCIONES AUXILIARES
+   FUNCIONES AUXILIARES Y CONSTANTES
 ============================================================================ */
 const getYouTubeId = (url) => {
   if (!url) return null;
@@ -19,9 +19,6 @@ const getYouTubeId = (url) => {
   } catch (e) { return null; }
 };
 
-/* ============================================================================
-   CONSTANTES Y EMOJIS (Exportados para que App.jsx los pueda leer)
-============================================================================ */
 export const GENERAL_EMOJIS = ['🎂','🎈','🎉','🥳','🎁','🎊','👶','💍','🎓','✨','🌟','❤️','💖','🦖','🦄','⚽','🎮','👑','🌸','🔥','💎','🎪','🎠','🎡','🦋','🌺','🎵','🏆'];
 export const FOOD_EMOJIS = ['🍕','🍔','🍟','🌭','🍿','🍳','🥞','🍞','🥐','🥨','🧀','🥗','🌮','🌯','🍖','🍗','🥟','🍣','🍤','🍩','🍪','🍰','🧁','🥧','🍫','🍬','🍭','🍮','🍯','🥤','🧃','🧉','🍻','🥂','🍷','🍹','🍸','🍺','☕'];
 export const CLOTHES_EMOJIS = ['👕','👖','👔','👗','👙','👘','🥻','👠','👡','👢','👞','👟','🥿','🧦','🧤','🧣','🎩','🧢','👒','🎓','👑','💍','👝','👛','👜','💼','🎒','🕶','👓'];
@@ -75,11 +72,11 @@ export const DEF_CONFIG = {
   showGallery:false, galleryTitle:"Fotos", galleryPhotos:[],
   showVideo:false, videoUrl:"", videoTitle:"Mirá el video",
   showVenueLogo:false, venueLogoUrl:"", venueName:"", venueLink:"", venueLinkType:"web",
-  whatsappNumber:"5491123456789", whatsappMessage:"¡Hola! Confirmo mi asistencia para el evento 🎉",
+  whatsappNumber:"5491123456789", whatsappMessage:"¡Hola! Confirmo mi asistencia para el cumple de {nombre} 🎉",
 };
 
 /* ============================================================================
-   MICRO COMPONENTES DE UI INTERNOS (Solo se usan acá)
+   MICRO COMPONENTES DE UI
 ============================================================================ */
 const Inp = ({ label, value, onChange, placeholder, type="text", multiline = false, className="" }) => (
   <div className={`mb-4 text-left ${className}`}>
@@ -237,15 +234,34 @@ const ParticleCanvas = ({ effect, primary }) => {
 
     const spawnParticle = () => {
       const x = Math.random() * canvas.width;
-      const base = { x, y: -20, vx: (Math.random() - 0.5) * 2, vy: Math.random() * 2 + 1, alpha: 1, rot: Math.random() * 360, rotV: (Math.random() - 0.5) * 4, size: Math.random() * 10 + 8, life: 1, decay: Math.random() * 0.003 + 0.002 };
+      const isBubble = effect === "bubbles";
+      
+      const base = { 
+        x, 
+        y: isBubble ? canvas.height + 20 : -20, // Burbujas nacen abajo, el resto arriba
+        vx: (Math.random() - 0.5) * 2, 
+        vy: Math.random() * 2 + 1, 
+        alpha: 1, 
+        rot: Math.random() * 360, 
+        rotV: (Math.random() - 0.5) * 4, 
+        size: Math.random() * 10 + 8, 
+        life: 1, 
+        decay: Math.random() * 0.003 + 0.002 
+      };
+
       if (effect === "confetti") {
         const colors = [primary, "#f59e0b", "#10b981", "#ef4444", "#3b82f6", "#ec4899", "#facc15"];
         return { ...base, type: "rect", color: colors[Math.floor(Math.random() * colors.length)], w: Math.random()*10+5, h: Math.random()*5+3 };
       }
       if (effect === "hearts")  return { ...base, type: "text", emoji: "❤️", size: Math.random()*18+10 };
       if (effect === "stars")   return { ...base, type: "text", emoji: "⭐", size: Math.random()*16+8 };
-      if (effect === "bubbles") return { ...base, type: "circle", color: primary, r: Math.random()*12+4, vx: (Math.random()-0.5)*1.5, vy: -(Math.random()*2+0.5) };
-      if (effect === "snow")    return { ...base, type: "circle", color: "#ffffff", r: Math.random()*5+2, vy: Math.random()*1.5+0.5, vx: (Math.random()-0.5)*0.8 };
+      
+      // Burbujas suben y son huecas
+      if (effect === "bubbles") return { ...base, type: "circle", color: primary, filled: false, r: Math.random()*12+4, vx: (Math.random()-0.5)*1.5, vy: -(Math.random()*2+0.5) };
+      
+      // Nieve baja, es pequeña y blanca sólida
+      if (effect === "snow")    return { ...base, type: "circle", color: "#ffffff", filled: true, r: Math.random()*3+1, vy: Math.random()*1.5+0.5, vx: (Math.random()-0.5)*0.8 };
+      
       if (effect === "petals")  return { ...base, type: "text", emoji: PETALS[Math.floor(Math.random()*PETALS.length)], size: Math.random()*20+12 };
       if (effect === "emojis")  return { ...base, type: "text", emoji: EMOJI_MIX[Math.floor(Math.random()*EMOJI_MIX.length)], size: Math.random()*20+12 };
       return null;
@@ -256,23 +272,33 @@ const ParticleCanvas = ({ effect, primary }) => {
       if (!ctx || !canvas) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       frame++;
+      
       if (frame % 8 === 0 && particlesRef.current.length < 60) {
         const p = spawnParticle();
         if (p) particlesRef.current.push(p);
       }
+      
       particlesRef.current = particlesRef.current.filter(p => {
         p.x += p.vx; p.y += p.vy; p.rot = (p.rot || 0) + (p.rotV || 0); p.life -= p.decay; p.alpha = p.life;
         ctx.globalAlpha = Math.max(0, p.alpha);
+        
         if (p.type === "rect") {
           ctx.save(); ctx.translate(p.x, p.y); ctx.rotate((p.rot || 0) * Math.PI/180);
           ctx.fillStyle = p.color; ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h); ctx.restore();
         } else if (p.type === "circle") {
-          ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.strokeStyle = p.color; ctx.lineWidth = 1.5; ctx.stroke();
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); 
+          if (p.filled) {
+            ctx.fillStyle = p.color; ctx.fill();
+          } else {
+            ctx.strokeStyle = p.color; ctx.lineWidth = 1.5; ctx.stroke();
+          }
         } else if (p.type === "text") {
           ctx.font = `${p.size}px serif`; ctx.textAlign = "center"; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate((p.rot||0)*Math.PI/180); ctx.fillText(p.emoji, 0, 0); ctx.restore();
         }
         ctx.globalAlpha = 1;
-        return p.life > 0 && p.y < canvas.height + 40;
+        
+        // Sobreviven si tienen vida y no se fueron ni muy abajo ni muy arriba
+        return p.life > 0 && p.y < canvas.height + 40 && p.y > -40;
       });
       animRef.current = requestAnimationFrame(loop);
     };
@@ -363,7 +389,7 @@ export const Envelope = ({ cfg, onOpen }) => {
 };
 
 /* ============================================================================
-   VISTA PREVIA DE LA INVITACIÓN (EXPORTADA PARA APP.JSX)
+   VISTA PREVIA DE LA INVITACIÓN (USADA EN EDITOR Y PÚBLICA)
 ============================================================================ */
 export const InvitePreview = ({ cfg }) => {
   if (!cfg) return null;
@@ -397,7 +423,8 @@ export const InvitePreview = ({ cfg }) => {
       <div className="relative h-[420px] overflow-hidden">
         <img src={cfg.coverPhoto || DEF_CONFIG.coverPhoto} className="w-full h-full object-cover" alt="Cover" />
         <div className="absolute inset-0" style={{ background: `linear-gradient(to top, ${cfg.bg1 || th.bg1} 5%, rgba(0,0,0,${gradOpacity}) 60%, transparent 100%)` }} />
-        <div className="absolute bottom-0 left-0 right-0 p-8 text-center relative z-30">
+        {/* CORRECCIÓN DE LA POSICIÓN DE LOS TEXTOS FRONTALES */}
+        <div className="absolute bottom-0 left-0 right-0 p-8 text-center z-30">
           <p className="font-black uppercase tracking-[0.2em] mb-4 flex items-center justify-center gap-2" style={{ color: primary, fontSize: `${cfg.eventTypeSize ?? 11}px` }}>{cfg.eventTypeEmoji} {cfg.eventType}</p>
           <h1 style={{ fontFamily: cfg.fontTitle, color: textC, fontSize: `${cfg.honoreeSize ?? 48}px` }} className="leading-tight mb-4">{cfg.honoreeName}</h1>
           <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-white/10 backdrop-blur-md bg-black/30 font-black text-sm" style={{ color: textC }}>{cfg.badgeEmoji} {cfg.badgeText}</span>
@@ -530,7 +557,7 @@ export const InvitePreview = ({ cfg }) => {
 };
 
 /* ============================================================================
-   EDITOR PRINCIPAL (EXPORTADO PARA APP.JSX)
+   EDITOR PRINCIPAL (EL PANEL QUE USA EL SALÓN)
 ============================================================================ */
 export const EditorScreen = ({ invitations, onSave }) => {
   const { id } = useParams();
@@ -546,9 +573,7 @@ export const EditorScreen = ({ invitations, onSave }) => {
   if (!inv) return <div className="h-screen bg-slate-950 flex items-center justify-center text-white"><Loader2 className="animate-spin mr-3"/> Cargando editor...</div>;
 
   const update = (k, v) => setInv(p => ({ ...p, config: { ...(p.config || DEF_CONFIG), [k]: v } }));
-
   const handleSave = () => { onSave(inv); navigate("/dashboard"); };
-
   const cfg = inv.config || DEF_CONFIG;
 
   return (
@@ -666,15 +691,10 @@ export const EditorScreen = ({ invitations, onSave }) => {
               <>
                 <Inp label="Nombre del lugar" value={cfg.locationName} onChange={v => update("locationName", v)} />
                 <Inp label="Dirección exacta" placeholder="Ej: Av. San Martín 1234, Buenos Aires" value={cfg.locationAddress} onChange={v => update("locationAddress", v)} />
-                <p className="text-[10px] text-violet-500 font-bold mb-4 mt-1 bg-violet-50 p-2 rounded-lg">📍 El mapa se genera automáticamente con la dirección y marca el lugar exacto.</p>
+                <p className="text-[10px] text-violet-500 font-bold mb-4 mt-1 bg-violet-50 p-2 rounded-lg">📍 El mapa se genera automáticamente con la dirección y marca el lugar exacto. Cuanto más completa la dirección, más preciso.</p>
                 <div className="flex items-center justify-between mt-4 mb-2"><span className="text-xs font-bold text-slate-500">Aclarar Estacionamiento</span><Toggle checked={cfg.showParking} onChange={v => update("showParking", v)} /></div>
                 {cfg.showParking && (
-                  <SelectInp label="Tipo" value={cfg.parkingType} options={[
-                    {label:"Público en la calle", value:"Estacionamiento público"},
-                    {label:"Cubierto / Privado", value:"Estacionamiento privado cubierto"},
-                    {label:"Al aire libre", value:"Estacionamiento al aire libre"},
-                    {label:"Personalizado...", value:"otro"}
-                  ]} onChange={v => update("parkingType", v)} />
+                  <SelectInp label="Tipo" value={cfg.parkingType} options={[{label:"Público en la calle", value:"Estacionamiento público"}, {label:"Cubierto / Privado", value:"Estacionamiento privado cubierto"}, {label:"Al aire libre", value:"Estacionamiento al aire libre"}, {label:"Personalizado...", value:"otro"}]} onChange={v => update("parkingType", v)} />
                 )}
                 {cfg.showParking && cfg.parkingType === 'otro' && <Inp placeholder="Escribe aquí..." value={cfg.customParking || ""} onChange={v => update("customParking", v)} />}
               </>
@@ -697,41 +717,29 @@ export const EditorScreen = ({ invitations, onSave }) => {
           </Acc>
 
           <Acc title="Video de la Fiesta" icon={Video} iconColor="#8b5cf6">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-bold text-slate-500">Agregar video</span>
-              <Toggle checked={cfg.showVideo || false} onChange={v => update("showVideo", v)} />
-            </div>
+            <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Agregar video</span><Toggle checked={cfg.showVideo || false} onChange={v => update("showVideo", v)} /></div>
             {cfg.showVideo && (
               <>
                 <Inp label="Título del video" value={cfg.videoTitle || ""} onChange={v => update("videoTitle", v)} placeholder="Ej: Un mensaje especial 💖" />
                 <Inp label="Enlace de YouTube" value={cfg.videoUrl || ""} onChange={v => update("videoUrl", v)} placeholder="Ej: https://www.youtube.com/watch?v=..." />
-                <p className="text-[10px] text-violet-500 font-bold mt-1 bg-violet-50 p-2 rounded-lg">🎬 Pegá cualquier link de YouTube. Se reproducirá directamente dentro de la invitación.</p>
+                <p className="text-[10px] text-violet-500 font-bold mt-1 bg-violet-50 p-2 rounded-lg">🎬 Pegá cualquier link de YouTube. Se reproducirá directamente dentro de la invitación sin que el usuario tenga que salir de la página.</p>
               </>
             )}
           </Acc>
 
           <Acc title="Programa (Itinerario)" icon={Clock} iconColor="#ca8a04">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-bold text-slate-500">Activar Itinerario</span>
-              <Toggle checked={cfg.showItinerary} onChange={v => update("showItinerary", v)} />
-            </div>
+            <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Itinerario</span><Toggle checked={cfg.showItinerary} onChange={v => update("showItinerary", v)} /></div>
             {cfg.showItinerary && (
               <>
                 <div className="space-y-3 mb-4">
                   {cfg.itinerary?.map((item, i) => (
                     <div key={i} className="p-3 bg-white rounded-xl border border-gray-200 relative">
                       <div className="flex gap-2 mb-2">
-                        <input className="w-16 p-2 bg-gray-50 rounded-lg text-xs font-bold border border-gray-100 outline-none focus:border-violet-300" value={item.time} onChange={e => {
-                          const n = [...cfg.itinerary]; n[i].time = e.target.value; update("itinerary", n);
-                        }} />
-                        <input className="flex-1 p-2 bg-gray-50 rounded-lg text-xs font-bold border border-gray-100 outline-none focus:border-violet-300" value={item.title} onChange={e => {
-                          const n = [...cfg.itinerary]; n[i].title = e.target.value; update("itinerary", n);
-                        }} />
+                        <input className="w-16 p-2 bg-gray-50 rounded-lg text-xs font-bold border border-gray-100 outline-none focus:border-violet-300" value={item.time} onChange={e => { const n = [...cfg.itinerary]; n[i].time = e.target.value; update("itinerary", n); }} />
+                        <input className="flex-1 p-2 bg-gray-50 rounded-lg text-xs font-bold border border-gray-100 outline-none focus:border-violet-300" value={item.title} onChange={e => { const n = [...cfg.itinerary]; n[i].title = e.target.value; update("itinerary", n); }} />
                         <button onClick={() => update("itinerary", cfg.itinerary.filter((_, idx) => idx !== i))} type="button" className="text-red-400 p-2 hover:bg-red-50 rounded-lg cursor-pointer"><Trash2 size={14}/></button>
                       </div>
-                      <input className="w-full p-2 bg-gray-50 rounded-lg text-xs border border-gray-100 outline-none focus:border-violet-300" value={item.sub} placeholder="Descripción (opcional)" onChange={e => {
-                        const n = [...cfg.itinerary]; n[i].sub = e.target.value; update("itinerary", n);
-                      }} />
+                      <input className="w-full p-2 bg-gray-50 rounded-lg text-xs border border-gray-100 outline-none focus:border-violet-300" value={item.sub} placeholder="Descripción (opcional)" onChange={e => { const n = [...cfg.itinerary]; n[i].sub = e.target.value; update("itinerary", n); }} />
                     </div>
                   ))}
                 </div>
@@ -741,19 +749,14 @@ export const EditorScreen = ({ invitations, onSave }) => {
           </Acc>
 
           <Acc title="¿Qué vamos a comer?" icon={List} iconColor="#10b981">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-bold text-slate-500">Activar Menú</span>
-              <Toggle checked={cfg.showMenu} onChange={v => update("showMenu", v)} />
-            </div>
+            <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Menú</span><Toggle checked={cfg.showMenu} onChange={v => update("showMenu", v)} /></div>
             {cfg.showMenu && (
               <>
                 <div className="space-y-3 mb-4">
                   {cfg.menuItems?.map((item, i) => (
                     <div key={i} className="flex items-center gap-2 p-2 bg-white rounded-xl border border-gray-200">
                       <EmojiPicker list={FOOD_EMOJIS} value={item.emoji} onSelect={e => { const n = [...cfg.menuItems]; n[i].emoji = e; update("menuItems", n); }} />
-                      <input className="flex-1 p-2 bg-gray-50 rounded-lg text-xs font-bold border border-gray-100 outline-none focus:border-violet-300" value={item.label} placeholder="Comida" onChange={e => {
-                        const n = [...cfg.menuItems]; n[i].label = e.target.value; update("menuItems", n);
-                      }} />
+                      <input className="flex-1 p-2 bg-gray-50 rounded-lg text-xs font-bold border border-gray-100 outline-none focus:border-violet-300" value={item.label} placeholder="Comida" onChange={e => { const n = [...cfg.menuItems]; n[i].label = e.target.value; update("menuItems", n); }} />
                       <button onClick={() => update("menuItems", cfg.menuItems.filter((_, idx) => idx !== i))} type="button" className="text-red-400 p-3 hover:bg-red-50 rounded-lg cursor-pointer"><Trash2 size={14}/></button>
                     </div>
                   ))}
@@ -764,21 +767,14 @@ export const EditorScreen = ({ invitations, onSave }) => {
           </Acc>
 
           <Acc title="Dress Code y Regalos" icon={Layout} iconColor="#f43f5e">
-             <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-bold text-slate-500">Activar Vestimenta</span>
-              <Toggle checked={cfg.showDressCode} onChange={v => update("showDressCode", v)} />
-             </div>
+             <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Vestimenta</span><Toggle checked={cfg.showDressCode} onChange={v => update("showDressCode", v)} /></div>
              {cfg.showDressCode && (
                <div className="flex gap-2 mb-6">
                  <EmojiPicker list={CLOTHES_EMOJIS} value={cfg.dressCodeIcon} onSelect={e => update("dressCodeIcon", e)} />
                  <div className="flex-1"><Inp value={cfg.dressCodeText} onChange={v => update("dressCodeText", v)} placeholder="Ej: Elegante Sport" className="!mb-0"/></div>
                </div>
              )}
-
-             <div className="flex items-center justify-between mb-4 pt-4 border-t border-gray-100">
-              <span className="text-xs font-bold text-slate-500">Activar Regalos</span>
-              <Toggle checked={cfg.showGifts} onChange={v => update("showGifts", v)} />
-             </div>
+             <div className="flex items-center justify-between mb-4 pt-4 border-t border-gray-100"><span className="text-xs font-bold text-slate-500">Activar Regalos</span><Toggle checked={cfg.showGifts} onChange={v => update("showGifts", v)} /></div>
              {cfg.showGifts && (
                <>
                  <div className="flex gap-2 mb-2">
@@ -786,22 +782,14 @@ export const EditorScreen = ({ invitations, onSave }) => {
                    <div className="w-24"><Inp value={cfg.giftLabel} onChange={v => update("giftLabel", v)} placeholder="Título" className="!mb-0"/></div>
                    <div className="flex-1"><Inp value={cfg.giftText} onChange={v => update("giftText", v)} placeholder="Lluvia de sobres..." className="!mb-0"/></div>
                  </div>
-                 <div className="flex items-center justify-between mt-4 mb-2">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase">Aclaración Extra</span>
-                  <Toggle checked={cfg.showGiftNote} onChange={v => update("showGiftNote", v)} />
-                 </div>
-                 {cfg.showGiftNote && (
-                   <Inp value={cfg.giftNoteText} onChange={v => update("giftNoteText", v)} placeholder="Ej: No traer cosas grandes" multiline />
-                 )}
+                 <div className="flex items-center justify-between mt-4 mb-2"><span className="text-[10px] font-bold text-slate-500 uppercase">Aclaración Extra</span><Toggle checked={cfg.showGiftNote} onChange={v => update("showGiftNote", v)} /></div>
+                 {cfg.showGiftNote && <Inp value={cfg.giftNoteText} onChange={v => update("giftNoteText", v)} placeholder="Ej: No traer cosas grandes" multiline />}
                </>
              )}
           </Acc>
 
           <Acc title="Galería de Fotos" icon={ImageIcon} iconColor="#ec4899">
-             <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-bold text-slate-500">Activar Galería</span>
-              <Toggle checked={cfg.showGallery} onChange={v => update("showGallery", v)} />
-             </div>
+             <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Galería</span><Toggle checked={cfg.showGallery} onChange={v => update("showGallery", v)} /></div>
              {cfg.showGallery && (
                <>
                  <Inp label="Título de la Sección" value={cfg.galleryTitle} onChange={v => update("galleryTitle", v)} />
@@ -823,16 +811,13 @@ export const EditorScreen = ({ invitations, onSave }) => {
             <p className="text-[9px] text-gray-400 mb-1">Usa {"{nombre}"} para incluir el nombre automáticamente.</p>
             <Inp value={cfg.whatsappMessage} onChange={v => update("whatsappMessage", v)} multiline />
           </Acc>
-
         </aside>
 
         {/* VISTA PREVIA CENTRAL */}
         <main className="flex-1 bg-slate-900 flex items-center justify-center p-6 relative">
           <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:20px_20px]" />
           <div className="invite-phone anim-pop border-[8px] border-slate-800 shadow-2xl relative z-10">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-7 bg-[#1a1a2e] rounded-b-2xl z-50 flex items-center justify-center">
-              <div className="w-10 h-1 bg-slate-800 rounded-full" />
-            </div>
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-7 bg-[#1a1a2e] rounded-b-2xl z-50 flex items-center justify-center"><div className="w-10 h-1 bg-slate-800 rounded-full" /></div>
             <div className="h-full w-full overflow-y-auto bg-black pb-10" style={{ scrollBehavior: 'smooth', scrollbarWidth: 'none' }}>
               <InvitePreview cfg={cfg} />
             </div>
