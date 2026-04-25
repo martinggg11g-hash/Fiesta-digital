@@ -8,6 +8,19 @@ import {
 } from "lucide-react";
 
 /* ============================================================================
+   FUNCIONES AUXILIARES
+============================================================================ */
+// Detector de YouTube: saca el ID del video sin importar el formato del link
+const getYouTubeId = (url) => {
+  if (!url) return null;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+};
+
+const slugify = (text) => text?.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') || 'salon';
+
+/* ============================================================================
    CONSTANTES Y EMOJIS
 ============================================================================ */
 export const GENERAL_EMOJIS = ['🎂','🎈','🎉','🥳','🎁','🎊','👶','💍','🎓','✨','🌟','❤️','💖','🦖','🦄','⚽','🎮','👑','🌸','🔥','💎','🎪','🎠','🎡','🦋','🌺','🎵','🏆'];
@@ -48,15 +61,12 @@ export const EFFECTS = [
 export const DEF_CONFIG = {
   theme:"violet", fontTitle:"'Pacifico', cursive", fontBody:"'DM Sans', sans-serif",
   bg1:"#08060f", bg2:"#120d24", primary:"#7c3aed", card:"#1a1035", text:"#f0ecff", muted:"#9b8ec4",
-  // NUEVO: intensidad del gradiente de portada 0–100
   coverGradientIntensity: 70,
-  // NUEVO: efecto de partículas
   particleEffect: "none",
   eventTypeEmoji:"✨", eventType:"Estás invitado al cumple de", honoreeName:"Valentina", badgeEmoji:"🎂", badgeText:"5 añitos",
   coverPhoto:"https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=800&q=80",
   showBanner:true, bannerTitle:"La festejada", bannerPhoto:"https://images.unsplash.com/photo-1545912452-8aea7e25a3d3?auto=format&fit=crop&w=400&q=80",
   showDate:true, dateText:"Sábado 24 de Octubre", showTime:true, timeText:"16:00 a 20:00 hs",
-  // NUEVO: cuenta regresiva simplificada
   showCountdown: false, countdownDate:"",
   showTheme:true, themeIcon:"🦕", themeLabel:"Temática", themeText:"Dinosaurios",
   showLocation:true, locationName:"Aventura Kids", locationAddress:"Av. San Martín 1234",
@@ -66,12 +76,12 @@ export const DEF_CONFIG = {
   showDressCode:true, dressCodeIcon:"👗", dressCodeText:"Elegante Sport",
   showGifts:true, giftIcon:"🎁", giftLabel:"Regalos", giftText:"Lluvia de sobres", showGiftNote:false, giftNoteText:"",
   showGallery:false, galleryTitle:"Fotos", galleryPhotos:[],
-  // NUEVO: video inline
-  showVideo:false, videoFile:"", videoTitle:"Mirá el video",
-  // NUEVO: logo del lugar con link
+  // Cambiamos videoFile por videoUrl
+  showVideo:false, videoUrl:"", videoTitle:"Mirá el video",
   showVenueLogo:false, venueLogoUrl:"", venueName:"", venueLink:"", venueLinkType:"web",
   whatsappNumber:"5491123456789", whatsappMessage:"¡Hola! Confirmo mi asistencia para el cumple de {nombre} 🎉",
 };
+
 
 /* ============================================================================
    MICRO COMPONENTES DE UI
@@ -105,13 +115,11 @@ const FileUpload = ({ label, onChange, value, accept="image/*" }) => {
       reader.readAsDataURL(file);
     }
   };
-  const isVideo = accept.includes("video");
   return (
     <div className="mb-4 text-left">
       {label && <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{label}</label>}
       <input type="file" accept={accept} onChange={handleFile} className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 cursor-pointer" />
-      {value && !isVideo && <img src={value} alt="preview" className="mt-3 h-24 w-auto rounded-xl object-cover border border-gray-200 shadow-sm" />}
-      {value && isVideo && <video src={value} className="mt-3 h-24 w-auto rounded-xl object-cover border border-gray-200 shadow-sm" muted />}
+      {value && <img src={value} alt="preview" className="mt-3 h-24 w-auto rounded-xl object-cover border border-gray-200 shadow-sm" />}
     </div>
   );
 };
@@ -162,7 +170,7 @@ const Acc = ({ title, icon: Icon, children, defaultOpen = false, iconColor = "#7
 };
 
 /* ============================================================================
-   CUENTA REGRESIVA SIMPLIFICADA
+   EFECTOS ESPECIALES Y WIDGETS
 ============================================================================ */
 const Countdown = ({ targetDate, primary, text }) => {
   const [timeLeft, setTimeLeft] = useState({ d:0, h:0, m:0, s:0 });
@@ -186,7 +194,6 @@ const Countdown = ({ targetDate, primary, text }) => {
   }, [targetDate]);
 
   if(!targetDate) return null;
-
   const labels = { d:"días", h:"horas", m:"min", s:"seg" };
 
   return (
@@ -210,9 +217,6 @@ const Countdown = ({ targetDate, primary, text }) => {
   );
 };
 
-/* ============================================================================
-   EFECTOS DE PARTÍCULAS
-============================================================================ */
 const ParticleCanvas = ({ effect, primary }) => {
   const canvasRef = useRef(null);
   const animRef = useRef(null);
@@ -236,17 +240,8 @@ const ParticleCanvas = ({ effect, primary }) => {
     const spawnParticle = () => {
       const x = Math.random() * canvas.width;
       const base = {
-        x, y: -20,
-        vx: (Math.random() - 0.5) * 2,
-        vy: Math.random() * 2 + 1,
-        alpha: 1,
-        rot: Math.random() * 360,
-        rotV: (Math.random() - 0.5) * 4,
-        size: Math.random() * 10 + 8,
-        life: 1,
-        decay: Math.random() * 0.003 + 0.002,
+        x, y: -20, vx: (Math.random() - 0.5) * 2, vy: Math.random() * 2 + 1, alpha: 1, rot: Math.random() * 360, rotV: (Math.random() - 0.5) * 4, size: Math.random() * 10 + 8, life: 1, decay: Math.random() * 0.003 + 0.002,
       };
-
       if (effect === "confetti") {
         const colors = [primary, "#f59e0b", "#10b981", "#ef4444", "#3b82f6", "#ec4899", "#facc15"];
         return { ...base, type: "rect", color: colors[Math.floor(Math.random() * colors.length)], w: Math.random()*10+5, h: Math.random()*5+3 };
@@ -301,89 +296,65 @@ const ParticleCanvas = ({ effect, primary }) => {
   return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none z-30" style={{ opacity: 0.85 }} />;
 };
 
-/* ============================================================================
-   MAPA EMBED SIMPLE (OpenStreetMap, sin API key)
-============================================================================ */
 const MapEmbed = ({ name, address, primary }) => {
   const query = `${name || ""} ${address || ""}`.trim();
   if (!query) return null;
-
-  // Usamos OpenStreetMap embed que es gratuito y muestra el marcador exacto
-  const osmSrc = `https://www.openstreetmap.org/export/embed.html?bbox=-180,-90,180,90&layer=mapnik&marker=0,0&query=${encodeURIComponent(query)}`;
-  // URL para ir al mapa externo con marcador
-  const gMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
-
+  const gMapsUrl = `http://googleusercontent.com/maps.google.com/maps?q=${encodeURIComponent(query)}`;
   return (
     <div className="rounded-2xl overflow-hidden border border-white/10 relative" style={{ background: "#1a1a2e" }}>
-      {/* Usamos Google Maps embed sin API key (modo básico) */}
-      <iframe
-        title="map"
-        width="100%"
-        height="200"
-        style={{ border: 0, display: "block" }}
-        loading="lazy"
-        referrerPolicy="no-referrer-when-downgrade"
-        src={`https://maps.google.com/maps?q=${encodeURIComponent(query)}&t=m&z=16&output=embed&iwloc=near`}
-      />
-      {/* Botón para abrir en Google Maps */}
-      <a
-        href={gMapsUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center justify-center gap-2 w-full py-3 text-xs font-black uppercase tracking-wider transition-colors"
-        style={{ background: `${primary}22`, color: primary }}
-      >
+      <iframe title="map" width="100%" height="200" style={{ border: 0, display: "block" }} loading="lazy" referrerPolicy="no-referrer-when-downgrade" src={`http://googleusercontent.com/maps.google.com/maps?q=${encodeURIComponent(query)}&t=m&z=16&output=embed&iwloc=near`} />
+      <a href={gMapsUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-3 text-xs font-black uppercase tracking-wider transition-colors" style={{ background: `${primary}22`, color: primary }}>
         <MapPin size={14} /> Abrir en Google Maps
       </a>
     </div>
   );
 };
 
-/* ============================================================================
-   LOGO DEL LUGAR
-============================================================================ */
 const VenueCard = ({ cfg, primary, text, muted, card }) => {
   if (!cfg.showVenueLogo) return null;
-  const href = cfg.venueLinkType === "whatsapp"
-    ? `https://wa.me/${cfg.venueLink}`
-    : cfg.venueLink;
-
+  const href = cfg.venueLinkType === "whatsapp" ? `https://wa.me/${cfg.venueLink}` : cfg.venueLink;
   return (
-    <a href={href} target="_blank" rel="noopener noreferrer"
-       className="flex items-center gap-4 p-4 rounded-2xl border border-white/5 no-underline transition-opacity hover:opacity-80"
-       style={{ background: card }}>
-      {cfg.venueLogoUrl
-        ? <img src={cfg.venueLogoUrl} alt="logo" className="w-14 h-14 rounded-xl object-contain border border-white/10 bg-white/5" />
-        : <div className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl" style={{ background: `${primary}22` }}>🏠</div>
-      }
+    <a href={href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4 rounded-2xl border border-white/5 no-underline transition-opacity hover:opacity-80" style={{ background: card }}>
+      {cfg.venueLogoUrl ? <img src={cfg.venueLogoUrl} alt="logo" className="w-14 h-14 rounded-xl object-contain border border-white/10 bg-white/5" /> : <div className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl" style={{ background: `${primary}22` }}>🏠</div>}
       <div className="text-left flex-1">
         <p className="text-[9px] uppercase font-black tracking-widest mb-0.5" style={{ color: muted }}>Lugar del evento</p>
         <p className="font-bold text-sm" style={{ color: text }}>{cfg.venueName || "Ver lugar"}</p>
-        <p className="text-[10px] mt-0.5 font-bold" style={{ color: primary }}>
-          {cfg.venueLinkType === "whatsapp" ? "📱 Consultar por WhatsApp" : "🌐 Ver sitio web"}
-        </p>
+        <p className="text-[10px] mt-0.5 font-bold" style={{ color: primary }}>{cfg.venueLinkType === "whatsapp" ? "📱 Consultar por WhatsApp" : "🌐 Ver sitio web"}</p>
       </div>
     </a>
   );
 };
 
 /* ============================================================================
-   VIDEO INLINE
+   SECCIÓN DE VIDEO (ACTUALIZADA PARA YOUTUBE)
 ============================================================================ */
 const VideoSection = ({ cfg, primary, text, muted, card }) => {
-  if (!cfg.showVideo || !cfg.videoFile) return null;
+  if (!cfg.showVideo || !cfg.videoUrl) return null;
+  
+  const ytId = getYouTubeId(cfg.videoUrl);
+
   return (
     <div className="rounded-3xl overflow-hidden border border-white/5" style={{ background: card }}>
       {cfg.videoTitle && (
         <p className="text-center text-[10px] font-black uppercase tracking-widest pt-4 pb-2" style={{ color: muted }}>{cfg.videoTitle}</p>
       )}
-      <video
-        src={cfg.videoFile}
-        controls
-        playsInline
-        className="w-full"
-        style={{ maxHeight: 300, display: "block" }}
-      />
+      
+      {ytId ? (
+        // Iframe para YouTube
+        <iframe
+          width="100%"
+          height="250"
+          src={`https://www.youtube.com/embed/${ytId}?rel=0`}
+          title="YouTube video player"
+          frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          className="block w-full"
+        ></iframe>
+      ) : (
+        // Fallback por si en algún momento ponen un link de video directo (MP4)
+        <video src={cfg.videoUrl} controls playsInline className="w-full block" style={{ maxHeight: 300 }} />
+      )}
     </div>
   );
 };
@@ -398,15 +369,11 @@ export const InvitePreview = ({ cfg }) => {
   const textC = cfg.text || th.text;
   const mutedC = cfg.muted || th.muted;
   const cardC  = cfg.card  || th.card;
-
-  // Intensidad del gradiente sobre la portada (0 = transparente, 100 = muy oscuro)
   const gradOpacity = ((cfg.coverGradientIntensity ?? 70) / 100).toFixed(2);
 
   const InfoCard = ({ icon: Icon, label, value, sub }) => (
     <div className="flex items-center gap-4 p-4 rounded-2xl border border-white/5" style={{ background: cardC }}>
-      <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: primary }}>
-        <Icon size={20} color="white" />
-      </div>
+      <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: primary }}><Icon size={20} color="white" /></div>
       <div className="text-left">
         <p className="text-[9px] uppercase font-black tracking-widest mb-0.5" style={{ color: mutedC }}>{label}</p>
         <p className="font-bold text-sm" style={{ color: textC }}>{value}</p>
@@ -419,35 +386,21 @@ export const InvitePreview = ({ cfg }) => {
 
   return (
     <div style={{ background: bg, fontFamily: cfg.fontBody }} className="min-h-full pb-12 relative">
-      {/* CAPA DE PARTÍCULAS */}
       <div className="fixed inset-0 pointer-events-none z-30 overflow-hidden" style={{ height: "100%" }}>
         <ParticleCanvas effect={cfg.particleEffect || "none"} primary={primary} />
       </div>
 
-      {/* PORTADA */}
       <div className="relative h-[420px] overflow-hidden">
         <img src={cfg.coverPhoto || DEF_CONFIG.coverPhoto} className="w-full h-full object-cover" alt="Cover" />
-        {/* Gradiente con intensidad ajustable */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background: `linear-gradient(to top, ${cfg.bg1 || th.bg1} 5%, rgba(0,0,0,${gradOpacity}) 60%, transparent 100%)`
-          }}
-        />
+        <div className="absolute inset-0" style={{ background: `linear-gradient(to top, ${cfg.bg1 || th.bg1} 5%, rgba(0,0,0,${gradOpacity}) 60%, transparent 100%)` }} />
         <div className="absolute bottom-0 left-0 right-0 p-8 text-center">
-          <p className="text-[11px] font-black uppercase tracking-[0.2em] mb-4 flex items-center justify-center gap-2" style={{ color: primary }}>
-            {cfg.eventTypeEmoji} {cfg.eventType}
-          </p>
+          <p className="text-[11px] font-black uppercase tracking-[0.2em] mb-4 flex items-center justify-center gap-2" style={{ color: primary }}>{cfg.eventTypeEmoji} {cfg.eventType}</p>
           <h1 style={{ fontFamily: cfg.fontTitle, color: textC }} className="text-5xl leading-tight mb-4">{cfg.honoreeName}</h1>
-          <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-white/10 backdrop-blur-md bg-black/30 font-black text-sm" style={{ color: textC }}>
-            {cfg.badgeEmoji} {cfg.badgeText}
-          </span>
+          <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-white/10 backdrop-blur-md bg-black/30 font-black text-sm" style={{ color: textC }}>{cfg.badgeEmoji} {cfg.badgeText}</span>
         </div>
       </div>
 
       <div className="px-5 -mt-8 relative z-10 space-y-4">
-
-        {/* CUENTA REGRESIVA SIMPLIFICADA */}
         {cfg.showCountdown && cfg.countdownDate && (
           <div className="p-5 rounded-3xl border border-white/5" style={{ background: cardC, color: textC }}>
             <h3 className="text-center text-[11px] font-black uppercase tracking-widest opacity-80 mb-1" style={{ color: mutedC }}>Falta para el gran día</h3>
@@ -470,7 +423,6 @@ export const InvitePreview = ({ cfg }) => {
         {cfg.showTime && <InfoCard icon={Clock} label="Horario" value={cfg.timeText} />}
         {cfg.showTheme && <InfoCard icon={Star} label={cfg.themeLabel} value={`${cfg.themeIcon} ${cfg.themeText}`} />}
 
-        {/* UBICACIÓN CON MAPA MEJORADO */}
         {cfg.showLocation && (
           <div className="rounded-3xl overflow-hidden border border-white/5" style={{ background: cardC }}>
             <div className="p-4 flex items-center gap-4">
@@ -483,7 +435,6 @@ export const InvitePreview = ({ cfg }) => {
                 <p className="text-[11px] opacity-70" style={{ color: mutedC }}>{cfg.locationAddress}</p>
               </div>
             </div>
-            {/* MAPA MEJORADO */}
             <div className="px-4 pb-2">
               <MapEmbed name={cfg.locationName} address={cfg.locationAddress} primary={primary} />
             </div>
@@ -497,16 +448,14 @@ export const InvitePreview = ({ cfg }) => {
           </div>
         )}
 
-        {/* LOGO DEL LUGAR */}
         <VenueCard cfg={cfg} primary={primary} text={textC} muted={mutedC} card={cardC} />
 
-        {/* VIDEO INLINE */}
         <VideoSection cfg={cfg} primary={primary} text={textC} muted={mutedC} card={cardC} />
 
         {cfg.showItinerary && cfg.itinerary?.length > 0 && (
           <div className="pt-4">
             <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-center mb-6" style={{ color: mutedC }}>Programa del evento</h4>
-            <div className="relative pl-6 space-y-8">
+            <div className="relative pl-6 space-y-8 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5" style={{ '--tw-before-bg': `${primary}33` }}>
               <div className="absolute left-[7px] top-2 bottom-2 w-[2px]" style={{ background: primary, opacity: 0.2 }} />
               {cfg.itinerary.map((item, i) => (
                 <div key={i} className="relative text-left">
@@ -568,7 +517,7 @@ export const InvitePreview = ({ cfg }) => {
           </div>
         )}
 
-        <button
+        <button 
           onClick={() => window.open(`https://wa.me/${cfg.whatsappNumber}?text=${encodeURIComponent(waMsg)}`)}
           className="w-full py-5 mt-4 rounded-[1.5rem] font-black text-sm tracking-wider flex items-center justify-center gap-3 shadow-2xl transition-transform active:scale-95 cursor-pointer"
           style={{ background: `linear-gradient(135deg, ${primary}, ${primary}dd)`, color: 'white', boxShadow: `0 15px 35px ${primary}44` }}
@@ -753,12 +702,12 @@ export const EditorScreen = ({ invitations, onSave }) => {
                     {label:"Personalizado...", value:"otro"}
                   ]} onChange={v => update("parkingType", v)} />
                 )}
-                {cfg.parkingType === 'otro' && <Inp placeholder="Escribe aquí..." value={cfg.customParking || ""} onChange={v => update("customParking", v)} />}
+                {cfg.showParking && cfg.parkingType === 'otro' && <Inp placeholder="Escribe aquí..." value={cfg.customParking || ""} onChange={v => update("customParking", v)} />}
               </>
             )}
           </Acc>
 
-          {/* ── LOGO DEL LUGAR (NUEVO) ── */}
+          {/* ── LOGO DEL LUGAR ── */}
           <Acc title="Logo del Lugar del Evento" icon={LinkIcon} iconColor="#6366f1">
             <div className="flex items-center justify-between mb-4">
               <span className="text-xs font-bold text-slate-500">Mostrar logo del lugar</span>
@@ -787,7 +736,7 @@ export const EditorScreen = ({ invitations, onSave }) => {
             )}
           </Acc>
 
-          {/* ── VIDEO INLINE (NUEVO) ── */}
+          {/* ── VIDEO INLINE (REEMPLAZADO POR YOUTUBE) ── */}
           <Acc title="Video de la Fiesta" icon={Video} iconColor="#8b5cf6">
             <div className="flex items-center justify-between mb-4">
               <span className="text-xs font-bold text-slate-500">Agregar video</span>
@@ -796,14 +745,9 @@ export const EditorScreen = ({ invitations, onSave }) => {
             {cfg.showVideo && (
               <>
                 <Inp label="Título del video" value={cfg.videoTitle || ""} onChange={v => update("videoTitle", v)} placeholder="Ej: Un mensaje especial 💖" />
-                <FileUpload
-                  label="Subir video (MP4, WebM)"
-                  value={cfg.videoFile || ""}
-                  onChange={v => update("videoFile", v)}
-                  accept="video/mp4,video/webm,video/ogg"
-                />
+                <Inp label="Enlace de YouTube" value={cfg.videoUrl || ""} onChange={v => update("videoUrl", v)} placeholder="Ej: https://www.youtube.com/watch?v=..." />
                 <p className="text-[10px] text-violet-500 font-bold mt-1 bg-violet-50 p-2 rounded-lg">
-                  🎬 El video se reproduce directamente en la invitación, sin salir a YouTube.
+                  🎬 Pegá cualquier link de YouTube. Se reproducirá directamente dentro de la invitación sin que el usuario tenga que salir de la página.
                 </p>
               </>
             )}
@@ -866,58 +810,59 @@ export const EditorScreen = ({ invitations, onSave }) => {
 
           {/* ── DRESS CODE Y REGALOS ── */}
           <Acc title="Dress Code y Regalos" icon={Layout} iconColor="#f43f5e">
-            <div className="flex items-center justify-between mb-4">
+             <div className="flex items-center justify-between mb-4">
               <span className="text-xs font-bold text-slate-500">Activar Vestimenta</span>
               <Toggle checked={cfg.showDressCode} onChange={v => update("showDressCode", v)} />
-            </div>
-            {cfg.showDressCode && (
-              <div className="flex gap-2 mb-6">
-                <EmojiPicker list={CLOTHES_EMOJIS} value={cfg.dressCodeIcon} onSelect={e => update("dressCodeIcon", e)} />
-                <div className="flex-1"><Inp value={cfg.dressCodeText} onChange={v => update("dressCodeText", v)} placeholder="Ej: Elegante Sport" className="!mb-0"/></div>
-              </div>
-            )}
-            <div className="flex items-center justify-between mb-4 pt-4 border-t border-gray-100">
+             </div>
+             {cfg.showDressCode && (
+               <div className="flex gap-2 mb-6">
+                 <EmojiPicker list={CLOTHES_EMOJIS} value={cfg.dressCodeIcon} onSelect={e => update("dressCodeIcon", e)} />
+                 <div className="flex-1"><Inp value={cfg.dressCodeText} onChange={v => update("dressCodeText", v)} placeholder="Ej: Elegante Sport" className="!mb-0"/></div>
+               </div>
+             )}
+
+             <div className="flex items-center justify-between mb-4 pt-4 border-t border-gray-100">
               <span className="text-xs font-bold text-slate-500">Activar Regalos</span>
               <Toggle checked={cfg.showGifts} onChange={v => update("showGifts", v)} />
-            </div>
-            {cfg.showGifts && (
-              <>
-                <div className="flex gap-2 mb-2">
-                  <EmojiPicker value={cfg.giftIcon} onSelect={e => update("giftIcon", e)} />
-                  <div className="w-24"><Inp value={cfg.giftLabel} onChange={v => update("giftLabel", v)} placeholder="Título" className="!mb-0"/></div>
-                  <div className="flex-1"><Inp value={cfg.giftText} onChange={v => update("giftText", v)} placeholder="Lluvia de sobres..." className="!mb-0"/></div>
-                </div>
-                <div className="flex items-center justify-between mt-4 mb-2">
+             </div>
+             {cfg.showGifts && (
+               <>
+                 <div className="flex gap-2 mb-2">
+                   <EmojiPicker value={cfg.giftIcon} onSelect={e => update("giftIcon", e)} />
+                   <div className="w-24"><Inp value={cfg.giftLabel} onChange={v => update("giftLabel", v)} placeholder="Título" className="!mb-0"/></div>
+                   <div className="flex-1"><Inp value={cfg.giftText} onChange={v => update("giftText", v)} placeholder="Lluvia de sobres..." className="!mb-0"/></div>
+                 </div>
+                 <div className="flex items-center justify-between mt-4 mb-2">
                   <span className="text-[10px] font-bold text-slate-500 uppercase">Aclaración Extra</span>
                   <Toggle checked={cfg.showGiftNote} onChange={v => update("showGiftNote", v)} />
-                </div>
-                {cfg.showGiftNote && (
-                  <Inp value={cfg.giftNoteText} onChange={v => update("giftNoteText", v)} placeholder="Ej: No traer cosas grandes" multiline />
-                )}
-              </>
-            )}
+                 </div>
+                 {cfg.showGiftNote && (
+                   <Inp value={cfg.giftNoteText} onChange={v => update("giftNoteText", v)} placeholder="Ej: No traer cosas grandes" multiline />
+                 )}
+               </>
+             )}
           </Acc>
 
           {/* ── GALERÍA ── */}
           <Acc title="Galería de Fotos" icon={ImageIcon} iconColor="#ec4899">
-            <div className="flex items-center justify-between mb-4">
+             <div className="flex items-center justify-between mb-4">
               <span className="text-xs font-bold text-slate-500">Activar Galería</span>
               <Toggle checked={cfg.showGallery} onChange={v => update("showGallery", v)} />
-            </div>
-            {cfg.showGallery && (
-              <>
-                <Inp label="Título de la Sección" value={cfg.galleryTitle} onChange={v => update("galleryTitle", v)} />
-                <div className="space-y-4 mb-4 mt-2">
-                  {cfg.galleryPhotos?.map((p, i) => (
-                    <div key={i} className="bg-white border border-gray-200 rounded-xl p-2 relative">
-                      <FileUpload onChange={v => { const n = [...cfg.galleryPhotos]; n[i] = v; update("galleryPhotos", n); }} value={p} />
-                      <button onClick={() => update("galleryPhotos", cfg.galleryPhotos.filter((_, idx) => idx !== i))} type="button" className="absolute top-2 right-2 p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 cursor-pointer"><Trash2 size={14}/></button>
-                    </div>
-                  ))}
-                </div>
-                <button onClick={() => update("galleryPhotos", [...(cfg.galleryPhotos || []), ""])} type="button" className="w-full py-3 bg-white border-2 border-dashed border-gray-200 rounded-xl text-xs font-bold text-slate-400 hover:border-violet-300 hover:text-violet-600 transition-all cursor-pointer">+ AÑADIR FOTO</button>
-              </>
-            )}
+             </div>
+             {cfg.showGallery && (
+               <>
+                 <Inp label="Título de la Sección" value={cfg.galleryTitle} onChange={v => update("galleryTitle", v)} />
+                 <div className="space-y-4 mb-4 mt-2">
+                   {cfg.galleryPhotos?.map((p, i) => (
+                     <div key={i} className="bg-white border border-gray-200 rounded-xl p-2 relative">
+                       <FileUpload onChange={v => { const n = [...cfg.galleryPhotos]; n[i] = v; update("galleryPhotos", n); }} value={p} />
+                       <button onClick={() => update("galleryPhotos", cfg.galleryPhotos.filter((_, idx) => idx !== i))} type="button" className="absolute top-2 right-2 p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 cursor-pointer"><Trash2 size={14}/></button>
+                     </div>
+                   ))}
+                 </div>
+                 <button onClick={() => update("galleryPhotos", [...(cfg.galleryPhotos || []), ""])} type="button" className="w-full py-3 bg-white border-2 border-dashed border-gray-200 rounded-xl text-xs font-bold text-slate-400 hover:border-violet-300 hover:text-violet-600 transition-all cursor-pointer">+ AÑADIR FOTO</button>
+               </>
+             )}
           </Acc>
 
           {/* ── WHATSAPP RSVP ── */}
