@@ -113,9 +113,8 @@ export const DEF_CONFIG = {
   showGallery:false, galleryTitle:"Fotos", galleryPhotos:[],
   showVideo:false, videoUrl:"", videoTitle:"Mirá el video",
   showVenueLogo:false, venueLogoUrl:"", venueName:"", venueLink:"", venueLinkType:"web",
-  whatsappNumber:"5491123456789", whatsappMessage:"¡Hola! Confirmo mi asistencia para el cumple de {nombre} 🎉",
+  whatsappNumber:"5491123456789", whatsappMessage:"¡Hola! Confirmo mi asistencia para el evento 🎉",
 };
-
 
 /* ============================================================================
    MICRO COMPONENTES DE UI
@@ -218,12 +217,7 @@ const Countdown = ({ targetDate, primary, text }) => {
       if (isNaN(target)) return;
       const dist = target - Date.now();
       if(dist <= 0) { setExpired(true); return; }
-      setTimeLeft({
-        d: Math.floor(dist / 86400000),
-        h: Math.floor((dist % 86400000) / 3600000),
-        m: Math.floor((dist % 3600000) / 60000),
-        s: Math.floor((dist % 60000) / 1000),
-      });
+      setTimeLeft({ d: Math.floor(dist / 86400000), h: Math.floor((dist % 86400000) / 3600000), m: Math.floor((dist % 3600000) / 60000), s: Math.floor((dist % 60000) / 1000) });
     };
     calc();
     const id = setInterval(calc, 1000);
@@ -242,9 +236,7 @@ const Countdown = ({ targetDate, primary, text }) => {
         <div className="flex justify-center gap-3">
           {Object.entries(timeLeft).map(([unit, val]) => (
             <div key={unit} className="flex flex-col items-center gap-1">
-              <div className="w-[52px] h-[52px] rounded-2xl flex items-center justify-center text-xl font-black text-white shadow-lg" style={{ background: primary }}>
-                {(val || 0).toString().padStart(2, '0')}
-              </div>
+              <div className="w-[52px] h-[52px] rounded-2xl flex items-center justify-center text-xl font-black text-white shadow-lg" style={{ background: primary }}>{(val || 0).toString().padStart(2, '0')}</div>
               <span className="text-[10px] font-bold opacity-60" style={{ color: primary }}>{labels[unit]}</span>
             </div>
           ))}
@@ -276,24 +268,9 @@ const ParticleCanvas = ({ effect, primary }) => {
     const spawnParticle = () => {
       const x = Math.random() * canvas.width;
       const isBubble = effect === "bubbles";
-      
-      const base = { 
-        x, 
-        y: isBubble ? canvas.height + 20 : -20, 
-        vx: (Math.random() - 0.5) * 2, 
-        vy: Math.random() * 2 + 1, 
-        alpha: 1, 
-        rot: Math.random() * 360, 
-        rotV: (Math.random() - 0.5) * 4, 
-        size: Math.random() * 10 + 8, 
-        life: 1, 
-        decay: Math.random() * 0.003 + 0.002 
-      };
+      const base = { x, y: isBubble ? canvas.height + 20 : -20, vx: (Math.random() - 0.5) * 2, vy: Math.random() * 2 + 1, alpha: 1, rot: Math.random() * 360, rotV: (Math.random() - 0.5) * 4, size: Math.random() * 10 + 8, life: 1, decay: Math.random() * 0.003 + 0.002 };
 
-      if (effect === "confetti") {
-        const colors = [primary, "#f59e0b", "#10b981", "#ef4444", "#3b82f6", "#ec4899", "#facc15"];
-        return { ...base, type: "rect", color: colors[Math.floor(Math.random() * colors.length)], w: Math.random()*10+5, h: Math.random()*5+3 };
-      }
+      if (effect === "confetti") { const colors = [primary, "#f59e0b", "#10b981", "#ef4444", "#3b82f6", "#ec4899", "#facc15"]; return { ...base, type: "rect", color: colors[Math.floor(Math.random() * colors.length)], w: Math.random()*10+5, h: Math.random()*5+3 }; }
       if (effect === "hearts")  return { ...base, type: "text", emoji: "❤️", size: Math.random()*18+10 };
       if (effect === "stars")   return { ...base, type: "text", emoji: "⭐", size: Math.random()*16+8 };
       if (effect === "bubbles") return { ...base, type: "circle", color: primary, filled: false, r: Math.random()*12+4, vx: (Math.random()-0.5)*1.5, vy: -(Math.random()*2+0.5) };
@@ -308,37 +285,22 @@ const ParticleCanvas = ({ effect, primary }) => {
       if (!ctx || !canvas) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       frame++;
-      
       if (frame % 8 === 0 && particlesRef.current.length < 60) {
-        const p = spawnParticle();
-        if (p) particlesRef.current.push(p);
+        const p = spawnParticle(); if (p) particlesRef.current.push(p);
       }
-      
       particlesRef.current = particlesRef.current.filter(p => {
         p.x += p.vx; p.y += p.vy; p.rot = (p.rot || 0) + (p.rotV || 0); p.life -= p.decay; p.alpha = p.life;
         ctx.globalAlpha = Math.max(0, p.alpha);
-        
-        if (p.type === "rect") {
-          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate((p.rot || 0) * Math.PI/180);
-          ctx.fillStyle = p.color; ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h); ctx.restore();
-        } else if (p.type === "circle") {
-          ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); 
-          if (p.filled) { ctx.fillStyle = p.color; ctx.fill(); } 
-          else { ctx.strokeStyle = p.color; ctx.lineWidth = 1.5; ctx.stroke(); }
-        } else if (p.type === "text") {
-          ctx.font = `${p.size}px serif`; ctx.textAlign = "center"; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate((p.rot||0)*Math.PI/180); ctx.fillText(p.emoji, 0, 0); ctx.restore();
-        }
+        if (p.type === "rect") { ctx.save(); ctx.translate(p.x, p.y); ctx.rotate((p.rot || 0) * Math.PI/180); ctx.fillStyle = p.color; ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h); ctx.restore(); } 
+        else if (p.type === "circle") { ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); if (p.filled) { ctx.fillStyle = p.color; ctx.fill(); } else { ctx.strokeStyle = p.color; ctx.lineWidth = 1.5; ctx.stroke(); } } 
+        else if (p.type === "text") { ctx.font = `${p.size}px serif`; ctx.textAlign = "center"; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate((p.rot||0)*Math.PI/180); ctx.fillText(p.emoji, 0, 0); ctx.restore(); }
         ctx.globalAlpha = 1;
         return p.life > 0 && p.y < canvas.height + 40 && p.y > -40;
       });
       animRef.current = requestAnimationFrame(loop);
     };
     loop();
-    return () => { 
-      if(animRef.current) cancelAnimationFrame(animRef.current); 
-      if(observer && canvasRef.current) observer.unobserve(canvasRef.current); 
-      particlesRef.current = []; 
-    };
+    return () => { if(animRef.current) cancelAnimationFrame(animRef.current); if(observer && canvasRef.current) observer.unobserve(canvasRef.current); particlesRef.current = []; };
   }, [effect, primary]);
 
   if (effect === "none") return null;
@@ -352,9 +314,7 @@ const MapEmbed = ({ name, address, primary }) => {
   return (
     <div className="rounded-2xl overflow-hidden border border-white/10 relative" style={{ background: "#1a1a2e" }}>
       <iframe title="map" width="100%" height="200" style={{ border: 0, display: "block" }} loading="lazy" referrerPolicy="no-referrer-when-downgrade" src={`http://googleusercontent.com/maps.google.com/maps?q=${encodeURIComponent(query)}&t=m&z=16&output=embed&iwloc=near`} />
-      <a href={gMapsUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-3 text-xs font-black uppercase tracking-wider transition-colors" style={{ background: `${primary}22`, color: primary }}>
-        <MapPin size={14} /> Abrir en Google Maps
-      </a>
+      <a href={gMapsUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-3 text-xs font-black uppercase tracking-wider transition-colors" style={{ background: `${primary}22`, color: primary }}><MapPin size={14} /> Abrir en Google Maps</a>
     </div>
   );
 };
@@ -416,7 +376,7 @@ export const OpeningAnimation = ({ cfg, onOpen }) => {
   const [opening, setOpening] = useState(false);
   const [phase, setPhase] = useState(0);
   
-  injectLocalStyles(); // Nos aseguramos que las clases existan
+  injectLocalStyles();
 
   const type = cfg?.openingAnimation || "envelope";
   const th = THEMES.find(t => t.id === cfg?.theme) || THEMES[0];
@@ -441,12 +401,10 @@ export const OpeningAnimation = ({ cfg, onOpen }) => {
     }
 
     if (type === "gift" || type === "soccer") {
-      // Fases cinematográficas
       setTimeout(() => setPhase(1), 200);   
       setTimeout(() => setPhase(2), 600);   
       setTimeout(() => onOpen(), 1600);
     } else {
-      // Clásicos
       setTimeout(() => onOpen(), type === 'envelope' || type === 'chest' ? 1200 : 1500);
     }
   };
@@ -495,15 +453,15 @@ export const OpeningAnimation = ({ cfg, onOpen }) => {
 
       case "soccer":
         return (
-          <div className="relative z-10 flex flex-col items-center w-full h-full justify-center overflow-visible">
+          <div className="relative z-10 flex flex-col items-center w-full h-full justify-center overflow-visible cursor-pointer group" onClick={handleOpen}>
             {phase >= 2 && <Confetti trigger={true} />}
             <div className="absolute bottom-0 w-full h-[250px] bg-green-600 border-t-4 border-white opacity-40 pointer-events-none" />
             <div className="relative w-full max-w-[300px] h-[200px] border-4 border-white border-b-0 flex items-end justify-center pointer-events-none mb-10">
               <div className="w-full h-full opacity-20" style={{ background: 'repeating-linear-gradient(90deg, transparent, transparent 20px, white 20px, white 24px), repeating-linear-gradient(0deg, transparent, transparent 20px, white 20px, white 24px)' }}/>
             </div>
-            <div className={`absolute bottom-32 text-7xl z-20 ${opening ? 'animate-shoot' : 'animate-bounce cursor-pointer hover:scale-110 transition-transform'}`}>⚽</div>
+            <div className={`absolute bottom-32 text-7xl z-20 ${opening ? 'animate-shoot' : 'animate-bounce group-hover:scale-110 transition-transform'}`}>⚽</div>
             {phase >= 1 && <div className="text-6xl absolute top-[250px] animate-ping z-30">💥</div>}
-            {!opening && <p className="absolute bottom-16 text-white text-xs font-black tracking-[0.3em] uppercase opacity-90 bg-black/50 px-4 py-2 rounded-full cursor-pointer">Tocar para patear</p>}
+            {!opening && <p className="absolute bottom-16 text-white text-xs font-black tracking-[0.3em] uppercase opacity-90 bg-black/50 px-4 py-2 rounded-full">Tocar para patear</p>}
           </div>
         );
 
@@ -522,9 +480,9 @@ export const OpeningAnimation = ({ cfg, onOpen }) => {
   };
 
   return (
-    <div className={`fixed inset-0 z-[100] flex flex-col items-center justify-center transition-all duration-1000 ${opening && (type==='envelope'||type==='chest'||type==='musicbox') ? 'opacity-0 pointer-events-none' : 'opacity-100 bg-slate-900'} ${opening && (type==='gift'||type==='soccer') && phase>=2 ? 'opacity-0 bg-black pointer-events-none' : ''}`}>
+    <div className={`absolute inset-0 z-[100] flex flex-col items-center justify-center transition-all duration-1000 ${opening && (type==='envelope'||type==='chest'||type==='musicbox') ? 'opacity-0 pointer-events-none' : 'opacity-100 bg-slate-900'} ${opening && (type==='gift'||type==='soccer') && phase>=2 ? 'opacity-0 bg-black pointer-events-none' : ''}`}>
       <div className="absolute inset-0 opacity-40" style={{ background: `linear-gradient(135deg, ${cfg?.bg1 || th.bg1}, ${cfg?.bg2 || th.bg2})` }} />
-      <div onClick={handleOpen} className="w-full h-full flex items-center justify-center">
+      <div onClick={type !== 'soccer' ? handleOpen : undefined} className="w-full h-full flex items-center justify-center">
          {renderContent()}
       </div>
     </div>
@@ -707,12 +665,13 @@ export const InvitePreview = ({ cfg }) => {
 };
 
 /* ============================================================================
-   EDITOR PRINCIPAL (PANEL DE HERRAMIENTAS)
+   EDITOR PRINCIPAL (EL PANEL QUE USA EL SALÓN)
 ============================================================================ */
 export const EditorScreen = ({ invitations, onSave }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [inv, setInv] = useState(null);
+  const [previewAnim, setPreviewAnim] = useState(false);
 
   useEffect(() => {
     const found = invitations.find(i => i.id === id);
@@ -798,7 +757,10 @@ export const EditorScreen = ({ invitations, onSave }) => {
             <div className="mb-2 border-t border-gray-100 pt-4">
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-left">Efectos y Animaciones</label>
               
-              <SelectInp label="Animación de Entrada (Al abrir el link)" value={cfg.openingAnimation || "envelope"} options={OPENING_ANIMATIONS.map(a => ({label: a.name, value: a.id}))} onChange={v => update("openingAnimation", v)} className="mb-4" />
+              <SelectInp label="Animación de Entrada (Al abrir el link)" value={cfg.openingAnimation || "envelope"} options={OPENING_ANIMATIONS.map(a => ({label: a.name, value: a.id}))} onChange={v => { update("openingAnimation", v); setPreviewAnim(true); }} className="!mb-2" />
+              <button type="button" onClick={() => setPreviewAnim(true)} className="w-full py-2 bg-violet-100 text-violet-700 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-violet-200 transition-colors flex items-center justify-center gap-2 mb-4">
+                 ▶ REPRODUCIR ANIMACIÓN
+              </button>
 
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-left">Partículas de Fondo</label>
               <div className="grid grid-cols-2 gap-2">
@@ -1004,6 +966,9 @@ export const EditorScreen = ({ invitations, onSave }) => {
           <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:20px_20px]" />
           <div className="invite-phone anim-pop border-[8px] border-slate-800 shadow-2xl relative z-10">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-7 bg-[#1a1a2e] rounded-b-2xl z-50 flex items-center justify-center"><div className="w-10 h-1 bg-slate-800 rounded-full" /></div>
+            
+            {previewAnim && <OpeningAnimation cfg={cfg} onOpen={() => setPreviewAnim(false)} />}
+            
             <div className="h-full w-full overflow-y-auto bg-black pb-10" style={{ scrollBehavior: 'smooth', scrollbarWidth: 'none' }}>
               <InvitePreview cfg={cfg} />
             </div>
