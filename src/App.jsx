@@ -11,7 +11,6 @@ import {
    ESTILOS Y CONSTANTES GLOBALES
 ═══════════════════════════════════════════════════════════ */
 (() => {
-  // Inyectamos Tailwind CSS para asegurar que los estilos carguen perfecto
   if (!document.getElementById("tw-cdn")) {
     const tw = document.createElement("script");
     tw.id = "tw-cdn";
@@ -164,7 +163,6 @@ const InvitePreview = ({ cfg }) => {
 
   return (
     <div style={{ background: bg, fontFamily: cfg.fontBody }} className="min-h-full pb-12">
-      {/* Portada */}
       <div className="relative h-[420px] overflow-hidden">
         <img src={cfg.coverPhoto} className="w-full h-full object-cover" alt="Cover" />
         <div className="absolute inset-0 bg-gradient-to-t" style={{ backgroundImage: `linear-gradient(to top, ${cfg.bg1 || th.bg1} 10%, transparent 80%)` }} />
@@ -178,7 +176,6 @@ const InvitePreview = ({ cfg }) => {
       </div>
 
       <div className="px-5 -mt-8 relative z-10 space-y-4">
-        {/* Banner Secundario */}
         {cfg.showBanner && (
           <div className="relative h-48 rounded-3xl overflow-hidden border-2" style={{ borderColor: `${primary}44` }}>
             <img src={cfg.bannerPhoto} className="w-full h-full object-cover" alt="Banner" />
@@ -190,12 +187,10 @@ const InvitePreview = ({ cfg }) => {
           </div>
         )}
 
-        {/* Datos Básicos */}
         {cfg.showDate && <InfoCard icon={Calendar} label="¿Cuándo?" value={cfg.dateText} />}
         {cfg.showTime && <InfoCard icon={Clock} label="Horario" value={cfg.timeText} />}
         {cfg.showTheme && <InfoCard icon={Star} label={cfg.themeLabel} value={`${cfg.themeIcon} ${cfg.themeText}`} />}
 
-        {/* Ubicación y Mapa */}
         {cfg.showLocation && (
           <div className="rounded-3xl overflow-hidden border border-white/5" style={{ background: cfg.card || th.card }}>
             <div className="p-4 flex items-center gap-4">
@@ -219,7 +214,6 @@ const InvitePreview = ({ cfg }) => {
           </div>
         )}
 
-        {/* Itinerario */}
         {cfg.showItinerary && cfg.itinerary?.length > 0 && (
           <div className="pt-4">
             <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-center mb-6" style={{ color: cfg.muted || th.muted }}>Programa del evento</h4>
@@ -237,7 +231,6 @@ const InvitePreview = ({ cfg }) => {
           </div>
         )}
 
-        {/* Menú */}
         {cfg.showMenu && cfg.menuItems?.length > 0 && (
           <div className="pt-4">
             <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-center mb-6" style={{ color: cfg.muted || th.muted }}>¿Qué vamos a comer?</h4>
@@ -252,7 +245,6 @@ const InvitePreview = ({ cfg }) => {
           </div>
         )}
 
-        {/* Dress Code y Regalos */}
         <div className="grid grid-cols-2 gap-3 pt-4">
           {cfg.showDressCode && (
             <div className="p-5 rounded-2xl text-center border border-white/5" style={{ background: cfg.card || th.card }}>
@@ -276,7 +268,6 @@ const InvitePreview = ({ cfg }) => {
           </div>
         )}
 
-        {/* Galería de Fotos */}
         {cfg.showGallery && cfg.galleryPhotos?.length > 0 && (
           <div className="pt-4">
             <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-center mb-6" style={{ color: cfg.muted || th.muted }}>{cfg.galleryTitle}</h4>
@@ -307,28 +298,34 @@ const InvitePreview = ({ cfg }) => {
 const LoginScreen = ({ isMaster = false, onLogin, users }) => {
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const handleAuth = (e) => {
     e.preventDefault();
+    setLoading(true);
     setError("");
     
-    if (isMaster && email === "owner@fiestadigital.com" && pass === "owner123") {
-      onLogin({ name: "Oswaldo Master", role: "owner", email });
-      navigate("/dashboard");
-      return;
-    }
+    // Simulamos un tiempito de carga para que se vea el spinner
+    setTimeout(() => {
+      if (isMaster && email === "owner@fiestadigital.com" && pass === "owner123") {
+        onLogin({ name: "Oswaldo Master", role: "owner", email });
+        navigate("/dashboard");
+        return;
+      }
 
-    const found = users.find(u => u.email === email && u.pass === pass);
-    if (found) {
-      onLogin(found);
-      navigate("/dashboard");
-    } else if (!isMaster) {
-      setError("Credenciales no válidas.");
-    } else {
-      setError("Acceso maestro denegado.");
-    }
+      const found = users.find(u => u.email === email && u.pass === pass);
+      if (found) {
+        onLogin(found);
+        navigate("/dashboard");
+      } else if (!isMaster) {
+        setError("Credenciales no válidas.");
+      } else {
+        setError("Acceso maestro denegado.");
+      }
+      setLoading(false);
+    }, 500);
   };
 
   return (
@@ -350,8 +347,8 @@ const LoginScreen = ({ isMaster = false, onLogin, users }) => {
             )}
             <Inp label={isMaster ? "Email Maestro" : "Email de Salón"} value={email} onChange={setEmail} placeholder={isMaster ? "owner@..." : "admin@admin.com"} />
             <Inp label="Clave" type="password" value={pass} onChange={setPass} placeholder="••••••" />
-            <button className="w-full py-4 mt-2 bg-violet-600 hover:bg-violet-500 text-white rounded-2xl font-black text-sm transition-all shadow-xl shadow-violet-900/40 flex items-center justify-center gap-2 cursor-pointer">
-              Ingresar al Sistema
+            <button disabled={loading} className="w-full py-4 mt-2 bg-violet-600 hover:bg-violet-500 text-white rounded-2xl font-black text-sm transition-all shadow-xl shadow-violet-900/40 flex items-center justify-center gap-2 cursor-pointer">
+              {loading ? <Loader2 className="animate-spin" /> : "Ingresar al Sistema"}
             </button>
           </form>
           <div style={{ marginTop:24, padding:16, background:"rgba(255,255,255,0.05)", borderRadius:16, border:"1px solid rgba(255,255,255,0.1)", textAlign:"center", color:"#9b8ec4", fontSize:11 }}>
@@ -470,6 +467,7 @@ const DashboardScreen = ({ user, onLogout, users, onCreateSalon, invitations, on
         )}
       </div>
 
+      {/* Modal Crear Salón */}
       {showModal && (
         <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-md flex items-center justify-center p-6 z-[100]">
           <div className="bg-white w-full max-w-md rounded-[3rem] p-10 anim-pop">
@@ -487,6 +485,7 @@ const DashboardScreen = ({ user, onLogout, users, onCreateSalon, invitations, on
         </div>
       )}
 
+      {/* Modal Eliminar Invitación */}
       {invToDelete && (
         <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-md flex items-center justify-center p-6 z-[100]">
           <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-center anim-pop">
@@ -771,7 +770,7 @@ const PublicInviteScreen = ({ invitations }) => {
 };
 
 /* ═══════════════════════════════════════════════════════════
-   RAÍZ DE LA APLICACIÓN
+   RAÍZ DE LA APLICACIÓN (STATE EN MEMORIA LOCAL)
 ═══════════════════════════════════════════════════════════ */
 export default function App() {
   const [user, setUser] = useState(null);
