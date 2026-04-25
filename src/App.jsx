@@ -307,7 +307,6 @@ const LoginScreen = ({ isMaster = false, onLogin, users }) => {
     setLoading(true);
     setError("");
     
-    // Simulamos un tiempito de carga para que se vea el spinner
     setTimeout(() => {
       if (isMaster && email === "owner@fiestadigital.com" && pass === "owner123") {
         onLogin({ name: "Oswaldo Master", role: "owner", email });
