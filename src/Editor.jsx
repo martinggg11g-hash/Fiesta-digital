@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 
 /* ============================================================================
-   ESTILOS INYECTADOS LOCALMENTE (Para Confeti y Pop)
+   ESTILOS INYECTADOS LOCALMENTE (Para Confeti, Pop y Baúl)
 ============================================================================ */
 const injectLocalStyles = () => {
   if (!document.getElementById("cinematic-styles")) {
@@ -35,6 +35,49 @@ const injectLocalStyles = () => {
         animation: confettiFall 2.5s linear forwards;
         z-index: 50;
       }
+
+      /* ====== BAÚL MEJORADO ====== */
+      @keyframes float { 
+        0%,100% { transform: translateY(0px); } 
+        50% { transform: translateY(-10px); } 
+      }
+      .animate-float { animation: float 3s ease-in-out infinite; }
+
+      /* Tapa que se abre hacia atrás con perspectiva */
+      @keyframes openChestLid {
+        0%   { transform: rotateX(0deg); }
+        100% { transform: rotateX(-130deg); }
+      }
+      .animate-chest-open { 
+        transform-origin: bottom center;
+        animation: openChestLid 0.9s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; 
+      }
+
+      /* Glow interior que aparece */
+      @keyframes chestGlow {
+        0% { opacity: 0; transform: scaleX(0.2) scaleY(0.5); }
+        100% { opacity: 1; transform: scaleX(1) scaleY(1); }
+      }
+      .animate-chest-glow { animation: chestGlow 0.5s 0.5s ease-out forwards; }
+
+      /* Pulso del brillo */
+      @keyframes glowPulse { 0%,100% { opacity: 0.7; } 50% { opacity: 1; } }
+      .animate-glow-pulse { animation: glowPulse 1.5s ease-in-out infinite; }
+
+      /* Monedas y partículas volando */
+      @keyframes coinFly {
+        0%   { opacity: 1; transform: translate(0,0) rotateY(0deg); }
+        60%  { opacity: 1; }
+        100% { opacity: 0; transform: translate(var(--tx), var(--ty)) rotateY(720deg); }
+      }
+      .animate-coin { animation: coinFly var(--dur, 0.8s) var(--delay, 0s) ease-out forwards; }
+
+      @keyframes sparkleOut {
+        0%   { opacity: 0; transform: translate(0,0) scale(0.2) rotate(0deg); }
+        20%  { opacity: 1; }
+        100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(1.2) rotate(var(--rot)); }
+      }
+      .animate-sparkle { animation: sparkleOut var(--dur, 1.5s) var(--delay, 0s) ease-out forwards; }
     `;
     document.head.appendChild(style);
   }
@@ -204,7 +247,7 @@ const Acc = ({ title, icon: Icon, children, defaultOpen = false, iconColor = "#7
 
 
 /* ============================================================================
-   EFECTOS ESPECIALES Y WIDGETS
+   WIDGETS Y EFECTOS ESPECIALES
 ============================================================================ */
 const Countdown = ({ targetDate, primary, text }) => {
   const [timeLeft, setTimeLeft] = useState({ d:0, h:0, m:0, s:0 });
@@ -217,7 +260,12 @@ const Countdown = ({ targetDate, primary, text }) => {
       if (isNaN(target)) return;
       const dist = target - Date.now();
       if(dist <= 0) { setExpired(true); return; }
-      setTimeLeft({ d: Math.floor(dist / 86400000), h: Math.floor((dist % 86400000) / 3600000), m: Math.floor((dist % 3600000) / 60000), s: Math.floor((dist % 60000) / 1000) });
+      setTimeLeft({
+        d: Math.floor(dist / 86400000),
+        h: Math.floor((dist % 86400000) / 3600000),
+        m: Math.floor((dist % 3600000) / 60000),
+        s: Math.floor((dist % 60000) / 1000),
+      });
     };
     calc();
     const id = setInterval(calc, 1000);
@@ -236,7 +284,9 @@ const Countdown = ({ targetDate, primary, text }) => {
         <div className="flex justify-center gap-3">
           {Object.entries(timeLeft).map(([unit, val]) => (
             <div key={unit} className="flex flex-col items-center gap-1">
-              <div className="w-[52px] h-[52px] rounded-2xl flex items-center justify-center text-xl font-black text-white shadow-lg" style={{ background: primary }}>{(val || 0).toString().padStart(2, '0')}</div>
+              <div className="w-[52px] h-[52px] rounded-2xl flex items-center justify-center text-xl font-black text-white shadow-lg" style={{ background: primary }}>
+                {(val || 0).toString().padStart(2, '0')}
+              </div>
               <span className="text-[10px] font-bold opacity-60" style={{ color: primary }}>{labels[unit]}</span>
             </div>
           ))}
@@ -268,9 +318,24 @@ const ParticleCanvas = ({ effect, primary }) => {
     const spawnParticle = () => {
       const x = Math.random() * canvas.width;
       const isBubble = effect === "bubbles";
-      const base = { x, y: isBubble ? canvas.height + 20 : -20, vx: (Math.random() - 0.5) * 2, vy: Math.random() * 2 + 1, alpha: 1, rot: Math.random() * 360, rotV: (Math.random() - 0.5) * 4, size: Math.random() * 10 + 8, life: 1, decay: Math.random() * 0.003 + 0.002 };
+      
+      const base = { 
+        x, 
+        y: isBubble ? canvas.height + 20 : -20, 
+        vx: (Math.random() - 0.5) * 2, 
+        vy: Math.random() * 2 + 1, 
+        alpha: 1, 
+        rot: Math.random() * 360, 
+        rotV: (Math.random() - 0.5) * 4, 
+        size: Math.random() * 10 + 8, 
+        life: 1, 
+        decay: Math.random() * 0.003 + 0.002 
+      };
 
-      if (effect === "confetti") { const colors = [primary, "#f59e0b", "#10b981", "#ef4444", "#3b82f6", "#ec4899", "#facc15"]; return { ...base, type: "rect", color: colors[Math.floor(Math.random() * colors.length)], w: Math.random()*10+5, h: Math.random()*5+3 }; }
+      if (effect === "confetti") {
+        const colors = [primary, "#f59e0b", "#10b981", "#ef4444", "#3b82f6", "#ec4899", "#facc15"];
+        return { ...base, type: "rect", color: colors[Math.floor(Math.random() * colors.length)], w: Math.random()*10+5, h: Math.random()*5+3 };
+      }
       if (effect === "hearts")  return { ...base, type: "text", emoji: "❤️", size: Math.random()*18+10 };
       if (effect === "stars")   return { ...base, type: "text", emoji: "⭐", size: Math.random()*16+8 };
       if (effect === "bubbles") return { ...base, type: "circle", color: primary, filled: false, r: Math.random()*12+4, vx: (Math.random()-0.5)*1.5, vy: -(Math.random()*2+0.5) };
@@ -285,22 +350,36 @@ const ParticleCanvas = ({ effect, primary }) => {
       if (!ctx || !canvas) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       frame++;
+      
       if (frame % 8 === 0 && particlesRef.current.length < 60) {
         const p = spawnParticle(); if (p) particlesRef.current.push(p);
       }
+      
       particlesRef.current = particlesRef.current.filter(p => {
         p.x += p.vx; p.y += p.vy; p.rot = (p.rot || 0) + (p.rotV || 0); p.life -= p.decay; p.alpha = p.life;
         ctx.globalAlpha = Math.max(0, p.alpha);
-        if (p.type === "rect") { ctx.save(); ctx.translate(p.x, p.y); ctx.rotate((p.rot || 0) * Math.PI/180); ctx.fillStyle = p.color; ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h); ctx.restore(); } 
-        else if (p.type === "circle") { ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); if (p.filled) { ctx.fillStyle = p.color; ctx.fill(); } else { ctx.strokeStyle = p.color; ctx.lineWidth = 1.5; ctx.stroke(); } } 
-        else if (p.type === "text") { ctx.font = `${p.size}px serif`; ctx.textAlign = "center"; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate((p.rot||0)*Math.PI/180); ctx.fillText(p.emoji, 0, 0); ctx.restore(); }
+        
+        if (p.type === "rect") {
+          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate((p.rot || 0) * Math.PI/180);
+          ctx.fillStyle = p.color; ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h); ctx.restore();
+        } else if (p.type === "circle") {
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); 
+          if (p.filled) { ctx.fillStyle = p.color; ctx.fill(); } 
+          else { ctx.strokeStyle = p.color; ctx.lineWidth = 1.5; ctx.stroke(); }
+        } else if (p.type === "text") {
+          ctx.font = `${p.size}px serif`; ctx.textAlign = "center"; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate((p.rot||0)*Math.PI/180); ctx.fillText(p.emoji, 0, 0); ctx.restore();
+        }
         ctx.globalAlpha = 1;
         return p.life > 0 && p.y < canvas.height + 40 && p.y > -40;
       });
       animRef.current = requestAnimationFrame(loop);
     };
     loop();
-    return () => { if(animRef.current) cancelAnimationFrame(animRef.current); if(observer && canvasRef.current) observer.unobserve(canvasRef.current); particlesRef.current = []; };
+    return () => { 
+      if(animRef.current) cancelAnimationFrame(animRef.current); 
+      if(observer && canvasRef.current) observer.unobserve(canvasRef.current); 
+      particlesRef.current = []; 
+    };
   }, [effect, primary]);
 
   if (effect === "none") return null;
@@ -314,7 +393,9 @@ const MapEmbed = ({ name, address, primary }) => {
   return (
     <div className="rounded-2xl overflow-hidden border border-white/10 relative" style={{ background: "#1a1a2e" }}>
       <iframe title="map" width="100%" height="200" style={{ border: 0, display: "block" }} loading="lazy" referrerPolicy="no-referrer-when-downgrade" src={`http://googleusercontent.com/maps.google.com/maps?q=${encodeURIComponent(query)}&t=m&z=16&output=embed&iwloc=near`} />
-      <a href={gMapsUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-3 text-xs font-black uppercase tracking-wider transition-colors" style={{ background: `${primary}22`, color: primary }}><MapPin size={14} /> Abrir en Google Maps</a>
+      <a href={gMapsUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-3 text-xs font-black uppercase tracking-wider transition-colors" style={{ background: `${primary}22`, color: primary }}>
+        <MapPin size={14} /> Abrir en Google Maps
+      </a>
     </div>
   );
 };
@@ -364,7 +445,7 @@ const Confetti = ({ trigger }) => {
   }, [trigger]);
 
   return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden w-[400px] h-[800px] -top-[100px] -left-[60px]">
+    <div className="absolute inset-0 pointer-events-none overflow-hidden w-full h-full">
       {pieces.map(p => (
         <div key={p.id} className="confetti-piece" style={{ left: `${p.left}%`, backgroundColor: p.color, animationDelay: `${p.delay}s` }} />
       ))}
@@ -386,26 +467,41 @@ export const OpeningAnimation = ({ cfg, onOpen }) => {
     if (opening) return;
     setOpening(true);
 
-    const sounds = {
-      envelope: "https://actions.google.com/sounds/v1/water/air_woosh_underwater.ogg", 
-      chest: "https://actions.google.com/sounds/v1/magic/magic_chimes.ogg",
-      soccer: "https://actions.google.com/sounds/v1/sports/referee_whistle.ogg",
-      musicbox: "https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg",
-      gift: "https://actions.google.com/sounds/v1/fireworks/fireworks_burst.ogg"
-    };
-
-    if(sounds[type]) {
-      const audio = new Audio(sounds[type]);
-      audio.volume = 0.6;
-      audio.play().catch(()=>{});
+    if (type === "chest") {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const notes = [523, 659, 784, 1047, 1319];
+        const times = [0, 0.1, 0.2, 0.35, 0.5];
+        notes.forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.frequency.value = freq; osc.type = 'sine';
+          gain.gain.setValueAtTime(0.15, ctx.currentTime + times[i]);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + times[i] + 0.4);
+          osc.start(ctx.currentTime + times[i]); osc.stop(ctx.currentTime + times[i] + 0.5);
+        });
+      } catch(e) {}
+    } else {
+      const sounds = {
+        envelope: "https://actions.google.com/sounds/v1/water/air_woosh_underwater.ogg", 
+        soccer: "https://actions.google.com/sounds/v1/sports/referee_whistle.ogg",
+        musicbox: "https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg",
+        gift: "https://actions.google.com/sounds/v1/fireworks/fireworks_burst.ogg"
+      };
+      if(sounds[type]) {
+        const audio = new Audio(sounds[type]);
+        audio.volume = 0.6;
+        audio.play().catch(()=>{});
+      }
     }
 
-    if (type === "gift" || type === "soccer") {
+    if (type === "gift" || type === "soccer" || type === "chest") {
       setTimeout(() => setPhase(1), 200);   
       setTimeout(() => setPhase(2), 600);   
       setTimeout(() => onOpen(), 1600);
     } else {
-      setTimeout(() => onOpen(), type === 'envelope' || type === 'chest' ? 1200 : 1500);
+      setTimeout(() => onOpen(), type === 'envelope' ? 1200 : 1500);
     }
   };
 
@@ -429,15 +525,52 @@ export const OpeningAnimation = ({ cfg, onOpen }) => {
 
       case "chest":
         return (
-          <div className="relative z-10 cursor-pointer group flex flex-col items-center">
-            <div className="relative w-[200px] h-[160px]">
-               <div className="absolute bottom-0 w-full h-[100px] rounded-b-xl shadow-2xl" style={{ backgroundColor: '#854d0e', border: '4px solid #ca8a04' }}>
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-yellow-400 border-2 border-yellow-600 flex items-center justify-center"><Key size={14} className="text-yellow-800"/></div>
-               </div>
-               <div className={`absolute top-0 w-full h-[60px] rounded-t-3xl ${opening ? 'animate-chest-open' : ''}`} style={{ backgroundColor: '#a16207', border: '4px solid #ca8a04' }} />
-               {opening && <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-5xl">✨✨✨</div>}
+          <div className="relative w-full h-full flex flex-col items-center justify-center cursor-pointer" onClick={handleOpen}>
+            {opening && (
+              <div className="absolute rounded-full animate-chest-glow pointer-events-none z-0" style={{ width: 220, height: 220, background: 'radial-gradient(circle, rgba(251,191,36,0.6) 0%, transparent 70%)', filter: 'blur(20px)', top: '50%', left: '50%', transform: 'translate(-50%, -60%)' }} />
+            )}
+            
+            {opening && (
+              <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
+                {['✨','🌟','💫','⭐','✦'].map((s, i) => (
+                  <span key={`sp${i}`} className="absolute animate-sparkle text-lg" style={{ left: `calc(50% + ${(Math.random()*2-1)*20}px)`, top: '42%', '--tx': `${(i % 2 === 0 ? -1 : 1) * (40 + i * 22)}px`, '--ty': `${-(80 + i * 25)}px`, '--rot': `${(Math.random()-0.5)*360}deg`, '--dur': `${0.9 + i * 0.15}s`, '--delay': `${0.3 + i * 0.08}s`, filter: 'drop-shadow(0 0 6px gold)' }}>{s}</span>
+                ))}
+                {[...Array(8)].map((_, i) => {
+                  const angle = (i / 8) * 220 - 110; const rad = angle * Math.PI / 180; const dist = 55 + (i % 3) * 25;
+                  return <div key={`coin${i}`} className="absolute rounded-full animate-coin" style={{ width: 10, height: 10, background: 'radial-gradient(circle at 35% 35%, #fef08a, #d97706)', border: '2px solid #b45309', left: '50%', top: '45%', '--tx': `${Math.sin(rad) * dist}px`, '--ty': `${-Math.abs(Math.cos(rad) * dist) - 10}px`, '--dur': `${0.6 + (i % 3) * 0.2}s`, '--delay': `${0.25 + (i % 4) * 0.08}s` }} />
+                })}
+                {['#f59e0b','#ef4444','#3b82f6','#22c55e','#ec4899','#a855f7'].map((c, i) => (
+                  <div key={`conf${i}`} className="absolute animate-coin rounded" style={{ width: 6, height: 6, background: c, left: '50%', top: '45%', '--tx': `${(i % 2 === 0 ? -1 : 1) * (30 + i * 18)}px`, '--ty': `${-(60 + i * 20)}px`, '--dur': `${0.7 + i * 0.12}s`, '--delay': `${0.2 + i * 0.07}s` }} />
+                ))}
+              </div>
+            )}
+
+            <div className={`relative z-20 transition-all duration-700 ${phase >= 2 ? 'opacity-0 scale-90' : 'animate-float group-hover:scale-105'}`} style={{ width: 200, height: 170, perspective: 600 }}>
+              <div className="absolute rounded-sm overflow-hidden" style={{ top: 3, left: 3, right: 3, height: 68, background: 'radial-gradient(ellipse at 50% 30%, #fef9c3, #fbbf24 40%, #d97706 80%, #7c3f00 100%)', opacity: opening ? 1 : 0, transition: 'opacity 0.4s 0.5s', zIndex: 2 }}>
+                <div className="absolute inset-0 animate-glow-pulse" style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.8) 0%, transparent 70%)' }} />
+              </div>
+              <div className={`absolute top-0 w-full overflow-hidden ${opening ? 'animate-chest-open' : ''}`} style={{ height: 72, borderRadius: '16px 16px 0 0', background: 'linear-gradient(180deg, #92400e 0%, #78350f 60%, #5c2d00 100%)', border: '3px solid #b8730a', borderBottom: 'none', zIndex: 5 }}>
+                <div className="absolute inset-0" style={{ background: 'repeating-linear-gradient(180deg, transparent 0px, transparent 18px, rgba(0,0,0,0.15) 18px, rgba(0,0,0,0.15) 20px)' }} />
+                <div className="absolute bottom-0 left-0 right-0" style={{ height: 14, background: 'linear-gradient(180deg, #ca8a04, #b45309, #ca8a04)', borderTop: '2px solid #fbbf24' }} />
+                <div className="absolute top-0 left-0 right-0" style={{ height: 6, background: 'linear-gradient(180deg, rgba(255,255,255,0.25), transparent)', borderRadius: '16px 16px 0 0' }} />
+                {[{ top: 10, left: 8 }, { top: 10, right: 8 }].map((pos, i) => (
+                  <div key={i} className="absolute" style={{ width: 10, height: 10, borderRadius: '50%', background: 'radial-gradient(circle at 35% 35%, #fef08a, #b45309)', border: '1px solid #78350f', ...pos }} />
+                ))}
+              </div>
+              <div className="absolute bottom-0 w-full overflow-hidden" style={{ height: 110, borderRadius: '0 0 16px 16px', background: 'linear-gradient(180deg, #7c3f00 0%, #5c2d00 60%, #3d1c00 100%)', border: '3px solid #b8730a' }}>
+                <div className="absolute inset-0" style={{ background: 'repeating-linear-gradient(180deg, transparent 0px, transparent 24px, rgba(0,0,0,0.2) 24px, rgba(0,0,0,0.2) 26px)' }} />
+                <div className="absolute" style={{ top: '45%', left: -4, right: -4, height: 16, transform: 'translateY(-50%)', background: 'linear-gradient(180deg, #ca8a04, #b45309, #ca8a04)', borderTop: '2px solid #fbbf24', borderBottom: '2px solid #fbbf24' }} />
+                {[{ top: 8, left: 8 }, { top: 8, right: 8 }, { bottom: 8, left: 8 }, { bottom: 8, right: 8 }].map((pos, i) => (
+                  <div key={i} className="absolute" style={{ width: 10, height: 10, borderRadius: '50%', background: 'radial-gradient(circle at 35% 35%, #fef08a, #b45309)', border: '1px solid #78350f', boxShadow: '0 1px 3px rgba(0,0,0,0.6)', ...pos }} />
+                ))}
+                <div className="absolute" style={{ bottom: 28, left: '50%', transform: 'translateX(-50%)', width: 28, height: 28, background: 'radial-gradient(circle at 35% 30%, #fef08a, #d97706)', borderRadius: 6, border: '2px solid #78350f', boxShadow: '0 2px 6px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.3)', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ width: 8, height: 6, borderRadius: '50% 50% 0 0 / 60% 60% 0 0', border: '2.5px solid #78350f', borderBottom: 'none', position: 'absolute', top: -7 }} />
+                  <div style={{ width: 6, height: 8, background: '#78350f', borderRadius: '50% 50% 4px 4px' }} />
+                </div>
+              </div>
+              <div style={{ position: 'absolute', bottom: -16, left: '50%', transform: 'translateX(-50%)', width: opening ? 200 : 160, height: 16, background: 'rgba(0,0,0,0.4)', borderRadius: '50%', filter: 'blur(6px)', transition: 'width 0.6s', opacity: opening ? 0.3 : 0.6 }} />
             </div>
-            <p className="mt-8 text-white text-xs font-black tracking-[0.3em] uppercase opacity-70 animate-pulse">Tocar para abrir</p>
+            {!opening && <p className="mt-8 text-white text-xs font-black tracking-[0.3em] uppercase opacity-70 animate-pulse z-30">Tocar para abrir</p>}
           </div>
         );
 
@@ -461,7 +594,7 @@ export const OpeningAnimation = ({ cfg, onOpen }) => {
             </div>
             <div className={`absolute bottom-32 text-7xl z-20 ${opening ? 'animate-shoot' : 'animate-bounce group-hover:scale-110 transition-transform'}`}>⚽</div>
             {phase >= 1 && <div className="text-6xl absolute top-[250px] animate-ping z-30">💥</div>}
-            {!opening && <p className="absolute bottom-16 text-white text-xs font-black tracking-[0.3em] uppercase opacity-90 bg-black/50 px-4 py-2 rounded-full">Tocar para patear</p>}
+            {!opening && <p className="absolute bottom-16 text-white text-xs font-black tracking-[0.3em] uppercase opacity-90 bg-black/50 px-4 py-2 rounded-full cursor-pointer">Tocar para patear</p>}
           </div>
         );
 
@@ -469,7 +602,7 @@ export const OpeningAnimation = ({ cfg, onOpen }) => {
         return (
           <div className="relative z-10 cursor-pointer group flex flex-col items-center">
             {phase >= 2 && <Confetti trigger={true} />}
-            <div className={`text-9xl transition-all duration-700 ${opening ? 'scale-0 rotate-[720deg] opacity-0' : 'animate-bounce'}`}>🎁</div>
+            <div className={`text-9xl transition-all duration-700 ${opening ? 'scale-0 rotate-[720deg] opacity-0' : 'animate-elastic'}`}>🎁</div>
             {phase >= 1 && <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-white rounded-full blur-2xl opacity-70 animate-ping pointer-events-none" />}
             {!opening && <p className="mt-8 text-white text-xs font-black tracking-[0.3em] uppercase opacity-70 animate-pulse">Tocar para descubrir</p>}
           </div>
@@ -480,9 +613,9 @@ export const OpeningAnimation = ({ cfg, onOpen }) => {
   };
 
   return (
-    <div className={`absolute inset-0 z-[100] flex flex-col items-center justify-center transition-all duration-1000 ${opening && (type==='envelope'||type==='chest'||type==='musicbox') ? 'opacity-0 pointer-events-none' : 'opacity-100 bg-slate-900'} ${opening && (type==='gift'||type==='soccer') && phase>=2 ? 'opacity-0 bg-black pointer-events-none' : ''}`}>
+    <div className={`absolute inset-0 z-[100] flex flex-col items-center justify-center transition-all duration-1000 ${opening && (type==='envelope'||type==='musicbox') ? 'opacity-0 pointer-events-none' : 'opacity-100 bg-slate-900'} ${opening && (type==='gift'||type==='soccer'||type==='chest') && phase>=2 ? 'opacity-0 bg-transparent pointer-events-none' : ''}`}>
       <div className="absolute inset-0 opacity-40" style={{ background: `linear-gradient(135deg, ${cfg?.bg1 || th.bg1}, ${cfg?.bg2 || th.bg2})` }} />
-      <div onClick={type !== 'soccer' ? handleOpen : undefined} className="w-full h-full flex items-center justify-center">
+      <div onClick={type === 'envelope' || type === 'musicbox' || type === 'gift' ? handleOpen : undefined} className="w-full h-full flex items-center justify-center">
          {renderContent()}
       </div>
     </div>
@@ -491,7 +624,7 @@ export const OpeningAnimation = ({ cfg, onOpen }) => {
 
 
 /* ============================================================================
-   VISTA PREVIA DE LA INVITACIÓN
+   VISTA PREVIA DE LA INVITACIÓN (USADA EN EDITOR Y PÚBLICA)
 ============================================================================ */
 export const InvitePreview = ({ cfg }) => {
   if (!cfg) return null;
