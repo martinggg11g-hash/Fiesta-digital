@@ -4,7 +4,7 @@ import { Loader2 } from "lucide-react";
 
 // Importamos todo de los archivos que separamos
 import { LoginScreen, DashboardScreen } from "./Master";
-import { EditorScreen, InvitePreview, Envelope, DEF_CONFIG } from "./Editor";
+import { EditorScreen, InvitePreview, OpeningAnimation, DEF_CONFIG } from "./Editor";
 
 /* ============================================================================
    ESTILOS GLOBALES E INYECCIÓN DE TAILWIND
@@ -37,6 +37,20 @@ const GlobalStyles = () => {
         .fd-toggle-track::before { content: ''; position: absolute; width: 20px; height: 20px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: .3s cubic-bezier(.34,1.56,.64,1); box-shadow: 0 1px 4px rgba(0,0,0,.2); }
         .fd-toggle input:checked ~ .fd-toggle-track { background: linear-gradient(135deg,#6d28d9,#8b5cf6); }
         .fd-toggle input:checked ~ .fd-toggle-track::before { transform: translateX(18px); }
+
+        /* Animaciones Personalizadas para las Entradas */
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+        .animate-float { animation: float 3s ease-in-out infinite; }
+        @keyframes openEnvelope { 0% { transform: rotateX(0deg); z-index: 20; } 100% { transform: rotateX(180deg); z-index: 0; } }
+        .animate-envelope-open { transform-origin: top; animation: openEnvelope 1s forwards; }
+        @keyframes openChest { 0% { transform: rotateX(0deg); } 100% { transform: rotateX(-90deg); opacity: 0; } }
+        .animate-chest-open { transform-origin: top; animation: openChest 1s forwards; }
+        @keyframes shootBall { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(50px, -150px) scale(0.5); opacity: 0; } }
+        .animate-shoot { animation: shootBall 0.8s forwards ease-in; }
+        @keyframes spinNote { 0% { transform: rotate(0deg) scale(1); } 100% { transform: rotate(720deg) scale(0); opacity: 0; } }
+        .animate-spin-away { animation: spinNote 1.5s forwards ease-in-out; }
+        @keyframes explodeGift { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(0); opacity: 0; } }
+        .animate-explode { animation: explodeGift 0.8s forwards; }
       `;
       document.head.appendChild(s);
     }
@@ -56,9 +70,9 @@ const PublicInviteScreen = ({ invitations }) => {
 
   return (
     <div className="bg-black min-h-screen flex justify-center w-full relative overflow-hidden">
-      {!opened && <Envelope cfg={inv.config} onOpen={() => setOpened(true)} />}
+      {!opened && <OpeningAnimation cfg={inv.config} onOpen={() => setOpened(true)} />}
       
-      <div className={`w-full max-w-[480px] bg-white shadow-2xl relative overflow-x-hidden transition-opacity duration-1000 ${opened ? 'opacity-100' : 'opacity-0'}`}>
+      <div className={`w-full max-w-[480px] bg-white shadow-2xl relative overflow-x-hidden transition-opacity duration-1000 ${opened ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
         <InvitePreview cfg={inv.config} />
       </div>
     </div>
@@ -75,6 +89,7 @@ export default function App() {
     { name:"Oswaldo Master", email:"owner@fiestadigital.com", pass:"owner123", role:"owner" },
     { name:"Aventura Kids", email:"admin@admin.com", pass:"admin", role:"salon", phone:"112233", paymentMethod:"Efectivo", paymentAlert: false, createdAt: new Date().toLocaleDateString() }
   ]);
+  
   const [invitations, setInvitations] = useState([
     { id: "demo-1", salonId: "admin@admin.com", salonName: "Aventura Kids", title: "Cumple de Valentina", config: DEF_CONFIG, internalDate:"", internalGuests:"", internalNotes:"" }
   ]);
