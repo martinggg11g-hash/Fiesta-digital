@@ -2,10 +2,43 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   MapPin, Clock, Calendar, Palette, CheckCircle2,
-  ChevronDown, Type, ArrowLeft, Save, X,
+  ChevronDown, Type, Edit2, ArrowLeft, Save, X,
   Star, Image as ImageIcon, Layout, List, Trash2, Loader2, Check,
-  Video, Link as LinkIcon, Sparkles, Mail, Key, Music, Goal, Gift
+  Video, Link as LinkIcon
 } from "lucide-react";
+
+/* ============================================================================
+   ESTILOS INYECTADOS LOCALMENTE (Para Confeti y Pop)
+============================================================================ */
+const injectLocalStyles = () => {
+  if (!document.getElementById("cinematic-styles")) {
+    const style = document.createElement("style");
+    style.id = "cinematic-styles";
+    style.textContent = `
+      @keyframes elasticPop {
+        0% { transform: scale(0.5); opacity: 0; }
+        60% { transform: scale(1.2); }
+        80% { transform: scale(0.95); }
+        100% { transform: scale(1); opacity: 1; }
+      }
+      .animate-elastic { animation: elasticPop 0.8s cubic-bezier(.34,1.56,.64,1); }
+
+      @keyframes confettiFall {
+        0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+        100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+      }
+      .confetti-piece {
+        position: absolute;
+        top: 0;
+        width: 8px;
+        height: 12px;
+        animation: confettiFall 2.5s linear forwards;
+        z-index: 50;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+};
 
 /* ============================================================================
    FUNCIONES AUXILIARES Y CONSTANTES
@@ -55,18 +88,18 @@ export const EFFECTS = [
 ];
 
 export const OPENING_ANIMATIONS = [
-  { id: "envelope", name: "Sobre", icon: <Mail size={16}/> },
-  { id: "chest", name: "Baúl", icon: <Key size={16}/> },
-  { id: "musicbox", name: "Caja Musical", icon: <Music size={16}/> },
-  { id: "soccer", name: "Cancha", icon: <Goal size={16}/> },
-  { id: "gift", name: "Regalo", icon: <Gift size={16}/> },
+  { id: "envelope", name: "Sobre", icon: "💌" },
+  { id: "chest", name: "Baúl", icon: "🗝️" },
+  { id: "musicbox", name: "Caja Musical", icon: "🎵" },
+  { id: "soccer", name: "Cancha", icon: "⚽" },
+  { id: "gift", name: "Regalo", icon: "🎁" },
 ];
 
 export const DEF_CONFIG = {
   theme:"violet", fontTitle:"'Pacifico', cursive", fontBody:"'DM Sans', sans-serif",
   honoreeSize: 48, eventTypeSize: 11,
   bg1:"#08060f", bg2:"#120d24", primary:"#7c3aed", card:"#1a1035", text:"#f0ecff", muted:"#9b8ec4",
-  coverGradientIntensity: 70, particleEffect: "none", openingAnimation: "envelope",
+  coverGradientIntensity: 70, particleEffect: "none", openingAnimation: "gift",
   eventTypeEmoji:"✨", eventType:"Estás invitado al cumple de", honoreeName:"Valentina", badgeEmoji:"🎂", badgeText:"5 añitos",
   coverPhoto:"https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=800&q=80",
   showBanner:true, bannerTitle:"La festejada", bannerPhoto:"https://images.unsplash.com/photo-1545912452-8aea7e25a3d3?auto=format&fit=crop&w=400&q=80",
@@ -82,6 +115,7 @@ export const DEF_CONFIG = {
   showVenueLogo:false, venueLogoUrl:"", venueName:"", venueLink:"", venueLinkType:"web",
   whatsappNumber:"5491123456789", whatsappMessage:"¡Hola! Confirmo mi asistencia para el cumple de {nombre} 🎉",
 };
+
 
 /* ============================================================================
    MICRO COMPONENTES DE UI
@@ -169,8 +203,9 @@ const Acc = ({ title, icon: Icon, children, defaultOpen = false, iconColor = "#7
   );
 };
 
+
 /* ============================================================================
-   WIDGETS Y EFECTOS ESPECIALES
+   EFECTOS ESPECIALES Y WIDGETS
 ============================================================================ */
 const Countdown = ({ targetDate, primary, text }) => {
   const [timeLeft, setTimeLeft] = useState({ d:0, h:0, m:0, s:0 });
@@ -183,7 +218,12 @@ const Countdown = ({ targetDate, primary, text }) => {
       if (isNaN(target)) return;
       const dist = target - Date.now();
       if(dist <= 0) { setExpired(true); return; }
-      setTimeLeft({ d: Math.floor(dist / 86400000), h: Math.floor((dist % 86400000) / 3600000), m: Math.floor((dist % 3600000) / 60000), s: Math.floor((dist % 60000) / 1000) });
+      setTimeLeft({
+        d: Math.floor(dist / 86400000),
+        h: Math.floor((dist % 86400000) / 3600000),
+        m: Math.floor((dist % 3600000) / 60000),
+        s: Math.floor((dist % 60000) / 1000),
+      });
     };
     calc();
     const id = setInterval(calc, 1000);
@@ -202,7 +242,9 @@ const Countdown = ({ targetDate, primary, text }) => {
         <div className="flex justify-center gap-3">
           {Object.entries(timeLeft).map(([unit, val]) => (
             <div key={unit} className="flex flex-col items-center gap-1">
-              <div className="w-[52px] h-[52px] rounded-2xl flex items-center justify-center text-xl font-black text-white shadow-lg" style={{ background: primary }}>{(val || 0).toString().padStart(2, '0')}</div>
+              <div className="w-[52px] h-[52px] rounded-2xl flex items-center justify-center text-xl font-black text-white shadow-lg" style={{ background: primary }}>
+                {(val || 0).toString().padStart(2, '0')}
+              </div>
               <span className="text-[10px] font-bold opacity-60" style={{ color: primary }}>{labels[unit]}</span>
             </div>
           ))}
@@ -234,9 +276,24 @@ const ParticleCanvas = ({ effect, primary }) => {
     const spawnParticle = () => {
       const x = Math.random() * canvas.width;
       const isBubble = effect === "bubbles";
-      const base = { x, y: isBubble ? canvas.height + 20 : -20, vx: (Math.random() - 0.5) * 2, vy: Math.random() * 2 + 1, alpha: 1, rot: Math.random() * 360, rotV: (Math.random() - 0.5) * 4, size: Math.random() * 10 + 8, life: 1, decay: Math.random() * 0.003 + 0.002 };
+      
+      const base = { 
+        x, 
+        y: isBubble ? canvas.height + 20 : -20, 
+        vx: (Math.random() - 0.5) * 2, 
+        vy: Math.random() * 2 + 1, 
+        alpha: 1, 
+        rot: Math.random() * 360, 
+        rotV: (Math.random() - 0.5) * 4, 
+        size: Math.random() * 10 + 8, 
+        life: 1, 
+        decay: Math.random() * 0.003 + 0.002 
+      };
 
-      if (effect === "confetti") { const colors = [primary, "#f59e0b", "#10b981", "#ef4444", "#3b82f6", "#ec4899", "#facc15"]; return { ...base, type: "rect", color: colors[Math.floor(Math.random() * colors.length)], w: Math.random()*10+5, h: Math.random()*5+3 }; }
+      if (effect === "confetti") {
+        const colors = [primary, "#f59e0b", "#10b981", "#ef4444", "#3b82f6", "#ec4899", "#facc15"];
+        return { ...base, type: "rect", color: colors[Math.floor(Math.random() * colors.length)], w: Math.random()*10+5, h: Math.random()*5+3 };
+      }
       if (effect === "hearts")  return { ...base, type: "text", emoji: "❤️", size: Math.random()*18+10 };
       if (effect === "stars")   return { ...base, type: "text", emoji: "⭐", size: Math.random()*16+8 };
       if (effect === "bubbles") return { ...base, type: "circle", color: primary, filled: false, r: Math.random()*12+4, vx: (Math.random()-0.5)*1.5, vy: -(Math.random()*2+0.5) };
@@ -251,22 +308,37 @@ const ParticleCanvas = ({ effect, primary }) => {
       if (!ctx || !canvas) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       frame++;
+      
       if (frame % 8 === 0 && particlesRef.current.length < 60) {
-        const p = spawnParticle(); if (p) particlesRef.current.push(p);
+        const p = spawnParticle();
+        if (p) particlesRef.current.push(p);
       }
+      
       particlesRef.current = particlesRef.current.filter(p => {
         p.x += p.vx; p.y += p.vy; p.rot = (p.rot || 0) + (p.rotV || 0); p.life -= p.decay; p.alpha = p.life;
         ctx.globalAlpha = Math.max(0, p.alpha);
-        if (p.type === "rect") { ctx.save(); ctx.translate(p.x, p.y); ctx.rotate((p.rot || 0) * Math.PI/180); ctx.fillStyle = p.color; ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h); ctx.restore(); } 
-        else if (p.type === "circle") { ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); if (p.filled) { ctx.fillStyle = p.color; ctx.fill(); } else { ctx.strokeStyle = p.color; ctx.lineWidth = 1.5; ctx.stroke(); } } 
-        else if (p.type === "text") { ctx.font = `${p.size}px serif`; ctx.textAlign = "center"; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate((p.rot||0)*Math.PI/180); ctx.fillText(p.emoji, 0, 0); ctx.restore(); }
+        
+        if (p.type === "rect") {
+          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate((p.rot || 0) * Math.PI/180);
+          ctx.fillStyle = p.color; ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h); ctx.restore();
+        } else if (p.type === "circle") {
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); 
+          if (p.filled) { ctx.fillStyle = p.color; ctx.fill(); } 
+          else { ctx.strokeStyle = p.color; ctx.lineWidth = 1.5; ctx.stroke(); }
+        } else if (p.type === "text") {
+          ctx.font = `${p.size}px serif`; ctx.textAlign = "center"; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate((p.rot||0)*Math.PI/180); ctx.fillText(p.emoji, 0, 0); ctx.restore();
+        }
         ctx.globalAlpha = 1;
         return p.life > 0 && p.y < canvas.height + 40 && p.y > -40;
       });
       animRef.current = requestAnimationFrame(loop);
     };
     loop();
-    return () => { if(animRef.current) cancelAnimationFrame(animRef.current); if(observer && canvasRef.current) observer.unobserve(canvasRef.current); particlesRef.current = []; };
+    return () => { 
+      if(animRef.current) cancelAnimationFrame(animRef.current); 
+      if(observer && canvasRef.current) observer.unobserve(canvasRef.current); 
+      particlesRef.current = []; 
+    };
   }, [effect, primary]);
 
   if (effect === "none") return null;
@@ -280,7 +352,9 @@ const MapEmbed = ({ name, address, primary }) => {
   return (
     <div className="rounded-2xl overflow-hidden border border-white/10 relative" style={{ background: "#1a1a2e" }}>
       <iframe title="map" width="100%" height="200" style={{ border: 0, display: "block" }} loading="lazy" referrerPolicy="no-referrer-when-downgrade" src={`http://googleusercontent.com/maps.google.com/maps?q=${encodeURIComponent(query)}&t=m&z=16&output=embed&iwloc=near`} />
-      <a href={gMapsUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-3 text-xs font-black uppercase tracking-wider transition-colors" style={{ background: `${primary}22`, color: primary }}><MapPin size={14} /> Abrir en Google Maps</a>
+      <a href={gMapsUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-3 text-xs font-black uppercase tracking-wider transition-colors" style={{ background: `${primary}22`, color: primary }}>
+        <MapPin size={14} /> Abrir en Google Maps
+      </a>
     </div>
   );
 };
@@ -316,33 +390,65 @@ const VideoSection = ({ cfg, primary, text, muted, card }) => {
 };
 
 /* ============================================================================
-   NUEVO: ANIMACIONES DE ENTRADA (Sobre, Baúl, Fútbol, etc)
+   ANIMACIONES DE ENTRADA CINEMATOGRÁFICAS
 ============================================================================ */
+const Confetti = ({ trigger }) => {
+  const [pieces, setPieces] = useState([]);
+  useEffect(() => {
+    if (trigger) {
+      const newPieces = Array.from({ length: 40 }).map((_, i) => ({
+        id: i, left: Math.random() * 100, delay: Math.random() * 0.5, color: `hsl(${Math.random()*360},100%,60%)`
+      }));
+      setPieces(newPieces);
+    }
+  }, [trigger]);
+
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden w-[400px] h-[800px] -top-[100px] -left-[60px]">
+      {pieces.map(p => (
+        <div key={p.id} className="confetti-piece" style={{ left: `${p.left}%`, backgroundColor: p.color, animationDelay: `${p.delay}s` }} />
+      ))}
+    </div>
+  );
+};
+
 export const OpeningAnimation = ({ cfg, onOpen }) => {
   const [opening, setOpening] = useState(false);
+  const [phase, setPhase] = useState(0);
+  
+  injectLocalStyles(); // Nos aseguramos que las clases existan
+
   const type = cfg?.openingAnimation || "envelope";
   const th = THEMES.find(t => t.id === cfg?.theme) || THEMES[0];
   const primary = cfg?.primary || th.primary;
 
   const handleOpen = () => {
+    if (opening) return;
     setOpening(true);
-    
-    // Reproducir Sonido según el tipo
+
     const sounds = {
-      envelope: "https://actions.google.com/sounds/v1/water/air_woosh_underwater.ogg", // Suave woosh
-      chest: "https://actions.google.com/sounds/v1/magic/magic_chimes.ogg", // Magia
-      soccer: "https://actions.google.com/sounds/v1/sports/referee_whistle.ogg", // Silbato
+      envelope: "https://actions.google.com/sounds/v1/water/air_woosh_underwater.ogg", 
+      chest: "https://actions.google.com/sounds/v1/magic/magic_chimes.ogg",
+      soccer: "https://actions.google.com/sounds/v1/sports/referee_whistle.ogg",
       musicbox: "https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg",
-      gift: "https://actions.google.com/sounds/v1/cartoon/pop.ogg"
+      gift: "https://actions.google.com/sounds/v1/fireworks/fireworks_burst.ogg"
     };
-    
+
     if(sounds[type]) {
       const audio = new Audio(sounds[type]);
-      audio.volume = 0.5;
-      audio.play().catch(e => console.log("Auto-play bloqueado por el navegador"));
+      audio.volume = 0.6;
+      audio.play().catch(()=>{});
     }
 
-    setTimeout(() => onOpen(), type === 'envelope' || type === 'chest' ? 1200 : 1500);
+    if (type === "gift" || type === "soccer") {
+      // Fases cinematográficas
+      setTimeout(() => setPhase(1), 200);   
+      setTimeout(() => setPhase(2), 600);   
+      setTimeout(() => onOpen(), 1600);
+    } else {
+      // Clásicos
+      setTimeout(() => onOpen(), type === 'envelope' || type === 'chest' ? 1200 : 1500);
+    }
   };
 
   const renderContent = () => {
@@ -351,7 +457,6 @@ export const OpeningAnimation = ({ cfg, onOpen }) => {
         return (
           <div className="relative z-10 cursor-pointer group flex flex-col items-center">
             <div className={`relative w-[280px] h-[180px] rounded-lg shadow-2xl transition-all duration-700 ease-in-out ${opening ? '-translate-y-20 opacity-0' : 'animate-float'}`} style={{ backgroundColor: cfg?.card || th.card }}>
-              {/* Solapas del sobre */}
               <div className={`absolute top-0 left-0 w-full h-full border-[0px] border-t-[90px] border-l-[140px] border-r-[140px] border-b-[90px] border-transparent opacity-30 ${opening ? 'animate-envelope-open' : ''}`} style={{ borderTopColor: primary }} />
               <div className="absolute bottom-0 left-0 w-full h-full border-[0px] border-b-[90px] border-l-[140px] border-r-[140px] border-t-[90px] border-transparent opacity-10" style={{ borderBottomColor: '#ffffff' }} />
               {!opening && (
@@ -368,29 +473,13 @@ export const OpeningAnimation = ({ cfg, onOpen }) => {
         return (
           <div className="relative z-10 cursor-pointer group flex flex-col items-center">
             <div className="relative w-[200px] h-[160px]">
-               {/* Base del baúl */}
                <div className="absolute bottom-0 w-full h-[100px] rounded-b-xl shadow-2xl" style={{ backgroundColor: '#854d0e', border: '4px solid #ca8a04' }}>
                   <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-yellow-400 border-2 border-yellow-600 flex items-center justify-center"><Key size={14} className="text-yellow-800"/></div>
                </div>
-               {/* Tapa del baúl */}
                <div className={`absolute top-0 w-full h-[60px] rounded-t-3xl ${opening ? 'animate-chest-open' : ''}`} style={{ backgroundColor: '#a16207', border: '4px solid #ca8a04' }} />
-               {/* Destellos mágicos salen al abrir */}
                {opening && <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-5xl">✨✨✨</div>}
             </div>
             <p className="mt-8 text-white text-xs font-black tracking-[0.3em] uppercase opacity-70 animate-pulse">Tocar para abrir</p>
-          </div>
-        );
-
-      case "soccer":
-        return (
-          <div className="relative z-10 cursor-pointer flex flex-col items-center w-full h-full justify-center overflow-hidden">
-            {/* Césped */}
-            <div className="absolute bottom-0 w-full h-1/3 bg-green-600 border-t-4 border-white opacity-40" />
-            <div className="relative w-full max-w-[300px] h-[200px] border-4 border-white border-b-0 flex items-end justify-center">
-              <div className="w-full h-full opacity-20" style={{ background: 'repeating-linear-gradient(90deg, transparent, transparent 20px, white 20px, white 24px), repeating-linear-gradient(0deg, transparent, transparent 20px, white 20px, white 24px)' }}/>
-            </div>
-            <div className={`absolute bottom-10 text-6xl ${opening ? 'animate-shoot' : 'animate-bounce'}`}>⚽</div>
-            {!opening && <p className="absolute bottom-32 text-white text-xs font-black tracking-[0.3em] uppercase opacity-90 bg-black/50 px-4 py-2 rounded-full">Tocar para patear</p>}
           </div>
         );
 
@@ -404,11 +493,27 @@ export const OpeningAnimation = ({ cfg, onOpen }) => {
           </div>
         );
 
+      case "soccer":
+        return (
+          <div className="relative z-10 flex flex-col items-center w-full h-full justify-center overflow-visible">
+            {phase >= 2 && <Confetti trigger={true} />}
+            <div className="absolute bottom-0 w-full h-[250px] bg-green-600 border-t-4 border-white opacity-40 pointer-events-none" />
+            <div className="relative w-full max-w-[300px] h-[200px] border-4 border-white border-b-0 flex items-end justify-center pointer-events-none mb-10">
+              <div className="w-full h-full opacity-20" style={{ background: 'repeating-linear-gradient(90deg, transparent, transparent 20px, white 20px, white 24px), repeating-linear-gradient(0deg, transparent, transparent 20px, white 20px, white 24px)' }}/>
+            </div>
+            <div className={`absolute bottom-32 text-7xl z-20 ${opening ? 'animate-shoot' : 'animate-bounce cursor-pointer hover:scale-110 transition-transform'}`}>⚽</div>
+            {phase >= 1 && <div className="text-6xl absolute top-[250px] animate-ping z-30">💥</div>}
+            {!opening && <p className="absolute bottom-16 text-white text-xs font-black tracking-[0.3em] uppercase opacity-90 bg-black/50 px-4 py-2 rounded-full cursor-pointer">Tocar para patear</p>}
+          </div>
+        );
+
       case "gift":
         return (
           <div className="relative z-10 cursor-pointer group flex flex-col items-center">
-             <div className={`text-9xl ${opening ? 'animate-explode' : 'animate-bounce'}`}>🎁</div>
-             {!opening && <p className="mt-8 text-white text-xs font-black tracking-[0.3em] uppercase opacity-70 animate-pulse">Tocar para descubrir</p>}
+            {phase >= 2 && <Confetti trigger={true} />}
+            <div className={`text-9xl transition-all duration-700 ${opening ? 'scale-0 rotate-[720deg] opacity-0' : 'animate-bounce'}`}>🎁</div>
+            {phase >= 1 && <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-white rounded-full blur-2xl opacity-70 animate-ping pointer-events-none" />}
+            {!opening && <p className="mt-8 text-white text-xs font-black tracking-[0.3em] uppercase opacity-70 animate-pulse">Tocar para descubrir</p>}
           </div>
         );
 
@@ -417,7 +522,7 @@ export const OpeningAnimation = ({ cfg, onOpen }) => {
   };
 
   return (
-    <div className={`fixed inset-0 z-[100] flex flex-col items-center justify-center transition-all duration-1000 ${opening ? 'opacity-0 pointer-events-none' : 'opacity-100 bg-slate-900'}`}>
+    <div className={`fixed inset-0 z-[100] flex flex-col items-center justify-center transition-all duration-1000 ${opening && (type==='envelope'||type==='chest'||type==='musicbox') ? 'opacity-0 pointer-events-none' : 'opacity-100 bg-slate-900'} ${opening && (type==='gift'||type==='soccer') && phase>=2 ? 'opacity-0 bg-black pointer-events-none' : ''}`}>
       <div className="absolute inset-0 opacity-40" style={{ background: `linear-gradient(135deg, ${cfg?.bg1 || th.bg1}, ${cfg?.bg2 || th.bg2})` }} />
       <div onClick={handleOpen} className="w-full h-full flex items-center justify-center">
          {renderContent()}
@@ -425,6 +530,7 @@ export const OpeningAnimation = ({ cfg, onOpen }) => {
     </div>
   );
 };
+
 
 /* ============================================================================
    VISTA PREVIA DE LA INVITACIÓN
@@ -461,6 +567,7 @@ export const InvitePreview = ({ cfg }) => {
       <div className="relative h-[420px] overflow-hidden">
         <img src={cfg.coverPhoto || DEF_CONFIG.coverPhoto} className="w-full h-full object-cover" alt="Cover" />
         <div className="absolute inset-0" style={{ background: `linear-gradient(to top, ${cfg.bg1 || th.bg1} 5%, rgba(0,0,0,${gradOpacity}) 60%, transparent 100%)` }} />
+        
         <div className="absolute bottom-0 left-0 right-0 p-8 text-center z-30">
           <p className="font-black uppercase tracking-[0.2em] mb-4 flex items-center justify-center gap-2" style={{ color: cfg.eventTypeColor || primary, fontSize: `${cfg.eventTypeSize ?? 11}px`, fontFamily: cfg.eventTypeFont || cfg.fontBody }}>
             {cfg.eventTypeEmoji} {cfg.eventType}
@@ -600,7 +707,7 @@ export const InvitePreview = ({ cfg }) => {
 };
 
 /* ============================================================================
-   EDITOR PRINCIPAL (EL PANEL QUE USA EL SALÓN)
+   EDITOR PRINCIPAL (PANEL DE HERRAMIENTAS)
 ============================================================================ */
 export const EditorScreen = ({ invitations, onSave }) => {
   const { id } = useParams();
@@ -689,7 +796,11 @@ export const EditorScreen = ({ invitations, onSave }) => {
             </div>
 
             <div className="mb-2 border-t border-gray-100 pt-4">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-left">Efecto Animado</label>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-left">Efectos y Animaciones</label>
+              
+              <SelectInp label="Animación de Entrada (Al abrir el link)" value={cfg.openingAnimation || "envelope"} options={OPENING_ANIMATIONS.map(a => ({label: a.name, value: a.id}))} onChange={v => update("openingAnimation", v)} className="mb-4" />
+
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-left">Partículas de Fondo</label>
               <div className="grid grid-cols-2 gap-2">
                 {EFFECTS.map(eff => (
                   <button key={eff.id} type="button" onClick={() => update("particleEffect", eff.id)} className={`p-2.5 rounded-xl border text-left text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${cfg.particleEffect === eff.id ? 'border-violet-400 bg-violet-50 text-violet-700' : 'border-gray-200 bg-white text-slate-600 hover:border-violet-200'}`}>
@@ -697,10 +808,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
                   </button>
                 ))}
               </div>
-            </div>
-
-            <div className="mb-2 border-t border-gray-100 pt-4">
-              <SelectInp label="Animación de Entrada (Al abrir el link)" value={cfg.openingAnimation || "envelope"} options={OPENING_ANIMATIONS.map(a => ({label: a.name, value: a.id}))} onChange={v => update("openingAnimation", v)} />
             </div>
           </Acc>
 
