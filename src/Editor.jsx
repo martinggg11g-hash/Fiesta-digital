@@ -55,19 +55,9 @@ export const EFFECTS = [
 ];
 
 export const DEF_CONFIG = {
-  theme:"violet", 
-  
-  // Fuentes Globales por defecto
-  fontTitle:"'Pacifico', cursive", 
-  fontBody:"'DM Sans', sans-serif",
-  
-  // Colores y Fuentes Específicas
-  honoreeSize: 48, honoreeColor: "#f0ecff", honoreeFont: "'Pacifico', cursive",
-  eventTypeSize: 11, eventTypeColor: "#7c3aed", eventTypeFont: "'DM Sans', sans-serif",
-
-  // Paleta editable
+  theme:"violet", fontTitle:"'Pacifico', cursive", fontBody:"'DM Sans', sans-serif",
+  honoreeSize: 48, eventTypeSize: 11,
   bg1:"#08060f", bg2:"#120d24", primary:"#7c3aed", card:"#1a1035", text:"#f0ecff", muted:"#9b8ec4",
-  
   coverGradientIntensity: 70, particleEffect: "none",
   eventTypeEmoji:"✨", eventType:"Estás invitado al cumple de", honoreeName:"Valentina", badgeEmoji:"🎂", badgeText:"5 añitos",
   coverPhoto:"https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=800&q=80",
@@ -86,7 +76,7 @@ export const DEF_CONFIG = {
 };
 
 /* ============================================================================
-   MICRO COMPONENTES DE UI INTERNOS
+   MICRO COMPONENTES DE UI DEL EDITOR
 ============================================================================ */
 const Inp = ({ label, value, onChange, placeholder, type="text", multiline = false, className="" }) => (
   <div className={`mb-4 text-left ${className}`}>
@@ -100,7 +90,7 @@ const Inp = ({ label, value, onChange, placeholder, type="text", multiline = fal
 );
 
 const SelectInp = ({ label, value, onChange, options, className="" }) => (
-  <div className={`text-left ${className}`}>
+  <div className={`mb-4 text-left ${className}`}>
     {label && <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{label}</label>}
     <select value={value || ""} onChange={e => onChange(e.target.value)} className="w-full px-4 py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all cursor-pointer">
       {options.map((opt, i) => <option key={i} value={opt.value}>{opt.label}</option>)}
@@ -358,35 +348,8 @@ const VideoSection = ({ cfg, primary, text, muted, card }) => {
   );
 };
 
-export const Envelope = ({ cfg, onOpen }) => {
-  const [opening, setOpening] = useState(false);
-  const th = THEMES.find(t => t.id === cfg?.theme) || THEMES[0];
-  const primary = cfg?.primary || th.primary;
-
-  const openEnvelope = () => {
-    setOpening(true);
-    setTimeout(() => onOpen(), 1000);
-  };
-
-  return (
-    <div className={`fixed inset-0 z-[100] flex flex-col items-center justify-center transition-all duration-1000 ${opening ? 'opacity-0 scale-110 pointer-events-none' : 'opacity-100 bg-slate-900'}`}>
-      <div className="absolute inset-0 opacity-40" style={{ background: `linear-gradient(135deg, ${cfg?.bg1 || th.bg1}, ${cfg?.bg2 || th.bg2})` }} />
-      <div onClick={openEnvelope} className="relative z-10 cursor-pointer group flex flex-col items-center">
-        <div className={`relative w-[280px] h-[180px] rounded-lg shadow-2xl transition-all duration-700 ease-in-out ${opening ? '-translate-y-20 opacity-0' : 'group-hover:-translate-y-2'}`} style={{ backgroundColor: cfg?.card || th.card }}>
-          <div className="absolute top-0 left-0 w-full h-full border-[0px] border-t-[90px] border-l-[140px] border-r-[140px] border-b-[90px] border-transparent opacity-20 pointer-events-none" style={{ borderTopColor: primary }} />
-          <div className="absolute bottom-0 left-0 w-full h-full border-[0px] border-b-[90px] border-l-[140px] border-r-[140px] border-t-[90px] border-transparent opacity-10 pointer-events-none" style={{ borderBottomColor: '#ffffff' }} />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full shadow-xl flex items-center justify-center text-2xl text-white transition-transform group-hover:scale-110" style={{ backgroundColor: primary, border: '2px solid rgba(255,255,255,0.2)' }}>
-            {cfg?.badgeEmoji || "💌"}
-          </div>
-        </div>
-        <p className="mt-8 text-white text-xs font-black tracking-[0.3em] uppercase opacity-70 animate-pulse">Tocar para abrir</p>
-      </div>
-    </div>
-  );
-};
-
 /* ============================================================================
-   VISTA PREVIA DE LA INVITACIÓN
+   VISTA PREVIA DE LA INVITACIÓN (USADA EN EDITOR Y PÚBLICA)
 ============================================================================ */
 export const InvitePreview = ({ cfg }) => {
   if (!cfg) return null;
@@ -420,12 +383,18 @@ export const InvitePreview = ({ cfg }) => {
       <div className="relative h-[420px] overflow-hidden">
         <img src={cfg.coverPhoto || DEF_CONFIG.coverPhoto} className="w-full h-full object-cover" alt="Cover" />
         <div className="absolute inset-0" style={{ background: `linear-gradient(to top, ${cfg.bg1 || th.bg1} 5%, rgba(0,0,0,${gradOpacity}) 60%, transparent 100%)` }} />
-        <div className="absolute bottom-0 left-0 right-0 p-8 text-center relative z-30">
+        
+        {/* CORRECCIÓN: 'absolute bottom-0' fijo y seguro para los textos de portada */}
+        <div className="absolute bottom-0 left-0 right-0 p-8 text-center z-30">
           <p className="font-black uppercase tracking-[0.2em] mb-4 flex items-center justify-center gap-2" style={{ color: cfg.eventTypeColor || primary, fontSize: `${cfg.eventTypeSize ?? 11}px`, fontFamily: cfg.eventTypeFont || cfg.fontBody }}>
             {cfg.eventTypeEmoji} {cfg.eventType}
           </p>
-          <h1 style={{ fontFamily: cfg.honoreeFont || cfg.fontTitle, color: cfg.honoreeColor || textC, fontSize: `${cfg.honoreeSize ?? 48}px` }} className="leading-tight mb-4">{cfg.honoreeName}</h1>
-          <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-white/10 backdrop-blur-md bg-black/30 font-black text-sm" style={{ color: textC }}>{cfg.badgeEmoji} {cfg.badgeText}</span>
+          <h1 style={{ fontFamily: cfg.honoreeFont || cfg.fontTitle, color: cfg.honoreeColor || textC, fontSize: `${cfg.honoreeSize ?? 48}px` }} className="leading-tight mb-4">
+            {cfg.honoreeName}
+          </h1>
+          <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-white/10 backdrop-blur-md bg-black/30 font-black text-sm" style={{ color: textC }}>
+            {cfg.badgeEmoji} {cfg.badgeText}
+          </span>
         </div>
       </div>
 
@@ -741,7 +710,7 @@ export const EditorScreen = ({ invitations, onSave }) => {
             {cfg.showVideo && (
               <>
                 <Inp label="Título del video" value={cfg.videoTitle || ""} onChange={v => update("videoTitle", v)} placeholder="Ej: Un mensaje especial 💖" />
-                <Inp label="Enlace de YouTube" value={cfg.videoUrl || ""} onChange={v => update("videoUrl", v)} placeholder="Ej: https://youtu.be/..." />
+                <Inp label="Enlace de YouTube" value={cfg.videoUrl || ""} onChange={v => update("videoUrl", v)} placeholder="Ej: https://www.youtube.com/watch?v=..." />
                 <p className="text-[10px] text-violet-500 font-bold mt-1 bg-violet-50 p-2 rounded-lg">🎬 Pegá cualquier link de YouTube. Se reproducirá directamente dentro de la invitación sin que el usuario tenga que salir de la página.</p>
               </>
             )}
