@@ -122,11 +122,11 @@ const EmojiPicker = ({ value, onSelect }) => {
   useEffect(() => { const fn = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }; document.addEventListener("mousedown", fn); return () => document.removeEventListener("mousedown", fn); }, []);
   return (
     <div ref={ref} className="relative">
-      <button onClick={() => setOpen(!open)} className="w-12 h-12 rounded-xl bg-gray-50 border border-gray-200 text-2xl flex items-center justify-center hover:bg-gray-100 transition-colors focus:outline-none">{value}</button>
+      <button onClick={() => setOpen(!open)} type="button" className="w-12 h-12 rounded-xl bg-gray-50 border border-gray-200 text-2xl flex items-center justify-center hover:bg-gray-100 transition-colors focus:outline-none">{value}</button>
       {open && (
         <div className="absolute top-14 left-0 z-50 bg-white border border-gray-200 rounded-2xl p-3 w-64 shadow-2xl">
           <div className="grid grid-cols-6 gap-1 max-h-48 overflow-y-auto fd-sb">
-            {EMOJIS.map(e => <button key={e} onClick={() => { onSelect(e); setOpen(false); }} className="p-2 text-xl hover:bg-gray-100 rounded-lg">{e}</button>)}
+            {EMOJIS.map(e => <button key={e} type="button" onClick={() => { onSelect(e); setOpen(false); }} className="p-2 text-xl hover:bg-gray-100 rounded-lg">{e}</button>)}
           </div>
         </div>
       )}
@@ -138,7 +138,7 @@ const Acc = ({ title, icon: Icon, children, defaultOpen = false, iconColor = "#7
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="mb-3 rounded-2xl border border-gray-100 bg-white overflow-hidden shadow-sm">
-      <button onClick={() => setOpen(!open)} className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors text-left">
+      <button onClick={() => setOpen(!open)} type="button" className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors text-left">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${iconColor}15` }}>
             <Icon size={18} style={{ color: iconColor }} />
@@ -536,8 +536,8 @@ const DashboardScreen = ({ user, onLogout }) => {
             <h2 className="text-xl font-black text-slate-900 font-['Syne'] mb-2">¿Eliminar invitación?</h2>
             <p className="text-sm text-slate-500 mb-8">Esta acción no se puede deshacer y el link dejará de funcionar.</p>
             <div className="flex gap-3">
-              <button onClick={() => setInvToDelete(null)} className="flex-1 py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold cursor-pointer hover:bg-gray-200">Cancelar</button>
-              <button onClick={async () => { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'invitations', invToDelete)); setInvToDelete(null); }} className="flex-1 py-4 bg-red-500 text-white rounded-2xl font-bold cursor-pointer hover:bg-red-600 shadow-lg shadow-red-500/30">Eliminar</button>
+              <button onClick={() => setInvToDelete(null)} type="button" className="flex-1 py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold cursor-pointer hover:bg-gray-200">Cancelar</button>
+              <button onClick={async () => { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'invitations', invToDelete)); setInvToDelete(null); }} type="button" className="flex-1 py-4 bg-red-500 text-white rounded-2xl font-bold cursor-pointer hover:bg-red-600 shadow-lg shadow-red-500/30">Eliminar</button>
             </div>
           </div>
         </div>
@@ -681,7 +681,7 @@ const EditorScreen = () => {
                         <input className="flex-1 p-2 bg-gray-50 rounded-lg text-xs font-bold border border-gray-100 outline-none focus:border-violet-300" value={item.title || ""} onChange={e => {
                           const n = [...inv.config.itinerary]; n[i].title = e.target.value; update("itinerary", n);
                         }} />
-                        <button onClick={() => update("itinerary", inv.config.itinerary.filter((_, idx) => idx !== i))} className="text-red-400 p-2 hover:bg-red-50 rounded-lg cursor-pointer"><Trash2 size={14}/></button>
+                        <button onClick={() => update("itinerary", inv.config.itinerary.filter((_, idx) => idx !== i))} type="button" className="text-red-400 p-2 hover:bg-red-50 rounded-lg cursor-pointer"><Trash2 size={14}/></button>
                       </div>
                       <input className="w-full p-2 bg-gray-50 rounded-lg text-xs border border-gray-100 outline-none focus:border-violet-300" value={item.sub || ""} placeholder="Descripción (opcional)" onChange={e => {
                         const n = [...inv.config.itinerary]; n[i].sub = e.target.value; update("itinerary", n);
@@ -689,7 +689,7 @@ const EditorScreen = () => {
                     </div>
                   ))}
                 </div>
-                <button onClick={() => update("itinerary", [...(inv.config.itinerary || []), { time: "16:00", title: "Evento", sub: "" }])} className="w-full py-3 bg-white border-2 border-dashed border-gray-200 rounded-xl text-xs font-bold text-slate-400 hover:border-violet-300 hover:text-violet-600 transition-all cursor-pointer">+ AGREGAR EVENTO</button>
+                <button onClick={() => update("itinerary", [...(inv.config.itinerary || []), { time: "16:00", title: "Evento", sub: "" }])} type="button" className="w-full py-3 bg-white border-2 border-dashed border-gray-200 rounded-xl text-xs font-bold text-slate-400 hover:border-violet-300 hover:text-violet-600 transition-all cursor-pointer">+ AGREGAR EVENTO</button>
               </>
             )}
           </Acc>
@@ -708,11 +708,11 @@ const EditorScreen = () => {
                       <input className="flex-1 p-2 bg-gray-50 rounded-lg text-xs font-bold border border-gray-100 outline-none focus:border-violet-300" value={item.label || ""} placeholder="Nombre comida" onChange={e => {
                         const n = [...inv.config.menuItems]; n[i].label = e.target.value; update("menuItems", n);
                       }} />
-                      <button onClick={() => update("menuItems", inv.config.menuItems.filter((_, idx) => idx !== i))} className="text-red-400 p-3 hover:bg-red-50 rounded-lg cursor-pointer"><Trash2 size={14}/></button>
+                      <button onClick={() => update("menuItems", inv.config.menuItems.filter((_, idx) => idx !== i))} type="button" className="text-red-400 p-3 hover:bg-red-50 rounded-lg cursor-pointer"><Trash2 size={14}/></button>
                     </div>
                   ))}
                 </div>
-                <button onClick={() => update("menuItems", [...(inv.config.menuItems || []), { emoji: "🍕", label: "Opción" }])} className="w-full py-3 bg-white border-2 border-dashed border-gray-200 rounded-xl text-xs font-bold text-slate-400 hover:border-violet-300 hover:text-violet-600 transition-all cursor-pointer">+ AGREGAR COMIDA</button>
+                <button onClick={() => update("menuItems", [...(inv.config.menuItems || []), { emoji: "🍕", label: "Opción" }])} type="button" className="w-full py-3 bg-white border-2 border-dashed border-gray-200 rounded-xl text-xs font-bold text-slate-400 hover:border-violet-300 hover:text-violet-600 transition-all cursor-pointer">+ AGREGAR COMIDA</button>
               </>
             )}
           </Acc>
@@ -765,11 +765,11 @@ const EditorScreen = () => {
                        <input className="flex-1 p-3 bg-white border border-gray-200 rounded-xl text-xs outline-none focus:border-violet-400" value={p || ""} onChange={e => {
                          const n = [...inv.config.galleryPhotos]; n[i] = e.target.value; update("galleryPhotos", n);
                        }} placeholder="URL de la imagen" />
-                       <button onClick={() => update("galleryPhotos", inv.config.galleryPhotos.filter((_, idx) => idx !== i))} className="p-3 text-red-400 bg-white border border-gray-200 rounded-xl hover:bg-red-50 cursor-pointer"><Trash2 size={16}/></button>
+                       <button onClick={() => update("galleryPhotos", inv.config.galleryPhotos.filter((_, idx) => idx !== i))} type="button" className="p-3 text-red-400 bg-white border border-gray-200 rounded-xl hover:bg-red-50 cursor-pointer"><Trash2 size={16}/></button>
                      </div>
                    ))}
                  </div>
-                 <button onClick={() => update("galleryPhotos", [...(inv.config.galleryPhotos || []), ""])} className="w-full py-3 bg-white border-2 border-dashed border-gray-200 rounded-xl text-xs font-bold text-slate-400 hover:border-violet-300 hover:text-violet-600 transition-all cursor-pointer">+ AÑADIR IMAGEN (URL)</button>
+                 <button onClick={() => update("galleryPhotos", [...(inv.config.galleryPhotos || []), ""])} type="button" className="w-full py-3 bg-white border-2 border-dashed border-gray-200 rounded-xl text-xs font-bold text-slate-400 hover:border-violet-300 hover:text-violet-600 transition-all cursor-pointer">+ AÑADIR IMAGEN (URL)</button>
                </>
              )}
           </Acc>
