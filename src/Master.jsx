@@ -2,14 +2,14 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   PartyPopper, ShieldCheck, AlertCircle, Loader2,
-  LogOut, UserPlus, Plus, Users, Trash2, Edit2, Copy, X, CheckCircle2, Key, Info, BellRing, Lock
+  LogOut, UserPlus, Plus, Users, Trash2, Edit2, Copy, X, CheckCircle2, Key, Info, BellRing, Lock, DollarSign
 } from "lucide-react";
 
 // Función auxiliar
 const slugify = (text) => text?.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') || 'salon';
 
 /* ============================================================================
-   MICRO COMPONENTES UI (Se usan en el panel)
+   MICRO COMPONENTES UI
 ============================================================================ */
 export const Toast = ({ msg }) => (
   <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[999] bg-slate-900 text-white px-6 py-3 rounded-full font-bold text-sm flex items-center gap-3 shadow-2xl border border-white/10">
@@ -29,7 +29,7 @@ export const Inp = ({ label, value, onChange, placeholder, type="text", multilin
 );
 
 /* ============================================================================
-   1. LOGIN SCREEN
+   LOGIN SCREEN
 ============================================================================ */
 export const LoginScreen = ({ isMaster = false, onLogin, users }) => {
   const [email, setEmail] = useState("");
@@ -42,23 +42,16 @@ export const LoginScreen = ({ isMaster = false, onLogin, users }) => {
     e.preventDefault();
     setLoading(true);
     setError("");
-    
     setTimeout(() => {
       if (isMaster && email === "owner@fiestadigital.com" && pass === "owner123") {
         onLogin({ name: "Oswaldo Master", role: "owner", email });
         navigate("/dashboard");
         return;
       }
-
       const found = users.find(u => u.email === email && u.pass === pass);
-      if (found) {
-        onLogin(found);
-        navigate("/dashboard");
-      } else if (!isMaster) {
-        setError("Credenciales no válidas.");
-      } else {
-        setError("Acceso maestro denegado.");
-      }
+      if (found) { onLogin(found); navigate("/dashboard"); } 
+      else if (!isMaster) setError("Credenciales no válidas."); 
+      else setError("Acceso maestro denegado.");
       setLoading(false);
     }, 500);
   };
@@ -75,11 +68,7 @@ export const LoginScreen = ({ isMaster = false, onLogin, users }) => {
         </div>
         <div className="p-10 rounded-[2.5rem]" style={{ background: "rgba(255, 255, 255, 0.03)", backdropFilter: "blur(12px)", border: "1px solid rgba(255, 255, 255, 0.1)" }}>
           <form onSubmit={handleAuth} className="space-y-2">
-            {error && (
-              <div className="p-4 mb-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm font-bold flex items-center gap-3">
-                <AlertCircle size={16} /> {error}
-              </div>
-            )}
+            {error && <div className="p-4 mb-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm font-bold flex items-center gap-3"><AlertCircle size={16} /> {error}</div>}
             <Inp label={isMaster ? "Email Maestro" : "Email de Salón"} value={email} onChange={setEmail} placeholder={isMaster ? "owner@..." : "admin@admin.com"} />
             <Inp label="Clave" type="password" value={pass} onChange={setPass} placeholder="••••••" />
             <button disabled={loading} className="w-full py-4 mt-2 bg-violet-600 hover:bg-violet-500 text-white rounded-2xl font-black text-sm transition-all shadow-xl shadow-violet-900/40 flex items-center justify-center gap-2 cursor-pointer">
@@ -93,7 +82,7 @@ export const LoginScreen = ({ isMaster = false, onLogin, users }) => {
 };
 
 /* ============================================================================
-   2. DASHBOARD SCREEN
+   DASHBOARD SCREEN
 ============================================================================ */
 export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateSalon, invitations, onCreateInv, onDeleteInv, onUpdateInternal }) => {
   const [showSalonModal, setShowSalonModal] = useState(false);
@@ -107,11 +96,7 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
 
   const navigate = useNavigate();
 
-  // Seguridad
-  if (!user) {
-    setTimeout(() => navigate("/"), 0);
-    return null;
-  }
+  if (!user) { setTimeout(() => navigate("/"), 0); return null; }
 
   const isOwner = user.role === "owner";
   const myInvs = isOwner ? invitations : invitations.filter(i => i.salonId === user.email);
@@ -119,64 +104,17 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
 
   const notify = (m) => { setToast(m); setTimeout(() => setToast(""), 2500); };
 
-  // ---- MASTER ACTIONS ----
   const handleCreateSalon = (e) => {
     e.preventDefault();
     if (!newSalon.name || !newSalon.email || !newSalon.pass) return notify("Completá campos obligatorios.");
-    onCreateSalon({ 
-      ...newSalon, 
-      role: "salon", 
-      createdAt: new Date().toLocaleDateString(), 
-      paymentAlert: false 
-    });
-    setShowSalonModal(false); 
-    setNewSalon({ name:"", email:"", pass:"", paymentMethod:"", phone:"" });
+    onCreateSalon({ ...newSalon, role: "salon", createdAt: new Date().toLocaleDateString(), paymentAlert: false });
+    setShowSalonModal(false); setNewSalon({ name:"", email:"", pass:"", paymentMethod:"", phone:"" });
     notify("Salón creado con éxito.");
-  };
-
-  const toggleAlert = (u) => {
-    onUpdateUser(u.email, { paymentAlert: !u.paymentAlert });
-    notify(u.paymentAlert ? "Alerta quitada" : "Alerta de pago enviada");
-  };
-
-  const resetPass = (u) => {
-    if(window.confirm(`¿Restablecer contraseña de ${u.name} a 'admin'?`)) {
-      onUpdateUser(u.email, { pass: "admin" });
-      notify("Contraseña restablecida");
-    }
-  };
-
-  const saveSalonInfo = (e) => {
-    e.preventDefault();
-    onUpdateUser(showInfoModal.email, { paymentMethod: showInfoModal.paymentMethod, phone: showInfoModal.phone });
-    setShowInfoModal(null);
-    notify("Información guardada");
-  };
-
-  // ---- SALON ACTIONS ----
-  const handlePassChange = (e) => {
-    e.preventDefault();
-    if(!newPass) return;
-    onUpdateUser(user.email, { pass: newPass });
-    setShowPassModal(false); 
-    setNewPass("");
-    notify("Contraseña actualizada");
-  };
-
-  const handleCreateInv = () => {
-    const newId = onCreateInv(user.email, user.name);
-    navigate(`/editor/${newId}`);
   };
 
   const copy = id => {
     const url = `${window.location.origin}/i/${slugify(user.name)}/${id}`;
-    const el = document.createElement('textarea'); 
-    el.value = url; 
-    document.body.appendChild(el); 
-    el.select(); 
-    document.execCommand('copy'); 
-    document.body.removeChild(el);
-    notify("¡Link copiado!");
+    const el = document.createElement('textarea'); el.value = url; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); notify("¡Link copiado!");
   };
 
   const amIAlerted = !isOwner && users.find(u => u.email === user.email)?.paymentAlert;
@@ -207,13 +145,12 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
             <h1 className="text-4xl font-black text-slate-900 tracking-tight" style={{ fontFamily: "'Syne', sans-serif" }}>{isOwner ? "Panel Maestro" : "Mis Eventos"}</h1>
             <p className="text-slate-400 mt-2">{isOwner ? `Gestionando ${salonUsers.length} socios activos` : `Tenés ${myInvs.length} invitaciones creadas`}</p>
           </div>
-          <button onClick={isOwner ? () => setShowSalonModal(true) : handleCreateInv} className="px-8 py-4 bg-violet-600 text-white rounded-[1.5rem] font-black text-sm shadow-2xl shadow-violet-200 hover:scale-105 transition-all flex items-center gap-3 cursor-pointer">
+          <button onClick={isOwner ? () => setShowSalonModal(true) : () => { const id = onCreateInv(user.email, user.name); navigate(`/editor/${id}`); }} className="px-8 py-4 bg-violet-600 text-white rounded-[1.5rem] font-black text-sm shadow-2xl shadow-violet-200 hover:scale-105 transition-all flex items-center gap-3 cursor-pointer">
             {isOwner ? <UserPlus size={20}/> : <Plus size={20}/>} {isOwner ? "Nuevo Salón" : "Crear Invitación"}
           </button>
         </div>
 
         {isOwner ? (
-          /* ================= VISTA DUEÑO ================= */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {salonUsers.map(s => (
               <div key={s.email} className={`bg-white p-8 rounded-[2.5rem] border ${s.paymentAlert ? 'border-red-200 shadow-red-100' : 'border-gray-100'} shadow-sm hover:shadow-xl transition-all group text-left`}>
@@ -224,17 +161,15 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                 <h3 className="font-black text-xl text-slate-900 mb-1">{s.name}</h3>
                 <p className="text-xs text-slate-400 mb-1">{s.email}</p>
                 <p className="text-xs text-slate-400 mb-6">Alta: {s.createdAt || 'N/A'}</p>
-                
                 <div className="flex flex-wrap gap-2 pt-6 border-t border-gray-50">
                   <button onClick={() => setShowInfoModal(s)} className="px-3 py-2 bg-slate-50 text-slate-600 rounded-lg text-[10px] font-bold hover:bg-slate-100 flex-1 cursor-pointer"><Info size={14} className="mx-auto mb-1"/> Info</button>
-                  <button onClick={() => toggleAlert(s)} className={`px-3 py-2 rounded-lg text-[10px] font-bold flex-1 cursor-pointer ${s.paymentAlert ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-orange-50 text-orange-500 hover:bg-orange-100'}`}><BellRing size={14} className="mx-auto mb-1"/> Alerta</button>
-                  <button onClick={() => resetPass(s)} className="px-3 py-2 bg-slate-50 text-slate-600 rounded-lg text-[10px] font-bold hover:bg-slate-100 flex-1 cursor-pointer"><Key size={14} className="mx-auto mb-1"/> Reset</button>
+                  <button onClick={() => { onUpdateUser(s.email, { paymentAlert: !s.paymentAlert }); notify(s.paymentAlert ? "Alerta quitada" : "Alerta activada"); }} className={`px-3 py-2 rounded-lg text-[10px] font-bold flex-1 cursor-pointer ${s.paymentAlert ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-orange-50 text-orange-500 hover:bg-orange-100'}`}><BellRing size={14} className="mx-auto mb-1"/> Alerta</button>
+                  <button onClick={() => { if(window.confirm("¿Resetear a 'admin'?")) { onUpdateUser(s.email, {pass:"admin"}); notify("Reseteado"); } }} className="px-3 py-2 bg-slate-50 text-slate-600 rounded-lg text-[10px] font-bold hover:bg-slate-100 flex-1 cursor-pointer"><Key size={14} className="mx-auto mb-1"/> Reset</button>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          /* ================= VISTA SALÓN ================= */
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {myInvs.map(inv => (
               <div key={inv.id} className="bg-white rounded-[2.5rem] border border-gray-100 overflow-hidden shadow-sm hover:shadow-2xl transition-all group text-left relative flex flex-col">
@@ -251,13 +186,31 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                   </div>
                 </div>
                 
-                {/* Control Interno Exclusivo del Salón */}
+                {/* CONTROL INTERNO DEL SALÓN MEJORADO */}
                 <div className="bg-slate-50 p-5 border-t border-gray-100 mt-auto">
                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2"><Lock size={12}/> Control Interno</p>
+                   
+                   {/* Fecha en formato DD/MM/YYYY gracias al type="date" */}
                    <div className="flex gap-2 mb-2">
-                     <div className="flex-1"><Inp label="Fecha/Hora Real" type="datetime-local" value={inv.internalDate} onChange={v => onUpdateInternal(inv.id, 'internalDate', v)} className="!mb-0"/></div>
-                     <div className="w-24"><Inp label="Invitados" type="number" value={inv.internalGuests} onChange={v => onUpdateInternal(inv.id, 'internalGuests', v)} className="!mb-0"/></div>
+                     <div className="flex-1"><Inp label="Fecha (Día/Mes/Año)" type="date" value={inv.internalDate} onChange={v => onUpdateInternal(inv.id, 'internalDate', v)} className="!mb-0"/></div>
+                     <div className="w-24"><Inp label="Hora" type="time" value={inv.internalTime} onChange={v => onUpdateInternal(inv.id, 'internalTime', v)} className="!mb-0"/></div>
                    </div>
+                   
+                   {/* Botones de Pago */}
+                   <div className="mb-3 mt-3 border-t border-gray-200 pt-3">
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1"><DollarSign size={10}/> Estado de Pago</p>
+                      <div className="flex gap-1">
+                        <button onClick={() => onUpdateInternal(inv.id, 'paymentStatus', 'completo')} className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase transition-colors ${inv.paymentStatus === 'completo' ? 'bg-green-500 text-white shadow-md' : 'bg-gray-200 text-gray-500 hover:bg-gray-300'}`}>Completo</button>
+                        <button onClick={() => onUpdateInternal(inv.id, 'paymentStatus', 'parcial')} className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase transition-colors ${inv.paymentStatus === 'parcial' ? 'bg-orange-500 text-white shadow-md' : 'bg-gray-200 text-gray-500 hover:bg-gray-300'}`}>Parcial</button>
+                        <button onClick={() => onUpdateInternal(inv.id, 'paymentStatus', 'impago')} className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase transition-colors ${!inv.paymentStatus || inv.paymentStatus === 'impago' ? 'bg-red-500 text-white shadow-md' : 'bg-gray-200 text-gray-500 hover:bg-gray-300'}`}>Impago</button>
+                      </div>
+                      {inv.paymentStatus === 'parcial' && (
+                        <div className="mt-2 anim-pop">
+                          <Inp label="Monto abonado hasta ahora ($)" type="number" placeholder="Ej: 50000" value={inv.paymentAmount} onChange={v => onUpdateInternal(inv.id, 'paymentAmount', v)} className="!mb-0"/>
+                        </div>
+                      )}
+                   </div>
+
                    <Inp label="Aclaraciones del cliente" multiline value={inv.internalNotes} onChange={v => onUpdateInternal(inv.id, 'internalNotes', v)} className="!mb-0"/>
                 </div>
               </div>
@@ -266,10 +219,10 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
         )}
       </div>
 
-      {/* ================= MODALES ================= */}
+      {/* MODALES REUTILIZABLES */}
       {showSalonModal && (
         <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-md flex items-center justify-center p-6 z-[100]">
-          <div className="bg-white w-full max-w-md rounded-[3rem] p-10">
+          <div className="bg-white w-full max-w-md rounded-[3rem] p-10 anim-pop">
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-2xl font-black text-slate-900" style={{ fontFamily: "'Syne', sans-serif" }}>Nuevo Socio</h2>
               <button onClick={() => setShowSalonModal(false)} className="text-slate-300 hover:text-slate-600 cursor-pointer"><X size={24}/></button>
@@ -290,12 +243,12 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
 
       {showInfoModal && (
         <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-md flex items-center justify-center p-6 z-[100]">
-          <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-left">
+          <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-left anim-pop">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-black text-slate-900">Info: {showInfoModal.name}</h2>
               <button onClick={() => setShowInfoModal(null)} className="cursor-pointer"><X size={20}/></button>
             </div>
-            <form onSubmit={saveSalonInfo}>
+            <form onSubmit={(e) => { e.preventDefault(); onUpdateUser(showInfoModal.email, { paymentMethod: showInfoModal.paymentMethod, phone: showInfoModal.phone }); setShowInfoModal(null); notify("Guardado"); }}>
                <Inp label="Email" value={showInfoModal.email} onChange={()=>{}} className="opacity-50 pointer-events-none" />
                <Inp label="Teléfono Contacto" value={showInfoModal.phone} onChange={v => setShowInfoModal({...showInfoModal, phone:v})} />
                <Inp label="Método de Pago (Manual)" value={showInfoModal.paymentMethod} onChange={v => setShowInfoModal({...showInfoModal, paymentMethod:v})} />
@@ -307,9 +260,9 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
 
       {showPassModal && (
         <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-md flex items-center justify-center p-6 z-[100]">
-          <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-center">
+          <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-center anim-pop">
             <h2 className="text-xl font-black text-slate-900 mb-6">Cambiar Contraseña</h2>
-            <form onSubmit={handlePassChange}>
+            <form onSubmit={(e) => { e.preventDefault(); if(newPass){ onUpdateUser(user.email, { pass: newPass }); setShowPassModal(false); setNewPass(""); notify("Actualizada"); } }}>
                <Inp label="Nueva Contraseña" type="password" value={newPass} onChange={setNewPass} placeholder="••••••" />
                <div className="flex gap-3 mt-4">
                  <button onClick={() => setShowPassModal(false)} type="button" className="flex-1 py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold cursor-pointer hover:bg-gray-200">Cancelar</button>
@@ -322,7 +275,7 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
 
       {invToDelete && (
         <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-md flex items-center justify-center p-6 z-[100]">
-          <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-center">
+          <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-center anim-pop">
             <div className="w-16 h-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-6"><Trash2 size={24}/></div>
             <h2 className="text-xl font-black text-slate-900 mb-2" style={{ fontFamily: "'Syne', sans-serif" }}>¿Eliminar invitación?</h2>
             <p className="text-sm text-slate-500 mb-8">Esta acción no se puede deshacer y el link dejará de funcionar.</p>
