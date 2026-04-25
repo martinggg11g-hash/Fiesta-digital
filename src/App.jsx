@@ -1,37 +1,24 @@
 import React, { useState, useEffect, useRef } from "react";
 import { BrowserRouter as Router, Routes, Route, useNavigate, useParams, Navigate } from "react-router-dom";
-import { initializeApp } from "firebase/app";
-import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "firebase/auth";
-import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot, query, addDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import {
   MapPin, Clock, Calendar, Palette, CheckCircle2, PartyPopper,
-  ChevronDown, Plus, Upload, Type, LogOut, Edit2,
-  Copy, ExternalLink, ArrowLeft, Save, Mail, Lock, Key, X,
-  Sparkles, Star, Image as ImageIcon, Layout, List, Trash2, UserPlus, Users, Settings, ShieldCheck, Loader2, AlertCircle
+  ChevronDown, Plus, Type, LogOut, Edit2,
+  Copy, ArrowLeft, Save, X,
+  Star, Image as ImageIcon, Layout, List, Trash2, UserPlus, Users, ShieldCheck, AlertCircle, Loader2
 } from "lucide-react";
-
-/* ═══════════════════════════════════════════════════════════
-   CONFIGURACIÓN DE FIREBASE (ROBUSTA)
-═══════════════════════════════════════════════════════════ */
-const fallbackConfig = { apiKey: "demo", authDomain: "demo", projectId: "demo", storageBucket: "demo", messagingSenderId: "demo", appId: "1:0:web:0" };
-let firebaseConfig = fallbackConfig;
-try {
-  if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-    firebaseConfig = JSON.parse(__firebase_config);
-  }
-} catch (e) {
-  console.error("Configuración de Firebase inválida", e);
-}
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const appId = typeof __app_id !== 'undefined' && __app_id ? __app_id : 'fiesta-digital-v1';
 
 /* ═══════════════════════════════════════════════════════════
    ESTILOS Y CONSTANTES GLOBALES
 ═══════════════════════════════════════════════════════════ */
 (() => {
+  // Inyectamos Tailwind CSS para asegurar que los estilos carguen perfecto
+  if (!document.getElementById("tw-cdn")) {
+    const tw = document.createElement("script");
+    tw.id = "tw-cdn";
+    tw.src = "https://cdn.tailwindcss.com";
+    document.head.appendChild(tw);
+  }
+
   if (document.getElementById("fd-global")) return;
   const s = document.createElement("style");
   s.id = "fd-global";
@@ -122,11 +109,11 @@ const EmojiPicker = ({ value, onSelect }) => {
   useEffect(() => { const fn = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }; document.addEventListener("mousedown", fn); return () => document.removeEventListener("mousedown", fn); }, []);
   return (
     <div ref={ref} className="relative">
-      <button onClick={() => setOpen(!open)} type="button" className="w-12 h-12 rounded-xl bg-gray-50 border border-gray-200 text-2xl flex items-center justify-center hover:bg-gray-100 transition-colors focus:outline-none">{value}</button>
+      <button onClick={() => setOpen(!open)} type="button" className="w-12 h-12 rounded-xl bg-gray-50 border border-gray-200 text-2xl flex items-center justify-center hover:bg-gray-100 transition-colors focus:outline-none cursor-pointer">{value}</button>
       {open && (
         <div className="absolute top-14 left-0 z-50 bg-white border border-gray-200 rounded-2xl p-3 w-64 shadow-2xl">
           <div className="grid grid-cols-6 gap-1 max-h-48 overflow-y-auto fd-sb">
-            {EMOJIS.map(e => <button key={e} type="button" onClick={() => { onSelect(e); setOpen(false); }} className="p-2 text-xl hover:bg-gray-100 rounded-lg">{e}</button>)}
+            {EMOJIS.map(e => <button key={e} type="button" onClick={() => { onSelect(e); setOpen(false); }} className="p-2 text-xl hover:bg-gray-100 rounded-lg cursor-pointer">{e}</button>)}
           </div>
         </div>
       )}
@@ -138,7 +125,7 @@ const Acc = ({ title, icon: Icon, children, defaultOpen = false, iconColor = "#7
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="mb-3 rounded-2xl border border-gray-100 bg-white overflow-hidden shadow-sm">
-      <button onClick={() => setOpen(!open)} type="button" className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors text-left">
+      <button onClick={() => setOpen(!open)} type="button" className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors text-left cursor-pointer">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${iconColor}15` }}>
             <Icon size={18} style={{ color: iconColor }} />
@@ -222,7 +209,7 @@ const InvitePreview = ({ cfg }) => {
               </div>
             </div>
             {cfg.locationName && (
-               <iframe className="w-full h-40 border-none opacity-80" src={`https://www.google.com/maps?q=${encodeURIComponent(cfg.locationName + " " + cfg.locationAddress)}&output=embed`} title="map" />
+               <iframe className="w-full h-40 border-none opacity-80" src={`https://maps.google.com/maps?q=${encodeURIComponent(cfg.locationName + " " + cfg.locationAddress)}&t=&z=15&ie=UTF8&iwloc=&output=embed`} title="map" />
             )}
             {cfg.showParking && (
                <div className="p-3 text-center border-t border-white/5">
@@ -315,18 +302,16 @@ const InvitePreview = ({ cfg }) => {
 };
 
 /* ═══════════════════════════════════════════════════════════
-   PANTALLAS DE AUTENTICACIÓN
+   PANTALLAS DE AUTENTICACIÓN (EN MEMORIA LOCAL)
 ═══════════════════════════════════════════════════════════ */
-const LoginScreen = ({ isMaster = false, onLogin }) => {
+const LoginScreen = ({ isMaster = false, onLogin, users }) => {
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleAuth = async (e) => {
+  const handleAuth = (e) => {
     e.preventDefault();
-    setLoading(true);
     setError("");
     
     if (isMaster && email === "owner@fiestadigital.com" && pass === "owner123") {
@@ -335,24 +320,15 @@ const LoginScreen = ({ isMaster = false, onLogin }) => {
       return;
     }
 
-    const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'salones'));
-    onSnapshot(q, (snap) => {
-      const users = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      const found = users.find(u => u.email === email && u.pass === pass);
-      if (found) {
-        onLogin(found);
-        navigate("/dashboard");
-      } else if (!isMaster) {
-        setError("Credenciales no válidas.");
-      } else {
-        setError("Acceso maestro denegado.");
-      }
-      setLoading(false);
-    }, (err) => { 
-      console.error(err); 
-      setLoading(false); 
-      setError("Error conectando a la base de datos.");
-    });
+    const found = users.find(u => u.email === email && u.pass === pass);
+    if (found) {
+      onLogin(found);
+      navigate("/dashboard");
+    } else if (!isMaster) {
+      setError("Credenciales no válidas.");
+    } else {
+      setError("Acceso maestro denegado.");
+    }
   };
 
   return (
@@ -372,12 +348,19 @@ const LoginScreen = ({ isMaster = false, onLogin }) => {
                 <AlertCircle size={16} /> {error}
               </div>
             )}
-            <Inp label={isMaster ? "Email Maestro" : "Email de Salón"} value={email} onChange={setEmail} placeholder={isMaster ? "owner@..." : "admin@fiesta.com"} />
+            <Inp label={isMaster ? "Email Maestro" : "Email de Salón"} value={email} onChange={setEmail} placeholder={isMaster ? "owner@..." : "admin@admin.com"} />
             <Inp label="Clave" type="password" value={pass} onChange={setPass} placeholder="••••••" />
-            <button disabled={loading} className="w-full py-4 mt-2 bg-violet-600 hover:bg-violet-500 text-white rounded-2xl font-black text-sm transition-all shadow-xl shadow-violet-900/40 flex items-center justify-center gap-2 cursor-pointer">
-              {loading ? <Loader2 className="animate-spin" /> : "Ingresar al Sistema"}
+            <button className="w-full py-4 mt-2 bg-violet-600 hover:bg-violet-500 text-white rounded-2xl font-black text-sm transition-all shadow-xl shadow-violet-900/40 flex items-center justify-center gap-2 cursor-pointer">
+              Ingresar al Sistema
             </button>
           </form>
+          <div style={{ marginTop:24, padding:16, background:"rgba(255,255,255,0.05)", borderRadius:16, border:"1px solid rgba(255,255,255,0.1)", textAlign:"center", color:"#9b8ec4", fontSize:11 }}>
+            <p style={{ margin: "0 0 8px", fontWeight: 800, color: "#a78bfa", textTransform: "uppercase" }}>Credenciales Demo</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <p style={{ margin: 0 }}>🏠 Salón: <b>admin@admin.com</b> / <b>admin</b></p>
+              <p style={{ margin: 0 }}>👑 Dueño: <b>owner@fiestadigital.com</b> / <b>owner123</b></p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -387,57 +370,36 @@ const LoginScreen = ({ isMaster = false, onLogin }) => {
 /* ═══════════════════════════════════════════════════════════
    PANTALLA DASHBOARD (MASTER Y SALÓN)
 ═══════════════════════════════════════════════════════════ */
-const DashboardScreen = ({ user, onLogout }) => {
-  const [salones, setSalones] = useState([]);
-  const [invitations, setInvitations] = useState([]);
-  const [loading, setLoading] = useState(true);
+const DashboardScreen = ({ user, onLogout, users, onCreateSalon, invitations, onCreateInv, onDeleteInv }) => {
   const [showModal, setShowModal] = useState(false);
   const [toast, setToast] = useState("");
   const [invToDelete, setInvToDelete] = useState(null);
   const [newSalon, setNewSalon] = useState({ name: "", email: "", pass: "" });
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!user || !user.role) return;
-    const unsubS = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'salones'), (s) => setSalones(s.docs.map(d => ({id:d.id, ...d.data()}))), e => console.error(e));
-    const unsubI = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'invitations'), (s) => {
-      setInvitations(s.docs.map(d => {
-        const data = d.data();
-        return { id: d.id, ...data, config: data.config || DEF_CONFIG };
-      }));
-      setLoading(false);
-    }, e => console.error(e));
-    return () => { unsubS(); unsubI(); };
-  }, [user]);
-
-  if (!user || !user.role) return <Navigate to="/" />;
+  if (!user) return <Navigate to="/" />;
 
   const isOwner = user.role === "owner";
   const myInvs = isOwner ? invitations : invitations.filter(i => i.salonId === user.email);
+  const salonUsers = users.filter(u => u.role === "salon");
 
-  const handleCreateSalon = async (e) => {
+  const handleCreateSalon = (e) => {
     e.preventDefault();
     if (!newSalon.name || !newSalon.email || !newSalon.pass) {
       setToast("Completá todos los campos.");
       setTimeout(() => setToast(""), 2000);
       return;
     }
-    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'salones'), { ...newSalon, role: "salon", createdAt: new Date().toISOString() });
+    onCreateSalon({ ...newSalon, role: "salon" });
     setShowModal(false);
     setNewSalon({ name:"", email:"", pass:"" });
     setToast("Salón creado con éxito.");
     setTimeout(() => setToast(""), 2000);
   };
 
-  const handleCreateInv = async () => {
-    const docRef = await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'invitations'), {
-      salonId: user.email,
-      salonName: user.name,
-      title: "Nuevo Cumpleaños",
-      config: DEF_CONFIG,
-      createdAt: new Date().toISOString()
-    });
-    navigate(`/editor/${docRef.id}`);
+  const handleCreateInv = () => {
+    const newId = onCreateInv(user.email, user.name);
+    navigate(`/editor/${newId}`);
   };
 
   const copy = id => {
@@ -455,7 +417,7 @@ const DashboardScreen = ({ user, onLogout }) => {
             <p className="text-[11px] font-black text-slate-800">{user.name}</p>
             <p className="text-[9px] text-violet-500 font-black uppercase tracking-widest">{isOwner ? "Dueño" : "Socio"}</p>
           </div>
-          <button onClick={() => { signOut(auth); onLogout(); navigate("/"); }} className="w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center cursor-pointer hover:bg-red-100 transition-colors"><LogOut size={18}/></button>
+          <button onClick={() => { onLogout(); navigate("/"); }} className="w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center cursor-pointer hover:bg-red-100 transition-colors"><LogOut size={18}/></button>
         </div>
       </nav>
 
@@ -463,19 +425,17 @@ const DashboardScreen = ({ user, onLogout }) => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-12">
           <div className="text-left">
             <h1 className="text-4xl font-black text-slate-900 font-['Syne'] tracking-tight">{isOwner ? "Panel Maestro" : "Mis Eventos"}</h1>
-            <p className="text-slate-400 mt-2">{isOwner ? `Gestionando ${salones.length} socios activos` : `Tenés ${myInvs.length} invitaciones creadas`}</p>
+            <p className="text-slate-400 mt-2">{isOwner ? `Gestionando ${salonUsers.length} socios activos` : `Tenés ${myInvs.length} invitaciones creadas`}</p>
           </div>
           <button onClick={isOwner ? () => setShowModal(true) : handleCreateInv} className="px-8 py-4 bg-violet-600 text-white rounded-[1.5rem] font-black text-sm shadow-2xl shadow-violet-200 hover:scale-105 transition-all flex items-center gap-3 cursor-pointer">
             {isOwner ? <UserPlus size={20}/> : <Plus size={20}/>} {isOwner ? "Nuevo Salón" : "Crear Invitación"}
           </button>
         </div>
 
-        {loading ? (
-          <div className="h-64 flex items-center justify-center"><Loader2 className="animate-spin text-violet-600" size={40}/></div>
-        ) : isOwner ? (
+        {isOwner ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {salones.map(s => (
-              <div key={s.id} className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all group text-left">
+            {salonUsers.map(s => (
+              <div key={s.email} className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all group text-left">
                 <div className="flex items-center justify-between mb-6">
                   <div className="w-14 h-14 bg-violet-50 text-violet-600 rounded-2xl flex items-center justify-center group-hover:bg-violet-600 group-hover:text-white transition-colors"><Users size={28}/></div>
                   <span className="px-3 py-1 bg-green-50 text-green-600 rounded-full text-[10px] font-black uppercase">Activo</span>
@@ -510,7 +470,6 @@ const DashboardScreen = ({ user, onLogout }) => {
         )}
       </div>
 
-      {/* Modal Crear Salón */}
       {showModal && (
         <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-md flex items-center justify-center p-6 z-[100]">
           <div className="bg-white w-full max-w-md rounded-[3rem] p-10 anim-pop">
@@ -528,7 +487,6 @@ const DashboardScreen = ({ user, onLogout }) => {
         </div>
       )}
 
-      {/* Modal Eliminar Invitación */}
       {invToDelete && (
         <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-md flex items-center justify-center p-6 z-[100]">
           <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-center anim-pop">
@@ -537,7 +495,7 @@ const DashboardScreen = ({ user, onLogout }) => {
             <p className="text-sm text-slate-500 mb-8">Esta acción no se puede deshacer y el link dejará de funcionar.</p>
             <div className="flex gap-3">
               <button onClick={() => setInvToDelete(null)} type="button" className="flex-1 py-4 bg-gray-100 text-gray-600 rounded-2xl font-bold cursor-pointer hover:bg-gray-200">Cancelar</button>
-              <button onClick={async () => { await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'invitations', invToDelete)); setInvToDelete(null); }} type="button" className="flex-1 py-4 bg-red-500 text-white rounded-2xl font-bold cursor-pointer hover:bg-red-600 shadow-lg shadow-red-500/30">Eliminar</button>
+              <button onClick={() => { onDeleteInv(invToDelete); setInvToDelete(null); }} type="button" className="flex-1 py-4 bg-red-500 text-white rounded-2xl font-bold cursor-pointer hover:bg-red-600 shadow-lg shadow-red-500/30">Eliminar</button>
             </div>
           </div>
         </div>
@@ -551,32 +509,26 @@ const DashboardScreen = ({ user, onLogout }) => {
 /* ═══════════════════════════════════════════════════════════
    PANTALLA EDITOR COMPLETO
 ═══════════════════════════════════════════════════════════ */
-const EditorScreen = () => {
+const EditorScreen = ({ invitations, onSave }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [inv, setInv] = useState(null);
-  const [saving, setSaving] = useState(false);
-
+  
   useEffect(() => {
-    return onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'invitations', id), (snap) => {
-      if (snap.exists()) {
-        const data = snap.data();
-        setInv({ id: snap.id, ...data, config: data.config || DEF_CONFIG });
-      }
-    });
-  }, [id]);
+    const found = invitations.find(i => i.id === id);
+    if (found) {
+      setInv({ ...found }); 
+    } else {
+      navigate("/dashboard");
+    }
+  }, [id, invitations, navigate]);
 
   if (!inv) return <div className="h-screen bg-slate-950 flex items-center justify-center text-white"><Loader2 className="animate-spin mr-3"/> Cargando editor...</div>;
 
   const update = (k, v) => setInv(p => ({ ...p, config: { ...(p.config || DEF_CONFIG), [k]: v } }));
 
-  const handleSave = async () => {
-    setSaving(true);
-    await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'invitations', id), {
-      title: inv.title,
-      config: inv.config
-    });
-    setSaving(false);
+  const handleSave = () => {
+    onSave(inv);
     navigate("/dashboard");
   };
 
@@ -587,13 +539,13 @@ const EditorScreen = () => {
           <button onClick={() => navigate("/dashboard")} className="w-10 h-10 bg-white/5 rounded-xl text-white flex items-center justify-center hover:bg-white/10 cursor-pointer"><ArrowLeft size={20}/></button>
           <input className="bg-transparent border-none text-white font-black text-sm outline-none w-48 px-2 py-1 rounded hover:bg-white/5 focus:bg-white/10 transition-colors" value={inv.title} onChange={e => setInv({...inv, title: e.target.value})} />
         </div>
-        <button onClick={handleSave} disabled={saving} className="px-8 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-black text-xs flex items-center gap-3 shadow-xl shadow-violet-900/40 cursor-pointer transition-colors">
-          {saving ? <Loader2 size={16} className="animate-spin"/> : <Save size={16}/>} GUARDAR CAMBIOS
+        <button onClick={handleSave} className="px-8 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-black text-xs flex items-center gap-3 shadow-xl shadow-violet-900/40 cursor-pointer transition-colors">
+          <Save size={16}/> GUARDAR CAMBIOS
         </button>
       </header>
       
       <div className="flex-1 flex overflow-hidden">
-        {/* PANEL LATERAL DE EDICIÓN - 100% COMPLETO */}
+        {/* PANEL LATERAL DE EDICIÓN */}
         <aside className="w-[380px] bg-[#f8f7ff] overflow-y-auto p-6 fd-sb border-r border-gray-100">
           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 text-left">Personalización</h3>
           
@@ -803,18 +755,9 @@ const EditorScreen = () => {
 /* ═══════════════════════════════════════════════════════════
    VISTA PÚBLICA (EL INVITADO ENTRA ACÁ)
 ═══════════════════════════════════════════════════════════ */
-const PublicInviteScreen = () => {
+const PublicInviteScreen = ({ invitations }) => {
   const { invId } = useParams();
-  const [inv, setInv] = useState(null);
-
-  useEffect(() => {
-    return onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'invitations', invId), (snap) => {
-      if (snap.exists()) {
-        const data = snap.data();
-        setInv({ id: snap.id, ...data, config: data.config || DEF_CONFIG });
-      }
-    });
-  }, [invId]);
+  const inv = invitations.find(i => i.id === invId);
 
   if (!inv) return <div className="h-screen bg-black flex items-center justify-center"><Loader2 size={30} className="animate-spin text-white"/></div>;
 
@@ -832,40 +775,40 @@ const PublicInviteScreen = () => {
 ═══════════════════════════════════════════════════════════ */
 export default function App() {
   const [user, setUser] = useState(null);
-  const [authReady, setAuthReady] = useState(false);
+  const [users, setUsers] = useState([
+    { name:"Oswaldo Master", email:"owner@fiestadigital.com", pass:"owner123", role:"owner" },
+    { name:"Aventura Kids", email:"admin@admin.com", pass:"admin", role:"salon" }
+  ]);
+  const [invitations, setInvitations] = useState([
+    { id: "demo-1", salonId: "admin@admin.com", salonName: "Aventura Kids", title: "Cumple de Valentina", config: DEF_CONFIG }
+  ]);
 
-  useEffect(() => {
-    const init = async () => {
-      try {
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
-        } else {
-          await signInAnonymously(auth);
-        }
-      } catch (e) {
-        console.error("Error de autenticación", e);
-      }
-      setAuthReady(true);
-    };
-    init();
-    
-    // Solo actualizamos si el usuario actual NO tiene un rol asignado por nuestro login (para no pisar el state del dashboard)
-    const unsub = onAuthStateChanged(auth, (u) => { 
-      setUser(prev => (prev && prev.role) ? prev : u); 
-    });
-    return () => unsub();
-  }, []);
+  const handleCreateSalon = (newUser) => {
+    setUsers(prev => [...prev, newUser]);
+  };
 
-  if (!authReady) return <div className="h-screen bg-slate-950 flex items-center justify-center"><Loader2 size={40} className="animate-spin text-violet-600"/></div>;
+  const handleCreateInv = (salonId, salonName) => {
+    const newId = "evt-" + Math.random().toString(36).substr(2,6);
+    setInvitations(prev => [...prev, { id: newId, salonId, salonName, title: "Nuevo Evento", config: DEF_CONFIG }]);
+    return newId;
+  };
+
+  const handleSaveInv = (updatedInv) => {
+    setInvitations(prev => prev.map(inv => inv.id === updatedInv.id ? updatedInv : inv));
+  };
+
+  const handleDeleteInv = (id) => {
+    setInvitations(prev => prev.filter(inv => inv.id !== id));
+  };
 
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<LoginScreen onLogin={setUser} />} />
-        <Route path="/master" element={<LoginScreen isMaster={true} onLogin={setUser} />} />
-        <Route path="/dashboard" element={<DashboardScreen user={user} onLogout={() => setUser(null)} />} />
-        <Route path="/editor/:id" element={<EditorScreen />} />
-        <Route path="/i/:salon/:invId" element={<PublicInviteScreen />} />
+        <Route path="/" element={<LoginScreen onLogin={setUser} users={users} />} />
+        <Route path="/master" element={<LoginScreen isMaster={true} onLogin={setUser} users={users} />} />
+        <Route path="/dashboard" element={<DashboardScreen user={user} users={users} invitations={invitations} onCreateSalon={handleCreateSalon} onCreateInv={handleCreateInv} onDeleteInv={handleDeleteInv} onLogout={() => setUser(null)} />} />
+        <Route path="/editor/:id" element={<EditorScreen invitations={invitations} onSave={handleSaveInv} />} />
+        <Route path="/i/:salon/:invId" element={<PublicInviteScreen invitations={invitations} />} />
       </Routes>
     </Router>
   );
