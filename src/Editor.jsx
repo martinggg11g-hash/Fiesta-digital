@@ -2,13 +2,13 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   MapPin, Clock, Calendar, Palette, CheckCircle2,
-  ChevronDown, Type, Edit2, ArrowLeft, Save, X,
+  ChevronDown, Type, ArrowLeft, Save,
   Star, Image as ImageIcon, Layout, List, Trash2, Loader2, Check,
   Video, Link as LinkIcon
 } from "lucide-react";
 
 /* ============================================================================
-   FUNCIONES AUXILIARES Y CONSTANTES
+   FUNCIONES AUXILIARES
 ============================================================================ */
 const getYouTubeId = (url) => {
   if (!url) return null;
@@ -19,6 +19,9 @@ const getYouTubeId = (url) => {
   } catch (e) { return null; }
 };
 
+/* ============================================================================
+   CONSTANTES Y EMOJIS (Exportados para que App.jsx los pueda leer)
+============================================================================ */
 export const GENERAL_EMOJIS = ['🎂','🎈','🎉','🥳','🎁','🎊','👶','💍','🎓','✨','🌟','❤️','💖','🦖','🦄','⚽','🎮','👑','🌸','🔥','💎','🎪','🎠','🎡','🦋','🌺','🎵','🏆'];
 export const FOOD_EMOJIS = ['🍕','🍔','🍟','🌭','🍿','🍳','🥞','🍞','🥐','🥨','🧀','🥗','🌮','🌯','🍖','🍗','🥟','🍣','🍤','🍩','🍪','🍰','🧁','🥧','🍫','🍬','🍭','🍮','🍯','🥤','🧃','🧉','🍻','🥂','🍷','🍹','🍸','🍺','☕'];
 export const CLOTHES_EMOJIS = ['👕','👖','👔','👗','👙','👘','🥻','👠','👡','👢','👞','👟','🥿','🧦','🧤','🧣','🎩','🧢','👒','🎓','👑','💍','👝','👛','👜','💼','🎒','🕶','👓'];
@@ -72,11 +75,11 @@ export const DEF_CONFIG = {
   showGallery:false, galleryTitle:"Fotos", galleryPhotos:[],
   showVideo:false, videoUrl:"", videoTitle:"Mirá el video",
   showVenueLogo:false, venueLogoUrl:"", venueName:"", venueLink:"", venueLinkType:"web",
-  whatsappNumber:"5491123456789", whatsappMessage:"¡Hola! Confirmo mi asistencia para el cumple de {nombre} 🎉",
+  whatsappNumber:"5491123456789", whatsappMessage:"¡Hola! Confirmo mi asistencia para el evento 🎉",
 };
 
 /* ============================================================================
-   MICRO COMPONENTES DE UI DEL EDITOR
+   MICRO COMPONENTES DE UI INTERNOS (Solo se usan acá)
 ============================================================================ */
 const Inp = ({ label, value, onChange, placeholder, type="text", multiline = false, className="" }) => (
   <div className={`mb-4 text-left ${className}`}>
@@ -330,7 +333,7 @@ const VideoSection = ({ cfg, primary, text, muted, card }) => {
 };
 
 /* ============================================================================
-   SOBRE DIGITAL ANIMADO (¡ESTO ES LO QUE TE FALTABA!)
+   SOBRE DIGITAL ANIMADO (EXPORTADO PARA APP.JSX)
 ============================================================================ */
 export const Envelope = ({ cfg, onOpen }) => {
   const [opening, setOpening] = useState(false);
@@ -360,7 +363,7 @@ export const Envelope = ({ cfg, onOpen }) => {
 };
 
 /* ============================================================================
-   VISTA PREVIA DE LA INVITACIÓN (USADA EN EDITOR Y PÚBLICA)
+   VISTA PREVIA DE LA INVITACIÓN (EXPORTADA PARA APP.JSX)
 ============================================================================ */
 export const InvitePreview = ({ cfg }) => {
   if (!cfg) return null;
@@ -527,7 +530,7 @@ export const InvitePreview = ({ cfg }) => {
 };
 
 /* ============================================================================
-   PANTALLA DEL EDITOR (EL PANEL)
+   EDITOR PRINCIPAL (EXPORTADO PARA APP.JSX)
 ============================================================================ */
 export const EditorScreen = ({ invitations, onSave }) => {
   const { id } = useParams();
@@ -543,7 +546,9 @@ export const EditorScreen = ({ invitations, onSave }) => {
   if (!inv) return <div className="h-screen bg-slate-950 flex items-center justify-center text-white"><Loader2 className="animate-spin mr-3"/> Cargando editor...</div>;
 
   const update = (k, v) => setInv(p => ({ ...p, config: { ...(p.config || DEF_CONFIG), [k]: v } }));
+
   const handleSave = () => { onSave(inv); navigate("/dashboard"); };
+
   const cfg = inv.config || DEF_CONFIG;
 
   return (
@@ -567,7 +572,13 @@ export const EditorScreen = ({ invitations, onSave }) => {
             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-left">Paleta de Colores</label>
             <div className="flex flex-wrap gap-3 mb-6">
               {THEMES.map(th => (
-                <button key={th.id} title={th.name} onClick={() => setInv({...inv, config: {...cfg, theme: th.id, ...th}})} className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer shadow-sm hover:scale-110 ${cfg.theme === th.id ? 'ring-4 ring-offset-2 ring-violet-400' : 'ring-1 ring-gray-200'}`} style={{ background: th.primary }}>
+                <button
+                  key={th.id}
+                  title={th.name}
+                  onClick={() => setInv({...inv, config: {...cfg, theme: th.id, ...th}})}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer shadow-sm hover:scale-110 ${cfg.theme === th.id ? 'ring-4 ring-offset-2 ring-violet-400' : 'ring-1 ring-gray-200'}`}
+                  style={{ background: th.primary }}
+                >
                   {cfg.theme === th.id && <Check size={16} color="white"/>}
                 </button>
               ))}
@@ -590,8 +601,11 @@ export const EditorScreen = ({ invitations, onSave }) => {
             </div>
 
             <div className="mb-4 border-t border-gray-100 pt-4">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-left">Sombreado de Portada — <span className="text-violet-500">{cfg.coverGradientIntensity ?? 70}%</span></label>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-left">
+                Sombreado de Portada — <span className="text-violet-500">{cfg.coverGradientIntensity ?? 70}%</span>
+              </label>
               <input type="range" min={0} max={100} step={5} value={cfg.coverGradientIntensity ?? 70} onChange={e => update("coverGradientIntensity", Number(e.target.value))} className="w-full accent-violet-600 cursor-pointer" />
+              <div className="flex justify-between text-[9px] text-slate-400 mt-1"><span>Transparente</span><span>Muy oscuro</span></div>
             </div>
 
             <div className="mb-2 border-t border-gray-100 pt-4">
@@ -634,7 +648,12 @@ export const EditorScreen = ({ invitations, onSave }) => {
 
           <Acc title="Fecha y Lugar" icon={Calendar} iconColor="#e11d48">
             <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Mostrar cuenta regresiva</span><Toggle checked={cfg.showCountdown || false} onChange={v => update("showCountdown", v)} /></div>
-            {cfg.showCountdown && <Inp label="Fecha y hora del evento" type="datetime-local" value={cfg.countdownDate || ""} onChange={v => update("countdownDate", v)} />}
+            {cfg.showCountdown && (
+              <>
+                <Inp label="Fecha y hora del evento" type="datetime-local" value={cfg.countdownDate || ""} onChange={v => update("countdownDate", v)} />
+                <p className="text-[10px] bg-violet-50 text-violet-500 font-bold p-2 rounded-lg mb-4">✅ Se mostrará automáticamente en días, horas, minutos y segundos en español.</p>
+              </>
+            )}
 
             <div className="flex items-center justify-between mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Mostrar Cuadro de Fecha</span><Toggle checked={cfg.showDate} onChange={v => update("showDate", v)} /></div>
             {cfg.showDate && <Inp label="Fecha Texto (Ej: Sáb 24 Oct)" value={cfg.dateText} onChange={v => update("dateText", v)} />}
@@ -647,31 +666,173 @@ export const EditorScreen = ({ invitations, onSave }) => {
               <>
                 <Inp label="Nombre del lugar" value={cfg.locationName} onChange={v => update("locationName", v)} />
                 <Inp label="Dirección exacta" placeholder="Ej: Av. San Martín 1234, Buenos Aires" value={cfg.locationAddress} onChange={v => update("locationAddress", v)} />
+                <p className="text-[10px] text-violet-500 font-bold mb-4 mt-1 bg-violet-50 p-2 rounded-lg">📍 El mapa se genera automáticamente con la dirección y marca el lugar exacto.</p>
                 <div className="flex items-center justify-between mt-4 mb-2"><span className="text-xs font-bold text-slate-500">Aclarar Estacionamiento</span><Toggle checked={cfg.showParking} onChange={v => update("showParking", v)} /></div>
                 {cfg.showParking && (
-                  <SelectInp label="Tipo" value={cfg.parkingType} options={[{label:"Público", value:"Estacionamiento público"}, {label:"Privado", value:"Estacionamiento privado cubierto"}, {label:"Aire libre", value:"Estacionamiento al aire libre"}, {label:"Otro...", value:"otro"}]} onChange={v => update("parkingType", v)} />
+                  <SelectInp label="Tipo" value={cfg.parkingType} options={[
+                    {label:"Público en la calle", value:"Estacionamiento público"},
+                    {label:"Cubierto / Privado", value:"Estacionamiento privado cubierto"},
+                    {label:"Al aire libre", value:"Estacionamiento al aire libre"},
+                    {label:"Personalizado...", value:"otro"}
+                  ]} onChange={v => update("parkingType", v)} />
                 )}
                 {cfg.showParking && cfg.parkingType === 'otro' && <Inp placeholder="Escribe aquí..." value={cfg.customParking || ""} onChange={v => update("customParking", v)} />}
               </>
             )}
           </Acc>
 
-          <Acc title="Video de la Fiesta" icon={Video} iconColor="#8b5cf6">
-            <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Agregar video</span><Toggle checked={cfg.showVideo || false} onChange={v => update("showVideo", v)} /></div>
-            {cfg.showVideo && (
+          <Acc title="Logo del Lugar del Evento" icon={LinkIcon} iconColor="#6366f1">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-xs font-bold text-slate-500">Mostrar logo del lugar</span>
+              <Toggle checked={cfg.showVenueLogo || false} onChange={v => update("showVenueLogo", v)} />
+            </div>
+            {cfg.showVenueLogo && (
               <>
-                <Inp label="Título del video" value={cfg.videoTitle || ""} onChange={v => update("videoTitle", v)} />
-                <Inp label="Enlace de YouTube" value={cfg.videoUrl || ""} onChange={v => update("videoUrl", v)} placeholder="Ej: https://youtu.be/..." />
+                <Inp label="Nombre del lugar" value={cfg.venueName || ""} onChange={v => update("venueName", v)} placeholder="Ej: Aventura Kids" />
+                <FileUpload label="Logo del lugar (imagen)" value={cfg.venueLogoUrl || ""} onChange={v => update("venueLogoUrl", v)} />
+                <SelectInp label="Tipo de link" value={cfg.venueLinkType || "web"} options={[{ label: "🌐 Página web", value: "web" }, { label: "📱 WhatsApp", value: "whatsapp" }]} onChange={v => update("venueLinkType", v)} />
+                <Inp label={cfg.venueLinkType === "whatsapp" ? "Número de WhatsApp (sin +)" : "URL del sitio web"} value={cfg.venueLink || ""} onChange={v => update("venueLink", v)} placeholder={cfg.venueLinkType === "whatsapp" ? "5491123456789" : "https://aventurakids.com"} />
               </>
             )}
           </Acc>
+
+          <Acc title="Video de la Fiesta" icon={Video} iconColor="#8b5cf6">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-xs font-bold text-slate-500">Agregar video</span>
+              <Toggle checked={cfg.showVideo || false} onChange={v => update("showVideo", v)} />
+            </div>
+            {cfg.showVideo && (
+              <>
+                <Inp label="Título del video" value={cfg.videoTitle || ""} onChange={v => update("videoTitle", v)} placeholder="Ej: Un mensaje especial 💖" />
+                <Inp label="Enlace de YouTube" value={cfg.videoUrl || ""} onChange={v => update("videoUrl", v)} placeholder="Ej: https://www.youtube.com/watch?v=..." />
+                <p className="text-[10px] text-violet-500 font-bold mt-1 bg-violet-50 p-2 rounded-lg">🎬 Pegá cualquier link de YouTube. Se reproducirá directamente dentro de la invitación.</p>
+              </>
+            )}
+          </Acc>
+
+          <Acc title="Programa (Itinerario)" icon={Clock} iconColor="#ca8a04">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-xs font-bold text-slate-500">Activar Itinerario</span>
+              <Toggle checked={cfg.showItinerary} onChange={v => update("showItinerary", v)} />
+            </div>
+            {cfg.showItinerary && (
+              <>
+                <div className="space-y-3 mb-4">
+                  {cfg.itinerary?.map((item, i) => (
+                    <div key={i} className="p-3 bg-white rounded-xl border border-gray-200 relative">
+                      <div className="flex gap-2 mb-2">
+                        <input className="w-16 p-2 bg-gray-50 rounded-lg text-xs font-bold border border-gray-100 outline-none focus:border-violet-300" value={item.time} onChange={e => {
+                          const n = [...cfg.itinerary]; n[i].time = e.target.value; update("itinerary", n);
+                        }} />
+                        <input className="flex-1 p-2 bg-gray-50 rounded-lg text-xs font-bold border border-gray-100 outline-none focus:border-violet-300" value={item.title} onChange={e => {
+                          const n = [...cfg.itinerary]; n[i].title = e.target.value; update("itinerary", n);
+                        }} />
+                        <button onClick={() => update("itinerary", cfg.itinerary.filter((_, idx) => idx !== i))} type="button" className="text-red-400 p-2 hover:bg-red-50 rounded-lg cursor-pointer"><Trash2 size={14}/></button>
+                      </div>
+                      <input className="w-full p-2 bg-gray-50 rounded-lg text-xs border border-gray-100 outline-none focus:border-violet-300" value={item.sub} placeholder="Descripción (opcional)" onChange={e => {
+                        const n = [...cfg.itinerary]; n[i].sub = e.target.value; update("itinerary", n);
+                      }} />
+                    </div>
+                  ))}
+                </div>
+                <button onClick={() => update("itinerary", [...(cfg.itinerary || []), { time: "16:00", title: "Evento", sub: "" }])} type="button" className="w-full py-3 bg-white border-2 border-dashed border-gray-200 rounded-xl text-xs font-bold text-slate-400 hover:border-violet-300 hover:text-violet-600 transition-all cursor-pointer">+ AGREGAR EVENTO</button>
+              </>
+            )}
+          </Acc>
+
+          <Acc title="¿Qué vamos a comer?" icon={List} iconColor="#10b981">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-xs font-bold text-slate-500">Activar Menú</span>
+              <Toggle checked={cfg.showMenu} onChange={v => update("showMenu", v)} />
+            </div>
+            {cfg.showMenu && (
+              <>
+                <div className="space-y-3 mb-4">
+                  {cfg.menuItems?.map((item, i) => (
+                    <div key={i} className="flex items-center gap-2 p-2 bg-white rounded-xl border border-gray-200">
+                      <EmojiPicker list={FOOD_EMOJIS} value={item.emoji} onSelect={e => { const n = [...cfg.menuItems]; n[i].emoji = e; update("menuItems", n); }} />
+                      <input className="flex-1 p-2 bg-gray-50 rounded-lg text-xs font-bold border border-gray-100 outline-none focus:border-violet-300" value={item.label} placeholder="Comida" onChange={e => {
+                        const n = [...cfg.menuItems]; n[i].label = e.target.value; update("menuItems", n);
+                      }} />
+                      <button onClick={() => update("menuItems", cfg.menuItems.filter((_, idx) => idx !== i))} type="button" className="text-red-400 p-3 hover:bg-red-50 rounded-lg cursor-pointer"><Trash2 size={14}/></button>
+                    </div>
+                  ))}
+                </div>
+                <button onClick={() => update("menuItems", [...(cfg.menuItems || []), { emoji: "🍕", label: "Opción" }])} type="button" className="w-full py-3 bg-white border-2 border-dashed border-gray-200 rounded-xl text-xs font-bold text-slate-400 hover:border-violet-300 hover:text-violet-600 transition-all cursor-pointer">+ AGREGAR COMIDA</button>
+              </>
+            )}
+          </Acc>
+
+          <Acc title="Dress Code y Regalos" icon={Layout} iconColor="#f43f5e">
+             <div className="flex items-center justify-between mb-4">
+              <span className="text-xs font-bold text-slate-500">Activar Vestimenta</span>
+              <Toggle checked={cfg.showDressCode} onChange={v => update("showDressCode", v)} />
+             </div>
+             {cfg.showDressCode && (
+               <div className="flex gap-2 mb-6">
+                 <EmojiPicker list={CLOTHES_EMOJIS} value={cfg.dressCodeIcon} onSelect={e => update("dressCodeIcon", e)} />
+                 <div className="flex-1"><Inp value={cfg.dressCodeText} onChange={v => update("dressCodeText", v)} placeholder="Ej: Elegante Sport" className="!mb-0"/></div>
+               </div>
+             )}
+
+             <div className="flex items-center justify-between mb-4 pt-4 border-t border-gray-100">
+              <span className="text-xs font-bold text-slate-500">Activar Regalos</span>
+              <Toggle checked={cfg.showGifts} onChange={v => update("showGifts", v)} />
+             </div>
+             {cfg.showGifts && (
+               <>
+                 <div className="flex gap-2 mb-2">
+                   <EmojiPicker value={cfg.giftIcon} onSelect={e => update("giftIcon", e)} />
+                   <div className="w-24"><Inp value={cfg.giftLabel} onChange={v => update("giftLabel", v)} placeholder="Título" className="!mb-0"/></div>
+                   <div className="flex-1"><Inp value={cfg.giftText} onChange={v => update("giftText", v)} placeholder="Lluvia de sobres..." className="!mb-0"/></div>
+                 </div>
+                 <div className="flex items-center justify-between mt-4 mb-2">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase">Aclaración Extra</span>
+                  <Toggle checked={cfg.showGiftNote} onChange={v => update("showGiftNote", v)} />
+                 </div>
+                 {cfg.showGiftNote && (
+                   <Inp value={cfg.giftNoteText} onChange={v => update("giftNoteText", v)} placeholder="Ej: No traer cosas grandes" multiline />
+                 )}
+               </>
+             )}
+          </Acc>
+
+          <Acc title="Galería de Fotos" icon={ImageIcon} iconColor="#ec4899">
+             <div className="flex items-center justify-between mb-4">
+              <span className="text-xs font-bold text-slate-500">Activar Galería</span>
+              <Toggle checked={cfg.showGallery} onChange={v => update("showGallery", v)} />
+             </div>
+             {cfg.showGallery && (
+               <>
+                 <Inp label="Título de la Sección" value={cfg.galleryTitle} onChange={v => update("galleryTitle", v)} />
+                 <div className="space-y-4 mb-4 mt-2">
+                   {cfg.galleryPhotos?.map((p, i) => (
+                     <div key={i} className="bg-white border border-gray-200 rounded-xl p-2 relative">
+                       <FileUpload onChange={v => { const n = [...cfg.galleryPhotos]; n[i] = v; update("galleryPhotos", n); }} value={p} />
+                       <button onClick={() => update("galleryPhotos", cfg.galleryPhotos.filter((_, idx) => idx !== i))} type="button" className="absolute top-2 right-2 p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 cursor-pointer"><Trash2 size={14}/></button>
+                     </div>
+                   ))}
+                 </div>
+                 <button onClick={() => update("galleryPhotos", [...(cfg.galleryPhotos || []), ""])} type="button" className="w-full py-3 bg-white border-2 border-dashed border-gray-200 rounded-xl text-xs font-bold text-slate-400 hover:border-violet-300 hover:text-violet-600 transition-all cursor-pointer">+ AÑADIR FOTO</button>
+               </>
+             )}
+          </Acc>
+
+          <Acc title="WhatsApp (Confirmación)" icon={CheckCircle2} iconColor="#22c55e">
+            <Inp label="Número de WhatsApp (Sin +)" value={cfg.whatsappNumber} onChange={v => update("whatsappNumber", v)} placeholder="5491123456789" />
+            <p className="text-[9px] text-gray-400 mb-1">Usa {"{nombre}"} para incluir el nombre automáticamente.</p>
+            <Inp value={cfg.whatsappMessage} onChange={v => update("whatsappMessage", v)} multiline />
+          </Acc>
+
         </aside>
 
         {/* VISTA PREVIA CENTRAL */}
         <main className="flex-1 bg-slate-900 flex items-center justify-center p-6 relative">
           <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:20px_20px]" />
           <div className="invite-phone anim-pop border-[8px] border-slate-800 shadow-2xl relative z-10">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-7 bg-[#1a1a2e] rounded-b-2xl z-50 flex items-center justify-center"><div className="w-10 h-1 bg-slate-800 rounded-full" /></div>
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-7 bg-[#1a1a2e] rounded-b-2xl z-50 flex items-center justify-center">
+              <div className="w-10 h-1 bg-slate-800 rounded-full" />
+            </div>
             <div className="h-full w-full overflow-y-auto bg-black pb-10" style={{ scrollBehavior: 'smooth', scrollbarWidth: 'none' }}>
               <InvitePreview cfg={cfg} />
             </div>
