@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import {
   MapPin, Clock, Calendar, Palette, CheckCircle2,
   ChevronDown, Type, Edit2, ArrowLeft, Save,
-  Star, Image as ImageIcon, Layout, List, Trash2, Loader2
+  Star, Image as ImageIcon, Layout, List, Trash2, Loader2, Check
 } from "lucide-react";
 
 /* ============================================================================
@@ -14,14 +14,14 @@ export const FOOD_EMOJIS = ['🍕','🍔','🍟','🌭','🍿','🍳','🥞','�
 export const CLOTHES_EMOJIS = ['👕','👖','👔','👗','👙','👘','🥻','👠','👡','👢','👞','👟','🥿','🧦','🧤','🧣','🎩','🧢','👒','🎓','👑','💍','👝','👛','👜','💼','🎒','🕶','👓'];
 
 export const THEMES = [
-  { id:"violet", name:"Violeta", emoji:"💜", bg1:"#08060f", bg2:"#120d24", primary:"#7c3aed", card:"#1a1035", text:"#f0ecff", muted:"#9b8ec4" },
-  { id:"rose",   name:"Rosa",    emoji:"🌸", bg1:"#150510", bg2:"#200a16", primary:"#e11d48", card:"#2a0e1a", text:"#fff1f3", muted:"#fda4af" },
-  { id:"teal",   name:"Teal",    emoji:"🌊", bg1:"#020f10", bg2:"#031a1c", primary:"#0d9488", card:"#062020", text:"#f0fdfb", muted:"#5eead4" },
-  { id:"amber",  name:"Ámbar",   emoji:"🔥", bg1:"#0f0800", bg2:"#1c1200", primary:"#d97706", card:"#1a1000", text:"#fffbeb", muted:"#fcd34d" },
-  { id:"p-pink", name:"P. Rosa", emoji:"🎀", bg1:"#fdf2f8", bg2:"#fce7f3", primary:"#ec4899", card:"#ffffff", text:"#831843", muted:"#f472b6" },
-  { id:"p-blue", name:"P. Azul", emoji:"☁️", bg1:"#eff6ff", bg2:"#e0f2fe", primary:"#3b82f6", card:"#ffffff", text:"#1e3a8a", muted:"#60a5fa" },
-  { id:"p-green",name:"P. Verde",emoji:"🌱", bg1:"#f0fdf4", bg2:"#dcfce7", primary:"#22c55e", card:"#ffffff", text:"#14532d", muted:"#4ade80" },
-  { id:"p-yellow",name:"P. Amar.",emoji:"🌻", bg1:"#fefce8", bg2:"#fef9c3", primary:"#eab308", card:"#ffffff", text:"#713f12", muted:"#facc15" },
+  { id:"violet", name:"Violeta", bg1:"#08060f", bg2:"#120d24", primary:"#7c3aed", card:"#1a1035", text:"#f0ecff", muted:"#9b8ec4" },
+  { id:"rose",   name:"Rosa",    bg1:"#150510", bg2:"#200a16", primary:"#e11d48", card:"#2a0e1a", text:"#fff1f3", muted:"#fda4af" },
+  { id:"teal",   name:"Teal",    bg1:"#020f10", bg2:"#031a1c", primary:"#0d9488", card:"#062020", text:"#f0fdfb", muted:"#5eead4" },
+  { id:"amber",  name:"Ámbar",   bg1:"#0f0800", bg2:"#1c1200", primary:"#d97706", card:"#1a1000", text:"#fffbeb", muted:"#fcd34d" },
+  { id:"p-pink", name:"P. Rosa", bg1:"#fdf2f8", bg2:"#fce7f3", primary:"#ec4899", card:"#ffffff", text:"#831843", muted:"#f472b6" },
+  { id:"p-blue", name:"P. Azul", bg1:"#eff6ff", bg2:"#e0f2fe", primary:"#3b82f6", card:"#ffffff", text:"#1e3a8a", muted:"#60a5fa" },
+  { id:"p-green",name:"P. Verde",bg1:"#f0fdf4", bg2:"#dcfce7", primary:"#22c55e", card:"#ffffff", text:"#14532d", muted:"#4ade80" },
+  { id:"p-yellow",name:"P. Amar",bg1:"#fefce8", bg2:"#fef9c3", primary:"#eab308", card:"#ffffff", text:"#713f12", muted:"#facc15" },
 ];
 
 export const FONTS = [
@@ -41,7 +41,7 @@ export const DEF_CONFIG = {
   showBanner:true, bannerTitle:"La festejada", bannerPhoto:"https://images.unsplash.com/photo-1545912452-8aea7e25a3d3?auto=format&fit=crop&w=400&q=80",
   showDate:true, dateText:"Sábado 24 de Octubre", showTime:true, timeText:"16:00 a 20:00 hs", countdownDate:"",
   showTheme:true, themeIcon:"🦕", themeLabel:"Temática", themeText:"Dinosaurios",
-  showLocation:true, locationName:"Aventura Kids", locationAddress:"Av. San Martín 1234", mapEmbedUrl:"", 
+  showLocation:true, locationName:"Aventura Kids", locationAddress:"Av. San Martín 1234", 
   showParking:true, parkingType:"Estacionamiento público", customParking:"",
   showItinerary:true, itinerary:[{ time:"16:00", title:"Bienvenida", sub:"Recepción de invitados" }],
   showMenu:true, menuItems:[{ emoji:"🍕", label:"Pizza Party" }, { emoji:"🥤", label:"Gaseosas" }],
@@ -157,13 +157,15 @@ const Countdown = ({ targetDate, primary }) => {
 
   if(!targetDate) return null;
   return (
-    <div className="flex justify-center gap-3 py-4">
+    <div className="flex justify-center gap-4 py-4">
       {Object.entries(timeLeft).map(([unit, val]) => (
         <div key={unit} className="flex flex-col items-center">
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-black text-white shadow-lg" style={{background: primary}}>
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-black text-white shadow-lg" style={{background: primary}}>
             {val.toString().padStart(2, '0')}
           </div>
-          <span className="text-[9px] font-bold uppercase mt-1.5 opacity-70">{unit === 'd' ? 'Días' : unit === 'h' ? 'Hrs' : unit === 'm' ? 'Min' : 'Seg'}</span>
+          <span className="text-[11px] font-black uppercase mt-2 tracking-wider" style={{ color: primary }}>
+            {unit === 'd' ? 'Días' : unit === 'h' ? 'Horas' : unit === 'm' ? 'Min' : 'Seg'}
+          </span>
         </div>
       ))}
     </div>
@@ -191,10 +193,11 @@ export const InvitePreview = ({ cfg }) => {
     </div>
   );
 
+  // Generador Automático de Mapa
   const getMapIframe = () => {
-    if(cfg.mapEmbedUrl) return cfg.mapEmbedUrl;
-    if(cfg.locationName) return `http://googleusercontent.com/maps.google.com/maps?q=${encodeURIComponent(cfg.locationName + " " + cfg.locationAddress)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
-    return null;
+    const query = `${cfg.locationName || ""} ${cfg.locationAddress || ""}`.trim();
+    if(!query) return null;
+    return `https://maps.google.com/maps?q=${encodeURIComponent(query)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
   };
 
   const waMsg = cfg.whatsappMessage.replace('{nombre}', cfg.honoreeName || "");
@@ -217,8 +220,8 @@ export const InvitePreview = ({ cfg }) => {
 
       <div className="px-5 -mt-8 relative z-10 space-y-4">
         {cfg.countdownDate && (
-          <div className="p-4 rounded-3xl border border-white/5" style={{ background: cfg.card || th.card, color: cfg.text || th.text }}>
-            <h3 className="text-center text-[10px] font-black uppercase tracking-widest opacity-80 mt-2">Falta muy poco</h3>
+          <div className="p-5 rounded-3xl border border-white/5" style={{ background: cfg.card || th.card, color: cfg.text || th.text }}>
+            <h3 className="text-center text-[11px] font-black uppercase tracking-widest opacity-80 mb-2">Falta muy poco</h3>
             <Countdown targetDate={cfg.countdownDate} primary={primary} />
           </div>
         )}
@@ -250,13 +253,14 @@ export const InvitePreview = ({ cfg }) => {
                 <p className="text-[11px] opacity-70" style={{ color: cfg.muted || th.muted }}>{cfg.locationAddress}</p>
               </div>
             </div>
+            {/* Mapa Automático */}
             {getMapIframe() && (
-               <iframe className="w-full h-40 border-none opacity-80" src={getMapIframe()} title="map" />
+               <iframe className="w-full h-48 border-none opacity-90" src={getMapIframe()} title="map" />
             )}
             {cfg.showParking && (
-               <div className="p-3 text-center border-t border-white/5">
-                 <span className="text-[10px] font-bold py-1 px-3 rounded-full" style={{ background: `${primary}22`, color: primary }}>
-                   {cfg.parkingType === 'otro' ? cfg.customParking : cfg.parkingType}
+               <div className="p-4 text-center border-t border-white/5">
+                 <span className="text-xs font-bold py-2 px-4 rounded-full inline-block" style={{ background: `${primary}22`, color: primary }}>
+                   🚗 {cfg.parkingType === 'otro' ? cfg.customParking : cfg.parkingType}
                  </span>
                </div>
             )}
@@ -382,11 +386,17 @@ export const EditorScreen = ({ invitations, onSave }) => {
           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 text-left">Personalización</h3>
           
           <Acc title="Estilo y Colores" icon={Palette} defaultOpen iconColor="#7c3aed">
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-left">Paleta de Colores</label>
-            <div className="grid grid-cols-4 gap-2 mb-6">
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-left">Paleta de Colores</label>
+            <div className="flex flex-wrap gap-3 mb-6">
               {THEMES.map(th => (
-                <button key={th.id} onClick={() => setInv({...inv, config: {...inv.config, theme: th.id, ...th}})} className={`h-12 rounded-xl flex flex-col items-center justify-center text-lg transition-all cursor-pointer ${inv.config.theme === th.id ? 'bg-violet-600 text-white ring-4 ring-violet-100' : 'bg-gray-100 text-slate-400 hover:bg-gray-200'}`}>
-                  {th.emoji}
+                <button 
+                  key={th.id} 
+                  title={th.name}
+                  onClick={() => setInv({...inv, config: {...inv.config, theme: th.id, ...th}})} 
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer shadow-sm hover:scale-110 ${inv.config.theme === th.id ? 'ring-4 ring-offset-2 ring-violet-400' : 'ring-1 ring-gray-200'}`}
+                  style={{ background: th.primary }}
+                >
+                  {inv.config.theme === th.id && <Check size={16} color="white"/>}
                 </button>
               ))}
             </div>
@@ -435,15 +445,14 @@ export const EditorScreen = ({ invitations, onSave }) => {
             {inv.config.showTime && <Inp label="Horario Texto" value={inv.config.timeText} onChange={v => update("timeText", v)} />}
             
             <div className="flex items-center justify-between mt-2 mb-2 border-t border-gray-100 pt-4">
-              <span className="text-xs font-bold text-slate-500">Mostrar Ubicación</span>
+              <span className="text-xs font-bold text-slate-500">Mostrar Ubicación y Mapa</span>
               <Toggle checked={inv.config.showLocation} onChange={v => update("showLocation", v)} />
             </div>
             {inv.config.showLocation && (
               <>
                 <Inp label="Lugar Nombre" value={inv.config.locationName} onChange={v => update("locationName", v)} />
-                <Inp label="Dirección / Calle" value={inv.config.locationAddress} onChange={v => update("locationAddress", v)} />
-                <Inp label="Google Maps (Link Embed Preciso)" placeholder="Ej: https://www.google.com/maps/embed?..." value={inv.config.mapEmbedUrl || ""} onChange={v => update("mapEmbedUrl", v)} />
-                <p className="text-[9px] text-gray-400 mb-4 mt-1">Si este campo está vacío, buscará la dirección escrita arriba.</p>
+                <Inp label="Dirección / Calle" placeholder="Ej: Av. San Martín 1234" value={inv.config.locationAddress} onChange={v => update("locationAddress", v)} />
+                <p className="text-[10px] text-violet-500 font-bold mb-4 mt-1 bg-violet-50 p-2 rounded-lg">El mapa de Google se generará automáticamente con la dirección que escribas arriba.</p>
                 
                 <div className="flex items-center justify-between mt-4 mb-2">
                   <span className="text-xs font-bold text-slate-500">Aclarar Estacionamiento</span>
@@ -585,7 +594,8 @@ export const EditorScreen = ({ invitations, onSave }) => {
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-7 bg-[#1a1a2e] rounded-b-2xl z-50 flex items-center justify-center">
               <div className="w-10 h-1 bg-slate-800 rounded-full" />
             </div>
-            <div className="invite-scroll bg-black">
+            {/* Scroll Container Arreglado */}
+            <div className="h-full w-full overflow-y-auto bg-black pb-10" style={{ scrollBehavior: 'smooth', scrollbarWidth: 'none' }}>
               <InvitePreview cfg={inv.config} />
             </div>
           </div>
