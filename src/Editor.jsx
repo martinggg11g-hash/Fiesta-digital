@@ -2,27 +2,23 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   MapPin, Clock, Calendar, Palette, CheckCircle2,
-  ChevronDown, Type, Edit2, ArrowLeft, Save,
+  ChevronDown, Type, Edit2, ArrowLeft, Save, X,
   Star, Image as ImageIcon, Layout, List, Trash2, Loader2, Check,
-  Video, Link as LinkIcon, Sparkles
+  Video, Link as LinkIcon
 } from "lucide-react";
 
 /* ============================================================================
-   FUNCIONES AUXILIARES
+   FUNCIONES AUXILIARES Y CONSTANTES
 ============================================================================ */
-// Detector de YouTube: saca el ID del video sin importar el formato del link
 const getYouTubeId = (url) => {
   if (!url) return null;
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-  const match = url.match(regExp);
-  return (match && match[2].length === 11) ? match[2] : null;
+  try {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2] && match[2].length === 11) ? match[2] : null;
+  } catch (e) { return null; }
 };
 
-const slugify = (text) => text?.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') || 'salon';
-
-/* ============================================================================
-   CONSTANTES Y EMOJIS
-============================================================================ */
 export const GENERAL_EMOJIS = ['🎂','🎈','🎉','🥳','🎁','🎊','👶','💍','🎓','✨','🌟','❤️','💖','🦖','🦄','⚽','🎮','👑','🌸','🔥','💎','🎪','🎠','🎡','🦋','🌺','🎵','🏆'];
 export const FOOD_EMOJIS = ['🍕','🍔','🍟','🌭','🍿','🍳','🥞','🍞','🥐','🥨','🧀','🥗','🌮','🌯','🍖','🍗','🥟','🍣','🍤','🍩','🍪','🍰','🧁','🥧','🍫','🍬','🍭','🍮','🍯','🥤','🧃','🧉','🍻','🥂','🍷','🍹','🍸','🍺','☕'];
 export const CLOTHES_EMOJIS = ['👕','👖','👔','👗','👙','👘','🥻','👠','👡','👢','👞','👟','🥿','🧦','🧤','🧣','🎩','🧢','👒','🎓','👑','💍','👝','👛','👜','💼','🎒','🕶','👓'];
@@ -60,31 +56,27 @@ export const EFFECTS = [
 
 export const DEF_CONFIG = {
   theme:"violet", fontTitle:"'Pacifico', cursive", fontBody:"'DM Sans', sans-serif",
+  honoreeSize: 48, eventTypeSize: 11,
   bg1:"#08060f", bg2:"#120d24", primary:"#7c3aed", card:"#1a1035", text:"#f0ecff", muted:"#9b8ec4",
-  coverGradientIntensity: 70,
-  particleEffect: "none",
+  coverGradientIntensity: 70, particleEffect: "none",
   eventTypeEmoji:"✨", eventType:"Estás invitado al cumple de", honoreeName:"Valentina", badgeEmoji:"🎂", badgeText:"5 añitos",
   coverPhoto:"https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=800&q=80",
   showBanner:true, bannerTitle:"La festejada", bannerPhoto:"https://images.unsplash.com/photo-1545912452-8aea7e25a3d3?auto=format&fit=crop&w=400&q=80",
-  showDate:true, dateText:"Sábado 24 de Octubre", showTime:true, timeText:"16:00 a 20:00 hs",
-  showCountdown: false, countdownDate:"",
+  showDate:true, dateText:"Sábado 24 de Octubre", showTime:true, timeText:"16:00 a 20:00 hs", showCountdown: false, countdownDate:"",
   showTheme:true, themeIcon:"🦕", themeLabel:"Temática", themeText:"Dinosaurios",
-  showLocation:true, locationName:"Aventura Kids", locationAddress:"Av. San Martín 1234",
-  showParking:true, parkingType:"Estacionamiento público", customParking:"",
+  showLocation:true, locationName:"Aventura Kids", locationAddress:"Av. San Martín 1234", showParking:true, parkingType:"Estacionamiento público", customParking:"",
   showItinerary:true, itinerary:[{ time:"16:00", title:"Bienvenida", sub:"Recepción de invitados" }],
   showMenu:true, menuItems:[{ emoji:"🍕", label:"Pizza Party" }, { emoji:"🥤", label:"Gaseosas" }],
   showDressCode:true, dressCodeIcon:"👗", dressCodeText:"Elegante Sport",
   showGifts:true, giftIcon:"🎁", giftLabel:"Regalos", giftText:"Lluvia de sobres", showGiftNote:false, giftNoteText:"",
   showGallery:false, galleryTitle:"Fotos", galleryPhotos:[],
-  // Cambiamos videoFile por videoUrl
   showVideo:false, videoUrl:"", videoTitle:"Mirá el video",
   showVenueLogo:false, venueLogoUrl:"", venueName:"", venueLink:"", venueLinkType:"web",
   whatsappNumber:"5491123456789", whatsappMessage:"¡Hola! Confirmo mi asistencia para el cumple de {nombre} 🎉",
 };
 
-
 /* ============================================================================
-   MICRO COMPONENTES DE UI
+   MICRO COMPONENTES DE UI DEL EDITOR
 ============================================================================ */
 const Inp = ({ label, value, onChange, placeholder, type="text", multiline = false, className="" }) => (
   <div className={`mb-4 text-left ${className}`}>
@@ -126,7 +118,7 @@ const FileUpload = ({ label, onChange, value, accept="image/*" }) => {
 
 const Toggle = ({ checked, onChange }) => (
   <label className="relative w-11 h-6 flex-shrink-0 cursor-pointer">
-    <input type="checkbox" className="sr-only peer" checked={checked} onChange={e => onChange(e.target.checked)} />
+    <input type="checkbox" className="sr-only peer" checked={checked || false} onChange={e => onChange(e.target.checked)} />
     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div>
   </label>
 );
@@ -170,7 +162,7 @@ const Acc = ({ title, icon: Icon, children, defaultOpen = false, iconColor = "#7
 };
 
 /* ============================================================================
-   EFECTOS ESPECIALES Y WIDGETS
+   WIDGETS Y EFECTOS ESPECIALES
 ============================================================================ */
 const Countdown = ({ targetDate, primary, text }) => {
   const [timeLeft, setTimeLeft] = useState({ d:0, h:0, m:0, s:0 });
@@ -179,7 +171,9 @@ const Countdown = ({ targetDate, primary, text }) => {
   useEffect(() => {
     if(!targetDate) return;
     const calc = () => {
-      const dist = new Date(targetDate).getTime() - Date.now();
+      const target = new Date(targetDate).getTime();
+      if (isNaN(target)) return;
+      const dist = target - Date.now();
       if(dist <= 0) { setExpired(true); return; }
       setTimeLeft({
         d: Math.floor(dist / 86400000),
@@ -193,7 +187,7 @@ const Countdown = ({ targetDate, primary, text }) => {
     return () => clearInterval(id);
   }, [targetDate]);
 
-  if(!targetDate) return null;
+  if(!targetDate || isNaN(new Date(targetDate).getTime())) return null;
   const labels = { d:"días", h:"horas", m:"min", s:"seg" };
 
   return (
@@ -206,7 +200,7 @@ const Countdown = ({ targetDate, primary, text }) => {
           {Object.entries(timeLeft).map(([unit, val]) => (
             <div key={unit} className="flex flex-col items-center gap-1">
               <div className="w-[52px] h-[52px] rounded-2xl flex items-center justify-center text-xl font-black text-white shadow-lg" style={{ background: primary }}>
-                {val.toString().padStart(2, '0')}
+                {(val || 0).toString().padStart(2, '0')}
               </div>
               <span className="text-[10px] font-bold opacity-60" style={{ color: primary }}>{labels[unit]}</span>
             </div>
@@ -224,24 +218,23 @@ const ParticleCanvas = ({ effect, primary }) => {
 
   useEffect(() => {
     if (effect === "none" || !canvasRef.current) return;
-
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
-
-    const resize = () => {
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
-    };
-    resize();
+    
+    let observer;
+    try {
+      const resize = () => { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; };
+      resize();
+      observer = new ResizeObserver(resize);
+      observer.observe(canvas);
+    } catch(e) { console.warn("ResizeObserver not supported"); }
 
     const EMOJI_MIX = ["🎉","🎊","🎈","✨","🌟","💖","🎂"];
     const PETALS = ["🌸","🌺","🌹","🌷"];
 
     const spawnParticle = () => {
       const x = Math.random() * canvas.width;
-      const base = {
-        x, y: -20, vx: (Math.random() - 0.5) * 2, vy: Math.random() * 2 + 1, alpha: 1, rot: Math.random() * 360, rotV: (Math.random() - 0.5) * 4, size: Math.random() * 10 + 8, life: 1, decay: Math.random() * 0.003 + 0.002,
-      };
+      const base = { x, y: -20, vx: (Math.random() - 0.5) * 2, vy: Math.random() * 2 + 1, alpha: 1, rot: Math.random() * 360, rotV: (Math.random() - 0.5) * 4, size: Math.random() * 10 + 8, life: 1, decay: Math.random() * 0.003 + 0.002 };
       if (effect === "confetti") {
         const colors = [primary, "#f59e0b", "#10b981", "#ef4444", "#3b82f6", "#ec4899", "#facc15"];
         return { ...base, type: "rect", color: colors[Math.floor(Math.random() * colors.length)], w: Math.random()*10+5, h: Math.random()*5+3 };
@@ -257,6 +250,7 @@ const ParticleCanvas = ({ effect, primary }) => {
 
     let frame = 0;
     const loop = () => {
+      if (!ctx || !canvas) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       frame++;
       if (frame % 8 === 0 && particlesRef.current.length < 60) {
@@ -264,21 +258,15 @@ const ParticleCanvas = ({ effect, primary }) => {
         if (p) particlesRef.current.push(p);
       }
       particlesRef.current = particlesRef.current.filter(p => {
-        p.x += p.vx; p.y += p.vy;
-        p.rot = (p.rot || 0) + (p.rotV || 0);
-        p.life -= p.decay;
-        p.alpha = p.life;
+        p.x += p.vx; p.y += p.vy; p.rot = (p.rot || 0) + (p.rotV || 0); p.life -= p.decay; p.alpha = p.life;
         ctx.globalAlpha = Math.max(0, p.alpha);
         if (p.type === "rect") {
           ctx.save(); ctx.translate(p.x, p.y); ctx.rotate((p.rot || 0) * Math.PI/180);
           ctx.fillStyle = p.color; ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h); ctx.restore();
         } else if (p.type === "circle") {
-          ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
-          ctx.strokeStyle = p.color; ctx.lineWidth = 1.5; ctx.stroke();
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.strokeStyle = p.color; ctx.lineWidth = 1.5; ctx.stroke();
         } else if (p.type === "text") {
-          ctx.font = `${p.size}px serif`; ctx.textAlign = "center";
-          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate((p.rot||0)*Math.PI/180);
-          ctx.fillText(p.emoji, 0, 0); ctx.restore();
+          ctx.font = `${p.size}px serif`; ctx.textAlign = "center"; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate((p.rot||0)*Math.PI/180); ctx.fillText(p.emoji, 0, 0); ctx.restore();
         }
         ctx.globalAlpha = 1;
         return p.life > 0 && p.y < canvas.height + 40;
@@ -286,14 +274,15 @@ const ParticleCanvas = ({ effect, primary }) => {
       animRef.current = requestAnimationFrame(loop);
     };
     loop();
-
-    const resizeObs = new ResizeObserver(resize);
-    resizeObs.observe(canvas);
-    return () => { cancelAnimationFrame(animRef.current); resizeObs.disconnect(); particlesRef.current = []; };
+    return () => { 
+      if(animRef.current) cancelAnimationFrame(animRef.current); 
+      if(observer && canvasRef.current) observer.unobserve(canvasRef.current); 
+      particlesRef.current = []; 
+    };
   }, [effect, primary]);
 
   if (effect === "none") return null;
-  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none z-30" style={{ opacity: 0.85 }} />;
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none z-20" style={{ opacity: 0.85 }} />;
 };
 
 const MapEmbed = ({ name, address, primary }) => {
@@ -325,34 +314,15 @@ const VenueCard = ({ cfg, primary, text, muted, card }) => {
   );
 };
 
-/* ============================================================================
-   SECCIÓN DE VIDEO (ACTUALIZADA PARA YOUTUBE)
-============================================================================ */
 const VideoSection = ({ cfg, primary, text, muted, card }) => {
   if (!cfg.showVideo || !cfg.videoUrl) return null;
-  
   const ytId = getYouTubeId(cfg.videoUrl);
-
   return (
     <div className="rounded-3xl overflow-hidden border border-white/5" style={{ background: card }}>
-      {cfg.videoTitle && (
-        <p className="text-center text-[10px] font-black uppercase tracking-widest pt-4 pb-2" style={{ color: muted }}>{cfg.videoTitle}</p>
-      )}
-      
+      {cfg.videoTitle && <p className="text-center text-[10px] font-black uppercase tracking-widest pt-4 pb-2" style={{ color: muted }}>{cfg.videoTitle}</p>}
       {ytId ? (
-        // Iframe para YouTube
-        <iframe
-          width="100%"
-          height="250"
-          src={`https://www.youtube.com/embed/${ytId}?rel=0`}
-          title="YouTube video player"
-          frameBorder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-          className="block w-full"
-        ></iframe>
+        <iframe width="100%" height="250" src={`https://www.youtube.com/embed/${ytId}?rel=0`} title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="block w-full"></iframe>
       ) : (
-        // Fallback por si en algún momento ponen un link de video directo (MP4)
         <video src={cfg.videoUrl} controls playsInline className="w-full block" style={{ maxHeight: 300 }} />
       )}
     </div>
@@ -360,9 +330,40 @@ const VideoSection = ({ cfg, primary, text, muted, card }) => {
 };
 
 /* ============================================================================
-   VISTA PREVIA DE LA INVITACIÓN
+   SOBRE DIGITAL ANIMADO (¡ESTO ES LO QUE TE FALTABA!)
+============================================================================ */
+export const Envelope = ({ cfg, onOpen }) => {
+  const [opening, setOpening] = useState(false);
+  const th = THEMES.find(t => t.id === cfg?.theme) || THEMES[0];
+  const primary = cfg?.primary || th.primary;
+
+  const openEnvelope = () => {
+    setOpening(true);
+    setTimeout(() => onOpen(), 1000);
+  };
+
+  return (
+    <div className={`fixed inset-0 z-[100] flex flex-col items-center justify-center transition-all duration-1000 ${opening ? 'opacity-0 scale-110 pointer-events-none' : 'opacity-100 bg-slate-900'}`}>
+      <div className="absolute inset-0 opacity-40" style={{ background: `linear-gradient(135deg, ${cfg?.bg1 || th.bg1}, ${cfg?.bg2 || th.bg2})` }} />
+      <div onClick={openEnvelope} className="relative z-10 cursor-pointer group flex flex-col items-center">
+        <div className={`relative w-[280px] h-[180px] rounded-lg shadow-2xl transition-all duration-700 ease-in-out ${opening ? '-translate-y-20 opacity-0' : 'group-hover:-translate-y-2'}`} style={{ backgroundColor: cfg?.card || th.card }}>
+          <div className="absolute top-0 left-0 w-full h-full border-[0px] border-t-[90px] border-l-[140px] border-r-[140px] border-b-[90px] border-transparent opacity-20 pointer-events-none" style={{ borderTopColor: primary }} />
+          <div className="absolute bottom-0 left-0 w-full h-full border-[0px] border-b-[90px] border-l-[140px] border-r-[140px] border-t-[90px] border-transparent opacity-10 pointer-events-none" style={{ borderBottomColor: '#ffffff' }} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full shadow-xl flex items-center justify-center text-2xl text-white transition-transform group-hover:scale-110" style={{ backgroundColor: primary, border: '2px solid rgba(255,255,255,0.2)' }}>
+            {cfg?.badgeEmoji || "💌"}
+          </div>
+        </div>
+        <p className="mt-8 text-white text-xs font-black tracking-[0.3em] uppercase opacity-70 animate-pulse">Tocar para abrir</p>
+      </div>
+    </div>
+  );
+};
+
+/* ============================================================================
+   VISTA PREVIA DE LA INVITACIÓN (USADA EN EDITOR Y PÚBLICA)
 ============================================================================ */
 export const InvitePreview = ({ cfg }) => {
+  if (!cfg) return null;
   const th = THEMES.find(t => t.id === cfg.theme) || THEMES[0];
   const primary = cfg.primary || th.primary;
   const bg = `linear-gradient(180deg, ${cfg.bg1 || th.bg1} 0%, ${cfg.bg2 || th.bg2} 100%)`;
@@ -382,25 +383,25 @@ export const InvitePreview = ({ cfg }) => {
     </div>
   );
 
-  const waMsg = cfg.whatsappMessage.replace('{nombre}', cfg.honoreeName || "");
+  const waMsg = (cfg.whatsappMessage || "").replace('{nombre}', cfg.honoreeName || "");
 
   return (
     <div style={{ background: bg, fontFamily: cfg.fontBody }} className="min-h-full pb-12 relative">
-      <div className="fixed inset-0 pointer-events-none z-30 overflow-hidden" style={{ height: "100%" }}>
+      <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden" style={{ height: "100%" }}>
         <ParticleCanvas effect={cfg.particleEffect || "none"} primary={primary} />
       </div>
 
       <div className="relative h-[420px] overflow-hidden">
         <img src={cfg.coverPhoto || DEF_CONFIG.coverPhoto} className="w-full h-full object-cover" alt="Cover" />
         <div className="absolute inset-0" style={{ background: `linear-gradient(to top, ${cfg.bg1 || th.bg1} 5%, rgba(0,0,0,${gradOpacity}) 60%, transparent 100%)` }} />
-        <div className="absolute bottom-0 left-0 right-0 p-8 text-center">
-          <p className="text-[11px] font-black uppercase tracking-[0.2em] mb-4 flex items-center justify-center gap-2" style={{ color: primary }}>{cfg.eventTypeEmoji} {cfg.eventType}</p>
-          <h1 style={{ fontFamily: cfg.fontTitle, color: textC }} className="text-5xl leading-tight mb-4">{cfg.honoreeName}</h1>
+        <div className="absolute bottom-0 left-0 right-0 p-8 text-center relative z-30">
+          <p className="font-black uppercase tracking-[0.2em] mb-4 flex items-center justify-center gap-2" style={{ color: primary, fontSize: `${cfg.eventTypeSize ?? 11}px` }}>{cfg.eventTypeEmoji} {cfg.eventType}</p>
+          <h1 style={{ fontFamily: cfg.fontTitle, color: textC, fontSize: `${cfg.honoreeSize ?? 48}px` }} className="leading-tight mb-4">{cfg.honoreeName}</h1>
           <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-white/10 backdrop-blur-md bg-black/30 font-black text-sm" style={{ color: textC }}>{cfg.badgeEmoji} {cfg.badgeText}</span>
         </div>
       </div>
 
-      <div className="px-5 -mt-8 relative z-10 space-y-4">
+      <div className="px-5 -mt-8 relative z-30 space-y-4">
         {cfg.showCountdown && cfg.countdownDate && (
           <div className="p-5 rounded-3xl border border-white/5" style={{ background: cardC, color: textC }}>
             <h3 className="text-center text-[11px] font-black uppercase tracking-widest opacity-80 mb-1" style={{ color: mutedC }}>Falta para el gran día</h3>
@@ -426,18 +427,14 @@ export const InvitePreview = ({ cfg }) => {
         {cfg.showLocation && (
           <div className="rounded-3xl overflow-hidden border border-white/5" style={{ background: cardC }}>
             <div className="p-4 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: primary }}>
-                <MapPin size={20} color="white" />
-              </div>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: primary }}><MapPin size={20} color="white" /></div>
               <div className="text-left">
                 <p className="text-[9px] uppercase font-black tracking-widest mb-0.5" style={{ color: mutedC }}>¿Dónde?</p>
                 <p className="font-bold text-sm" style={{ color: textC }}>{cfg.locationName}</p>
                 <p className="text-[11px] opacity-70" style={{ color: mutedC }}>{cfg.locationAddress}</p>
               </div>
             </div>
-            <div className="px-4 pb-2">
-              <MapEmbed name={cfg.locationName} address={cfg.locationAddress} primary={primary} />
-            </div>
+            <div className="px-4 pb-2"><MapEmbed name={cfg.locationName} address={cfg.locationAddress} primary={primary} /></div>
             {cfg.showParking && (
               <div className="p-4 text-center border-t border-white/5">
                 <span className="text-xs font-bold py-2 px-4 rounded-full inline-block" style={{ background: `${primary}22`, color: primary }}>
@@ -449,7 +446,6 @@ export const InvitePreview = ({ cfg }) => {
         )}
 
         <VenueCard cfg={cfg} primary={primary} text={textC} muted={mutedC} card={cardC} />
-
         <VideoSection cfg={cfg} primary={primary} text={textC} muted={mutedC} card={cardC} />
 
         {cfg.showItinerary && cfg.itinerary?.length > 0 && (
@@ -531,7 +527,7 @@ export const InvitePreview = ({ cfg }) => {
 };
 
 /* ============================================================================
-   EDITOR PRINCIPAL
+   PANTALLA DEL EDITOR (EL PANEL)
 ============================================================================ */
 export const EditorScreen = ({ invitations, onSave }) => {
   const { id } = useParams();
@@ -547,9 +543,7 @@ export const EditorScreen = ({ invitations, onSave }) => {
   if (!inv) return <div className="h-screen bg-slate-950 flex items-center justify-center text-white"><Loader2 className="animate-spin mr-3"/> Cargando editor...</div>;
 
   const update = (k, v) => setInv(p => ({ ...p, config: { ...(p.config || DEF_CONFIG), [k]: v } }));
-
   const handleSave = () => { onSave(inv); navigate("/dashboard"); };
-
   const cfg = inv.config || DEF_CONFIG;
 
   return (
@@ -569,52 +563,42 @@ export const EditorScreen = ({ invitations, onSave }) => {
         <aside className="w-[380px] bg-[#f8f7ff] overflow-y-auto p-6 border-r border-gray-100 z-10 relative">
           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 text-left">Personalización</h3>
 
-          {/* ── ESTILO Y COLORES ── */}
           <Acc title="Estilo y Colores" icon={Palette} defaultOpen iconColor="#7c3aed">
             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-left">Paleta de Colores</label>
             <div className="flex flex-wrap gap-3 mb-6">
               {THEMES.map(th => (
-                <button
-                  key={th.id}
-                  title={th.name}
-                  onClick={() => setInv({...inv, config: {...cfg, theme: th.id, ...th}})}
-                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer shadow-sm hover:scale-110 ${cfg.theme === th.id ? 'ring-4 ring-offset-2 ring-violet-400' : 'ring-1 ring-gray-200'}`}
-                  style={{ background: th.primary }}
-                >
+                <button key={th.id} title={th.name} onClick={() => setInv({...inv, config: {...cfg, theme: th.id, ...th}})} className={`w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer shadow-sm hover:scale-110 ${cfg.theme === th.id ? 'ring-4 ring-offset-2 ring-violet-400' : 'ring-1 ring-gray-200'}`} style={{ background: th.primary }}>
                   {cfg.theme === th.id && <Check size={16} color="white"/>}
                 </button>
               ))}
             </div>
 
             <SelectInp label="Tipografía Principal" value={cfg.fontTitle} options={FONTS} onChange={v => update("fontTitle", v)} />
-
-            {/* Intensidad del gradiente */}
-            <div className="mb-4">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-left">
-                Sombreado de Portada — <span className="text-violet-500">{cfg.coverGradientIntensity ?? 70}%</span>
-              </label>
-              <input
-                type="range" min={0} max={100} step={5}
-                value={cfg.coverGradientIntensity ?? 70}
-                onChange={e => update("coverGradientIntensity", Number(e.target.value))}
-                className="w-full accent-violet-600 cursor-pointer"
-              />
-              <div className="flex justify-between text-[9px] text-slate-400 mt-1">
-                <span>Transparente</span><span>Muy oscuro</span>
+            
+            <div className="mb-4 mt-4 border-t border-gray-100 pt-4">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-left">Tamaño de Textos</label>
+              <div className="space-y-4">
+                <div>
+                  <div className="flex justify-between text-[9px] font-bold text-slate-500 mb-1"><span>Nombre principal</span><span>{cfg.honoreeSize ?? 48}px</span></div>
+                  <input type="range" min={30} max={80} value={cfg.honoreeSize ?? 48} onChange={e => update("honoreeSize", Number(e.target.value))} className="w-full accent-violet-600" />
+                </div>
+                <div>
+                  <div className="flex justify-between text-[9px] font-bold text-slate-500 mb-1"><span>Frase (Estás invitado...)</span><span>{cfg.eventTypeSize ?? 11}px</span></div>
+                  <input type="range" min={8} max={24} value={cfg.eventTypeSize ?? 11} onChange={e => update("eventTypeSize", Number(e.target.value))} className="w-full accent-violet-600" />
+                </div>
               </div>
             </div>
 
-            {/* Efectos de partículas */}
-            <div className="mb-2">
+            <div className="mb-4 border-t border-gray-100 pt-4">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-left">Sombreado de Portada — <span className="text-violet-500">{cfg.coverGradientIntensity ?? 70}%</span></label>
+              <input type="range" min={0} max={100} step={5} value={cfg.coverGradientIntensity ?? 70} onChange={e => update("coverGradientIntensity", Number(e.target.value))} className="w-full accent-violet-600 cursor-pointer" />
+            </div>
+
+            <div className="mb-2 border-t border-gray-100 pt-4">
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-left">Efecto Animado</label>
               <div className="grid grid-cols-2 gap-2">
                 {EFFECTS.map(eff => (
-                  <button
-                    key={eff.id}
-                    type="button"
-                    onClick={() => update("particleEffect", eff.id)}
-                    className={`p-2.5 rounded-xl border text-left text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${cfg.particleEffect === eff.id ? 'border-violet-400 bg-violet-50 text-violet-700' : 'border-gray-200 bg-white text-slate-600 hover:border-violet-200'}`}
-                  >
+                  <button key={eff.id} type="button" onClick={() => update("particleEffect", eff.id)} className={`p-2.5 rounded-xl border text-left text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${cfg.particleEffect === eff.id ? 'border-violet-400 bg-violet-50 text-violet-700' : 'border-gray-200 bg-white text-slate-600 hover:border-violet-200'}`}>
                     <span className="text-base">{eff.icon}</span> {eff.name}
                   </button>
                 ))}
@@ -622,7 +606,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
             </div>
           </Acc>
 
-          {/* ── TEXTOS DE PORTADA ── */}
           <Acc title="Textos de Portada" icon={Type} iconColor="#0d9488">
             <Inp label="Nombre Agasajado" value={cfg.honoreeName} onChange={v => update("honoreeName", v)} />
             <div className="flex gap-2">
@@ -636,7 +619,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
             <FileUpload label="Foto de Portada (Subir imagen)" value={cfg.coverPhoto} onChange={v => update("coverPhoto", v)} />
           </Acc>
 
-          {/* ── BANNER ── */}
           <Acc title="Banner Promocional" icon={ImageIcon} iconColor="#d97706">
             <div className="flex items-center justify-between mb-4">
               <span className="text-xs font-bold text-slate-500">Mostrar Banner central</span>
@@ -650,237 +632,46 @@ export const EditorScreen = ({ invitations, onSave }) => {
             )}
           </Acc>
 
-          {/* ── FECHA Y LUGAR ── */}
           <Acc title="Fecha y Lugar" icon={Calendar} iconColor="#e11d48">
+            <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Mostrar cuenta regresiva</span><Toggle checked={cfg.showCountdown || false} onChange={v => update("showCountdown", v)} /></div>
+            {cfg.showCountdown && <Inp label="Fecha y hora del evento" type="datetime-local" value={cfg.countdownDate || ""} onChange={v => update("countdownDate", v)} />}
 
-            {/* CUENTA REGRESIVA SIMPLIFICADA */}
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-bold text-slate-500">Mostrar cuenta regresiva</span>
-              <Toggle checked={cfg.showCountdown || false} onChange={v => update("showCountdown", v)} />
-            </div>
-            {cfg.showCountdown && (
-              <>
-                <Inp label="Fecha y hora del evento" type="datetime-local" value={cfg.countdownDate || ""} onChange={v => update("countdownDate", v)} />
-                <p className="text-[10px] bg-violet-50 text-violet-500 font-bold p-2 rounded-lg mb-4">
-                  ✅ Se mostrará automáticamente en días, horas, minutos y segundos en español.
-                </p>
-              </>
-            )}
-
-            <div className="flex items-center justify-between mb-2 border-t border-gray-100 pt-4">
-              <span className="text-xs font-bold text-slate-500">Mostrar Cuadro de Fecha</span>
-              <Toggle checked={cfg.showDate} onChange={v => update("showDate", v)} />
-            </div>
+            <div className="flex items-center justify-between mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Mostrar Cuadro de Fecha</span><Toggle checked={cfg.showDate} onChange={v => update("showDate", v)} /></div>
             {cfg.showDate && <Inp label="Fecha Texto (Ej: Sáb 24 Oct)" value={cfg.dateText} onChange={v => update("dateText", v)} />}
 
-            <div className="flex items-center justify-between mt-2 mb-2 border-t border-gray-100 pt-4">
-              <span className="text-xs font-bold text-slate-500">Mostrar Cuadro de Horario</span>
-              <Toggle checked={cfg.showTime} onChange={v => update("showTime", v)} />
-            </div>
+            <div className="flex items-center justify-between mt-2 mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Mostrar Cuadro de Horario</span><Toggle checked={cfg.showTime} onChange={v => update("showTime", v)} /></div>
             {cfg.showTime && <Inp label="Horario Texto" value={cfg.timeText} onChange={v => update("timeText", v)} />}
 
-            <div className="flex items-center justify-between mt-2 mb-2 border-t border-gray-100 pt-4">
-              <span className="text-xs font-bold text-slate-500">Mostrar Ubicación y Mapa</span>
-              <Toggle checked={cfg.showLocation} onChange={v => update("showLocation", v)} />
-            </div>
+            <div className="flex items-center justify-between mt-2 mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Mostrar Ubicación y Mapa</span><Toggle checked={cfg.showLocation} onChange={v => update("showLocation", v)} /></div>
             {cfg.showLocation && (
               <>
                 <Inp label="Nombre del lugar" value={cfg.locationName} onChange={v => update("locationName", v)} />
                 <Inp label="Dirección exacta" placeholder="Ej: Av. San Martín 1234, Buenos Aires" value={cfg.locationAddress} onChange={v => update("locationAddress", v)} />
-                <p className="text-[10px] text-violet-500 font-bold mb-4 mt-1 bg-violet-50 p-2 rounded-lg">
-                  📍 El mapa se genera automáticamente con la dirección y marca el lugar exacto. Cuanto más completa la dirección, más preciso.
-                </p>
-                <div className="flex items-center justify-between mt-4 mb-2">
-                  <span className="text-xs font-bold text-slate-500">Aclarar Estacionamiento</span>
-                  <Toggle checked={cfg.showParking} onChange={v => update("showParking", v)} />
-                </div>
+                <div className="flex items-center justify-between mt-4 mb-2"><span className="text-xs font-bold text-slate-500">Aclarar Estacionamiento</span><Toggle checked={cfg.showParking} onChange={v => update("showParking", v)} /></div>
                 {cfg.showParking && (
-                  <SelectInp label="Tipo" value={cfg.parkingType} options={[
-                    {label:"Público en la calle", value:"Estacionamiento público"},
-                    {label:"Cubierto / Privado", value:"Estacionamiento privado cubierto"},
-                    {label:"Al aire libre", value:"Estacionamiento al aire libre"},
-                    {label:"Personalizado...", value:"otro"}
-                  ]} onChange={v => update("parkingType", v)} />
+                  <SelectInp label="Tipo" value={cfg.parkingType} options={[{label:"Público", value:"Estacionamiento público"}, {label:"Privado", value:"Estacionamiento privado cubierto"}, {label:"Aire libre", value:"Estacionamiento al aire libre"}, {label:"Otro...", value:"otro"}]} onChange={v => update("parkingType", v)} />
                 )}
                 {cfg.showParking && cfg.parkingType === 'otro' && <Inp placeholder="Escribe aquí..." value={cfg.customParking || ""} onChange={v => update("customParking", v)} />}
               </>
             )}
           </Acc>
 
-          {/* ── LOGO DEL LUGAR ── */}
-          <Acc title="Logo del Lugar del Evento" icon={LinkIcon} iconColor="#6366f1">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-bold text-slate-500">Mostrar logo del lugar</span>
-              <Toggle checked={cfg.showVenueLogo || false} onChange={v => update("showVenueLogo", v)} />
-            </div>
-            {cfg.showVenueLogo && (
-              <>
-                <Inp label="Nombre del lugar" value={cfg.venueName || ""} onChange={v => update("venueName", v)} placeholder="Ej: Aventura Kids" />
-                <FileUpload label="Logo del lugar (imagen)" value={cfg.venueLogoUrl || ""} onChange={v => update("venueLogoUrl", v)} />
-                <SelectInp
-                  label="Tipo de link"
-                  value={cfg.venueLinkType || "web"}
-                  options={[
-                    { label: "🌐 Página web", value: "web" },
-                    { label: "📱 WhatsApp", value: "whatsapp" },
-                  ]}
-                  onChange={v => update("venueLinkType", v)}
-                />
-                <Inp
-                  label={cfg.venueLinkType === "whatsapp" ? "Número de WhatsApp (sin +)" : "URL del sitio web"}
-                  value={cfg.venueLink || ""}
-                  onChange={v => update("venueLink", v)}
-                  placeholder={cfg.venueLinkType === "whatsapp" ? "5491123456789" : "https://aventurakids.com"}
-                />
-              </>
-            )}
-          </Acc>
-
-          {/* ── VIDEO INLINE (REEMPLAZADO POR YOUTUBE) ── */}
           <Acc title="Video de la Fiesta" icon={Video} iconColor="#8b5cf6">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-bold text-slate-500">Agregar video</span>
-              <Toggle checked={cfg.showVideo || false} onChange={v => update("showVideo", v)} />
-            </div>
+            <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Agregar video</span><Toggle checked={cfg.showVideo || false} onChange={v => update("showVideo", v)} /></div>
             {cfg.showVideo && (
               <>
-                <Inp label="Título del video" value={cfg.videoTitle || ""} onChange={v => update("videoTitle", v)} placeholder="Ej: Un mensaje especial 💖" />
-                <Inp label="Enlace de YouTube" value={cfg.videoUrl || ""} onChange={v => update("videoUrl", v)} placeholder="Ej: https://www.youtube.com/watch?v=..." />
-                <p className="text-[10px] text-violet-500 font-bold mt-1 bg-violet-50 p-2 rounded-lg">
-                  🎬 Pegá cualquier link de YouTube. Se reproducirá directamente dentro de la invitación sin que el usuario tenga que salir de la página.
-                </p>
+                <Inp label="Título del video" value={cfg.videoTitle || ""} onChange={v => update("videoTitle", v)} />
+                <Inp label="Enlace de YouTube" value={cfg.videoUrl || ""} onChange={v => update("videoUrl", v)} placeholder="Ej: https://youtu.be/..." />
               </>
             )}
           </Acc>
-
-          {/* ── PROGRAMA ── */}
-          <Acc title="Programa (Itinerario)" icon={Clock} iconColor="#ca8a04">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-bold text-slate-500">Activar Itinerario</span>
-              <Toggle checked={cfg.showItinerary} onChange={v => update("showItinerary", v)} />
-            </div>
-            {cfg.showItinerary && (
-              <>
-                <div className="space-y-3 mb-4">
-                  {cfg.itinerary?.map((item, i) => (
-                    <div key={i} className="p-3 bg-white rounded-xl border border-gray-200 relative">
-                      <div className="flex gap-2 mb-2">
-                        <input className="w-16 p-2 bg-gray-50 rounded-lg text-xs font-bold border border-gray-100 outline-none focus:border-violet-300" value={item.time} onChange={e => {
-                          const n = [...cfg.itinerary]; n[i].time = e.target.value; update("itinerary", n);
-                        }} />
-                        <input className="flex-1 p-2 bg-gray-50 rounded-lg text-xs font-bold border border-gray-100 outline-none focus:border-violet-300" value={item.title} onChange={e => {
-                          const n = [...cfg.itinerary]; n[i].title = e.target.value; update("itinerary", n);
-                        }} />
-                        <button onClick={() => update("itinerary", cfg.itinerary.filter((_, idx) => idx !== i))} type="button" className="text-red-400 p-2 hover:bg-red-50 rounded-lg cursor-pointer"><Trash2 size={14}/></button>
-                      </div>
-                      <input className="w-full p-2 bg-gray-50 rounded-lg text-xs border border-gray-100 outline-none focus:border-violet-300" value={item.sub} placeholder="Descripción (opcional)" onChange={e => {
-                        const n = [...cfg.itinerary]; n[i].sub = e.target.value; update("itinerary", n);
-                      }} />
-                    </div>
-                  ))}
-                </div>
-                <button onClick={() => update("itinerary", [...(cfg.itinerary || []), { time: "16:00", title: "Evento", sub: "" }])} type="button" className="w-full py-3 bg-white border-2 border-dashed border-gray-200 rounded-xl text-xs font-bold text-slate-400 hover:border-violet-300 hover:text-violet-600 transition-all cursor-pointer">+ AGREGAR EVENTO</button>
-              </>
-            )}
-          </Acc>
-
-          {/* ── MENÚ ── */}
-          <Acc title="¿Qué vamos a comer?" icon={List} iconColor="#10b981">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-bold text-slate-500">Activar Menú</span>
-              <Toggle checked={cfg.showMenu} onChange={v => update("showMenu", v)} />
-            </div>
-            {cfg.showMenu && (
-              <>
-                <div className="space-y-3 mb-4">
-                  {cfg.menuItems?.map((item, i) => (
-                    <div key={i} className="flex items-center gap-2 p-2 bg-white rounded-xl border border-gray-200">
-                      <EmojiPicker list={FOOD_EMOJIS} value={item.emoji} onSelect={e => { const n = [...cfg.menuItems]; n[i].emoji = e; update("menuItems", n); }} />
-                      <input className="flex-1 p-2 bg-gray-50 rounded-lg text-xs font-bold border border-gray-100 outline-none focus:border-violet-300" value={item.label} placeholder="Comida" onChange={e => {
-                        const n = [...cfg.menuItems]; n[i].label = e.target.value; update("menuItems", n);
-                      }} />
-                      <button onClick={() => update("menuItems", cfg.menuItems.filter((_, idx) => idx !== i))} type="button" className="text-red-400 p-3 hover:bg-red-50 rounded-lg cursor-pointer"><Trash2 size={14}/></button>
-                    </div>
-                  ))}
-                </div>
-                <button onClick={() => update("menuItems", [...(cfg.menuItems || []), { emoji: "🍕", label: "Opción" }])} type="button" className="w-full py-3 bg-white border-2 border-dashed border-gray-200 rounded-xl text-xs font-bold text-slate-400 hover:border-violet-300 hover:text-violet-600 transition-all cursor-pointer">+ AGREGAR COMIDA</button>
-              </>
-            )}
-          </Acc>
-
-          {/* ── DRESS CODE Y REGALOS ── */}
-          <Acc title="Dress Code y Regalos" icon={Layout} iconColor="#f43f5e">
-             <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-bold text-slate-500">Activar Vestimenta</span>
-              <Toggle checked={cfg.showDressCode} onChange={v => update("showDressCode", v)} />
-             </div>
-             {cfg.showDressCode && (
-               <div className="flex gap-2 mb-6">
-                 <EmojiPicker list={CLOTHES_EMOJIS} value={cfg.dressCodeIcon} onSelect={e => update("dressCodeIcon", e)} />
-                 <div className="flex-1"><Inp value={cfg.dressCodeText} onChange={v => update("dressCodeText", v)} placeholder="Ej: Elegante Sport" className="!mb-0"/></div>
-               </div>
-             )}
-
-             <div className="flex items-center justify-between mb-4 pt-4 border-t border-gray-100">
-              <span className="text-xs font-bold text-slate-500">Activar Regalos</span>
-              <Toggle checked={cfg.showGifts} onChange={v => update("showGifts", v)} />
-             </div>
-             {cfg.showGifts && (
-               <>
-                 <div className="flex gap-2 mb-2">
-                   <EmojiPicker value={cfg.giftIcon} onSelect={e => update("giftIcon", e)} />
-                   <div className="w-24"><Inp value={cfg.giftLabel} onChange={v => update("giftLabel", v)} placeholder="Título" className="!mb-0"/></div>
-                   <div className="flex-1"><Inp value={cfg.giftText} onChange={v => update("giftText", v)} placeholder="Lluvia de sobres..." className="!mb-0"/></div>
-                 </div>
-                 <div className="flex items-center justify-between mt-4 mb-2">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase">Aclaración Extra</span>
-                  <Toggle checked={cfg.showGiftNote} onChange={v => update("showGiftNote", v)} />
-                 </div>
-                 {cfg.showGiftNote && (
-                   <Inp value={cfg.giftNoteText} onChange={v => update("giftNoteText", v)} placeholder="Ej: No traer cosas grandes" multiline />
-                 )}
-               </>
-             )}
-          </Acc>
-
-          {/* ── GALERÍA ── */}
-          <Acc title="Galería de Fotos" icon={ImageIcon} iconColor="#ec4899">
-             <div className="flex items-center justify-between mb-4">
-              <span className="text-xs font-bold text-slate-500">Activar Galería</span>
-              <Toggle checked={cfg.showGallery} onChange={v => update("showGallery", v)} />
-             </div>
-             {cfg.showGallery && (
-               <>
-                 <Inp label="Título de la Sección" value={cfg.galleryTitle} onChange={v => update("galleryTitle", v)} />
-                 <div className="space-y-4 mb-4 mt-2">
-                   {cfg.galleryPhotos?.map((p, i) => (
-                     <div key={i} className="bg-white border border-gray-200 rounded-xl p-2 relative">
-                       <FileUpload onChange={v => { const n = [...cfg.galleryPhotos]; n[i] = v; update("galleryPhotos", n); }} value={p} />
-                       <button onClick={() => update("galleryPhotos", cfg.galleryPhotos.filter((_, idx) => idx !== i))} type="button" className="absolute top-2 right-2 p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 cursor-pointer"><Trash2 size={14}/></button>
-                     </div>
-                   ))}
-                 </div>
-                 <button onClick={() => update("galleryPhotos", [...(cfg.galleryPhotos || []), ""])} type="button" className="w-full py-3 bg-white border-2 border-dashed border-gray-200 rounded-xl text-xs font-bold text-slate-400 hover:border-violet-300 hover:text-violet-600 transition-all cursor-pointer">+ AÑADIR FOTO</button>
-               </>
-             )}
-          </Acc>
-
-          {/* ── WHATSAPP RSVP ── */}
-          <Acc title="WhatsApp (Confirmación)" icon={CheckCircle2} iconColor="#22c55e">
-            <Inp label="Número de WhatsApp (Sin +)" value={cfg.whatsappNumber} onChange={v => update("whatsappNumber", v)} placeholder="5491123456789" />
-            <p className="text-[9px] text-gray-400 mb-1">Usa {"{nombre}"} para incluir el nombre automáticamente.</p>
-            <Inp value={cfg.whatsappMessage} onChange={v => update("whatsappMessage", v)} multiline />
-          </Acc>
-
         </aside>
 
         {/* VISTA PREVIA CENTRAL */}
         <main className="flex-1 bg-slate-900 flex items-center justify-center p-6 relative">
           <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:20px_20px]" />
           <div className="invite-phone anim-pop border-[8px] border-slate-800 shadow-2xl relative z-10">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-7 bg-[#1a1a2e] rounded-b-2xl z-50 flex items-center justify-center">
-              <div className="w-10 h-1 bg-slate-800 rounded-full" />
-            </div>
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-7 bg-[#1a1a2e] rounded-b-2xl z-50 flex items-center justify-center"><div className="w-10 h-1 bg-slate-800 rounded-full" /></div>
             <div className="h-full w-full overflow-y-auto bg-black pb-10" style={{ scrollBehavior: 'smooth', scrollbarWidth: 'none' }}>
               <InvitePreview cfg={cfg} />
             </div>
