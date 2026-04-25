@@ -466,7 +466,6 @@ const DashboardScreen = ({ user, onLogout, users, onCreateSalon, invitations, on
         )}
       </div>
 
-      {/* Modal Crear Salón */}
       {showModal && (
         <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-md flex items-center justify-center p-6 z-[100]">
           <div className="bg-white w-full max-w-md rounded-[3rem] p-10 anim-pop">
@@ -484,7 +483,6 @@ const DashboardScreen = ({ user, onLogout, users, onCreateSalon, invitations, on
         </div>
       )}
 
-      {/* Modal Eliminar Invitación */}
       {invToDelete && (
         <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-md flex items-center justify-center p-6 z-[100]">
           <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-center anim-pop">
@@ -543,7 +541,6 @@ const EditorScreen = ({ invitations, onSave }) => {
       </header>
       
       <div className="flex-1 flex overflow-hidden">
-        {/* PANEL LATERAL DE EDICIÓN */}
         <aside className="w-[380px] bg-[#f8f7ff] overflow-y-auto p-6 fd-sb border-r border-gray-100">
           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 text-left">Personalización</h3>
           
