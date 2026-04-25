@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   MapPin, Clock, Calendar, Palette, CheckCircle2,
-  ChevronDown, Type, ArrowLeft, Save,
+  ChevronDown, Type, Edit2, ArrowLeft, Save, X,
   Star, Image as ImageIcon, Layout, List, Trash2, Loader2, Check,
   Video, Link as LinkIcon
 } from "lucide-react";
@@ -72,7 +72,7 @@ export const DEF_CONFIG = {
   showGallery:false, galleryTitle:"Fotos", galleryPhotos:[],
   showVideo:false, videoUrl:"", videoTitle:"Mirá el video",
   showVenueLogo:false, venueLogoUrl:"", venueName:"", venueLink:"", venueLinkType:"web",
-  whatsappNumber:"5491123456789", whatsappMessage:"¡Hola! Confirmo mi asistencia para el cumple de {nombre} 🎉",
+  whatsappNumber:"5491123456789", whatsappMessage:"¡Hola! Confirmo mi asistencia para el evento 🎉",
 };
 
 /* ============================================================================
@@ -349,6 +349,36 @@ const VideoSection = ({ cfg, primary, text, muted, card }) => {
 };
 
 /* ============================================================================
+   SOBRE DIGITAL ANIMADO (EXPORTADO PARA APP.JSX)
+============================================================================ */
+export const Envelope = ({ cfg, onOpen }) => {
+  const [opening, setOpening] = useState(false);
+  const th = THEMES.find(t => t.id === cfg?.theme) || THEMES[0];
+  const primary = cfg?.primary || th.primary;
+
+  const openEnvelope = () => {
+    setOpening(true);
+    setTimeout(() => onOpen(), 1000);
+  };
+
+  return (
+    <div className={`fixed inset-0 z-[100] flex flex-col items-center justify-center transition-all duration-1000 ${opening ? 'opacity-0 scale-110 pointer-events-none' : 'opacity-100 bg-slate-900'}`}>
+      <div className="absolute inset-0 opacity-40" style={{ background: `linear-gradient(135deg, ${cfg?.bg1 || th.bg1}, ${cfg?.bg2 || th.bg2})` }} />
+      <div onClick={openEnvelope} className="relative z-10 cursor-pointer group flex flex-col items-center">
+        <div className={`relative w-[280px] h-[180px] rounded-lg shadow-2xl transition-all duration-700 ease-in-out ${opening ? '-translate-y-20 opacity-0' : 'group-hover:-translate-y-2'}`} style={{ backgroundColor: cfg?.card || th.card }}>
+          <div className="absolute top-0 left-0 w-full h-full border-[0px] border-t-[90px] border-l-[140px] border-r-[140px] border-b-[90px] border-transparent opacity-20 pointer-events-none" style={{ borderTopColor: primary }} />
+          <div className="absolute bottom-0 left-0 w-full h-full border-[0px] border-b-[90px] border-l-[140px] border-r-[140px] border-t-[90px] border-transparent opacity-10 pointer-events-none" style={{ borderBottomColor: '#ffffff' }} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full shadow-xl flex items-center justify-center text-2xl text-white transition-transform group-hover:scale-110" style={{ backgroundColor: primary, border: '2px solid rgba(255,255,255,0.2)' }}>
+            {cfg?.badgeEmoji || "💌"}
+          </div>
+        </div>
+        <p className="mt-8 text-white text-xs font-black tracking-[0.3em] uppercase opacity-70 animate-pulse">Tocar para abrir</p>
+      </div>
+    </div>
+  );
+};
+
+/* ============================================================================
    VISTA PREVIA DE LA INVITACIÓN (USADA EN EDITOR Y PÚBLICA)
 ============================================================================ */
 export const InvitePreview = ({ cfg }) => {
@@ -384,7 +414,7 @@ export const InvitePreview = ({ cfg }) => {
         <img src={cfg.coverPhoto || DEF_CONFIG.coverPhoto} className="w-full h-full object-cover" alt="Cover" />
         <div className="absolute inset-0" style={{ background: `linear-gradient(to top, ${cfg.bg1 || th.bg1} 5%, rgba(0,0,0,${gradOpacity}) 60%, transparent 100%)` }} />
         
-        {/* CORRECCIÓN: 'absolute bottom-0' fijo y seguro para los textos de portada */}
+        {/* CORRECCIÓN DE LA POSICIÓN DE LOS TEXTOS FRONTALES */}
         <div className="absolute bottom-0 left-0 right-0 p-8 text-center z-30">
           <p className="font-black uppercase tracking-[0.2em] mb-4 flex items-center justify-center gap-2" style={{ color: cfg.eventTypeColor || primary, fontSize: `${cfg.eventTypeSize ?? 11}px`, fontFamily: cfg.eventTypeFont || cfg.fontBody }}>
             {cfg.eventTypeEmoji} {cfg.eventType}
@@ -561,7 +591,7 @@ export const EditorScreen = ({ invitations, onSave }) => {
           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 text-left">Personalización</h3>
 
           <Acc title="Estilo y Colores" icon={Palette} defaultOpen iconColor="#7c3aed">
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-left">Temas Predefinidos</label>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-left">Paleta de Colores</label>
             <div className="flex flex-wrap gap-3 mb-6">
               {THEMES.map(th => (
                 <button
@@ -710,7 +740,7 @@ export const EditorScreen = ({ invitations, onSave }) => {
             {cfg.showVideo && (
               <>
                 <Inp label="Título del video" value={cfg.videoTitle || ""} onChange={v => update("videoTitle", v)} placeholder="Ej: Un mensaje especial 💖" />
-                <Inp label="Enlace de YouTube" value={cfg.videoUrl || ""} onChange={v => update("videoUrl", v)} placeholder="Ej: https://www.youtube.com/watch?v=..." />
+                <Inp label="Enlace de YouTube" value={cfg.videoUrl || ""} onChange={v => update("videoUrl", v)} placeholder="Ej: https://youtu.be/..." />
                 <p className="text-[10px] text-violet-500 font-bold mt-1 bg-violet-50 p-2 rounded-lg">🎬 Pegá cualquier link de YouTube. Se reproducirá directamente dentro de la invitación sin que el usuario tenga que salir de la página.</p>
               </>
             )}
