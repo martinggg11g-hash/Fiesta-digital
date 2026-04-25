@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   MapPin, Clock, Calendar, Palette, CheckCircle2,
-  ChevronDown, Type, Edit2, ArrowLeft, Save, X,
+  ChevronDown, Type, ArrowLeft, Save,
   Star, Image as ImageIcon, Layout, List, Trash2, Loader2, Check,
   Video, Link as LinkIcon
 } from "lucide-react";
@@ -55,9 +55,19 @@ export const EFFECTS = [
 ];
 
 export const DEF_CONFIG = {
-  theme:"violet", fontTitle:"'Pacifico', cursive", fontBody:"'DM Sans', sans-serif",
-  honoreeSize: 48, eventTypeSize: 11,
+  theme:"violet", 
+  
+  // Fuentes Globales por defecto
+  fontTitle:"'Pacifico', cursive", 
+  fontBody:"'DM Sans', sans-serif",
+  
+  // Colores y Fuentes Específicas
+  honoreeSize: 48, honoreeColor: "#f0ecff", honoreeFont: "'Pacifico', cursive",
+  eventTypeSize: 11, eventTypeColor: "#7c3aed", eventTypeFont: "'DM Sans', sans-serif",
+
+  // Paleta editable
   bg1:"#08060f", bg2:"#120d24", primary:"#7c3aed", card:"#1a1035", text:"#f0ecff", muted:"#9b8ec4",
+  
   coverGradientIntensity: 70, particleEffect: "none",
   eventTypeEmoji:"✨", eventType:"Estás invitado al cumple de", honoreeName:"Valentina", badgeEmoji:"🎂", badgeText:"5 añitos",
   coverPhoto:"https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=800&q=80",
@@ -76,7 +86,7 @@ export const DEF_CONFIG = {
 };
 
 /* ============================================================================
-   MICRO COMPONENTES DE UI
+   MICRO COMPONENTES DE UI INTERNOS
 ============================================================================ */
 const Inp = ({ label, value, onChange, placeholder, type="text", multiline = false, className="" }) => (
   <div className={`mb-4 text-left ${className}`}>
@@ -89,8 +99,8 @@ const Inp = ({ label, value, onChange, placeholder, type="text", multiline = fal
   </div>
 );
 
-const SelectInp = ({ label, value, onChange, options }) => (
-  <div className="mb-4 text-left">
+const SelectInp = ({ label, value, onChange, options, className="" }) => (
+  <div className={`text-left ${className}`}>
     {label && <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{label}</label>}
     <select value={value || ""} onChange={e => onChange(e.target.value)} className="w-full px-4 py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all cursor-pointer">
       {options.map((opt, i) => <option key={i} value={opt.value}>{opt.label}</option>)}
@@ -238,7 +248,7 @@ const ParticleCanvas = ({ effect, primary }) => {
       
       const base = { 
         x, 
-        y: isBubble ? canvas.height + 20 : -20, // Burbujas nacen abajo, el resto arriba
+        y: isBubble ? canvas.height + 20 : -20, 
         vx: (Math.random() - 0.5) * 2, 
         vy: Math.random() * 2 + 1, 
         alpha: 1, 
@@ -255,13 +265,8 @@ const ParticleCanvas = ({ effect, primary }) => {
       }
       if (effect === "hearts")  return { ...base, type: "text", emoji: "❤️", size: Math.random()*18+10 };
       if (effect === "stars")   return { ...base, type: "text", emoji: "⭐", size: Math.random()*16+8 };
-      
-      // Burbujas suben y son huecas
       if (effect === "bubbles") return { ...base, type: "circle", color: primary, filled: false, r: Math.random()*12+4, vx: (Math.random()-0.5)*1.5, vy: -(Math.random()*2+0.5) };
-      
-      // Nieve baja, es pequeña y blanca sólida
       if (effect === "snow")    return { ...base, type: "circle", color: "#ffffff", filled: true, r: Math.random()*3+1, vy: Math.random()*1.5+0.5, vx: (Math.random()-0.5)*0.8 };
-      
       if (effect === "petals")  return { ...base, type: "text", emoji: PETALS[Math.floor(Math.random()*PETALS.length)], size: Math.random()*20+12 };
       if (effect === "emojis")  return { ...base, type: "text", emoji: EMOJI_MIX[Math.floor(Math.random()*EMOJI_MIX.length)], size: Math.random()*20+12 };
       return null;
@@ -287,17 +292,12 @@ const ParticleCanvas = ({ effect, primary }) => {
           ctx.fillStyle = p.color; ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h); ctx.restore();
         } else if (p.type === "circle") {
           ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); 
-          if (p.filled) {
-            ctx.fillStyle = p.color; ctx.fill();
-          } else {
-            ctx.strokeStyle = p.color; ctx.lineWidth = 1.5; ctx.stroke();
-          }
+          if (p.filled) { ctx.fillStyle = p.color; ctx.fill(); } 
+          else { ctx.strokeStyle = p.color; ctx.lineWidth = 1.5; ctx.stroke(); }
         } else if (p.type === "text") {
           ctx.font = `${p.size}px serif`; ctx.textAlign = "center"; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate((p.rot||0)*Math.PI/180); ctx.fillText(p.emoji, 0, 0); ctx.restore();
         }
         ctx.globalAlpha = 1;
-        
-        // Sobreviven si tienen vida y no se fueron ni muy abajo ni muy arriba
         return p.life > 0 && p.y < canvas.height + 40 && p.y > -40;
       });
       animRef.current = requestAnimationFrame(loop);
@@ -358,9 +358,6 @@ const VideoSection = ({ cfg, primary, text, muted, card }) => {
   );
 };
 
-/* ============================================================================
-   SOBRE DIGITAL ANIMADO (EXPORTADO PARA APP.JSX)
-============================================================================ */
 export const Envelope = ({ cfg, onOpen }) => {
   const [opening, setOpening] = useState(false);
   const th = THEMES.find(t => t.id === cfg?.theme) || THEMES[0];
@@ -389,7 +386,7 @@ export const Envelope = ({ cfg, onOpen }) => {
 };
 
 /* ============================================================================
-   VISTA PREVIA DE LA INVITACIÓN (USADA EN EDITOR Y PÚBLICA)
+   VISTA PREVIA DE LA INVITACIÓN
 ============================================================================ */
 export const InvitePreview = ({ cfg }) => {
   if (!cfg) return null;
@@ -406,8 +403,8 @@ export const InvitePreview = ({ cfg }) => {
       <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: primary }}><Icon size={20} color="white" /></div>
       <div className="text-left">
         <p className="text-[9px] uppercase font-black tracking-widest mb-0.5" style={{ color: mutedC }}>{label}</p>
-        <p className="font-bold text-sm" style={{ color: textC }}>{value}</p>
-        {sub && <p className="text-[11px] mt-0.5 opacity-70" style={{ color: mutedC }}>{sub}</p>}
+        <p className="font-bold text-sm" style={{ color: textC, fontFamily: cfg.fontBody }}>{value}</p>
+        {sub && <p className="text-[11px] mt-0.5 opacity-70" style={{ color: mutedC, fontFamily: cfg.fontBody }}>{sub}</p>}
       </div>
     </div>
   );
@@ -423,10 +420,11 @@ export const InvitePreview = ({ cfg }) => {
       <div className="relative h-[420px] overflow-hidden">
         <img src={cfg.coverPhoto || DEF_CONFIG.coverPhoto} className="w-full h-full object-cover" alt="Cover" />
         <div className="absolute inset-0" style={{ background: `linear-gradient(to top, ${cfg.bg1 || th.bg1} 5%, rgba(0,0,0,${gradOpacity}) 60%, transparent 100%)` }} />
-        {/* CORRECCIÓN DE LA POSICIÓN DE LOS TEXTOS FRONTALES */}
-        <div className="absolute bottom-0 left-0 right-0 p-8 text-center z-30">
-          <p className="font-black uppercase tracking-[0.2em] mb-4 flex items-center justify-center gap-2" style={{ color: primary, fontSize: `${cfg.eventTypeSize ?? 11}px` }}>{cfg.eventTypeEmoji} {cfg.eventType}</p>
-          <h1 style={{ fontFamily: cfg.fontTitle, color: textC, fontSize: `${cfg.honoreeSize ?? 48}px` }} className="leading-tight mb-4">{cfg.honoreeName}</h1>
+        <div className="absolute bottom-0 left-0 right-0 p-8 text-center relative z-30">
+          <p className="font-black uppercase tracking-[0.2em] mb-4 flex items-center justify-center gap-2" style={{ color: cfg.eventTypeColor || primary, fontSize: `${cfg.eventTypeSize ?? 11}px`, fontFamily: cfg.eventTypeFont || cfg.fontBody }}>
+            {cfg.eventTypeEmoji} {cfg.eventType}
+          </p>
+          <h1 style={{ fontFamily: cfg.honoreeFont || cfg.fontTitle, color: cfg.honoreeColor || textC, fontSize: `${cfg.honoreeSize ?? 48}px` }} className="leading-tight mb-4">{cfg.honoreeName}</h1>
           <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-white/10 backdrop-blur-md bg-black/30 font-black text-sm" style={{ color: textC }}>{cfg.badgeEmoji} {cfg.badgeText}</span>
         </div>
       </div>
@@ -445,7 +443,7 @@ export const InvitePreview = ({ cfg }) => {
             <div className="absolute inset-0 bg-black/40" />
             <div className="absolute top-4 left-4 px-3 py-1 bg-black/50 backdrop-blur rounded-full text-[9px] font-black uppercase tracking-widest text-white">{cfg.bannerTitle}</div>
             <div className="absolute bottom-4 left-4 text-left">
-              <h2 style={{ fontFamily: cfg.fontTitle }} className="text-2xl text-white">{cfg.honoreeName}</h2>
+              <h2 style={{ fontFamily: cfg.honoreeFont || cfg.fontTitle }} className="text-2xl text-white">{cfg.honoreeName}</h2>
             </div>
           </div>
         )}
@@ -460,14 +458,14 @@ export const InvitePreview = ({ cfg }) => {
               <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: primary }}><MapPin size={20} color="white" /></div>
               <div className="text-left">
                 <p className="text-[9px] uppercase font-black tracking-widest mb-0.5" style={{ color: mutedC }}>¿Dónde?</p>
-                <p className="font-bold text-sm" style={{ color: textC }}>{cfg.locationName}</p>
-                <p className="text-[11px] opacity-70" style={{ color: mutedC }}>{cfg.locationAddress}</p>
+                <p className="font-bold text-sm" style={{ color: textC, fontFamily: cfg.fontBody }}>{cfg.locationName}</p>
+                <p className="text-[11px] opacity-70" style={{ color: mutedC, fontFamily: cfg.fontBody }}>{cfg.locationAddress}</p>
               </div>
             </div>
             <div className="px-4 pb-2"><MapEmbed name={cfg.locationName} address={cfg.locationAddress} primary={primary} /></div>
             {cfg.showParking && (
               <div className="p-4 text-center border-t border-white/5">
-                <span className="text-xs font-bold py-2 px-4 rounded-full inline-block" style={{ background: `${primary}22`, color: primary }}>
+                <span className="text-xs font-bold py-2 px-4 rounded-full inline-block" style={{ background: `${primary}22`, color: primary, fontFamily: cfg.fontBody }}>
                   🚗 {cfg.parkingType === 'otro' ? cfg.customParking : cfg.parkingType}
                 </span>
               </div>
@@ -487,8 +485,8 @@ export const InvitePreview = ({ cfg }) => {
                 <div key={i} className="relative text-left">
                   <div className="absolute -left-[23px] top-1.5 w-3 h-3 rounded-full" style={{ background: primary, boxShadow: `0 0 10px ${primary}` }} />
                   <p className="text-[10px] font-black mb-1" style={{ color: primary }}>{item.time}</p>
-                  <p className="font-bold text-sm" style={{ color: textC }}>{item.title}</p>
-                  <p className="text-xs opacity-60" style={{ color: mutedC }}>{item.sub}</p>
+                  <p className="font-bold text-sm" style={{ color: textC, fontFamily: cfg.fontBody }}>{item.title}</p>
+                  <p className="text-xs opacity-60" style={{ color: mutedC, fontFamily: cfg.fontBody }}>{item.sub}</p>
                 </div>
               ))}
             </div>
@@ -502,7 +500,7 @@ export const InvitePreview = ({ cfg }) => {
               {cfg.menuItems.map((m, i) => (
                 <div key={i} className="p-4 rounded-2xl text-center border border-white/5" style={{ background: cardC }}>
                   <span className="text-3xl block mb-2">{m.emoji}</span>
-                  <span className="text-xs font-bold" style={{ color: textC }}>{m.label}</span>
+                  <span className="text-xs font-bold" style={{ color: textC, fontFamily: cfg.fontBody }}>{m.label}</span>
                 </div>
               ))}
             </div>
@@ -514,21 +512,21 @@ export const InvitePreview = ({ cfg }) => {
             <div className="p-5 rounded-2xl text-center border border-white/5" style={{ background: cardC }}>
               <span className="text-3xl block mb-2">{cfg.dressCodeIcon}</span>
               <p className="text-[9px] font-black uppercase tracking-widest mb-1" style={{ color: mutedC }}>Vestimenta</p>
-              <p className="font-bold text-xs" style={{ color: textC }}>{cfg.dressCodeText}</p>
+              <p className="font-bold text-xs" style={{ color: textC, fontFamily: cfg.fontBody }}>{cfg.dressCodeText}</p>
             </div>
           )}
           {cfg.showGifts && (
             <div className="p-5 rounded-2xl text-center border border-white/5" style={{ background: cardC }}>
               <span className="text-3xl block mb-2">{cfg.giftIcon}</span>
               <p className="text-[9px] font-black uppercase tracking-widest mb-1" style={{ color: mutedC }}>{cfg.giftLabel}</p>
-              <p className="font-bold text-xs" style={{ color: textC }}>{cfg.giftText}</p>
+              <p className="font-bold text-xs" style={{ color: textC, fontFamily: cfg.fontBody }}>{cfg.giftText}</p>
             </div>
           )}
         </div>
 
         {cfg.showGifts && cfg.showGiftNote && cfg.giftNoteText && (
           <div className="text-center pt-2">
-            <span className="inline-flex py-2 px-4 rounded-full text-[10px] font-bold border" style={{ background: `${primary}15`, borderColor: `${primary}33`, color: primary }}>{cfg.giftNoteText}</span>
+            <span className="inline-flex py-2 px-4 rounded-full text-[10px] font-bold border" style={{ background: `${primary}15`, borderColor: `${primary}33`, color: primary, fontFamily: cfg.fontBody }}>{cfg.giftNoteText}</span>
           </div>
         )}
 
@@ -557,7 +555,7 @@ export const InvitePreview = ({ cfg }) => {
 };
 
 /* ============================================================================
-   EDITOR PRINCIPAL (EL PANEL QUE USA EL SALÓN)
+   EDITOR PRINCIPAL (PANEL DE HERRAMIENTAS)
 ============================================================================ */
 export const EditorScreen = ({ invitations, onSave }) => {
   const { id } = useParams();
@@ -594,7 +592,7 @@ export const EditorScreen = ({ invitations, onSave }) => {
           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 text-left">Personalización</h3>
 
           <Acc title="Estilo y Colores" icon={Palette} defaultOpen iconColor="#7c3aed">
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-left">Paleta de Colores</label>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-left">Temas Predefinidos</label>
             <div className="flex flex-wrap gap-3 mb-6">
               {THEMES.map(th => (
                 <button
@@ -609,18 +607,30 @@ export const EditorScreen = ({ invitations, onSave }) => {
               ))}
             </div>
 
-            <SelectInp label="Tipografía Principal" value={cfg.fontTitle} options={FONTS} onChange={v => update("fontTitle", v)} />
-            
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-left mt-4 border-t border-gray-100 pt-4">Ajuste Manual de Colores</label>
+            <div className="grid grid-cols-2 gap-2 mb-6">
+              <label className="text-xs flex items-center justify-between font-bold text-slate-600">Fondo Arriba <input type="color" value={cfg.bg1} onChange={e => update('bg1', e.target.value)} className="w-8 h-8 rounded cursor-pointer" /></label>
+              <label className="text-xs flex items-center justify-between font-bold text-slate-600">Fondo Abajo <input type="color" value={cfg.bg2} onChange={e => update('bg2', e.target.value)} className="w-8 h-8 rounded cursor-pointer" /></label>
+              <label className="text-xs flex items-center justify-between font-bold text-slate-600">Color Principal <input type="color" value={cfg.primary} onChange={e => update('primary', e.target.value)} className="w-8 h-8 rounded cursor-pointer" /></label>
+              <label className="text-xs flex items-center justify-between font-bold text-slate-600">Fondo Tarjetas <input type="color" value={cfg.card} onChange={e => update('card', e.target.value)} className="w-8 h-8 rounded cursor-pointer" /></label>
+              <label className="text-xs flex items-center justify-between font-bold text-slate-600">Texto Principal <input type="color" value={cfg.text} onChange={e => update('text', e.target.value)} className="w-8 h-8 rounded cursor-pointer" /></label>
+              <label className="text-xs flex items-center justify-between font-bold text-slate-600">Texto Secund. <input type="color" value={cfg.muted} onChange={e => update('muted', e.target.value)} className="w-8 h-8 rounded cursor-pointer" /></label>
+            </div>
+
+            <div className="border-t border-gray-100 pt-4">
+              <SelectInp label="Tipografía General (Global)" value={cfg.fontBody} options={FONTS} onChange={v => update("fontBody", v)} />
+            </div>
+
             <div className="mb-4 mt-4 border-t border-gray-100 pt-4">
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-left">Tamaño de Textos</label>
               <div className="space-y-4">
                 <div>
                   <div className="flex justify-between text-[9px] font-bold text-slate-500 mb-1"><span>Nombre principal</span><span>{cfg.honoreeSize ?? 48}px</span></div>
-                  <input type="range" min={30} max={80} value={cfg.honoreeSize ?? 48} onChange={e => update("honoreeSize", Number(e.target.value))} className="w-full accent-violet-600" />
+                  <input type="range" min={30} max={80} value={cfg.honoreeSize ?? 48} onChange={e => update("honoreeSize", Number(e.target.value))} className="w-full accent-violet-600 cursor-pointer" />
                 </div>
                 <div>
                   <div className="flex justify-between text-[9px] font-bold text-slate-500 mb-1"><span>Frase (Estás invitado...)</span><span>{cfg.eventTypeSize ?? 11}px</span></div>
-                  <input type="range" min={8} max={24} value={cfg.eventTypeSize ?? 11} onChange={e => update("eventTypeSize", Number(e.target.value))} className="w-full accent-violet-600" />
+                  <input type="range" min={8} max={24} value={cfg.eventTypeSize ?? 11} onChange={e => update("eventTypeSize", Number(e.target.value))} className="w-full accent-violet-600 cursor-pointer" />
                 </div>
               </div>
             </div>
@@ -647,11 +657,21 @@ export const EditorScreen = ({ invitations, onSave }) => {
 
           <Acc title="Textos de Portada" icon={Type} iconColor="#0d9488">
             <Inp label="Nombre Agasajado" value={cfg.honoreeName} onChange={v => update("honoreeName", v)} />
-            <div className="flex gap-2">
+            <div className="flex gap-2 mb-4 bg-gray-50 p-2 rounded-xl border border-gray-200">
+               <SelectInp className="flex-1 !mb-0" label="Fuente" value={cfg.honoreeFont || cfg.fontTitle} options={FONTS} onChange={v => update("honoreeFont", v)} />
+               <div className="w-10 flex flex-col justify-end"><input type="color" value={cfg.honoreeColor || cfg.text} onChange={e => update('honoreeColor', e.target.value)} className="w-full h-11 rounded-lg cursor-pointer" /></div>
+            </div>
+
+            <div className="flex gap-2 mt-4">
               <EmojiPicker value={cfg.eventTypeEmoji || "✨"} onSelect={v => update("eventTypeEmoji", v)} />
               <div className="flex-1"><Inp label="Frase (Ej: Estás invitado a...)" value={cfg.eventType} onChange={v => update("eventType", v)} /></div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 mb-4 bg-gray-50 p-2 rounded-xl border border-gray-200">
+               <SelectInp className="flex-1 !mb-0" label="Fuente" value={cfg.eventTypeFont || cfg.fontBody} options={FONTS} onChange={v => update("eventTypeFont", v)} />
+               <div className="w-10 flex flex-col justify-end"><input type="color" value={cfg.eventTypeColor || cfg.primary} onChange={e => update('eventTypeColor', e.target.value)} className="w-full h-11 rounded-lg cursor-pointer" /></div>
+            </div>
+
+            <div className="flex gap-2 mt-4">
               <EmojiPicker value={cfg.badgeEmoji} onSelect={v => update("badgeEmoji", v)} />
               <div className="flex-1"><Inp label="Texto Medalla (Ej: 5 añitos)" value={cfg.badgeText} onChange={v => update("badgeText", v)} /></div>
             </div>
@@ -721,7 +741,7 @@ export const EditorScreen = ({ invitations, onSave }) => {
             {cfg.showVideo && (
               <>
                 <Inp label="Título del video" value={cfg.videoTitle || ""} onChange={v => update("videoTitle", v)} placeholder="Ej: Un mensaje especial 💖" />
-                <Inp label="Enlace de YouTube" value={cfg.videoUrl || ""} onChange={v => update("videoUrl", v)} placeholder="Ej: https://www.youtube.com/watch?v=..." />
+                <Inp label="Enlace de YouTube" value={cfg.videoUrl || ""} onChange={v => update("videoUrl", v)} placeholder="Ej: https://youtu.be/..." />
                 <p className="text-[10px] text-violet-500 font-bold mt-1 bg-violet-50 p-2 rounded-lg">🎬 Pegá cualquier link de YouTube. Se reproducirá directamente dentro de la invitación sin que el usuario tenga que salir de la página.</p>
               </>
             )}
@@ -735,11 +755,17 @@ export const EditorScreen = ({ invitations, onSave }) => {
                   {cfg.itinerary?.map((item, i) => (
                     <div key={i} className="p-3 bg-white rounded-xl border border-gray-200 relative">
                       <div className="flex gap-2 mb-2">
-                        <input className="w-16 p-2 bg-gray-50 rounded-lg text-xs font-bold border border-gray-100 outline-none focus:border-violet-300" value={item.time} onChange={e => { const n = [...cfg.itinerary]; n[i].time = e.target.value; update("itinerary", n); }} />
-                        <input className="flex-1 p-2 bg-gray-50 rounded-lg text-xs font-bold border border-gray-100 outline-none focus:border-violet-300" value={item.title} onChange={e => { const n = [...cfg.itinerary]; n[i].title = e.target.value; update("itinerary", n); }} />
+                        <input className="w-16 p-2 bg-gray-50 rounded-lg text-xs font-bold border border-gray-100 outline-none focus:border-violet-300" value={item.time} onChange={e => {
+                          const n = [...cfg.itinerary]; n[i].time = e.target.value; update("itinerary", n);
+                        }} />
+                        <input className="flex-1 p-2 bg-gray-50 rounded-lg text-xs font-bold border border-gray-100 outline-none focus:border-violet-300" value={item.title} onChange={e => {
+                          const n = [...cfg.itinerary]; n[i].title = e.target.value; update("itinerary", n);
+                        }} />
                         <button onClick={() => update("itinerary", cfg.itinerary.filter((_, idx) => idx !== i))} type="button" className="text-red-400 p-2 hover:bg-red-50 rounded-lg cursor-pointer"><Trash2 size={14}/></button>
                       </div>
-                      <input className="w-full p-2 bg-gray-50 rounded-lg text-xs border border-gray-100 outline-none focus:border-violet-300" value={item.sub} placeholder="Descripción (opcional)" onChange={e => { const n = [...cfg.itinerary]; n[i].sub = e.target.value; update("itinerary", n); }} />
+                      <input className="w-full p-2 bg-gray-50 rounded-lg text-xs border border-gray-100 outline-none focus:border-violet-300" value={item.sub} placeholder="Descripción (opcional)" onChange={e => {
+                        const n = [...cfg.itinerary]; n[i].sub = e.target.value; update("itinerary", n);
+                      }} />
                     </div>
                   ))}
                 </div>
@@ -756,7 +782,9 @@ export const EditorScreen = ({ invitations, onSave }) => {
                   {cfg.menuItems?.map((item, i) => (
                     <div key={i} className="flex items-center gap-2 p-2 bg-white rounded-xl border border-gray-200">
                       <EmojiPicker list={FOOD_EMOJIS} value={item.emoji} onSelect={e => { const n = [...cfg.menuItems]; n[i].emoji = e; update("menuItems", n); }} />
-                      <input className="flex-1 p-2 bg-gray-50 rounded-lg text-xs font-bold border border-gray-100 outline-none focus:border-violet-300" value={item.label} placeholder="Comida" onChange={e => { const n = [...cfg.menuItems]; n[i].label = e.target.value; update("menuItems", n); }} />
+                      <input className="flex-1 p-2 bg-gray-50 rounded-lg text-xs font-bold border border-gray-100 outline-none focus:border-violet-300" value={item.label} placeholder="Comida" onChange={e => {
+                        const n = [...cfg.menuItems]; n[i].label = e.target.value; update("menuItems", n);
+                      }} />
                       <button onClick={() => update("menuItems", cfg.menuItems.filter((_, idx) => idx !== i))} type="button" className="text-red-400 p-3 hover:bg-red-50 rounded-lg cursor-pointer"><Trash2 size={14}/></button>
                     </div>
                   ))}
@@ -774,6 +802,7 @@ export const EditorScreen = ({ invitations, onSave }) => {
                  <div className="flex-1"><Inp value={cfg.dressCodeText} onChange={v => update("dressCodeText", v)} placeholder="Ej: Elegante Sport" className="!mb-0"/></div>
                </div>
              )}
+
              <div className="flex items-center justify-between mb-4 pt-4 border-t border-gray-100"><span className="text-xs font-bold text-slate-500">Activar Regalos</span><Toggle checked={cfg.showGifts} onChange={v => update("showGifts", v)} /></div>
              {cfg.showGifts && (
                <>
@@ -811,6 +840,7 @@ export const EditorScreen = ({ invitations, onSave }) => {
             <p className="text-[9px] text-gray-400 mb-1">Usa {"{nombre}"} para incluir el nombre automáticamente.</p>
             <Inp value={cfg.whatsappMessage} onChange={v => update("whatsappMessage", v)} multiline />
           </Acc>
+
         </aside>
 
         {/* VISTA PREVIA CENTRAL */}
