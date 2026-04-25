@@ -4,7 +4,7 @@ import {
   MapPin, Clock, Calendar, Palette, CheckCircle2, PartyPopper,
   ChevronDown, Plus, Type, LogOut, Edit2, Copy, ArrowLeft, Save, X,
   Star, Image as ImageIcon, Layout, List, Trash2, UserPlus, Users, 
-  ShieldCheck, AlertCircle, Loader2, Key, Info, BellRing, Lock, Video, Link as LinkIcon
+  ShieldCheck, AlertCircle, Loader2, Key, Info, BellRing, Lock, Video, Link as LinkIcon, Sparkles
 } from "lucide-react";
 
 /* ============================================================================
@@ -93,7 +93,7 @@ export const EFFECTS = [
 
 export const DEF_CONFIG = {
   theme:"violet", fontTitle:"'Pacifico', cursive", fontBody:"'DM Sans', sans-serif",
-  honoreeSize: 48, eventTypeSize: 11, // Controles de tamaño de letra nuevos
+  honoreeSize: 48, eventTypeSize: 11,
   bg1:"#08060f", bg2:"#120d24", primary:"#7c3aed", card:"#1a1035", text:"#f0ecff", muted:"#9b8ec4",
   coverGradientIntensity: 70, particleEffect: "none",
   eventTypeEmoji:"✨", eventType:"Estás invitado al cumple de", honoreeName:"Valentina", badgeEmoji:"🎂", badgeText:"5 añitos",
@@ -362,7 +362,7 @@ const VideoSection = ({ cfg, primary, text, muted, card }) => {
 };
 
 /* ============================================================================
-   SOBRE DIGITAL (Animación al abrir)
+   SOBRE DIGITAL (Animación al abrir) -> ¡ESTE ES EL QUE ME COMÍ ANTES!
 ============================================================================ */
 const Envelope = ({ cfg, onOpen }) => {
   const [opening, setOpening] = useState(false);
@@ -379,11 +379,10 @@ const Envelope = ({ cfg, onOpen }) => {
       <div className="absolute inset-0 opacity-40" style={{ background: `linear-gradient(135deg, ${cfg.bg1 || th.bg1}, ${cfg.bg2 || th.bg2})` }} />
       <div onClick={openEnvelope} className="relative z-10 cursor-pointer group flex flex-col items-center">
         <div className={`relative w-[280px] h-[180px] rounded-lg shadow-2xl transition-all duration-700 ease-in-out ${opening ? '-translate-y-20 opacity-0' : 'group-hover:-translate-y-2'}`} style={{ backgroundColor: cfg.card || th.card }}>
-          {/* Solapa Superior */}
+          {/* Solapas del sobre hechas con bordes transparentes */}
           <div className="absolute top-0 left-0 w-full h-full border-[0px] border-t-[90px] border-l-[140px] border-r-[140px] border-b-[90px] border-transparent opacity-20 pointer-events-none" style={{ borderTopColor: primary }} />
-          {/* Cierre Inferior */}
           <div className="absolute bottom-0 left-0 w-full h-full border-[0px] border-b-[90px] border-l-[140px] border-r-[140px] border-t-[90px] border-transparent opacity-10 pointer-events-none" style={{ borderBottomColor: '#ffffff' }} />
-          {/* Sello */}
+          {/* Sello lacrado */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full shadow-xl flex items-center justify-center text-2xl text-white transition-transform group-hover:scale-110" style={{ backgroundColor: primary, border: '2px solid rgba(255,255,255,0.2)' }}>
             {cfg.badgeEmoji || "💌"}
           </div>
@@ -393,7 +392,6 @@ const Envelope = ({ cfg, onOpen }) => {
     </div>
   );
 };
-
 
 /* ============================================================================
    VISTA PREVIA DE LA INVITACIÓN
@@ -418,7 +416,7 @@ export const InvitePreview = ({ cfg }) => {
     </div>
   );
 
-  const waMsg = cfg.whatsappMessage.replace('{nombre}', cfg.honoreeName || "");
+  const waMsg = (cfg.whatsappMessage || "").replace('{nombre}', cfg.honoreeName || "");
 
   return (
     <div style={{ background: bg, fontFamily: cfg.fontBody }} className="min-h-full pb-12 relative">
@@ -430,9 +428,7 @@ export const InvitePreview = ({ cfg }) => {
         <img src={cfg.coverPhoto || DEF_CONFIG.coverPhoto} className="w-full h-full object-cover" alt="Cover" />
         <div className="absolute inset-0" style={{ background: `linear-gradient(to top, ${cfg.bg1 || th.bg1} 5%, rgba(0,0,0,${gradOpacity}) 60%, transparent 100%)` }} />
         <div className="absolute bottom-0 left-0 right-0 p-8 text-center">
-          <p className="font-black uppercase tracking-[0.2em] mb-4 flex items-center justify-center gap-2" style={{ color: primary, fontSize: `${cfg.eventTypeSize ?? 11}px` }}>
-            {cfg.eventTypeEmoji} {cfg.eventType}
-          </p>
+          <p className="font-black uppercase tracking-[0.2em] mb-4 flex items-center justify-center gap-2" style={{ color: primary, fontSize: `${cfg.eventTypeSize ?? 11}px` }}>{cfg.eventTypeEmoji} {cfg.eventType}</p>
           <h1 style={{ fontFamily: cfg.fontTitle, color: textC, fontSize: `${cfg.honoreeSize ?? 48}px` }} className="leading-tight mb-4">{cfg.honoreeName}</h1>
           <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-white/10 backdrop-blur-md bg-black/30 font-black text-sm" style={{ color: textC }}>{cfg.badgeEmoji} {cfg.badgeText}</span>
         </div>
@@ -702,6 +698,14 @@ const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateSalon, i
                     <button onClick={() => { const el = document.createElement('textarea'); el.value = `${window.location.origin}/i/${slugify(user.name)}/${inv.id}`; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); notify("Copiado!"); }} className="w-14 h-14 border border-gray-100 rounded-2xl flex items-center justify-center text-violet-600 hover:bg-violet-50 transition-all cursor-pointer"><Copy size={20}/></button>
                   </div>
                 </div>
+                <div className="bg-slate-50 p-5 border-t border-gray-100 mt-auto">
+                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2"><Lock size={12}/> Control Interno</p>
+                   <div className="flex gap-2 mb-2">
+                     <div className="flex-1"><Inp label="Fecha/Hora" type="datetime-local" value={inv.internalDate} onChange={v => onUpdateInternal(inv.id, 'internalDate', v)} className="!mb-0"/></div>
+                     <div className="w-24"><Inp label="Invitados" type="number" value={inv.internalGuests} onChange={v => onUpdateInternal(inv.id, 'internalGuests', v)} className="!mb-0"/></div>
+                   </div>
+                   <Inp label="Aclaraciones del cliente" multiline value={inv.internalNotes} onChange={v => onUpdateInternal(inv.id, 'internalNotes', v)} className="!mb-0"/>
+                </div>
               </div>
             ))}
           </div>
@@ -729,6 +733,7 @@ const EditorScreen = ({ invitations, onSave }) => {
   if (!inv) return <div className="h-screen bg-slate-950 flex items-center justify-center text-white"><Loader2 className="animate-spin mr-3"/> Cargando editor...</div>;
 
   const update = (k, v) => setInv(p => ({ ...p, config: { ...(p.config || DEF_CONFIG), [k]: v } }));
+  const handleSave = () => { onSave(inv); navigate("/dashboard"); };
   const cfg = inv.config || DEF_CONFIG;
 
   return (
@@ -738,12 +743,13 @@ const EditorScreen = ({ invitations, onSave }) => {
           <button onClick={() => navigate("/dashboard")} className="w-10 h-10 bg-white/5 rounded-xl text-white flex items-center justify-center hover:bg-white/10 cursor-pointer"><ArrowLeft size={20}/></button>
           <input className="bg-transparent border-none text-white font-black text-sm outline-none w-48 px-2 py-1 rounded hover:bg-white/5 focus:bg-white/10 transition-colors" value={inv.title} onChange={e => setInv({...inv, title: e.target.value})} />
         </div>
-        <button onClick={() => { onSave(inv); navigate("/dashboard"); }} className="px-8 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-black text-xs flex items-center gap-3 shadow-xl shadow-violet-900/40 cursor-pointer transition-colors">
+        <button onClick={handleSave} className="px-8 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-black text-xs flex items-center gap-3 shadow-xl shadow-violet-900/40 cursor-pointer transition-colors">
           <Save size={16}/> GUARDAR CAMBIOS
         </button>
       </header>
 
       <div className="flex-1 flex overflow-hidden">
+        {/* PANEL LATERAL */}
         <aside className="w-[380px] bg-[#f8f7ff] overflow-y-auto p-6 border-r border-gray-100 z-10 relative">
           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 text-left">Personalización</h3>
 
@@ -759,7 +765,6 @@ const EditorScreen = ({ invitations, onSave }) => {
 
             <SelectInp label="Tipografía Principal" value={cfg.fontTitle} options={FONTS} onChange={v => update("fontTitle", v)} />
             
-            {/* NUEVO: Controles de Tamaño de Letra */}
             <div className="mb-4 mt-4 border-t border-gray-100 pt-4">
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-left">Tamaño de Textos</label>
               <div className="space-y-4">
@@ -802,6 +807,19 @@ const EditorScreen = ({ invitations, onSave }) => {
               <div className="flex-1"><Inp label="Texto Medalla (Ej: 5 añitos)" value={cfg.badgeText} onChange={v => update("badgeText", v)} /></div>
             </div>
             <FileUpload label="Foto de Portada (Subir imagen)" value={cfg.coverPhoto} onChange={v => update("coverPhoto", v)} />
+          </Acc>
+
+          <Acc title="Banner Promocional" icon={ImageIcon} iconColor="#d97706">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-xs font-bold text-slate-500">Mostrar Banner central</span>
+              <Toggle checked={cfg.showBanner} onChange={v => update("showBanner", v)} />
+            </div>
+            {cfg.showBanner && (
+              <>
+                <Inp label="Título Banner (Ej: La Festejada)" value={cfg.bannerTitle} onChange={v => update("bannerTitle", v)} />
+                <FileUpload label="Foto del Banner (Subir imagen)" value={cfg.bannerPhoto} onChange={v => update("bannerPhoto", v)} />
+              </>
+            )}
           </Acc>
 
           <Acc title="Fecha y Lugar" icon={Calendar} iconColor="#e11d48">
