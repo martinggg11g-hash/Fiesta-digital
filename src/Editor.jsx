@@ -1,87 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import {
   MapPin, Clock, Calendar, Palette, CheckCircle2,
   ChevronDown, Type, Edit2, ArrowLeft, Save, X,
   Star, Image as ImageIcon, Layout, List, Trash2, Loader2, Check,
   Video, Link as LinkIcon
 } from "lucide-react";
-
-/* ============================================================================
-   ESTILOS INYECTADOS LOCALMENTE (Para Confeti, Pop y Baúl)
-============================================================================ */
-const injectLocalStyles = () => {
-  if (!document.getElementById("cinematic-styles")) {
-    const style = document.createElement("style");
-    style.id = "cinematic-styles";
-    style.textContent = `
-      @keyframes elasticPop {
-        0% { transform: scale(0.5); opacity: 0; }
-        60% { transform: scale(1.2); }
-        80% { transform: scale(0.95); }
-        100% { transform: scale(1); opacity: 1; }
-      }
-      .animate-elastic { animation: elasticPop 0.8s cubic-bezier(.34,1.56,.64,1); }
-
-      @keyframes confettiFall {
-        0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
-        100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
-      }
-      .confetti-piece {
-        position: absolute;
-        top: 0;
-        width: 8px;
-        height: 12px;
-        animation: confettiFall 2.5s linear forwards;
-        z-index: 50;
-      }
-
-      /* ====== BAÚL MEJORADO ====== */
-      @keyframes float { 
-        0%,100% { transform: translateY(0px); } 
-        50% { transform: translateY(-10px); } 
-      }
-      .animate-float { animation: float 3s ease-in-out infinite; }
-
-      /* Tapa que se abre hacia atrás con perspectiva */
-      @keyframes openChestLid {
-        0%   { transform: rotateX(0deg); }
-        100% { transform: rotateX(-130deg); }
-      }
-      .animate-chest-open { 
-        transform-origin: bottom center;
-        animation: openChestLid 0.9s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; 
-      }
-
-      /* Glow interior que aparece */
-      @keyframes chestGlow {
-        0% { opacity: 0; transform: scaleX(0.2) scaleY(0.5); }
-        100% { opacity: 1; transform: scaleX(1) scaleY(1); }
-      }
-      .animate-chest-glow { animation: chestGlow 0.5s 0.5s ease-out forwards; }
-
-      /* Pulso del brillo */
-      @keyframes glowPulse { 0%,100% { opacity: 0.7; } 50% { opacity: 1; } }
-      .animate-glow-pulse { animation: glowPulse 1.5s ease-in-out infinite; }
-
-      /* Monedas y partículas volando */
-      @keyframes coinFly {
-        0%   { opacity: 1; transform: translate(0,0) rotateY(0deg); }
-        60%  { opacity: 1; }
-        100% { opacity: 0; transform: translate(var(--tx), var(--ty)) rotateY(720deg); }
-      }
-      .animate-coin { animation: coinFly var(--dur, 0.8s) var(--delay, 0s) ease-out forwards; }
-
-      @keyframes sparkleOut {
-        0%   { opacity: 0; transform: translate(0,0) scale(0.2) rotate(0deg); }
-        20%  { opacity: 1; }
-        100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(1.2) rotate(var(--rot)); }
-      }
-      .animate-sparkle { animation: sparkleOut var(--dur, 1.5s) var(--delay, 0s) ease-out forwards; }
-    `;
-    document.head.appendChild(style);
-  }
-};
 
 /* ============================================================================
    FUNCIONES AUXILIARES Y CONSTANTES
@@ -130,19 +55,11 @@ export const EFFECTS = [
   { id: "emojis",   name: "Emojis mix",  icon: "🎉" },
 ];
 
-export const OPENING_ANIMATIONS = [
-  { id: "envelope", name: "Sobre", icon: "💌" },
-  { id: "chest", name: "Baúl", icon: "🗝️" },
-  { id: "musicbox", name: "Caja Musical", icon: "🎵" },
-  { id: "soccer", name: "Cancha", icon: "⚽" },
-  { id: "gift", name: "Regalo", icon: "🎁" },
-];
-
 export const DEF_CONFIG = {
   theme:"violet", fontTitle:"'Pacifico', cursive", fontBody:"'DM Sans', sans-serif",
   honoreeSize: 48, eventTypeSize: 11,
   bg1:"#08060f", bg2:"#120d24", primary:"#7c3aed", card:"#1a1035", text:"#f0ecff", muted:"#9b8ec4",
-  coverGradientIntensity: 70, particleEffect: "none", openingAnimation: "gift",
+  coverGradientIntensity: 70, particleEffect: "none",
   eventTypeEmoji:"✨", eventType:"Estás invitado al cumple de", honoreeName:"Valentina", badgeEmoji:"🎂", badgeText:"5 añitos",
   coverPhoto:"https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=800&q=80",
   showBanner:true, bannerTitle:"La festejada", bannerPhoto:"https://images.unsplash.com/photo-1545912452-8aea7e25a3d3?auto=format&fit=crop&w=400&q=80",
@@ -245,9 +162,8 @@ const Acc = ({ title, icon: Icon, children, defaultOpen = false, iconColor = "#7
   );
 };
 
-
 /* ============================================================================
-   WIDGETS Y EFECTOS ESPECIALES
+   EFECTOS ESPECIALES Y WIDGETS
 ============================================================================ */
 const Countdown = ({ targetDate, primary, text }) => {
   const [timeLeft, setTimeLeft] = useState({ d:0, h:0, m:0, s:0 });
@@ -431,200 +347,49 @@ const VideoSection = ({ cfg, primary, text, muted, card }) => {
 };
 
 /* ============================================================================
-   ANIMACIONES DE ENTRADA CINEMATOGRÁFICAS
+   ANIMACIÓN DE ENTRADA CON LOTTIE PREMIUM
 ============================================================================ */
-const Confetti = ({ trigger }) => {
-  const [pieces, setPieces] = useState([]);
-  useEffect(() => {
-    if (trigger) {
-      const newPieces = Array.from({ length: 40 }).map((_, i) => ({
-        id: i, left: Math.random() * 100, delay: Math.random() * 0.5, color: `hsl(${Math.random()*360},100%,60%)`
-      }));
-      setPieces(newPieces);
-    }
-  }, [trigger]);
-
-  return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden w-full h-full">
-      {pieces.map(p => (
-        <div key={p.id} className="confetti-piece" style={{ left: `${p.left}%`, backgroundColor: p.color, animationDelay: `${p.delay}s` }} />
-      ))}
-    </div>
-  );
-};
-
 export const OpeningAnimation = ({ cfg, onOpen }) => {
   const [opening, setOpening] = useState(false);
-  const [phase, setPhase] = useState(0);
-  
-  injectLocalStyles();
-
-  const type = cfg?.openingAnimation || "envelope";
   const th = THEMES.find(t => t.id === cfg?.theme) || THEMES[0];
-  const primary = cfg?.primary || th.primary;
 
   const handleOpen = () => {
     if (opening) return;
     setOpening(true);
 
-    if (type === "chest") {
-      try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const notes = [523, 659, 784, 1047, 1319];
-        const times = [0, 0.1, 0.2, 0.35, 0.5];
-        notes.forEach((freq, i) => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.connect(gain); gain.connect(ctx.destination);
-          osc.frequency.value = freq; osc.type = 'sine';
-          gain.gain.setValueAtTime(0.15, ctx.currentTime + times[i]);
-          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + times[i] + 0.4);
-          osc.start(ctx.currentTime + times[i]); osc.stop(ctx.currentTime + times[i] + 0.5);
-        });
-      } catch(e) {}
-    } else {
-      const sounds = {
-        envelope: "https://actions.google.com/sounds/v1/water/air_woosh_underwater.ogg", 
-        soccer: "https://actions.google.com/sounds/v1/sports/referee_whistle.ogg",
-        musicbox: "https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg",
-        gift: "https://actions.google.com/sounds/v1/fireworks/fireworks_burst.ogg"
-      };
-      if(sounds[type]) {
-        const audio = new Audio(sounds[type]);
-        audio.volume = 0.6;
-        audio.play().catch(()=>{});
-      }
-    }
+    const audio = new Audio("https://actions.google.com/sounds/v1/magic/magic_chimes.ogg");
+    audio.volume = 0.5;
+    audio.play().catch(() => {});
 
-    if (type === "gift" || type === "soccer" || type === "chest") {
-      setTimeout(() => setPhase(1), 200);   
-      setTimeout(() => setPhase(2), 600);   
-      setTimeout(() => onOpen(), 1600);
-    } else {
-      setTimeout(() => onOpen(), type === 'envelope' ? 1200 : 1500);
-    }
-  };
-
-  const renderContent = () => {
-    switch (type) {
-      case "envelope":
-        return (
-          <div className="relative z-10 cursor-pointer group flex flex-col items-center">
-            <div className={`relative w-[280px] h-[180px] rounded-lg shadow-2xl transition-all duration-700 ease-in-out ${opening ? '-translate-y-20 opacity-0' : 'animate-float'}`} style={{ backgroundColor: cfg?.card || th.card }}>
-              <div className={`absolute top-0 left-0 w-full h-full border-[0px] border-t-[90px] border-l-[140px] border-r-[140px] border-b-[90px] border-transparent opacity-30 ${opening ? 'animate-envelope-open' : ''}`} style={{ borderTopColor: primary }} />
-              <div className="absolute bottom-0 left-0 w-full h-full border-[0px] border-b-[90px] border-l-[140px] border-r-[140px] border-t-[90px] border-transparent opacity-10" style={{ borderBottomColor: '#ffffff' }} />
-              {!opening && (
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full shadow-xl flex items-center justify-center text-2xl text-white transition-transform group-hover:scale-110" style={{ backgroundColor: primary, border: '2px solid rgba(255,255,255,0.2)' }}>
-                  {cfg?.badgeEmoji || "💌"}
-                </div>
-              )}
-            </div>
-            <p className="mt-8 text-white text-xs font-black tracking-[0.3em] uppercase opacity-70 animate-pulse">Tocar para abrir</p>
-          </div>
-        );
-
-      case "chest":
-        return (
-          <div className="relative w-full h-full flex flex-col items-center justify-center cursor-pointer" onClick={handleOpen}>
-            {opening && (
-              <div className="absolute rounded-full animate-chest-glow pointer-events-none z-0" style={{ width: 220, height: 220, background: 'radial-gradient(circle, rgba(251,191,36,0.6) 0%, transparent 70%)', filter: 'blur(20px)', top: '50%', left: '50%', transform: 'translate(-50%, -60%)' }} />
-            )}
-            
-            {opening && (
-              <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
-                {['✨','🌟','💫','⭐','✦'].map((s, i) => (
-                  <span key={`sp${i}`} className="absolute animate-sparkle text-lg" style={{ left: `calc(50% + ${(Math.random()*2-1)*20}px)`, top: '42%', '--tx': `${(i % 2 === 0 ? -1 : 1) * (40 + i * 22)}px`, '--ty': `${-(80 + i * 25)}px`, '--rot': `${(Math.random()-0.5)*360}deg`, '--dur': `${0.9 + i * 0.15}s`, '--delay': `${0.3 + i * 0.08}s`, filter: 'drop-shadow(0 0 6px gold)' }}>{s}</span>
-                ))}
-                {[...Array(8)].map((_, i) => {
-                  const angle = (i / 8) * 220 - 110; const rad = angle * Math.PI / 180; const dist = 55 + (i % 3) * 25;
-                  return <div key={`coin${i}`} className="absolute rounded-full animate-coin" style={{ width: 10, height: 10, background: 'radial-gradient(circle at 35% 35%, #fef08a, #d97706)', border: '2px solid #b45309', left: '50%', top: '45%', '--tx': `${Math.sin(rad) * dist}px`, '--ty': `${-Math.abs(Math.cos(rad) * dist) - 10}px`, '--dur': `${0.6 + (i % 3) * 0.2}s`, '--delay': `${0.25 + (i % 4) * 0.08}s` }} />
-                })}
-                {['#f59e0b','#ef4444','#3b82f6','#22c55e','#ec4899','#a855f7'].map((c, i) => (
-                  <div key={`conf${i}`} className="absolute animate-coin rounded" style={{ width: 6, height: 6, background: c, left: '50%', top: '45%', '--tx': `${(i % 2 === 0 ? -1 : 1) * (30 + i * 18)}px`, '--ty': `${-(60 + i * 20)}px`, '--dur': `${0.7 + i * 0.12}s`, '--delay': `${0.2 + i * 0.07}s` }} />
-                ))}
-              </div>
-            )}
-
-            <div className={`relative z-20 transition-all duration-700 ${phase >= 2 ? 'opacity-0 scale-90' : 'animate-float group-hover:scale-105'}`} style={{ width: 200, height: 170, perspective: 600 }}>
-              <div className="absolute rounded-sm overflow-hidden" style={{ top: 3, left: 3, right: 3, height: 68, background: 'radial-gradient(ellipse at 50% 30%, #fef9c3, #fbbf24 40%, #d97706 80%, #7c3f00 100%)', opacity: opening ? 1 : 0, transition: 'opacity 0.4s 0.5s', zIndex: 2 }}>
-                <div className="absolute inset-0 animate-glow-pulse" style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.8) 0%, transparent 70%)' }} />
-              </div>
-              <div className={`absolute top-0 w-full overflow-hidden ${opening ? 'animate-chest-open' : ''}`} style={{ height: 72, borderRadius: '16px 16px 0 0', background: 'linear-gradient(180deg, #92400e 0%, #78350f 60%, #5c2d00 100%)', border: '3px solid #b8730a', borderBottom: 'none', zIndex: 5 }}>
-                <div className="absolute inset-0" style={{ background: 'repeating-linear-gradient(180deg, transparent 0px, transparent 18px, rgba(0,0,0,0.15) 18px, rgba(0,0,0,0.15) 20px)' }} />
-                <div className="absolute bottom-0 left-0 right-0" style={{ height: 14, background: 'linear-gradient(180deg, #ca8a04, #b45309, #ca8a04)', borderTop: '2px solid #fbbf24' }} />
-                <div className="absolute top-0 left-0 right-0" style={{ height: 6, background: 'linear-gradient(180deg, rgba(255,255,255,0.25), transparent)', borderRadius: '16px 16px 0 0' }} />
-                {[{ top: 10, left: 8 }, { top: 10, right: 8 }].map((pos, i) => (
-                  <div key={i} className="absolute" style={{ width: 10, height: 10, borderRadius: '50%', background: 'radial-gradient(circle at 35% 35%, #fef08a, #b45309)', border: '1px solid #78350f', ...pos }} />
-                ))}
-              </div>
-              <div className="absolute bottom-0 w-full overflow-hidden" style={{ height: 110, borderRadius: '0 0 16px 16px', background: 'linear-gradient(180deg, #7c3f00 0%, #5c2d00 60%, #3d1c00 100%)', border: '3px solid #b8730a' }}>
-                <div className="absolute inset-0" style={{ background: 'repeating-linear-gradient(180deg, transparent 0px, transparent 24px, rgba(0,0,0,0.2) 24px, rgba(0,0,0,0.2) 26px)' }} />
-                <div className="absolute" style={{ top: '45%', left: -4, right: -4, height: 16, transform: 'translateY(-50%)', background: 'linear-gradient(180deg, #ca8a04, #b45309, #ca8a04)', borderTop: '2px solid #fbbf24', borderBottom: '2px solid #fbbf24' }} />
-                {[{ top: 8, left: 8 }, { top: 8, right: 8 }, { bottom: 8, left: 8 }, { bottom: 8, right: 8 }].map((pos, i) => (
-                  <div key={i} className="absolute" style={{ width: 10, height: 10, borderRadius: '50%', background: 'radial-gradient(circle at 35% 35%, #fef08a, #b45309)', border: '1px solid #78350f', boxShadow: '0 1px 3px rgba(0,0,0,0.6)', ...pos }} />
-                ))}
-                <div className="absolute" style={{ bottom: 28, left: '50%', transform: 'translateX(-50%)', width: 28, height: 28, background: 'radial-gradient(circle at 35% 30%, #fef08a, #d97706)', borderRadius: 6, border: '2px solid #78350f', boxShadow: '0 2px 6px rgba(0,0,0,0.5), inset 0 1px 2px rgba(255,255,255,0.3)', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <div style={{ width: 8, height: 6, borderRadius: '50% 50% 0 0 / 60% 60% 0 0', border: '2.5px solid #78350f', borderBottom: 'none', position: 'absolute', top: -7 }} />
-                  <div style={{ width: 6, height: 8, background: '#78350f', borderRadius: '50% 50% 4px 4px' }} />
-                </div>
-              </div>
-              <div style={{ position: 'absolute', bottom: -16, left: '50%', transform: 'translateX(-50%)', width: opening ? 200 : 160, height: 16, background: 'rgba(0,0,0,0.4)', borderRadius: '50%', filter: 'blur(6px)', transition: 'width 0.6s', opacity: opening ? 0.3 : 0.6 }} />
-            </div>
-            {!opening && <p className="mt-8 text-white text-xs font-black tracking-[0.3em] uppercase opacity-70 animate-pulse z-30">Tocar para abrir</p>}
-          </div>
-        );
-
-      case "musicbox":
-        return (
-          <div className="relative z-10 cursor-pointer group flex flex-col items-center">
-            <div className="w-[150px] h-[150px] bg-white rounded-3xl flex items-center justify-center shadow-2xl" style={{ border: `8px solid ${primary}` }}>
-               <div className={`text-6xl text-slate-800 ${opening ? 'animate-spin-away' : 'animate-float'}`}>🎵</div>
-            </div>
-            <p className="mt-8 text-white text-xs font-black tracking-[0.3em] uppercase opacity-70 animate-pulse">Tocar para escuchar</p>
-          </div>
-        );
-
-      case "soccer":
-        return (
-          <div className="relative z-10 flex flex-col items-center w-full h-full justify-center overflow-visible cursor-pointer group" onClick={handleOpen}>
-            {phase >= 2 && <Confetti trigger={true} />}
-            <div className="absolute bottom-0 w-full h-[250px] bg-green-600 border-t-4 border-white opacity-40 pointer-events-none" />
-            <div className="relative w-full max-w-[300px] h-[200px] border-4 border-white border-b-0 flex items-end justify-center pointer-events-none mb-10">
-              <div className="w-full h-full opacity-20" style={{ background: 'repeating-linear-gradient(90deg, transparent, transparent 20px, white 20px, white 24px), repeating-linear-gradient(0deg, transparent, transparent 20px, white 20px, white 24px)' }}/>
-            </div>
-            <div className={`absolute bottom-32 text-7xl z-20 ${opening ? 'animate-shoot' : 'animate-bounce group-hover:scale-110 transition-transform'}`}>⚽</div>
-            {phase >= 1 && <div className="text-6xl absolute top-[250px] animate-ping z-30">💥</div>}
-            {!opening && <p className="absolute bottom-16 text-white text-xs font-black tracking-[0.3em] uppercase opacity-90 bg-black/50 px-4 py-2 rounded-full cursor-pointer">Tocar para patear</p>}
-          </div>
-        );
-
-      case "gift":
-        return (
-          <div className="relative z-10 cursor-pointer group flex flex-col items-center">
-            {phase >= 2 && <Confetti trigger={true} />}
-            <div className={`text-9xl transition-all duration-700 ${opening ? 'scale-0 rotate-[720deg] opacity-0' : 'animate-elastic'}`}>🎁</div>
-            {phase >= 1 && <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-white rounded-full blur-2xl opacity-70 animate-ping pointer-events-none" />}
-            {!opening && <p className="mt-8 text-white text-xs font-black tracking-[0.3em] uppercase opacity-70 animate-pulse">Tocar para descubrir</p>}
-          </div>
-        );
-
-      default: return null;
-    }
+    setTimeout(() => {
+      onOpen();
+    }, 2000); 
   };
 
   return (
-    <div className={`absolute inset-0 z-[100] flex flex-col items-center justify-center transition-all duration-1000 ${opening && (type==='envelope'||type==='musicbox') ? 'opacity-0 pointer-events-none' : 'opacity-100 bg-slate-900'} ${opening && (type==='gift'||type==='soccer'||type==='chest') && phase>=2 ? 'opacity-0 bg-transparent pointer-events-none' : ''}`}>
+    <div className={`absolute inset-0 z-[100] flex flex-col items-center justify-center transition-all duration-1000 ${opening ? 'opacity-0 pointer-events-none' : 'opacity-100 bg-slate-900'}`}>
       <div className="absolute inset-0 opacity-40" style={{ background: `linear-gradient(135deg, ${cfg?.bg1 || th.bg1}, ${cfg?.bg2 || th.bg2})` }} />
-      <div onClick={type === 'envelope' || type === 'musicbox' || type === 'gift' ? handleOpen : undefined} className="w-full h-full flex items-center justify-center">
-         {renderContent()}
+      
+      <div onClick={handleOpen} className="relative z-10 w-full h-full flex flex-col items-center justify-center cursor-pointer group">
+        <div className={`w-[350px] h-[350px] transition-transform duration-700 ${opening ? 'scale-125' : 'group-hover:scale-105'}`}>
+          <DotLottieReact
+            src="https://lottie.host/51bb8f1d-513f-4694-a67e-f78069ee6d73/NoYFCNNNCE.lottie"
+            loop={!opening}
+            autoplay
+          />
+        </div>
+        {!opening && (
+          <p className="mt-8 text-white text-xs font-black tracking-[0.3em] uppercase opacity-70 animate-pulse">
+            Tocar para abrir
+          </p>
+        )}
       </div>
     </div>
   );
 };
 
-
 /* ============================================================================
-   VISTA PREVIA DE LA INVITACIÓN (USADA EN EDITOR Y PÚBLICA)
+   VISTA PREVIA DE LA INVITACIÓN
 ============================================================================ */
 export const InvitePreview = ({ cfg }) => {
   if (!cfg) return null;
@@ -888,11 +653,10 @@ export const EditorScreen = ({ invitations, onSave }) => {
             </div>
 
             <div className="mb-2 border-t border-gray-100 pt-4">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-left">Efectos y Animaciones</label>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-left">Efectos de Animación</label>
               
-              <SelectInp label="Animación de Entrada (Al abrir el link)" value={cfg.openingAnimation || "envelope"} options={OPENING_ANIMATIONS.map(a => ({label: a.name, value: a.id}))} onChange={v => { update("openingAnimation", v); setPreviewAnim(true); }} className="!mb-2" />
-              <button type="button" onClick={() => setPreviewAnim(true)} className="w-full py-2 bg-violet-100 text-violet-700 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-violet-200 transition-colors flex items-center justify-center gap-2 mb-4">
-                 ▶ REPRODUCIR ANIMACIÓN
+              <button type="button" onClick={() => setPreviewAnim(true)} className="w-full py-2 bg-violet-100 text-violet-700 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-violet-200 transition-colors flex items-center justify-center gap-2 mb-4 mt-2">
+                 ▶ REPRODUCIR LOTTIE PREMIUM
               </button>
 
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-left">Partículas de Fondo</label>
