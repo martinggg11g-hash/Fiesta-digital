@@ -639,7 +639,7 @@ export const EditorScreen = ({ invitations, onSave }) => {
                   
                   <div className="mb-4">
                     <div className="flex justify-between text-[9px] font-bold text-slate-500 mb-1">
-                      <span>Duración de la salida</span>
+                      <span>Duración de la animación en pantalla</span>
                       <span>{cfg.animationDuration || 2}s</span>
                     </div>
                     <input type="range" min={1} max={3} step={0.5} value={cfg.animationDuration || 2} onChange={e => update("animationDuration", Number(e.target.value))} className="w-full accent-violet-600 cursor-pointer" />
