@@ -1,23 +1,21 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+import { OpeningAnimation } from "./Lotties";
 import {
   MapPin, Clock, Calendar, Palette, CheckCircle2,
   ChevronDown, Type, Edit2, ArrowLeft, Save, X,
   Star, Image as ImageIcon, Layout, List, Trash2, Loader2, Check,
-  Video, Link as LinkIcon
+  Video, Link as LinkIcon, Sparkles, Mail, Goal, Gift, Music, Key, Ghost, Cat
 } from "lucide-react";
 
 /* ============================================================================
-   FUNCIONES AUXILIARES Y CONSTANTES
+   CONFIGURACIONES Y CONSTANTES
 ============================================================================ */
 const getYouTubeId = (url) => {
   if (!url) return null;
-  try {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url.match(regExp);
-    return (match && match[2] && match[2].length === 11) ? match[2] : null;
-  } catch (e) { return null; }
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2] && match[2].length === 11) ? match[2] : null;
 };
 
 export const GENERAL_EMOJIS = ['🎂','🎈','🎉','🥳','🎁','🎊','👶','💍','🎓','✨','🌟','❤️','💖','🦖','🦄','⚽','🎮','👑','🌸','🔥','💎','🎪','🎠','🎡','🦋','🌺','🎵','🏆'];
@@ -55,11 +53,22 @@ export const EFFECTS = [
   { id: "emojis",   name: "Emojis mix",  icon: "🎉" },
 ];
 
+export const OPENING_ANIMATIONS = [
+  { id: "envelope", name: "Sobre Elegante", icon: <Mail size={14}/> },
+  { id: "chest", name: "Baúl del Tesoro", icon: <Key size={14}/> },
+  { id: "soccer", name: "Cancha de Fútbol", icon: <Goal size={14}/> },
+  { id: "musicbox", name: "Caja Musical", icon: <Music size={14}/> },
+  { id: "gift", name: "Regalo Sorpresa", icon: <Gift size={14}/> },
+  { id: "amongus", name: "Among Us", icon: <Ghost size={14}/> },
+  { id: "tiger", name: "Tigre Animado", icon: <Cat size={14}/> },
+];
+
 export const DEF_CONFIG = {
   theme:"violet", fontTitle:"'Pacifico', cursive", fontBody:"'DM Sans', sans-serif",
-  honoreeSize: 48, eventTypeSize: 11,
+  honoreeSize: 48, honoreeFont: "'Pacifico', cursive", honoreeColor: "#f0ecff",
+  eventTypeSize: 11, eventTypeFont: "'DM Sans', sans-serif", eventTypeColor: "#7c3aed",
   bg1:"#08060f", bg2:"#120d24", primary:"#7c3aed", card:"#1a1035", text:"#f0ecff", muted:"#9b8ec4",
-  coverGradientIntensity: 70, particleEffect: "none",
+  coverGradientIntensity: 70, particleEffect: "none", openingAnimation: "envelope",
   eventTypeEmoji:"✨", eventType:"Estás invitado al cumple de", honoreeName:"Valentina", badgeEmoji:"🎂", badgeText:"5 añitos",
   coverPhoto:"https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=800&q=80",
   showBanner:true, bannerTitle:"La festejada", bannerPhoto:"https://images.unsplash.com/photo-1545912452-8aea7e25a3d3?auto=format&fit=crop&w=400&q=80",
@@ -163,7 +172,7 @@ const Acc = ({ title, icon: Icon, children, defaultOpen = false, iconColor = "#7
 };
 
 /* ============================================================================
-   EFECTOS ESPECIALES Y WIDGETS
+   WIDGETS Y EFECTOS ESPECIALES
 ============================================================================ */
 const Countdown = ({ targetDate, primary, text }) => {
   const [timeLeft, setTimeLeft] = useState({ d:0, h:0, m:0, s:0 });
@@ -342,48 +351,6 @@ const VideoSection = ({ cfg, primary, text, muted, card }) => {
       ) : (
         <video src={cfg.videoUrl} controls playsInline className="w-full block" style={{ maxHeight: 300 }} />
       )}
-    </div>
-  );
-};
-
-/* ============================================================================
-   ANIMACIÓN DE ENTRADA CON LOTTIE PREMIUM
-============================================================================ */
-export const OpeningAnimation = ({ cfg, onOpen }) => {
-  const [opening, setOpening] = useState(false);
-  const th = THEMES.find(t => t.id === cfg?.theme) || THEMES[0];
-
-  const handleOpen = () => {
-    if (opening) return;
-    setOpening(true);
-
-    const audio = new Audio("https://actions.google.com/sounds/v1/magic/magic_chimes.ogg");
-    audio.volume = 0.5;
-    audio.play().catch(() => {});
-
-    setTimeout(() => {
-      onOpen();
-    }, 2000); 
-  };
-
-  return (
-    <div className={`absolute inset-0 z-[100] flex flex-col items-center justify-center transition-all duration-1000 ${opening ? 'opacity-0 pointer-events-none' : 'opacity-100 bg-slate-900'}`}>
-      <div className="absolute inset-0 opacity-40" style={{ background: `linear-gradient(135deg, ${cfg?.bg1 || th.bg1}, ${cfg?.bg2 || th.bg2})` }} />
-      
-      <div onClick={handleOpen} className="relative z-10 w-full h-full flex flex-col items-center justify-center cursor-pointer group">
-        <div className={`w-[350px] h-[350px] transition-transform duration-700 ${opening ? 'scale-125' : 'group-hover:scale-105'}`}>
-          <DotLottieReact
-            src="https://lottie.host/51bb8f1d-513f-4694-a67e-f78069ee6d73/NoYFCNNNCE.lottie"
-            loop={!opening}
-            autoplay
-          />
-        </div>
-        {!opening && (
-          <p className="mt-8 text-white text-xs font-black tracking-[0.3em] uppercase opacity-70 animate-pulse">
-            Tocar para abrir
-          </p>
-        )}
-      </div>
     </div>
   );
 };
@@ -653,9 +620,10 @@ export const EditorScreen = ({ invitations, onSave }) => {
             </div>
 
             <div className="mb-2 border-t border-gray-100 pt-4">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-left">Efectos de Animación</label>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-left">Efectos y Animaciones</label>
               
-              <button type="button" onClick={() => setPreviewAnim(true)} className="w-full py-2 bg-violet-100 text-violet-700 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-violet-200 transition-colors flex items-center justify-center gap-2 mb-4 mt-2">
+              <SelectInp label="Animación de Entrada (Al abrir el link)" value={cfg.openingAnimation || "envelope"} options={OPENING_ANIMATIONS.map(a => ({label: a.name, value: a.id}))} onChange={v => { update("openingAnimation", v); setPreviewAnim(true); }} className="!mb-2" />
+              <button type="button" onClick={() => setPreviewAnim(true)} className="w-full py-2 bg-violet-100 text-violet-700 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-violet-200 transition-colors flex items-center justify-center gap-2 mb-4">
                  ▶ REPRODUCIR LOTTIE PREMIUM
               </button>
 
@@ -864,7 +832,7 @@ export const EditorScreen = ({ invitations, onSave }) => {
           <div className="invite-phone anim-pop border-[8px] border-slate-800 shadow-2xl relative z-10">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-7 bg-[#1a1a2e] rounded-b-2xl z-50 flex items-center justify-center"><div className="w-10 h-1 bg-slate-800 rounded-full" /></div>
             
-            {previewAnim && <OpeningAnimation cfg={cfg} onOpen={() => setPreviewAnim(false)} />}
+            {previewAnim && <OpeningAnimation cfg={cfg} onOpen={() => setPreviewAnim(false)} isPreview={true} />}
             
             <div className="h-full w-full overflow-y-auto bg-black pb-10" style={{ scrollBehavior: 'smooth', scrollbarWidth: 'none' }}>
               <InvitePreview cfg={cfg} />
