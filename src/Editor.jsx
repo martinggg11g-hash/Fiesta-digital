@@ -54,6 +54,7 @@ export const EFFECTS = [
 ];
 
 export const OPENING_ANIMATIONS = [
+  { id: "none", name: "Sin Animación", icon: <X size={14}/> },
   { id: "envelope", name: "Sobre Elegante", icon: <Mail size={14}/> },
   { id: "chest", name: "Baúl del Tesoro", icon: <Key size={14}/> },
   { id: "soccer", name: "Cancha de Fútbol", icon: <Goal size={14}/> },
@@ -63,12 +64,20 @@ export const OPENING_ANIMATIONS = [
   { id: "tiger", name: "Tigre Animado", icon: <Cat size={14}/> },
 ];
 
+export const TRANSITION_OPTS = [
+  { label: "Desvanecer Suave (Fade)", value: "fade" },
+  { label: "Deslizar hacia arriba", value: "slideUp" },
+  { label: "Zoom de Acercamiento", value: "zoomOut" },
+  { label: "Zoom de Alejamiento", value: "zoomIn" }
+];
+
 export const DEF_CONFIG = {
   theme:"violet", fontTitle:"'Pacifico', cursive", fontBody:"'DM Sans', sans-serif",
   honoreeSize: 48, honoreeFont: "'Pacifico', cursive", honoreeColor: "#f0ecff",
   eventTypeSize: 11, eventTypeFont: "'DM Sans', sans-serif", eventTypeColor: "#7c3aed",
   bg1:"#08060f", bg2:"#120d24", primary:"#7c3aed", card:"#1a1035", text:"#f0ecff", muted:"#9b8ec4",
-  coverGradientIntensity: 70, particleEffect: "none", openingAnimation: "envelope",
+  coverGradientIntensity: 70, particleEffect: "none", 
+  openingAnimation: "envelope", animationDuration: 2, animationTransition: "fade",
   eventTypeEmoji:"✨", eventType:"Estás invitado al cumple de", honoreeName:"Valentina", badgeEmoji:"🎂", badgeText:"5 añitos",
   coverPhoto:"https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=800&q=80",
   showBanner:true, bannerTitle:"La festejada", bannerPhoto:"https://images.unsplash.com/photo-1545912452-8aea7e25a3d3?auto=format&fit=crop&w=400&q=80",
@@ -620,12 +629,27 @@ export const EditorScreen = ({ invitations, onSave }) => {
             </div>
 
             <div className="mb-2 border-t border-gray-100 pt-4">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-left">Efectos y Animaciones</label>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-left">Efectos de Animación</label>
               
-              <SelectInp label="Animación de Entrada (Al abrir el link)" value={cfg.openingAnimation || "envelope"} options={OPENING_ANIMATIONS.map(a => ({label: a.name, value: a.id}))} onChange={v => { update("openingAnimation", v); setPreviewAnim(true); }} className="!mb-2" />
-              <button type="button" onClick={() => setPreviewAnim(true)} className="w-full py-2 bg-violet-100 text-violet-700 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-violet-200 transition-colors flex items-center justify-center gap-2 mb-4">
-                 ▶ REPRODUCIR LOTTIE PREMIUM
-              </button>
+              <SelectInp label="Elegir Animación Lottie" value={cfg.openingAnimation || "envelope"} options={OPENING_ANIMATIONS.map(a => ({label: a.name, value: a.id}))} onChange={v => { update("openingAnimation", v); setPreviewAnim(true); }} className="!mb-2" />
+              
+              {cfg.openingAnimation !== 'none' && (
+                <>
+                  <SelectInp label="Efecto de Transición" value={cfg.animationTransition || 'fade'} options={TRANSITION_OPTS} onChange={v => update("animationTransition", v)} className="!mb-2" />
+                  
+                  <div className="mb-4">
+                    <div className="flex justify-between text-[9px] font-bold text-slate-500 mb-1">
+                      <span>Duración de la salida</span>
+                      <span>{cfg.animationDuration || 2}s</span>
+                    </div>
+                    <input type="range" min={1} max={3} step={0.5} value={cfg.animationDuration || 2} onChange={e => update("animationDuration", Number(e.target.value))} className="w-full accent-violet-600 cursor-pointer" />
+                  </div>
+
+                  <button type="button" onClick={() => setPreviewAnim(true)} className="w-full py-2 bg-violet-100 text-violet-700 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-violet-200 transition-colors flex items-center justify-center gap-2 mb-4 mt-2">
+                     ▶ PROBAR ANIMACIÓN PREMIUM
+                  </button>
+                </>
+              )}
 
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-left">Partículas de Fondo</label>
               <div className="grid grid-cols-2 gap-2">
