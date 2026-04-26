@@ -21,61 +21,63 @@ const TRANSITIONS = {
 };
 
 export const OpeningAnimation = ({ cfg, onOpen, isPreview = false }) => {
-  const [opening, setOpening] = useState(false);
+  const [isExiting, setIsExiting] = useState(false);
   const type = cfg?.openingAnimation || "envelope";
   
-  // Si elige "Sin animación", ejecutamos la apertura directo y no renderizamos nada
   useEffect(() => {
+    // Si eligen "Sin Animación", abrimos la invitación inmediatamente
     if (type === "none") {
       onOpen();
+      return;
     }
-  }, [type, onOpen]);
 
-  if (type === "none") return null;
-
-  const url = LOTTIE_MAP[type] || LOTTIE_MAP.envelope;
-  const durationSecs = cfg?.animationDuration || 2; // Por defecto 2 segundos
-  const transitionClass = TRANSITIONS[cfg?.animationTransition || 'fade'];
-
-  const handleOpen = () => {
-    if (opening) return;
-    setOpening(true);
-
-    // Sonido mágico universal (puede fallar si el navegador lo bloquea, lo atrapamos)
+    // Sonido mágico de entrada
     const audio = new Audio("https://actions.google.com/sounds/v1/magic/magic_chimes.ogg");
     audio.volume = 0.4;
     audio.play().catch(() => {});
 
-    // Usamos el tiempo elegido por el usuario para la transición
-    setTimeout(() => {
-      onOpen();
-    }, durationSecs * 1000); 
-  };
+    // Calculamos el tiempo en milisegundos (según el slider del editor)
+    const durationMs = (cfg?.animationDuration || 2) * 1000;
+
+    // Timer principal: Espera el tiempo configurado y arranca la salida
+    const exitTimer = setTimeout(() => {
+      setIsExiting(true); // Activa la animación CSS de salida
+      
+      // Esperamos 800ms (lo que tarda la transición CSS) y abrimos la invitación
+      setTimeout(() => {
+        onOpen(); 
+      }, 800); 
+      
+    }, durationMs);
+
+    return () => clearTimeout(exitTimer);
+  }, [type, cfg?.animationDuration, onOpen]);
+
+  if (type === "none") return null;
+
+  const url = LOTTIE_MAP[type] || LOTTIE_MAP.envelope;
+  const transitionClass = TRANSITIONS[cfg?.animationTransition || 'fade'];
 
   return (
     <div 
       className={`
         ${isPreview ? 'absolute' : 'fixed'} inset-0 z-[100] 
         flex flex-col items-center justify-center 
-        transition-all ease-in-out 
-        ${opening ? transitionClass : 'opacity-100 bg-slate-950'}
+        transition-all duration-700 ease-in-out 
+        ${isExiting ? transitionClass : 'opacity-100 bg-slate-950'}
       `}
-      style={{ transitionDuration: `${durationSecs * 1000}ms` }}
     >
       {/* Overlay de color suave basado en el tema */}
       <div className="absolute inset-0 opacity-30" style={{ background: cfg?.primary || '#7c3aed' }} />
       
-      {/* Al tocar en cualquier lado de la pantalla, se abre */}
-      <div onClick={handleOpen} className="relative z-10 w-full h-full flex flex-col items-center justify-center cursor-pointer group">
-        <div className={`w-[320px] h-[320px] transition-all duration-700 ${opening ? 'scale-110' : 'group-hover:scale-105'}`}>
+      <div className="relative z-10 w-full h-full flex flex-col items-center justify-center">
+        <div className={`w-[320px] h-[320px] transition-transform duration-700 ${isExiting ? 'scale-110' : 'scale-100'}`}>
           <DotLottieReact
             src={url}
-            loop={!opening}
+            loop={true}
             autoplay
-            speed={2 / durationSecs} // Ajustamos un poco la velocidad del Lottie en base al tiempo
           />
         </div>
-        {/* El texto "Tocar para abrir" fue removido a pedido tuyo para mayor elegancia */}
       </div>
     </div>
   );
