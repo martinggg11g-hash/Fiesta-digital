@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   PartyPopper, ShieldCheck, AlertCircle, Loader2, LogOut, Plus, Trash2, Copy, CheckCircle2, Lock, 
   MapPin, CalendarClock, AlertTriangle, KeyRound, Building, Edit2, X, MessageCircle, ExternalLink, Eye, Search,
-  ChevronDown, Phone, Users, Utensils, Music, CreditCard
+  ChevronDown, Phone, Users, Utensils, Music, CreditCard, Clock
 } from "lucide-react";
 
 const slugify = (text) => text?.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') || 'salon';
@@ -80,7 +80,7 @@ export const LoginScreen = ({ isMaster = false, onLogin, users }) => {
 export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateSalon, onDeleteSalon, invitations, onCreateInv, onDeleteInv, onUpdateInternal }) => {
   const [toast, setToast] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [openCrm, setOpenCrm] = useState({}); // Estado para abrir/cerrar fichas de CRM
+  const [openCrm, setOpenCrm] = useState({});
   const navigate = useNavigate();
   if (!user) return null;
 
@@ -93,7 +93,7 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
   const filteredInvs = myInvs.filter(inv => inv.title.toLowerCase().includes(searchTerm.toLowerCase()));
 
   // ==============================
-  // VISTA DEL DUEÑO DEL SALÓN (CLIENTE) REDISEÑADA CON CRM
+  // VISTA DEL DUEÑO DEL SALÓN (CLIENTE)
   // ==============================
   if (!isOwner) {
     const salonInfo = users.find(u => u.email === user.email);
@@ -117,7 +117,6 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
 
     return (
       <div className="min-h-screen bg-[#f1f3f9] pb-20">
-        {/* NAV PREMIUM PERSONALIZADO */}
         <nav className="h-20 bg-white border-b border-slate-200 px-8 flex items-center justify-between sticky top-0 z-50">
           <div className="flex items-center gap-4">
              <div className="w-10 h-10 bg-violet-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-violet-200"><Building size={20}/></div>
@@ -135,7 +134,6 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
         )}
 
         <main className="max-w-7xl mx-auto p-6 md:p-12">
-          {/* HEADER DASHBOARD */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
             <div className="text-left">
               <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-tight">Mis Eventos</h1>
@@ -158,7 +156,6 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
             </div>
           </div>
 
-          {/* GRID DE EVENTOS */}
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
             {filteredInvs.map(inv => {
               const crmOpen = openCrm[inv.id];
@@ -166,9 +163,8 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
               const statusColors = { 'Pendiente': 'bg-red-100 text-red-700', 'Seña / Parcial': 'bg-amber-100 text-amber-700', 'Pagado Total': 'bg-green-100 text-green-700' };
 
               return (
-                <div key={inv.id} className="bg-white rounded-[2.5rem] border border-slate-200/60 overflow-hidden shadow-sm hover:shadow-xl transition-all group flex flex-col h-full">
+                <div key={inv.id} className="bg-white rounded-[2.5rem] border border-slate-200/60 overflow-hidden shadow-sm hover:shadow-xl transition-all group flex flex-col h-full border-b-4 border-b-violet-500/10">
                   
-                  {/* PREVIEW IMAGE */}
                   <div className="h-40 relative overflow-hidden">
                     <img src={inv.config?.coverPhoto || "https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=800&q=80"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" alt="Event" />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent" />
@@ -182,7 +178,6 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                     <button onClick={() => { if(window.confirm("¿Seguro que querés eliminar esta invitación?")) onDeleteInv(inv.id); }} className="absolute top-4 right-4 w-9 h-9 bg-red-500/90 text-white rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-red-600 shadow-lg cursor-pointer"><Trash2 size={16}/></button>
                   </div>
 
-                  {/* MAIN ACTIONS */}
                   <div className="p-6">
                     <div className="flex gap-2 mb-4">
                       <button onClick={() => navigate(`/editor/${inv.id}`)} className="flex-1 py-3 bg-slate-900 hover:bg-black text-white rounded-xl font-black text-[11px] tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer">
@@ -196,18 +191,15 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                       </button>
                     </div>
 
-                    {/* BOTON DE GESTION CRM */}
                     <button onClick={() => toggleCrm(inv.id)} className={`w-full py-3 rounded-xl font-bold text-xs flex justify-between items-center px-4 transition-colors border cursor-pointer ${crmOpen ? 'bg-violet-600 text-white border-violet-600 shadow-md' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>
                        <span className="flex items-center gap-2"><Lock size={14}/> Ficha del Evento (CRM)</span>
                        <ChevronDown size={16} className={`transition-transform ${crmOpen ? 'rotate-180' : ''}`}/>
                     </button>
                   </div>
 
-                  {/* AREA EXPANDIBLE CRM */}
                   {crmOpen && (
                     <div className="px-6 pb-6 pt-0 bg-slate-50/50 border-t border-slate-100 anim-pop">
                        
-                       {/* FILA 1: Agasajado, Fecha y Hora */}
                        <div className="grid grid-cols-12 gap-2 mt-4">
                           <div className="col-span-12 sm:col-span-5">
                              <label className="block text-[9px] font-black text-slate-400 uppercase mb-1 flex items-center gap-1"><PartyPopper size={10}/> Agasajado</label>
@@ -223,7 +215,6 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                           </div>
                        </div>
 
-                       {/* FILA 2: Cliente, Telefono y WhatsApp */}
                        <div className="grid grid-cols-12 gap-2 mt-3">
                           <div className="col-span-12 sm:col-span-7">
                              <label className="block text-[9px] font-black text-slate-400 uppercase mb-1 flex items-center gap-1"><Phone size={10}/> Celular Responsable</label>
@@ -238,7 +229,6 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                           </div>
                        </div>
 
-                       {/* FILA 3: Estado de Pago */}
                        <div className="grid grid-cols-12 gap-2 mt-3 p-3 bg-white border border-slate-100 rounded-xl">
                           <div className="col-span-12 sm:col-span-6">
                              <label className="block text-[9px] font-black text-slate-400 uppercase mb-1 flex items-center gap-1"><CreditCard size={10}/> Estado de Pago</label>
@@ -254,14 +244,13 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                           </div>
                        </div>
 
-                       {/* FILA 4: Menú Especial y Notas Adicionales */}
                        <div className="grid grid-cols-1 gap-2 mt-3">
                           <div>
                              <label className="block text-[9px] font-black text-slate-400 uppercase mb-1 flex items-center gap-1"><Utensils size={10}/> Menús Especiales (Dietas)</label>
                              <input type="text" className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:border-violet-400" placeholder="Ej: 2 Celíacos, 1 Vegano" value={inv.dietaryNotes || ''} onChange={e => onUpdateInternal(inv.id, 'dietaryNotes', e.target.value)} />
                           </div>
                           <div>
-                             <label className="block text-[9px] font-black text-slate-400 uppercase mb-1 flex items-center gap-1"><Music size={10}/> Indicaciones de Animación / Música / Extra</label>
+                             <label className="block text-[9px] font-black text-slate-400 uppercase mb-1 flex items-center gap-1"><Music size={10}/> Indicaciones Adicionales</label>
                              <textarea rows={2} className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 outline-none focus:border-violet-400 resize-none" placeholder="Canción de entrada, temáticas, juegos..." value={inv.extraNotes || ''} onChange={e => onUpdateInternal(inv.id, 'extraNotes', e.target.value)} />
                           </div>
                        </div>
@@ -288,7 +277,7 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
   }
 
   // ==============================
-  // VISTA MASTER (ADMIN) - INTACTA
+  // VISTA MASTER (ADMIN)
   // ==============================
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState("create"); 
