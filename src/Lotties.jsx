@@ -15,11 +15,11 @@ export const ANIMATION_CATEGORIES = {
   ],
   bodas: [
     { id: "envelope", name: "Sobre Elegante", emoji: "✉️" },
-    { id: "rings", name: "Anillos (Próx)", emoji: "💍" } // Relleno para que tengas la estructura
+    { id: "rings", name: "Anillos (Próx)", emoji: "💍" } 
   ],
   adultos: [
-    { id: "cheers", name: "Brindis (Próx)", emoji: "🥂" }, // Relleno
-    { id: "disco", name: "Fiesta Disco", emoji: "🪩" } // Relleno
+    { id: "cheers", name: "Brindis (Próx)", emoji: "🥂" }, 
+    { id: "disco", name: "Fiesta Disco", emoji: "🪩" } 
   ]
 };
 
@@ -32,9 +32,9 @@ export const LOTTIE_MAP = {
   gift: "https://lottie.host/93278564-96d5-45a7-96a8-f8648348630c/183xLpSUnp.json",
   amongus: "https://lottie.host/4d6d5ca1-2c8b-443a-a3e8-add97bfa7007/KxUqcK88DH.lottie", 
   tiger: "https://lottie.host/19d90dc5-4d0a-4693-af95-96f949c67386/iW4Roe7QD1.lottie",
-  rings: "https://lottie.host/79010496-e08b-4a5e-8557-0a4176378e90/4x9xLpSUnp.json", // Reemplazar luego
-  cheers: "https://lottie.host/93278564-96d5-45a7-96a8-f8648348630c/183xLpSUnp.json", // Reemplazar luego
-  disco: "https://lottie.host/62e08e61-9c6a-4933-911b-85e68379207e/t5vR0ZtI7V.json" // Reemplazar luego
+  rings: "https://lottie.host/79010496-e08b-4a5e-8557-0a4176378e90/4x9xLpSUnp.json", 
+  cheers: "https://lottie.host/93278564-96d5-45a7-96a8-f8648348630c/183xLpSUnp.json", 
+  disco: "https://lottie.host/62e08e61-9c6a-4933-911b-85e68379207e/t5vR0ZtI7V.json" 
 };
 
 const TRANSITIONS = {
