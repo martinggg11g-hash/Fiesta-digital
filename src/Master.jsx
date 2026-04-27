@@ -8,10 +8,23 @@ import {
 
 const slugify = (text) => text?.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') || 'salon';
 
+// Función para parsear fechas argentinas (DD/MM/YYYY) o las viejas (YYYY-MM-DD)
+const parseDateArg = (dateStr) => {
+  if (!dateStr) return null;
+  if (dateStr.includes('/')) {
+    const [d, m, y] = dateStr.split('/');
+    return new Date(`${y}-${m}-${d}T00:00:00`);
+  }
+  return new Date(dateStr);
+};
+
 const formatDate = (dateStr) => {
   if (!dateStr) return 'Sin fecha';
-  const [y, m, d] = dateStr.split('-');
-  return `${d}/${m}/${y}`;
+  if (dateStr.includes('-')) {
+    const [y, m, d] = dateStr.split('-');
+    return `${d}/${m}/${y}`;
+  }
+  return dateStr; // Si ya está en DD/MM/YYYY lo deja igual
 };
 
 export const Toast = ({ msg }) => (
@@ -20,16 +33,17 @@ export const Toast = ({ msg }) => (
   </div>
 );
 
-// LE APLICAMOS EL lang="es-AR" A TODOS LOS INPUTS POR DEFECTO PARA FORZAR FORMATO ARGENTINO
-const Inp = ({ label, value, onChange, placeholder, type="text", multiline = false, className="", prefix=null }) => (
+// INPUT MODIFICADO: Acepta íconos y fuerza el formato texto para evitar el formato yanqui
+const Inp = ({ label, value, onChange, placeholder, type="text", multiline = false, className="", icon: Icon = null, prefix=null }) => (
   <div className={`mb-4 text-left ${className}`}>
     {label && <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{label}</label>}
     <div className="relative flex items-center">
+      {Icon && <div className="absolute left-4 text-slate-400"><Icon size={16}/></div>}
       {prefix && <span className="absolute left-4 text-slate-400 font-bold">{prefix}</span>}
       {multiline ? (
-        <textarea value={value || ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={3} className={`w-full py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all resize-none ${prefix ? 'pl-9 pr-4' : 'px-4'}`} />
+        <textarea value={value || ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={3} className={`w-full py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all resize-none ${(Icon || prefix) ? 'pl-11 pr-4' : 'px-4'}`} />
       ) : (
-        <input type={type} lang={(type === 'date' || type === 'time') ? "es-AR" : undefined} value={value || ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} className={`w-full py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all ${prefix ? 'pl-9 pr-4' : 'px-4'}`} />
+        <input type={type} value={value || ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} className={`w-full py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all ${(Icon || prefix) ? 'pl-11 pr-4' : 'px-4'}`} />
       )}
     </div>
   </div>
@@ -90,8 +104,6 @@ export const LoginScreen = ({ isMaster = false, onLogin, users }) => {
 export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateSalon, onDeleteSalon, invitations, onCreateInv, onDeleteInv, onUpdateInternal }) => {
   const [toast, setToast] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  
-  // Estados para Modal de CRM y Configuración
   const [activeCrmId, setActiveCrmId] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [newPassword, setNewPassword] = useState("");
@@ -122,12 +134,15 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
       alertType = 'red';
       alertMsg = "Tu cuenta presenta un atraso en el pago. Por favor regularizá tu situación.";
     } else if (paymentDateStr) {
-      const today = new Date(); today.setHours(0,0,0,0);
-      const dueDate = new Date(paymentDateStr); dueDate.setHours(0,0,0,0); dueDate.setDate(dueDate.getDate() + 1);
-      const diffDays = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+      const dueDate = parseDateArg(paymentDateStr);
+      if (dueDate && !isNaN(dueDate)) {
+        const today = new Date(); today.setHours(0,0,0,0);
+        dueDate.setHours(0,0,0,0); dueDate.setDate(dueDate.getDate() + 1);
+        const diffDays = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
 
-      if (diffDays < 0) { alertType = 'red'; alertMsg = `Abono vencido el ${dueDate.toLocaleDateString('es-AR')}. Regularizá el pago pronto.`; }
-      else if (diffDays <= 5) { alertType = 'yellow'; alertMsg = `Recordatorio: Tu pago vence en ${diffDays} días (${dueDate.toLocaleDateString('es-AR')}).`; }
+        if (diffDays < 0) { alertType = 'red'; alertMsg = `Abono vencido el ${dueDate.toLocaleDateString('es-AR')}. Regularizá el pago pronto.`; }
+        else if (diffDays <= 5) { alertType = 'yellow'; alertMsg = `Recordatorio: Tu pago vence en ${diffDays} días (${dueDate.toLocaleDateString('es-AR')}).`; }
+      }
     }
 
     const handleChangePassword = () => {
@@ -140,7 +155,6 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
 
     return (
       <div className="min-h-screen bg-[#f1f3f9] pb-20">
-        {/* NAV PREMIUM */}
         <nav className="h-20 bg-white border-b border-slate-200 px-6 sm:px-8 flex items-center justify-between sticky top-0 z-40">
           <div className="flex items-center gap-4">
              <div className="w-10 h-10 bg-violet-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-violet-200"><Building size={20}/></div>
@@ -159,7 +173,6 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
         )}
 
         <main className="max-w-7xl mx-auto p-6 md:p-12">
-          {/* HEADER DASHBOARD */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
             <div className="text-left">
               <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-tight">Mis Eventos</h1>
@@ -182,7 +195,6 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
             </div>
           </div>
 
-          {/* GRID DE EVENTOS */}
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
             {filteredInvs.map(inv => {
               const pStatus = inv.paymentStatus || 'Pendiente';
@@ -191,7 +203,6 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
               return (
                 <div key={inv.id} className="bg-white rounded-[2.5rem] border border-slate-200/60 overflow-hidden shadow-sm hover:shadow-xl transition-all group flex flex-col h-full border-b-4 border-b-violet-500/10">
                   
-                  {/* PREVIEW IMAGE */}
                   <div className="h-44 relative overflow-hidden">
                     <img src={inv.config?.coverPhoto || "https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=800&q=80"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" alt="Event" />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/30 to-transparent" />
@@ -205,7 +216,6 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                     <button onClick={() => { if(window.confirm("¿Seguro que querés eliminar esta invitación?")) onDeleteInv(inv.id); }} className="absolute top-4 right-4 w-9 h-9 bg-red-500/90 text-white rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-red-600 shadow-lg cursor-pointer"><Trash2 size={16}/></button>
                   </div>
 
-                  {/* MAIN ACTIONS */}
                   <div className="p-6">
                     <div className="flex gap-2 mb-4">
                       <button onClick={() => navigate(`/editor/${inv.id}`)} className="flex-1 py-3.5 bg-slate-900 hover:bg-black text-white rounded-2xl font-black text-[11px] tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer shadow-md">
@@ -238,7 +248,7 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
         </main>
         
         {/* =========================================
-            MODAL DE FICHA CRM (VENTANA NUEVA)
+            MODAL DE FICHA CRM (VENTANA NUEVA 100% ARG)
         ============================================= */}
         {activeCrmId && activeInv && (
           <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
@@ -253,21 +263,21 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                  <button onClick={() => setActiveCrmId(null)} className="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors cursor-pointer shadow-sm"><X size={20}/></button>
               </div>
 
-              {/* CONTENIDO MODAL CON SCROLL */}
+              {/* CONTENIDO MODAL */}
               <div className="p-6 sm:p-8 overflow-y-auto fd-sb flex-1 bg-white">
                 
                 {/* SECCIÓN 1: DATOS DEL EVENTO */}
                 <div className="mb-8">
                    <h3 className="text-xs font-black text-violet-600 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2 flex items-center gap-2"><PartyPopper size={14}/> Datos Principales</h3>
                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <Inp label="Tipo de Evento" placeholder="Ej: Cumpleaños, Boda, 15 Años..." value={activeInv.eventType || ''} onChange={v => onUpdateInternal(activeInv.id, 'eventType', v)} />
+                      <Inp label="Tipo de Evento" placeholder="Ej: Cumpleaños, Boda..." value={activeInv.eventType || ''} onChange={v => onUpdateInternal(activeInv.id, 'eventType', v)} />
                       <Inp label="Nombre Agasajado" placeholder="Ej: Valentina" value={activeInv.internalHonoree || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalHonoree', v)} />
                       <Inp label="Edad / Motivo" placeholder="Ej: Cumple 5" value={activeInv.eventReason || ''} onChange={v => onUpdateInternal(activeInv.id, 'eventReason', v)} />
                    </div>
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* FORZAMOS IDIOMA ARGENTINO Y 24HS CON LANG="es-AR" */}
-                      <Inp label="Fecha (DD/MM/AÑO)" type="date" value={activeInv.internalDate || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalDate', v)} />
-                      <Inp label="Horario (24hs)" type="time" value={activeInv.internalTime || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalTime', v)} />
+                      {/* CAMBIOS CLAVES ACÁ: TYPE TEXT PARA FORMATO ARGENTINO */}
+                      <Inp label="Fecha (Día/Mes/Año)" type="text" placeholder="Ej: 24/10/2026" icon={CalendarClock} value={activeInv.internalDate || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalDate', v)} />
+                      <Inp label="Horario (24hs)" type="text" placeholder="Ej: 14:00" icon={Clock} value={activeInv.internalTime || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalTime', v)} />
                    </div>
                 </div>
 
@@ -364,7 +374,7 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
   }
 
   // ==============================
-  // VISTA MASTER (ADMIN) - INTACTA
+  // VISTA MASTER (ADMIN)
   // ==============================
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState("create"); 
@@ -433,11 +443,14 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                   let statusUi = <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 font-bold text-xs">Al día</span>;
                   if (salon.paymentAlert) statusUi = <span className="px-3 py-1 rounded-full bg-red-100 text-red-700 font-bold text-xs">Bloqueado</span>;
                   else if (salon.paymentDate) {
-                     const today = new Date(); today.setHours(0,0,0,0);
-                     const due = new Date(salon.paymentDate); due.setHours(0,0,0,0); due.setDate(due.getDate() + 1);
-                     const diff = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
-                     if (diff < 0) statusUi = <span className="px-3 py-1 rounded-full bg-red-100 text-red-700 font-bold text-xs">Vencido</span>;
-                     else if (diff <= 5) statusUi = <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-700 font-bold text-xs">Vence pronto</span>;
+                     const dueDate = parseDateArg(salon.paymentDate);
+                     if (dueDate && !isNaN(dueDate)) {
+                       const today = new Date(); today.setHours(0,0,0,0);
+                       dueDate.setHours(0,0,0,0); dueDate.setDate(dueDate.getDate() + 1);
+                       const diff = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+                       if (diff < 0) statusUi = <span className="px-3 py-1 rounded-full bg-red-100 text-red-700 font-bold text-xs">Vencido</span>;
+                       else if (diff <= 5) statusUi = <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-700 font-bold text-xs">Vence pronto</span>;
+                     }
                   }
                   return (
                     <tr key={salon.email} className="border-b border-gray-50 hover:bg-slate-50/50 transition-colors">
@@ -446,7 +459,7 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                         <p className="text-xs text-slate-500">{salon.email}</p>
                       </td>
                       <td className="p-5"><div className="flex items-start gap-2 max-w-[200px]"><MapPin size={16} className="text-slate-300"/><span className="text-xs truncate">{salon.address || 'N/A'}</span></div></td>
-                      <td className="p-5 font-bold">{salon.paymentDate ? new Date(salon.paymentDate).toLocaleDateString('es-AR') : '--'}</td>
+                      <td className="p-5 font-bold">{salon.paymentDate || '--/--/----'}</td>
                       <td className="p-5">{statusUi}</td>
                       <td className="p-5 text-right flex justify-end gap-2">
                         <button onClick={() => salon.phone && window.open(`https://wa.me/${salon.phone}`)} className="w-10 h-10 rounded-xl bg-green-50 text-green-600 flex items-center justify-center hover:bg-green-100 transition-all cursor-pointer"><MessageCircle size={16}/></button>
@@ -474,11 +487,15 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                 <Inp label="Email" value={fEmail} onChange={setFEmail} className={modalMode === 'edit' ? 'opacity-50 pointer-events-none' : ''} />
                 {modalMode === 'create' && <Inp label="Contraseña" value={fPass} onChange={setFPass} type="password" />}
                 <Inp label="Dirección Google Maps" value={fAddress} onChange={setFAddress} />
-                <div className="flex gap-4"><Inp label="Próximo Vencimiento" type="date" value={fPayDate} onChange={setFPayDate} className="flex-1" /><div className="flex flex-col items-center"><span className="text-[10px] font-black uppercase mb-2 text-red-500">Bloqueo</span><Toggle checked={fAlert} onChange={setFAlert} /></div></div>
+                
+                <div className="flex gap-4">
+                   <Inp label="Próximo Vencimiento (Día/Mes/Año)" type="text" placeholder="Ej: 10/05/2026" icon={CalendarClock} value={fPayDate} onChange={setFPayDate} className="flex-1" />
+                   <div className="flex flex-col items-center"><span className="text-[10px] font-black uppercase mb-2 text-red-500">Bloqueo</span><Toggle checked={fAlert} onChange={setFAlert} /></div>
+                </div>
               </div>
             )}
             {modalMode === 'password' && <Inp label="Nueva Contraseña" value={fPass} onChange={setFPass} />}
-            <button onClick={handleSaveModal} className="w-full py-4 mt-6 bg-slate-900 text-white rounded-2xl font-black text-sm">GUARDAR CAMBIOS</button>
+            <button onClick={handleSaveModal} className="w-full py-4 mt-6 bg-slate-900 text-white rounded-2xl font-black text-sm cursor-pointer">GUARDAR CAMBIOS</button>
           </div>
         </div>
       )}
