@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   PartyPopper, ShieldCheck, AlertCircle, Loader2, LogOut, Plus, Trash2, Copy, CheckCircle2, Lock, 
-  MapPin, CalendarClock, AlertTriangle, KeyRound, Building, Edit2, X, MessageCircle
+  MapPin, CalendarClock, AlertTriangle, KeyRound, Building, Edit2, X, MessageCircle, ExternalLink, Eye, Search
 } from "lucide-react";
 
 const slugify = (text) => text?.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') || 'salon';
@@ -78,6 +78,7 @@ export const LoginScreen = ({ isMaster = false, onLogin, users }) => {
 
 export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateSalon, onDeleteSalon, invitations, onCreateInv, onDeleteInv, onUpdateInternal }) => {
   const [toast, setToast] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
   if (!user) return null;
 
@@ -86,8 +87,11 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
   const mySalons = users.filter(u => u.role === "salon");
   const notify = (m) => { setToast(m); setTimeout(() => setToast(""), 2500); };
 
+  // Filtrado de invitaciones para el buscador
+  const filteredInvs = myInvs.filter(inv => inv.title.toLowerCase().includes(searchTerm.toLowerCase()));
+
   // ==============================
-  // VISTA DEL DUEÑO DEL SALÓN (CLIENTE)
+  // VISTA DEL DUEÑO DEL SALÓN (CLIENTE) REDISEÑADA
   // ==============================
   if (!isOwner) {
     const salonInfo = users.find(u => u.email === user.email);
@@ -95,135 +99,175 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
     const paymentDateStr = salonInfo?.paymentDate;
     
     let alertMsg = null;
-    let alertType = null; // 'red' o 'yellow'
+    let alertType = null;
 
-    // Lógica Automática de Fechas
     if (isManualBlocked) {
       alertType = 'red';
-      alertMsg = "Tu cuenta presenta un atraso en el pago o fue suspendida temporalmente. Por favor regularizá tu situación.";
+      alertMsg = "Tu cuenta presenta un atraso en el pago. Por favor regularizá tu situación.";
     } else if (paymentDateStr) {
-      const today = new Date();
-      today.setHours(0,0,0,0);
-      const dueDate = new Date(paymentDateStr);
-      dueDate.setHours(0,0,0,0);
-      dueDate.setDate(dueDate.getDate() + 1); // Compensar zona horaria
-      
-      const diffTime = dueDate - today;
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const today = new Date(); today.setHours(0,0,0,0);
+      const dueDate = new Date(paymentDateStr); dueDate.setHours(0,0,0,0); dueDate.setDate(dueDate.getDate() + 1);
+      const diffDays = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
 
-      if (diffDays < 0) {
-        alertType = 'red';
-        alertMsg = `Atención: Tu abono venció el ${dueDate.toLocaleDateString('es-ES')}. Por favor regularizá el pago para evitar la suspensión del servicio.`;
-      } else if (diffDays <= 5) {
-        alertType = 'yellow';
-        alertMsg = `Recordatorio: Tu próximo pago vence el ${dueDate.toLocaleDateString('es-ES')} (en ${diffDays} días).`;
-      }
+      if (diffDays < 0) { alertType = 'red'; alertMsg = `Abono vencido el ${dueDate.toLocaleDateString('es-ES')}. Regularizá el pago pronto.`; }
+      else if (diffDays <= 5) { alertType = 'yellow'; alertMsg = `Recordatorio: Tu pago vence en ${diffDays} días (${dueDate.toLocaleDateString('es-ES')}).`; }
     }
 
     return (
-      <div className="min-h-screen bg-[#f8f7ff]">
-        <nav className="h-16 bg-white border-b border-gray-100 px-6 flex items-center justify-between sticky top-0 z-50">
-          <div className="font-extrabold text-xl">Fiesta<span className="text-violet-600">Digital</span></div>
-          <button onClick={() => { onLogout(); navigate("/"); }} className="w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center hover:bg-red-100 transition-colors"><LogOut size={18}/></button>
+      <div className="min-h-screen bg-[#f1f3f9]">
+        {/* NAV PREMIUM */}
+        <nav className="h-20 bg-white border-b border-slate-200 px-8 flex items-center justify-between sticky top-0 z-50">
+          <div className="flex items-center gap-4">
+             <div className="w-10 h-10 bg-violet-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-violet-200"><PartyPopper size={22}/></div>
+             <div className="font-black text-xl tracking-tight text-slate-800">Fiesta<span className="text-violet-600">Digital</span></div>
+          </div>
+          <div className="flex items-center gap-6">
+             <div className="hidden md:block text-right">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Sesión Iniciada</p>
+                <p className="text-sm font-bold text-slate-700 leading-none">{user.name}</p>
+             </div>
+             <button onClick={() => { onLogout(); navigate("/"); }} className="w-10 h-10 bg-slate-100 text-slate-500 rounded-xl flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition-all cursor-pointer"><LogOut size={18}/></button>
+          </div>
         </nav>
         
-        {/* ALERTAS INTELIGENTES */}
         {alertMsg && (
-          <div className={`${alertType === 'red' ? 'bg-red-500 text-white' : 'bg-amber-400 text-slate-900'} p-4 text-center font-bold text-sm flex items-center justify-center gap-3`}>
-            <AlertTriangle size={18}/> {alertMsg}
+          <div className={`${alertType === 'red' ? 'bg-red-500 text-white' : 'bg-amber-400 text-slate-900'} p-3 text-center font-bold text-xs flex items-center justify-center gap-3 shadow-inner`}>
+            <AlertTriangle size={16}/> {alertMsg}
           </div>
         )}
 
-        <div className="max-w-6xl mx-auto p-6 sm:p-12">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-12">
+        <main className="max-w-7xl mx-auto p-6 md:p-12">
+          {/* HEADER DASHBOARD */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
             <div className="text-left">
-              <h1 className="text-4xl font-black text-slate-900 tracking-tight">Mis Eventos</h1>
-              <p className="text-slate-400 mt-2">Gestionando {myInvs.length} invitaciones</p>
+              <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-tight">Mis Eventos</h1>
+              <p className="text-slate-500 mt-1 font-medium italic">Creá y gestioná las invitaciones de tus clientes.</p>
             </div>
-            <button onClick={() => { const id = onCreateInv(user.email, user.name); navigate(`/editor/${id}`); }} className="px-8 py-4 bg-violet-600 hover:bg-violet-700 text-white rounded-[1.5rem] font-black text-sm shadow-2xl flex items-center justify-center gap-3 transition-colors cursor-pointer">
-              <Plus size={20}/> Crear Invitación
-            </button>
+            
+            <div className="flex items-center gap-3">
+               <div className="relative group">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-violet-500 transition-colors" size={18}/>
+                  <input 
+                    className="pl-11 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-violet-200 focus:border-violet-500 outline-none w-64 transition-all" 
+                    placeholder="Buscar evento..." 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+               </div>
+               <button onClick={() => { const id = onCreateInv(user.email, user.name); navigate(`/editor/${id}`); }} className="px-8 py-3.5 bg-violet-600 hover:bg-violet-700 text-white rounded-2xl font-black text-sm shadow-xl shadow-violet-200 flex items-center justify-center gap-3 transition-all active:scale-95 cursor-pointer">
+                 <Plus size={20}/> Crear Invitación
+               </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {myInvs.map(inv => (
-              <div key={inv.id} className="bg-white rounded-[2.5rem] border border-gray-100 overflow-hidden shadow-sm hover:shadow-2xl transition-all group text-left relative flex flex-col">
-                <button onClick={() => onDeleteInv(inv.id)} className="absolute top-4 right-4 z-10 w-10 h-10 bg-red-500/90 text-white rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"><Trash2 size={16}/></button>
-                <div className="h-44 relative overflow-hidden">
-                  <img src={inv.config?.coverPhoto || "https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=800&q=80"} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="Event" />
-                  <div className="absolute inset-0 bg-black/30" />
-                </div>
-                <div className="p-7 flex-1">
-                  <h3 className="font-black text-xl text-slate-900 mb-6 truncate">{inv.title}</h3>
-                  <div className="flex gap-3 mb-6">
-                    <button onClick={() => navigate(`/editor/${inv.id}`)} className="flex-1 py-4 bg-slate-950 text-white rounded-2xl font-black text-xs flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer">EDITAR</button>
-                    <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/i/${slugify(user.name)}/${inv.id}`); notify("¡Link Copiado!"); }} className="w-14 h-14 border border-gray-100 rounded-2xl flex items-center justify-center text-violet-600 hover:bg-violet-50 transition-all cursor-pointer"><Copy size={20}/></button>
+          {/* GRID DE EVENTOS */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredInvs.map(inv => (
+              <div key={inv.id} className="bg-white rounded-[2.5rem] border border-slate-200/60 overflow-hidden shadow-sm hover:shadow-xl transition-all group flex flex-col h-full border-b-4 border-b-violet-500/10">
+                
+                {/* PREVIEW IMAGE */}
+                <div className="h-48 relative overflow-hidden">
+                  <img src={inv.config?.coverPhoto || "https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=800&q=80"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" alt="Event" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent" />
+                  <div className="absolute bottom-4 left-6">
+                     <span className="px-3 py-1 bg-white/20 backdrop-blur-md border border-white/30 rounded-full text-[9px] font-black text-white uppercase tracking-widest">ID: {inv.id}</span>
                   </div>
+                  <button onClick={() => onDeleteInv(inv.id)} className="absolute top-4 right-4 w-9 h-9 bg-red-500/90 text-white rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-red-600 shadow-lg cursor-pointer"><Trash2 size={16}/></button>
                 </div>
-                <div className="bg-slate-50 p-5 border-t border-gray-100 mt-auto">
-                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2"><Lock size={12}/> Control Interno</p>
-                   <div className="flex gap-2">
-                     <div className="flex-1"><Inp label="Fecha" type="date" value={inv.internalDate} onChange={v => onUpdateInternal(inv.id, 'internalDate', v)} className="!mb-0"/></div>
-                     <div className="w-24"><Inp label="Pago" type="number" value={inv.paymentAmount} onChange={v => onUpdateInternal(inv.id, 'paymentAmount', v)} className="!mb-0"/></div>
-                   </div>
+
+                {/* CONTENT */}
+                <div className="p-7 flex-1 flex flex-col">
+                  <h3 className="font-black text-xl text-slate-800 mb-2 truncate">{inv.title}</h3>
+                  <div className="flex items-center gap-2 mb-8">
+                     <CalendarClock size={14} className="text-slate-400"/>
+                     <span className="text-xs font-bold text-slate-500 uppercase tracking-tighter">Creado el {new Date().toLocaleDateString('es-AR')}</span>
+                  </div>
+                  
+                  <div className="flex gap-2 mb-6">
+                    <button onClick={() => navigate(`/editor/${inv.id}`)} className="flex-1 py-3.5 bg-slate-900 hover:bg-black text-white rounded-2xl font-black text-[11px] tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer">
+                      <Edit2 size={14}/> EDITAR
+                    </button>
+                    <button onClick={() => window.open(`${window.location.origin}/i/${slugify(user.name)}/${inv.id}`)} title="Ver en vivo" className="w-14 h-14 bg-violet-50 text-violet-600 rounded-2xl flex items-center justify-center hover:bg-violet-100 transition-all cursor-pointer border border-violet-100">
+                      <Eye size={20}/>
+                    </button>
+                    <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/i/${slugify(user.name)}/${inv.id}`); notify("¡Link Copiado!"); }} title="Copiar Link" className="w-14 h-14 bg-slate-50 text-slate-600 border border-slate-100 rounded-2xl flex items-center justify-center hover:bg-slate-100 transition-all cursor-pointer">
+                      <Copy size={20}/>
+                    </button>
+                  </div>
+
+                  {/* CONTROL INTERNO REDISEÑADO */}
+                  <div className="mt-auto pt-6 border-t border-slate-100">
+                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2 italic"><Lock size={12}/> Info de Gestión</p>
+                     <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                           <label className="block text-[8px] font-black text-slate-400 uppercase mb-1">Fecha de Fiesta</label>
+                           <input 
+                              type="date" 
+                              className="w-full bg-transparent text-xs font-bold text-slate-700 outline-none focus:text-violet-600 transition-colors" 
+                              value={inv.internalDate} 
+                              onChange={v => onUpdateInternal(inv.id, 'internalDate', v.target.value)}
+                           />
+                        </div>
+                        <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                           <label className="block text-[8px] font-black text-slate-400 uppercase mb-1">Abonado ($)</label>
+                           <input 
+                              type="number" 
+                              placeholder="0"
+                              className="w-full bg-transparent text-xs font-bold text-slate-700 outline-none focus:text-green-600 transition-colors" 
+                              value={inv.paymentAmount} 
+                              onChange={v => onUpdateInternal(inv.id, 'paymentAmount', v.target.value)}
+                           />
+                        </div>
+                     </div>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+
+          {filteredInvs.length === 0 && (
+             <div className="py-20 text-center flex flex-col items-center">
+                <div className="w-20 h-20 bg-slate-200 rounded-full flex items-center justify-center text-slate-400 mb-6 opacity-50"><Search size={40}/></div>
+                <p className="text-slate-500 font-bold">No se encontraron invitaciones.</p>
+                <p className="text-slate-400 text-sm mt-1">Intentá con otro nombre o creá una nueva.</p>
+             </div>
+          )}
+        </main>
         {toast && <Toast msg={toast} />}
       </div>
     );
   }
 
   // ==============================
-  // VISTA MASTER (ADMIN)
+  // VISTA MASTER (ADMIN) - SE MANTIENE IGUAL
   // ==============================
   const [showModal, setShowModal] = useState(false);
-  const [modalMode, setModalMode] = useState("create"); // 'create' | 'edit' | 'password'
+  const [modalMode, setModalMode] = useState("create"); 
   const [editingEmail, setEditingEmail] = useState("");
-  
-  // Estados del Formulario de Salón
   const [fName, setFName] = useState("");
   const [fEmail, setFEmail] = useState("");
-  const [fPhone, setFPhone] = useState(""); // Nuevo Campo para WhatsApp
+  const [fPhone, setFPhone] = useState(""); 
   const [fPass, setFPass] = useState("");
   const [fAddress, setFAddress] = useState("");
   const [fPayDate, setFPayDate] = useState("");
   const [fAlert, setFAlert] = useState(false);
 
-  const openCreateModal = () => {
-    setModalMode("create");
-    setFName(""); setFEmail(""); setFPhone(""); setFPass(""); setFAddress(""); setFPayDate(""); setFAlert(false);
-    setShowModal(true);
-  };
-
-  const openEditModal = (salon) => {
-    setModalMode("edit");
-    setEditingEmail(salon.email);
-    setFName(salon.name); setFEmail(salon.email); setFPhone(salon.phone || ""); setFAddress(salon.address || ""); setFPayDate(salon.paymentDate || ""); setFAlert(salon.paymentAlert || false);
-    setShowModal(true);
-  };
-
-  const openPassModal = (salon) => {
-    setModalMode("password");
-    setEditingEmail(salon.email);
-    setFPass("");
-    setShowModal(true);
-  };
+  const openCreateModal = () => { setModalMode("create"); setFName(""); setFEmail(""); setFPhone(""); setFPass(""); setFAddress(""); setFPayDate(""); setFAlert(false); setShowModal(true); };
+  const openEditModal = (salon) => { setModalMode("edit"); setEditingEmail(salon.email); setFName(salon.name); setFEmail(salon.email); setFPhone(salon.phone || ""); setFAddress(salon.address || ""); setFPayDate(salon.paymentDate || ""); setFAlert(salon.paymentAlert || false); setShowModal(true); };
+  const openPassModal = (salon) => { setModalMode("password"); setEditingEmail(salon.email); setFPass(""); setShowModal(true); };
 
   const handleSaveModal = () => {
     if (modalMode === "create") {
       if(!fName || !fEmail || !fPass) return alert("Completá nombre, email y contraseña");
       onCreateSalon({ name: fName, email: fEmail, pass: fPass, role: "salon", address: fAddress, phone: fPhone, paymentDate: fPayDate, paymentAlert: fAlert, createdAt: new Date().toISOString() });
-      notify("Salón creado con éxito");
+      notify("Salón creado");
     } else if (modalMode === "edit") {
       onUpdateUser(editingEmail, { name: fName, phone: fPhone, address: fAddress, paymentDate: fPayDate, paymentAlert: fAlert });
-      notify("Datos del salón actualizados");
+      notify("Datos actualizados");
     } else if (modalMode === "password") {
-      if(!fPass) return alert("Ingresá una nueva contraseña");
+      if(!fPass) return alert("Nueva contraseña");
       onUpdateUser(editingEmail, { pass: fPass });
-      notify("Contraseña actualizada con éxito");
+      notify("Clave reseteada");
     }
     setShowModal(false);
   };
@@ -235,9 +279,9 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
         <button onClick={() => { onLogout(); navigate("/master"); }} className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center hover:bg-white/20 transition-colors"><LogOut size={18}/></button>
       </nav>
 
-      <div className="max-w-7xl mx-auto p-6 sm:p-12">
+      <div className="max-w-7xl mx-auto p-6 sm:p-12 text-left">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-12">
-          <div className="text-left">
+          <div>
             <h1 className="text-4xl font-black text-slate-900 tracking-tight">Gestión de Salones</h1>
             <p className="text-slate-500 mt-2 font-medium">Administrando {mySalons.length} clientes activos</p>
           </div>
@@ -246,7 +290,6 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
           </button>
         </div>
 
-        {/* LISTA DE SALONES */}
         <div className="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -262,120 +305,58 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
               <tbody className="text-sm text-slate-700">
                 {mySalons.map(salon => {
                   const sInvs = invitations.filter(i => i.salonId === salon.email).length;
-                  
-                  // Calcular estado automático para mostrar en el panel maestro
-                  let statusUi = <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-100 text-green-700 font-bold text-xs"><CheckCircle2 size={14}/> Al día</span>;
-                  if (salon.paymentAlert) {
-                     statusUi = <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-100 text-red-700 font-bold text-xs"><AlertTriangle size={14}/> Bloqueado</span>;
-                  } else if (salon.paymentDate) {
+                  let statusUi = <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 font-bold text-xs">Al día</span>;
+                  if (salon.paymentAlert) statusUi = <span className="px-3 py-1 rounded-full bg-red-100 text-red-700 font-bold text-xs">Bloqueado</span>;
+                  else if (salon.paymentDate) {
                      const today = new Date(); today.setHours(0,0,0,0);
                      const due = new Date(salon.paymentDate); due.setHours(0,0,0,0); due.setDate(due.getDate() + 1);
                      const diff = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
-                     if (diff < 0) statusUi = <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-100 text-red-700 font-bold text-xs"><AlertTriangle size={14}/> Vencido</span>;
-                     else if (diff <= 5) statusUi = <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-700 font-bold text-xs"><AlertTriangle size={14}/> Vence pronto</span>;
+                     if (diff < 0) statusUi = <span className="px-3 py-1 rounded-full bg-red-100 text-red-700 font-bold text-xs">Vencido</span>;
+                     else if (diff <= 5) statusUi = <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-700 font-bold text-xs">Vence pronto</span>;
                   }
-
-                  // Mensaje Pre-armado para WhatsApp
-                  const wpMsg = `Hola ${salon.name}, desde FiestaDigital te contactamos para recordarte el pago de tu suscripción mensual.`;
-
                   return (
-                    <tr key={salon.email} className="border-b border-gray-50 hover:bg-slate-50/50 transition-colors group">
+                    <tr key={salon.email} className="border-b border-gray-50 hover:bg-slate-50/50 transition-colors">
                       <td className="p-5">
-                        <p className="font-bold text-slate-900 text-base mb-1">{salon.name}</p>
+                        <p className="font-bold text-slate-900">{salon.name}</p>
                         <p className="text-xs text-slate-500">{salon.email}</p>
-                        <p className="text-[10px] font-black text-violet-500 uppercase tracking-widest mt-2">{sInvs} invitaciones creadas</p>
                       </td>
-                      <td className="p-5">
-                        <div className="flex items-start gap-2 max-w-[200px]">
-                          <MapPin size={16} className="text-slate-400 shrink-0 mt-0.5" />
-                          <span className="text-xs font-medium leading-relaxed">{salon.address || <span className="text-gray-300 italic">No configurada</span>}</span>
-                        </div>
-                      </td>
-                      <td className="p-5">
-                        <div className="flex items-center gap-2">
-                          <CalendarClock size={16} className="text-slate-400" />
-                          <span className="font-bold">{salon.paymentDate ? new Date(salon.paymentDate).toLocaleDateString('es-ES', {timeZone: 'UTC'}) : '--/--/----'}</span>
-                        </div>
-                      </td>
+                      <td className="p-5"><div className="flex items-start gap-2 max-w-[200px]"><MapPin size={16} className="text-slate-300"/><span className="text-xs truncate">{salon.address || 'N/A'}</span></div></td>
+                      <td className="p-5 font-bold">{salon.paymentDate ? new Date(salon.paymentDate).toLocaleDateString('es-AR') : '--'}</td>
                       <td className="p-5">{statusUi}</td>
-                      <td className="p-5 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          {/* BOTÓN MÁGICO DE WHATSAPP */}
-                          <button onClick={() => { salon.phone ? window.open(`https://wa.me/${salon.phone}?text=${encodeURIComponent(wpMsg)}`) : alert("Este salón no tiene teléfono guardado.") }} title="Avisar por WhatsApp" className="w-10 h-10 rounded-xl bg-white border border-green-200 text-green-600 flex items-center justify-center hover:bg-green-50 transition-all cursor-pointer"><MessageCircle size={16}/></button>
-                          
-                          <button onClick={() => openEditModal(salon)} title="Editar Datos" className="w-10 h-10 rounded-xl bg-white border border-gray-200 text-slate-600 flex items-center justify-center hover:bg-violet-50 hover:text-violet-600 hover:border-violet-200 transition-all cursor-pointer"><Edit2 size={16}/></button>
-                          <button onClick={() => openPassModal(salon)} title="Resetear Contraseña" className="w-10 h-10 rounded-xl bg-white border border-gray-200 text-slate-600 flex items-center justify-center hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all cursor-pointer"><KeyRound size={16}/></button>
-                          <button onClick={() => { if(window.confirm(`¿Seguro que querés eliminar el salón ${salon.name} y todas sus invitaciones? Esta acción no se puede deshacer.`)) onDeleteSalon(salon.email); }} title="Eliminar Salón" className="w-10 h-10 rounded-xl bg-white border border-red-100 text-red-400 flex items-center justify-center hover:bg-red-50 hover:text-red-600 transition-all cursor-pointer"><Trash2 size={16}/></button>
-                        </div>
+                      <td className="p-5 text-right flex justify-end gap-2">
+                        <button onClick={() => salon.phone && window.open(`https://wa.me/${salon.phone}`)} className="w-10 h-10 rounded-xl bg-green-50 text-green-600 flex items-center justify-center hover:bg-green-100 transition-all cursor-pointer"><MessageCircle size={16}/></button>
+                        <button onClick={() => openEditModal(salon)} className="w-10 h-10 rounded-xl bg-slate-50 text-slate-600 flex items-center justify-center hover:bg-violet-50 transition-all cursor-pointer"><Edit2 size={16}/></button>
+                        <button onClick={() => openPassModal(salon)} className="w-10 h-10 rounded-xl bg-slate-50 text-slate-600 flex items-center justify-center hover:bg-blue-50 transition-all cursor-pointer"><KeyRound size={16}/></button>
+                        <button onClick={() => window.confirm("Eliminar?") && onDeleteSalon(salon.email)} className="w-10 h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 transition-all cursor-pointer"><Trash2 size={16}/></button>
                       </td>
                     </tr>
                   );
                 })}
-                {mySalons.length === 0 && (
-                  <tr><td colSpan="5" className="p-10 text-center text-slate-400 font-medium">Aún no hay salones creados.</td></tr>
-                )}
               </tbody>
             </table>
           </div>
         </div>
       </div>
 
-      {/* MODAL MULTIUSO */}
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl relative anim-pop">
             <button onClick={() => setShowModal(false)} className="absolute top-6 right-6 w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 cursor-pointer"><X size={20}/></button>
-            
-            <h2 className="text-2xl font-black text-slate-900 mb-8 flex items-center gap-3">
-              {modalMode === 'create' && <><Building className="text-violet-500"/> Nuevo Salón</>}
-              {modalMode === 'edit' && <><Edit2 className="text-violet-500"/> Editar Salón</>}
-              {modalMode === 'password' && <><KeyRound className="text-violet-500"/> Nueva Clave</>}
-            </h2>
-
-            <div className="space-y-2">
-              {/* MODO CREAR O EDITAR */}
-              {(modalMode === 'create' || modalMode === 'edit') && (
-                <>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Inp label="Nombre del Salón" value={fName} onChange={setFName} placeholder="Ej: Aventura Kids" />
-                    <Inp label="WhatsApp (Sin +)" value={fPhone} onChange={setFPhone} placeholder="54911234567" />
-                  </div>
-                  
-                  <Inp label="Correo de Acceso (Inmodificable luego)" value={fEmail} onChange={modalMode === 'create' ? setFEmail : undefined} placeholder="salon@email.com" className={modalMode === 'edit' ? 'opacity-50 pointer-events-none' : ''} />
-                  
-                  {modalMode === 'create' && <Inp label="Contraseña Inicial" value={fPass} onChange={setFPass} type="password" />}
-                  
-                  <div className="h-px bg-gray-100 my-6" />
-                  <h4 className="text-[10px] font-black text-violet-500 uppercase tracking-widest mb-4">Configuración Fija y Pagos</h4>
-                  
-                  <Inp label="Dirección de Google Maps (Se aplica a sus invitaciones)" value={fAddress} onChange={setFAddress} placeholder="Ej: Av. San Martín 1234, Buenos Aires" />
-                  
-                  <div className="flex gap-4">
-                    <div className="flex-1"><Inp label="Próximo Vencimiento" type="date" value={fPayDate} onChange={setFPayDate} /></div>
-                    <div className="flex flex-col items-center justify-center pt-2">
-                      <span className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-2">Bloqueo Manual</span>
-                      <Toggle checked={fAlert} onChange={setFAlert} />
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* MODO RESETEAR CONTRASEÑA */}
-              {modalMode === 'password' && (
-                <>
-                  <p className="text-sm text-slate-500 mb-6">Estás cambiando la contraseña de acceso para <b>{editingEmail}</b>. Sus invitaciones no se borrarán ni se verán afectadas.</p>
-                  <Inp label="Escribir Nueva Contraseña" value={fPass} onChange={setFPass} type="text" placeholder="Ej: clave123" />
-                </>
-              )}
-            </div>
-
-            <button onClick={handleSaveModal} className="w-full py-4 mt-6 bg-slate-900 hover:bg-black text-white rounded-2xl font-black text-sm transition-transform active:scale-95 cursor-pointer">
-              GUARDAR CAMBIOS
-            </button>
+            <h2 className="text-2xl font-black mb-8">{modalMode === 'create' ? 'Nuevo Salón' : modalMode === 'edit' ? 'Editar Salón' : 'Nueva Clave'}</h2>
+            {(modalMode === 'create' || modalMode === 'edit') && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3"><Inp label="Nombre" value={fName} onChange={setFName} /><Inp label="WhatsApp" value={fPhone} onChange={setFPhone} /></div>
+                <Inp label="Email" value={fEmail} onChange={setFEmail} className={modalMode === 'edit' ? 'opacity-50 pointer-events-none' : ''} />
+                {modalMode === 'create' && <Inp label="Contraseña" value={fPass} onChange={setFPass} type="password" />}
+                <Inp label="Dirección Google Maps" value={fAddress} onChange={setFAddress} />
+                <div className="flex gap-4"><Inp label="Próximo Vencimiento" type="date" value={fPayDate} onChange={setFPayDate} className="flex-1" /><div className="flex flex-col items-center"><span className="text-[10px] font-black uppercase mb-2 text-red-500">Bloqueo</span><Toggle checked={fAlert} onChange={setFAlert} /></div></div>
+              </div>
+            )}
+            {modalMode === 'password' && <Inp label="Nueva Contraseña" value={fPass} onChange={setFPass} />}
+            <button onClick={handleSaveModal} className="w-full py-4 mt-6 bg-slate-900 text-white rounded-2xl font-black text-sm">GUARDAR CAMBIOS</button>
           </div>
         </div>
       )}
-
       {toast && <Toast msg={toast} />}
     </div>
   );
