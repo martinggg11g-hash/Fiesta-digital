@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { OpeningAnimation, ANIMATION_CATEGORIES } from "./Lotties";
+import { OpeningAnimation } from "./Lotties"; // Mirá cómo importo solo la animación, cero errores.
 
 // INTEGRACIÓN DE GIPHY
 import { GiphyFetch } from '@giphy/js-fetch-api';
@@ -17,6 +17,30 @@ import {
    CONFIGURACIÓN DE GIPHY
 ============================================================================ */
 const gf = new GiphyFetch('32PbboqCveiWSlj9vROPmyjv8l8cuaj1');
+
+/* ============================================================================
+   CATEGORÍAS DE ANIMACIONES (BLINDADAS ACÁ ADENTRO)
+============================================================================ */
+export const ANIMATION_CATEGORIES = {
+  infantil: [
+    { id: "amongus", name: "Among Us", emoji: "👾" },
+    { id: "tiger", name: "Tigre Animado", emoji: "🐯" },
+    { id: "chest", name: "Cofre Pirata", emoji: "🏴‍☠️" },
+    { id: "soccer", name: "Cancha Fútbol", emoji: "⚽" }
+  ],
+  quince: [
+    { id: "musicbox", name: "Caja Musical", emoji: "🎵" },
+    { id: "gift", name: "Regalo", emoji: "🎁" }
+  ],
+  bodas: [
+    { id: "envelope", name: "Sobre Elegante", emoji: "✉️" },
+    { id: "rings", name: "Anillos", emoji: "💍" } 
+  ],
+  adultos: [
+    { id: "cheers", name: "Brindis", emoji: "🥂" }, 
+    { id: "disco", name: "Fiesta Disco", emoji: "🪩" } 
+  ]
+};
 
 /* ============================================================================
    CONFIGURACIONES Y CONSTANTES
@@ -583,7 +607,7 @@ export const EditorScreen = ({ invitations, onSave }) => {
   const navigate = useNavigate();
   const [inv, setInv] = useState(null);
   const [previewAnim, setPreviewAnim] = useState(false);
-  const [animCat, setAnimCategory] = useState("infantil"); // Estado para las categorías de Lotties
+  const [animCat, setAnimCategory] = useState("infantil");
 
   useEffect(() => {
     const found = invitations.find(i => i.id === id);
