@@ -1,28 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 
-// CATEGORÍAS DE ANIMACIONES
-export const ANIMATION_CATEGORIES = {
-  infantil: [
-    { id: "amongus", name: "Among Us", emoji: "👾" },
-    { id: "tiger", name: "Tigre Animado", emoji: "🐯" },
-    { id: "chest", name: "Cofre Pirata", emoji: "🏴‍☠️" },
-    { id: "soccer", name: "Cancha Fútbol", emoji: "⚽" }
-  ],
-  quince: [
-    { id: "musicbox", name: "Caja Musical", emoji: "🎵" },
-    { id: "gift", name: "Regalo", emoji: "🎁" }
-  ],
-  bodas: [
-    { id: "envelope", name: "Sobre Elegante", emoji: "✉️" },
-    { id: "rings", name: "Anillos (Próx)", emoji: "💍" } 
-  ],
-  adultos: [
-    { id: "cheers", name: "Brindis (Próx)", emoji: "🥂" }, 
-    { id: "disco", name: "Fiesta Disco", emoji: "🪩" } 
-  ]
-};
-
 // URLS DE CADA ANIMACIÓN
 export const LOTTIE_MAP = {
   envelope: "https://lottie.host/79010496-e08b-4a5e-8557-0a4176378e90/4x9xLpSUnp.json", 
