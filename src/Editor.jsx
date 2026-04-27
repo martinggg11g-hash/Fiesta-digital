@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { OpeningAnimation } from "./Lotties";
+import { OpeningAnimation, ANIMATION_CATEGORIES } from "./Lotties";
 
-// INTEGRACIÓN OFICIAL DE GIPHY
+// INTEGRACIÓN DE GIPHY
 import { GiphyFetch } from '@giphy/js-fetch-api';
 import { Grid } from '@giphy/react-components';
 
@@ -10,11 +10,11 @@ import {
   MapPin, Clock, Calendar, Palette, CheckCircle2,
   ChevronDown, Type, Edit2, ArrowLeft, Save, X,
   Star, Image as ImageIcon, Layout, List, Trash2, Loader2, Check,
-  Video, Link as LinkIcon, Sparkles, Mail, Goal, Gift, Music, Key, Ghost, Cat, Zap
+  Video, Link as LinkIcon, Sparkles, MoveVertical
 } from "lucide-react";
 
 /* ============================================================================
-   CONFIGURACIÓN DE GIPHY (API KEY CONECTADA)
+   CONFIGURACIÓN DE GIPHY
 ============================================================================ */
 const gf = new GiphyFetch('32PbboqCveiWSlj9vROPmyjv8l8cuaj1');
 
@@ -25,7 +25,7 @@ const getYouTubeId = (url) => {
   if (!url) return null;
   const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
   const match = url.match(regExp);
-  return (match && match[2].length === 11) ? match[2] : null;
+  return (match && match[2] && match[2].length === 11) ? match[2] : null;
 };
 
 export const GENERAL_EMOJIS = ['🎂','🎈','🎉','🥳','🎁','🎊','👶','💍','🎓','✨','🌟','❤️','💖','🦖','🦄','⚽','🎮','👑','🌸','🔥','💎','🎪','🎠','🎡','🦋','🌺','🎵','🏆'];
@@ -63,17 +63,6 @@ export const EFFECTS = [
   { id: "emojis",   name: "Emojis mix",  icon: "🎉" },
 ];
 
-export const OPENING_ANIMATIONS = [
-  { id: "none", name: "Sin Animación", icon: <X size={14}/> },
-  { id: "envelope", name: "Sobre Elegante", icon: <Mail size={14}/> },
-  { id: "chest", name: "Baúl del Tesoro", icon: <Key size={14}/> },
-  { id: "soccer", name: "Cancha de Fútbol", icon: <Goal size={14}/> },
-  { id: "musicbox", name: "Caja Musical", icon: <Music size={14}/> },
-  { id: "gift", name: "Regalo Sorpresa", icon: <Gift size={14}/> },
-  { id: "amongus", name: "Among Us", icon: <Ghost size={14}/> },
-  { id: "tiger", name: "Tigre Animado", icon: <Cat size={14}/> },
-];
-
 export const TRANSITION_OPTS = [
   { label: "Desvanecer (Fade)", value: "fade" },
   { label: "Deslizar arriba", value: "slideUp" },
@@ -83,32 +72,39 @@ export const TRANSITION_OPTS = [
 
 export const DEF_CONFIG = {
   theme:"violet", fontTitle:"'Pacifico', cursive", fontBody:"'DM Sans', sans-serif",
+  
+  // TAMAÑOS INDEPENDIENTES
   honoreeSize: 48, honoreeFont: "'Pacifico', cursive", honoreeColor: "#f0ecff",
   eventTypeSize: 11, eventTypeFont: "'DM Sans', sans-serif", eventTypeColor: "#7c3aed",
+  dateSize: 18, locationSize: 18, titlesSize: 10,
+  
   bg1:"#08060f", bg2:"#120d24", primary:"#7c3aed", card:"#1a1035", text:"#f0ecff", muted:"#9b8ec4",
   coverGradientIntensity: 70, particleEffect: "none", 
   openingAnimation: "envelope", animationDuration: 2, animationTransition: "fade",
   eventTypeEmoji:"✨", eventType:"Estás invitado al cumple de", honoreeName:"Valentina", badgeEmoji:"🎂", badgeText:"5 añitos",
   coverPhoto:"https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=800&q=80",
+  
   showBanner:true, bannerTitle:"La festejada", bannerPhoto:"https://images.unsplash.com/photo-1545912452-8aea7e25a3d3?auto=format&fit=crop&w=400&q=80",
   useGiphyBanner: false,
-  showDate:true, dateText:"Sábado 24 de Octubre", showTime:true, timeText:"16:00 a 20:00 hs",
-  showLocation:true, locationName:"Aventura Kids", locationAddress:"Av. San Martín 1234",
-  showParking:true, parkingType:"Estacionamiento público",
-  showItinerary:true, itinerary:[{ time:"16:00", title:"Bienvenida", sub:"Recepción" }],
-  showMenu:true, menuItems:[{ emoji:"🍕", label:"Pizza Party" }],
+  
+  showTheme:true, themeIcon:"🦕", themeLabel:"Temática", themeText:"Dinosaurios",
+  
+  showDate:true, dateText:"Sábado 24 de Octubre", showTime:true, timeText:"16:00 a 20:00 hs", showCountdown: false, countdownDate:"",
+  showLocation:true, locationName:"Aventura Kids", locationAddress:"Av. San Martín 1234", showParking:true, parkingType:"Estacionamiento público", customParking:"",
+  
+  showItinerary:true, itinerary:[{ time:"16:00", title:"Bienvenida", sub:"Recepción de invitados" }],
+  showMenu:true, menuItems:[{ emoji:"🍕", label:"Pizza Party" }, { emoji:"🥤", label:"Gaseosas" }],
   showDressCode:true, dressCodeIcon:"👗", dressCodeText:"Elegante Sport",
-  showGifts:true, giftIcon:"🎁", giftLabel:"Regalos", giftText:"Lluvia de sobres",
-  showGallery:false, galleryPhotos:[],
-  showVideo:false, videoUrl:"", videoTitle:"",
+  showGifts:true, giftIcon:"🎁", giftLabel:"Regalos", giftText:"Lluvia de sobres", showGiftNote:false, giftNoteText:"",
+  showGallery:false, galleryTitle:"Fotos", galleryPhotos:[],
+  showVideo:false, videoUrl:"", videoTitle:"Mirá el video",
   showVenueLogo:false, venueLogoUrl:"", venueName:"", venueLink:"", venueLinkType:"web",
-  whatsappNumber:"5491123456789", whatsappMessage:"¡Hola! Confirmo mi asistencia 🎉",
+  whatsappNumber:"5491123456789", whatsappMessage:"¡Hola! Confirmo mi asistencia para el evento 🎉",
 };
 
 /* ============================================================================
-   COMPONENTES DE INTERFAZ
+   COMPONENTES GIPHY Y UI
 ============================================================================ */
-
 const GiphySearch = ({ onSelect }) => {
   const [term, setTerm] = useState("cumpleaños");
   const [debouncedTerm, setDebouncedTerm] = useState("cumpleaños");
@@ -125,17 +121,11 @@ const GiphySearch = ({ onSelect }) => {
       <input 
         value={term} 
         onChange={(e) => setTerm(e.target.value)} 
-        placeholder="Buscar GIF (ej: azul, globos...)" 
+        placeholder="Buscar GIF (ej: infantil, azul, globos...)" 
         className="w-full px-4 py-2.5 rounded-xl text-xs border border-slate-200 focus:border-violet-400 outline-none mb-3 shadow-sm" 
       />
       <div className="h-48 overflow-y-auto fd-sb rounded-xl bg-white border border-slate-100">
-        <Grid 
-          width={300} 
-          columns={2} 
-          fetchGifs={fetchGifs} 
-          key={debouncedTerm} 
-          onGifClick={(gif, e) => { e.preventDefault(); onSelect(gif.images.original.url); }} 
-        />
+        <Grid width={300} columns={2} fetchGifs={fetchGifs} key={debouncedTerm} onGifClick={(gif, e) => { e.preventDefault(); onSelect(gif.images.original.url); }} />
       </div>
     </div>
   );
@@ -145,7 +135,7 @@ const Inp = ({ label, value, onChange, placeholder, type="text", multiline = fal
   <div className={`mb-4 text-left ${className}`}>
     {label && <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{label}</label>}
     {multiline ? (
-      <textarea value={value || ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={3} className="w-full px-4 py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all" />
+      <textarea value={value || ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={3} className="w-full px-4 py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm resize-none focus:bg-white focus:border-violet-400 outline-none transition-all" />
     ) : (
       <input type={type} value={value || ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} className="w-full px-4 py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all" />
     )}
@@ -208,7 +198,7 @@ const Acc = ({ title, icon: Icon, children, defaultOpen = false, iconColor = "#7
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="mb-3 rounded-2xl border border-gray-100 bg-white overflow-hidden shadow-sm">
-      <button onClick={() => setOpen(!open)} className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors text-left cursor-pointer">
+      <button onClick={() => setOpen(!open)} type="button" className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors text-left cursor-pointer">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${iconColor}15` }}>
             <Icon size={18} style={{ color: iconColor }} />
@@ -225,9 +215,194 @@ const Acc = ({ title, icon: Icon, children, defaultOpen = false, iconColor = "#7
 };
 
 /* ============================================================================
+   WIDGETS Y EFECTOS
+============================================================================ */
+const Countdown = ({ targetDate, primary, text }) => {
+  const [timeLeft, setTimeLeft] = useState({ d:0, h:0, m:0, s:0 });
+  const [expired, setExpired] = useState(false);
+
+  useEffect(() => {
+    if(!targetDate) return;
+    const calc = () => {
+      const target = new Date(targetDate).getTime();
+      if (isNaN(target)) return;
+      const dist = target - Date.now();
+      if(dist <= 0) { setExpired(true); return; }
+      setTimeLeft({
+        d: Math.floor(dist / 86400000),
+        h: Math.floor((dist % 86400000) / 3600000),
+        m: Math.floor((dist % 3600000) / 60000),
+        s: Math.floor((dist % 60000) / 1000),
+      });
+    };
+    calc();
+    const id = setInterval(calc, 1000);
+    return () => clearInterval(id);
+  }, [targetDate]);
+
+  if(!targetDate || isNaN(new Date(targetDate).getTime())) return null;
+  const labels = { d:"días", h:"horas", m:"min", s:"seg" };
+
+  return (
+    <div className="py-4">
+      {text && <p className="text-center text-xs font-bold mb-3 opacity-70" style={{ color: primary }}>{text}</p>}
+      {expired ? (
+        <p className="text-center font-black text-lg" style={{ color: primary }}>🎉 ¡El día llegó!</p>
+      ) : (
+        <div className="flex justify-center gap-3">
+          {Object.entries(timeLeft).map(([unit, val]) => (
+            <div key={unit} className="flex flex-col items-center gap-1">
+              <div className="w-[52px] h-[52px] rounded-2xl flex items-center justify-center text-xl font-black text-white shadow-lg" style={{ background: primary }}>
+                {(val || 0).toString().padStart(2, '0')}
+              </div>
+              <span className="text-[10px] font-bold opacity-60" style={{ color: primary }}>{labels[unit]}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const ParticleCanvas = ({ effect, primary }) => {
+  const canvasRef = useRef(null);
+  const animRef = useRef(null);
+  const particlesRef = useRef([]);
+
+  useEffect(() => {
+    if (effect === "none" || !canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    
+    let observer;
+    try {
+      const resize = () => { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; };
+      resize(); observer = new ResizeObserver(resize); observer.observe(canvas);
+    } catch(e) { console.warn("ResizeObserver not supported"); }
+
+    const EMOJI_MIX = ["🎉","🎊","🎈","✨","🌟","💖","🎂"];
+    const PETALS = ["🌸","🌺","🌹","🌷"];
+
+    const spawnParticle = () => {
+      const x = Math.random() * canvas.width;
+      const isBubble = effect === "bubbles";
+      
+      const base = { 
+        x, 
+        y: isBubble ? canvas.height + 20 : -20, 
+        vx: (Math.random() - 0.5) * 2, 
+        vy: Math.random() * 2 + 1, 
+        alpha: 1, 
+        rot: Math.random() * 360, 
+        rotV: (Math.random() - 0.5) * 4, 
+        size: Math.random() * 10 + 8, 
+        life: 1, 
+        decay: Math.random() * 0.003 + 0.002 
+      };
+
+      if (effect === "confetti") {
+        const colors = [primary, "#f59e0b", "#10b981", "#ef4444", "#3b82f6", "#ec4899", "#facc15"];
+        return { ...base, type: "rect", color: colors[Math.floor(Math.random() * colors.length)], w: Math.random()*10+5, h: Math.random()*5+3 };
+      }
+      if (effect === "hearts")  return { ...base, type: "text", emoji: "❤️", size: Math.random()*18+10 };
+      if (effect === "stars")   return { ...base, type: "text", emoji: "⭐", size: Math.random()*16+8 };
+      if (effect === "bubbles") return { ...base, type: "circle", color: primary, filled: false, r: Math.random()*12+4, vx: (Math.random()-0.5)*1.5, vy: -(Math.random()*2+0.5) };
+      if (effect === "snow")    return { ...base, type: "circle", color: "#ffffff", filled: true, r: Math.random()*3+1, vy: Math.random()*1.5+0.5, vx: (Math.random()-0.5)*0.8 };
+      if (effect === "petals")  return { ...base, type: "text", emoji: PETALS[Math.floor(Math.random()*PETALS.length)], size: Math.random()*20+12 };
+      if (effect === "emojis")  return { ...base, type: "text", emoji: EMOJI_MIX[Math.floor(Math.random()*EMOJI_MIX.length)], size: Math.random()*20+12 };
+      return null;
+    };
+
+    let frame = 0;
+    const loop = () => {
+      if (!ctx || !canvas) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      frame++;
+      
+      if (frame % 8 === 0 && particlesRef.current.length < 60) {
+        const p = spawnParticle(); if (p) particlesRef.current.push(p);
+      }
+      
+      particlesRef.current = particlesRef.current.filter(p => {
+        p.x += p.vx; p.y += p.vy; p.rot = (p.rot || 0) + (p.rotV || 0); p.life -= p.decay; p.alpha = p.life;
+        ctx.globalAlpha = Math.max(0, p.alpha);
+        
+        if (p.type === "rect") {
+          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate((p.rot || 0) * Math.PI/180);
+          ctx.fillStyle = p.color; ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h); ctx.restore();
+        } else if (p.type === "circle") {
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); 
+          if (p.filled) { ctx.fillStyle = p.color; ctx.fill(); } 
+          else { ctx.strokeStyle = p.color; ctx.lineWidth = 1.5; ctx.stroke(); }
+        } else if (p.type === "text") {
+          ctx.font = `${p.size}px serif`; ctx.textAlign = "center"; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate((p.rot||0)*Math.PI/180); ctx.fillText(p.emoji, 0, 0); ctx.restore();
+        }
+        ctx.globalAlpha = 1;
+        return p.life > 0 && p.y < canvas.height + 40 && p.y > -40;
+      });
+      animRef.current = requestAnimationFrame(loop);
+    };
+    loop();
+    return () => { 
+      if(animRef.current) cancelAnimationFrame(animRef.current); 
+      if(observer && canvasRef.current) observer.unobserve(canvasRef.current); 
+      particlesRef.current = []; 
+    };
+  }, [effect, primary]);
+
+  if (effect === "none") return null;
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none z-20" style={{ opacity: 0.85 }} />;
+};
+
+const MapEmbed = ({ name, address, primary }) => {
+  const query = `${name || ""} ${address || ""}`.trim();
+  if (!query) return null;
+  const gMapsUrl = `http://googleusercontent.com/maps.google.com/maps?q=${encodeURIComponent(query)}`;
+  return (
+    <div className="rounded-2xl overflow-hidden border border-white/10 relative" style={{ background: "#1a1a2e" }}>
+      <iframe title="map" width="100%" height="200" style={{ border: 0, display: "block" }} loading="lazy" referrerPolicy="no-referrer-when-downgrade" src={`http://googleusercontent.com/maps.google.com/maps?q=${encodeURIComponent(query)}&t=m&z=16&output=embed&iwloc=near`} />
+      <a href={gMapsUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-3 text-xs font-black uppercase tracking-wider transition-colors" style={{ background: `${primary}22`, color: primary }}>
+        <MapPin size={14} /> Abrir en Google Maps
+      </a>
+    </div>
+  );
+};
+
+const VenueCard = ({ cfg, primary, text, muted, card }) => {
+  if (!cfg.showVenueLogo) return null;
+  const href = cfg.venueLinkType === "whatsapp" ? `https://wa.me/${cfg.venueLink}` : cfg.venueLink;
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4 rounded-2xl border border-white/5 no-underline transition-opacity hover:opacity-80" style={{ background: card }}>
+      {cfg.venueLogoUrl ? <img src={cfg.venueLogoUrl} alt="logo" className="w-14 h-14 rounded-xl object-contain border border-white/10 bg-white/5" /> : <div className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl" style={{ background: `${primary}22` }}>🏠</div>}
+      <div className="text-left flex-1">
+        <p className="text-[9px] uppercase font-black tracking-widest mb-0.5" style={{ color: muted }}>Lugar del evento</p>
+        <p className="font-bold text-sm" style={{ color: text }}>{cfg.venueName || "Ver lugar"}</p>
+        <p className="text-[10px] mt-0.5 font-bold" style={{ color: primary }}>{cfg.venueLinkType === "whatsapp" ? "📱 Consultar por WhatsApp" : "🌐 Ver sitio web"}</p>
+      </div>
+    </a>
+  );
+};
+
+const VideoSection = ({ cfg, primary, text, muted, card }) => {
+  if (!cfg.showVideo || !cfg.videoUrl) return null;
+  const ytId = getYouTubeId(cfg.videoUrl);
+  return (
+    <div className="rounded-3xl overflow-hidden border border-white/5" style={{ background: card }}>
+      {cfg.videoTitle && <p className="text-center text-[10px] font-black uppercase tracking-widest pt-4 pb-2" style={{ color: muted }}>{cfg.videoTitle}</p>}
+      {ytId ? (
+        <iframe width="100%" height="250" src={`https://www.youtube.com/embed/${ytId}?rel=0`} title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="block w-full"></iframe>
+      ) : (
+        <video src={cfg.videoUrl} controls playsInline className="w-full block" style={{ maxHeight: 300 }} />
+      )}
+    </div>
+  );
+};
+
+/* ============================================================================
    VISTA PREVIA CELULAR
 ============================================================================ */
 export const InvitePreview = ({ cfg }) => {
+  if (!cfg) return null;
   const th = THEMES.find(t => t.id === cfg.theme) || THEMES[0];
   const primary = cfg.primary || th.primary;
   const bg = `linear-gradient(180deg, ${cfg.bg1 || th.bg1} 0%, ${cfg.bg2 || th.bg2} 100%)`;
@@ -236,11 +411,35 @@ export const InvitePreview = ({ cfg }) => {
   const cardC  = cfg.card  || th.card;
   const gradOpacity = ((cfg.coverGradientIntensity ?? 70) / 100).toFixed(2);
 
+  const SectionTitle = ({ children }) => (
+    <h4 className="font-black uppercase tracking-[0.3em] text-center mb-6" style={{ color: mutedC, fontSize: `${cfg.titlesSize ?? 10}px` }}>
+      {children}
+    </h4>
+  );
+
+  const InfoCard = ({ icon: Icon, label, value, sub, fontSize }) => (
+    <div className="flex items-center gap-4 p-4 rounded-2xl border border-white/5" style={{ background: cardC }}>
+      <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: primary }}><Icon size={20} color="white" /></div>
+      <div className="text-left">
+        <p className="text-[9px] uppercase font-black tracking-widest mb-0.5" style={{ color: mutedC }}>{label}</p>
+        <p className="font-bold" style={{ color: textC, fontFamily: cfg.fontBody, fontSize: `${fontSize}px` }}>{value}</p>
+        {sub && <p className="text-[11px] mt-0.5 opacity-70" style={{ color: mutedC, fontFamily: cfg.fontBody }}>{sub}</p>}
+      </div>
+    </div>
+  );
+
+  const waMsg = (cfg.whatsappMessage || "").replace('{nombre}', cfg.honoreeName || "");
+
   return (
     <div style={{ background: bg, fontFamily: cfg.fontBody }} className="min-h-full pb-12 relative overflow-x-hidden">
+      <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden" style={{ height: "100%" }}>
+        <ParticleCanvas effect={cfg.particleEffect || "none"} primary={primary} />
+      </div>
+
       <div className="relative h-[420px] overflow-hidden">
         <img src={cfg.coverPhoto || DEF_CONFIG.coverPhoto} className="w-full h-full object-cover" alt="Cover" />
         <div className="absolute inset-0" style={{ background: `linear-gradient(to top, ${cfg.bg1 || th.bg1} 5%, rgba(0,0,0,${gradOpacity}) 60%, transparent 100%)` }} />
+        
         <div className="absolute bottom-0 left-0 right-0 p-8 text-center z-30">
           <p className="font-black uppercase tracking-[0.2em] mb-4 flex items-center justify-center gap-2" style={{ color: cfg.eventTypeColor || primary, fontSize: `${cfg.eventTypeSize ?? 11}px`, fontFamily: cfg.eventTypeFont || cfg.fontBody }}>
             {cfg.eventTypeEmoji} {cfg.eventType}
@@ -248,44 +447,143 @@ export const InvitePreview = ({ cfg }) => {
           <h1 style={{ fontFamily: cfg.honoreeFont || cfg.fontTitle, color: cfg.honoreeColor || textC, fontSize: `${cfg.honoreeSize ?? 48}px` }} className="leading-tight mb-4">
             {cfg.honoreeName}
           </h1>
-          <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-white/10 backdrop-blur-md bg-black/30 font-black text-sm text-white">
+          <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-white/10 backdrop-blur-md bg-black/30 font-black text-sm" style={{ color: textC }}>
             {cfg.badgeEmoji} {cfg.badgeText}
           </span>
         </div>
       </div>
 
-      <div className="px-5 -mt-8 relative z-30 space-y-4 text-center">
-        {cfg.showBanner && (
-           <div className="relative h-44 rounded-[2rem] overflow-hidden border border-white/10">
-              <img src={cfg.bannerPhoto || DEF_CONFIG.bannerPhoto} className="w-full h-full object-cover" alt="Banner" />
-              <div className="absolute inset-0 bg-black/20" />
-              <div className="absolute bottom-4 left-0 right-0 px-4 text-white font-bold text-sm drop-shadow-md">{cfg.bannerTitle}</div>
-           </div>
+      <div className="px-5 -mt-8 relative z-30 space-y-4">
+        {cfg.showCountdown && cfg.countdownDate && (
+          <div className="p-5 rounded-3xl border border-white/5" style={{ background: cardC, color: textC }}>
+            <h3 className="text-center text-[11px] font-black uppercase tracking-widest opacity-80 mb-1" style={{ color: mutedC }}>Falta para el gran día</h3>
+            <Countdown targetDate={cfg.countdownDate} primary={primary} />
+          </div>
         )}
-        <div className="p-6 rounded-[2rem] border border-white/10" style={{ background: cardC }}>
-           <p className="text-[9px] font-black uppercase tracking-widest opacity-50 mb-2" style={{ color: mutedC }}>¿Cuándo?</p>
-           <p className="text-lg font-bold" style={{ color: textC }}>{cfg.dateText}</p>
+
+        {cfg.showBanner && (
+          <div className="relative h-48 rounded-3xl overflow-hidden border-2" style={{ borderColor: `${primary}44` }}>
+            <img src={cfg.bannerPhoto || DEF_CONFIG.bannerPhoto} className="w-full h-full object-cover" alt="Banner" />
+            <div className="absolute inset-0 bg-black/40" />
+            <div className="absolute top-4 left-4 px-3 py-1 bg-black/50 backdrop-blur rounded-full text-[9px] font-black uppercase tracking-widest text-white">{cfg.bannerTitle}</div>
+          </div>
+        )}
+
+        {cfg.showDate && <InfoCard icon={Calendar} label="¿Cuándo?" value={cfg.dateText} fontSize={cfg.dateSize ?? 18} />}
+        {cfg.showTime && <InfoCard icon={Clock} label="Horario" value={cfg.timeText} fontSize={cfg.dateSize ?? 18} />}
+        {cfg.showTheme && <InfoCard icon={Star} label={cfg.themeLabel} value={`${cfg.themeIcon} ${cfg.themeText}`} fontSize={cfg.dateSize ?? 18} />}
+
+        {cfg.showLocation && (
+          <div className="rounded-3xl overflow-hidden border border-white/5" style={{ background: cardC }}>
+            <div className="p-4 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: primary }}><MapPin size={20} color="white" /></div>
+              <div className="text-left">
+                <p className="text-[9px] uppercase font-black tracking-widest mb-0.5" style={{ color: mutedC }}>¿Dónde?</p>
+                <p className="font-bold" style={{ color: textC, fontFamily: cfg.fontBody, fontSize: `${cfg.locationSize ?? 18}px` }}>{cfg.locationName}</p>
+                <p className="text-[11px] opacity-70" style={{ color: mutedC, fontFamily: cfg.fontBody }}>{cfg.locationAddress}</p>
+              </div>
+            </div>
+            <div className="px-4 pb-2"><MapEmbed name={cfg.locationName} address={cfg.locationAddress} primary={primary} /></div>
+            {cfg.showParking && (
+              <div className="p-4 text-center border-t border-white/5">
+                <span className="text-xs font-bold py-2 px-4 rounded-full inline-block" style={{ background: `${primary}22`, color: primary, fontFamily: cfg.fontBody }}>
+                  🚗 {cfg.parkingType === 'otro' ? cfg.customParking : cfg.parkingType}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        <VenueCard cfg={cfg} primary={primary} text={textC} muted={mutedC} card={cardC} />
+        <VideoSection cfg={cfg} primary={primary} text={textC} muted={mutedC} card={cardC} />
+
+        {cfg.showItinerary && cfg.itinerary?.length > 0 && (
+          <div className="pt-4">
+            <SectionTitle>Programa del evento</SectionTitle>
+            <div className="relative pl-6 space-y-8 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5" style={{ '--tw-before-bg': `${primary}33` }}>
+              <div className="absolute left-[7px] top-2 bottom-2 w-[2px]" style={{ background: primary, opacity: 0.2 }} />
+              {cfg.itinerary.map((item, i) => (
+                <div key={i} className="relative text-left">
+                  <div className="absolute -left-[23px] top-1.5 w-3 h-3 rounded-full" style={{ background: primary, boxShadow: `0 0 10px ${primary}` }} />
+                  <p className="text-[10px] font-black mb-1" style={{ color: primary }}>{item.time}</p>
+                  <p className="font-bold text-sm" style={{ color: textC, fontFamily: cfg.fontBody }}>{item.title}</p>
+                  <p className="text-xs opacity-60" style={{ color: mutedC, fontFamily: cfg.fontBody }}>{item.sub}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {cfg.showMenu && cfg.menuItems?.length > 0 && (
+          <div className="pt-4">
+            <SectionTitle>¿Qué vamos a comer?</SectionTitle>
+            <div className="grid grid-cols-2 gap-3">
+              {cfg.menuItems.map((m, i) => (
+                <div key={i} className="p-4 rounded-2xl text-center border border-white/5" style={{ background: cardC }}>
+                  <span className="text-3xl block mb-2">{m.emoji}</span>
+                  <span className="text-xs font-bold" style={{ color: textC, fontFamily: cfg.fontBody }}>{m.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 gap-3 pt-4">
+          {cfg.showDressCode && (
+            <div className="p-5 rounded-2xl text-center border border-white/5" style={{ background: cardC }}>
+              <span className="text-3xl block mb-2">{cfg.dressCodeIcon}</span>
+              <p className="text-[9px] font-black uppercase tracking-widest mb-1" style={{ color: mutedC }}>Vestimenta</p>
+              <p className="font-bold text-xs" style={{ color: textC, fontFamily: cfg.fontBody }}>{cfg.dressCodeText}</p>
+            </div>
+          )}
+          {cfg.showGifts && (
+            <div className="p-5 rounded-2xl text-center border border-white/5" style={{ background: cardC }}>
+              <span className="text-3xl block mb-2">{cfg.giftIcon}</span>
+              <p className="text-[9px] font-black uppercase tracking-widest mb-1" style={{ color: mutedC }}>{cfg.giftLabel}</p>
+              <p className="font-bold text-xs" style={{ color: textC, fontFamily: cfg.fontBody }}>{cfg.giftText}</p>
+            </div>
+          )}
         </div>
-        <div className="p-6 rounded-[2rem] border border-white/10" style={{ background: cardC }}>
-           <p className="text-[9px] font-black uppercase tracking-widest opacity-50 mb-2" style={{ color: mutedC }}>¿Dónde?</p>
-           <p className="text-lg font-bold" style={{ color: textC }}>{cfg.locationName}</p>
-        </div>
-        <button className="w-full py-5 rounded-[1.5rem] font-black text-sm tracking-widest text-white shadow-2xl transition-transform active:scale-95" style={{ background: primary }}>
-           CONFIRMAR ASISTENCIA
+
+        {cfg.showGifts && cfg.showGiftNote && cfg.giftNoteText && (
+          <div className="text-center pt-2">
+            <span className="inline-flex py-2 px-4 rounded-full text-[10px] font-bold border" style={{ background: `${primary}15`, borderColor: `${primary}33`, color: primary, fontFamily: cfg.fontBody }}>{cfg.giftNoteText}</span>
+          </div>
+        )}
+
+        {cfg.showGallery && cfg.galleryPhotos?.length > 0 && (
+          <div className="pt-4">
+            <SectionTitle>{cfg.galleryTitle}</SectionTitle>
+            <div className="flex gap-3 overflow-x-auto pb-4 -mx-5 px-5">
+              {cfg.galleryPhotos.map((p, i) => p && (
+                <img key={i} src={p} className="w-32 h-32 rounded-2xl object-cover shrink-0 border border-white/5" alt={`Galeria ${i}`} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        <button 
+          onClick={() => window.open(`https://wa.me/${cfg.whatsappNumber}?text=${encodeURIComponent(waMsg)}`)}
+          className="w-full py-5 mt-4 rounded-[1.5rem] font-black text-sm tracking-wider flex items-center justify-center gap-3 shadow-2xl transition-transform active:scale-95 cursor-pointer"
+          style={{ background: `linear-gradient(135deg, ${primary}, ${primary}dd)`, color: 'white', boxShadow: `0 15px 35px ${primary}44` }}
+        >
+          <CheckCircle2 size={20} /> CONFIRMAR ASISTENCIA
         </button>
+        <p className="text-center text-[9px] font-bold opacity-30 mt-8" style={{ color: mutedC }}>FiestaDigital © 2024</p>
       </div>
     </div>
   );
 };
 
 /* ============================================================================
-   PANTALLA EDITOR PRINCIPAL
+   EDITOR PRINCIPAL (EL PANEL QUE USA EL SALÓN)
 ============================================================================ */
 export const EditorScreen = ({ invitations, onSave }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [inv, setInv] = useState(null);
   const [previewAnim, setPreviewAnim] = useState(false);
+  const [animCat, setAnimCategory] = useState("infantil"); // Estado para las categorías de Lotties
 
   useEffect(() => {
     const found = invitations.find(i => i.id === id);
@@ -293,9 +591,10 @@ export const EditorScreen = ({ invitations, onSave }) => {
     else navigate("/dashboard");
   }, [id, invitations, navigate]);
 
-  if (!inv) return <div className="h-screen bg-slate-950 flex items-center justify-center text-white"><Loader2 className="animate-spin mr-3"/> Cargando...</div>;
+  if (!inv) return <div className="h-screen bg-slate-950 flex items-center justify-center text-white"><Loader2 className="animate-spin mr-3"/> Cargando editor...</div>;
 
   const update = (k, v) => setInv(p => ({ ...p, config: { ...(p.config || DEF_CONFIG), [k]: v } }));
+  const handleSave = () => { onSave(inv); navigate("/dashboard"); };
   const cfg = inv.config || DEF_CONFIG;
 
   return (
@@ -303,44 +602,125 @@ export const EditorScreen = ({ invitations, onSave }) => {
       <header className="h-16 border-b border-white/10 px-6 flex items-center justify-between shrink-0 bg-slate-950/80 backdrop-blur z-20">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate("/dashboard")} className="w-10 h-10 bg-white/5 rounded-xl text-white flex items-center justify-center hover:bg-white/10 cursor-pointer"><ArrowLeft size={20}/></button>
-          <input className="bg-transparent border-none text-white font-black text-sm outline-none w-48 px-2 py-1 rounded hover:bg-white/5" value={inv.title} onChange={e => setInv({...inv, title: e.target.value})} />
+          <input className="bg-transparent border-none text-white font-black text-sm outline-none w-48 px-2 py-1 rounded hover:bg-white/5 focus:bg-white/10 transition-colors" value={inv.title} onChange={e => setInv({...inv, title: e.target.value})} />
         </div>
-        <button onClick={() => { onSave(inv); navigate("/dashboard"); }} className="px-8 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-black text-xs flex items-center gap-3 shadow-xl transition-all shadow-violet-900/40">
+        <button onClick={handleSave} className="px-8 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-black text-xs flex items-center gap-3 shadow-xl shadow-violet-900/40 cursor-pointer transition-colors">
           <Save size={16}/> GUARDAR CAMBIOS
         </button>
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* PANEL LATERAL DE HERRAMIENTAS */}
+        {/* PANEL LATERAL */}
         <aside className="w-[380px] bg-[#f8f7ff] overflow-y-auto p-6 border-r border-gray-100 z-10 relative fd-sb">
-          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 text-left">Personalización</h3>
+          
+          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 text-left">Personalización Completa</h3>
 
           <Acc title="Estilo y Colores" icon={Palette} defaultOpen iconColor="#7c3aed">
             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-left">Temas Sugeridos</label>
             <div className="flex flex-wrap gap-2.5 mb-6">
               {THEMES.map(th => (
-                <button key={th.id} onClick={() => setInv({...inv, config: {...cfg, theme: th.id, ...th}})} className={`w-9 h-9 rounded-full border-2 transition-all hover:scale-110 ${cfg.theme === th.id ? 'border-violet-600 ring-2 ring-violet-200' : 'border-transparent'}`} style={{ background: th.primary }} />
+                <button
+                  key={th.id}
+                  title={th.name}
+                  onClick={() => setInv({...inv, config: {...cfg, theme: th.id, ...th}})}
+                  className={`w-9 h-9 rounded-full border-2 transition-all hover:scale-110 ${cfg.theme === th.id ? 'border-violet-600 ring-2 ring-violet-200' : 'border-transparent'}`}
+                  style={{ background: th.primary }}
+                />
               ))}
             </div>
+
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-left mt-4 border-t border-gray-100 pt-4">Colores Manuales</label>
             <div className="grid grid-cols-2 gap-3 mb-6">
               <div className="flex flex-col gap-1"><label className="text-[9px] font-bold text-slate-400 uppercase">Primario</label><input type="color" value={cfg.primary} onChange={e => update('primary', e.target.value)} className="w-full h-9 rounded-xl cursor-pointer border-none shadow-sm" /></div>
-              <div className="flex flex-col gap-1"><label className="text-[9px] font-bold text-slate-400 uppercase">Fondo</label><input type="color" value={cfg.bg1} onChange={e => update('bg1', e.target.value)} className="w-full h-9 rounded-xl cursor-pointer border-none shadow-sm" /></div>
+              <div className="flex flex-col gap-1"><label className="text-[9px] font-bold text-slate-400 uppercase">Fondo Arriba</label><input type="color" value={cfg.bg1} onChange={e => update('bg1', e.target.value)} className="w-full h-9 rounded-xl cursor-pointer border-none shadow-sm" /></div>
+              <div className="flex flex-col gap-1"><label className="text-[9px] font-bold text-slate-400 uppercase">Fondo Abajo</label><input type="color" value={cfg.bg2} onChange={e => update('bg2', e.target.value)} className="w-full h-9 rounded-xl cursor-pointer border-none shadow-sm" /></div>
+              <div className="flex flex-col gap-1"><label className="text-[9px] font-bold text-slate-400 uppercase">Tarjetas</label><input type="color" value={cfg.card} onChange={e => update('card', e.target.value)} className="w-full h-9 rounded-xl cursor-pointer border-none shadow-sm" /></div>
+              <div className="flex flex-col gap-1"><label className="text-[9px] font-bold text-slate-400 uppercase">Texto Ppal</label><input type="color" value={cfg.text} onChange={e => update('text', e.target.value)} className="w-full h-9 rounded-xl cursor-pointer border-none shadow-sm" /></div>
+              <div className="flex flex-col gap-1"><label className="text-[9px] font-bold text-slate-400 uppercase">Texto Secund</label><input type="color" value={cfg.muted} onChange={e => update('muted', e.target.value)} className="w-full h-9 rounded-xl cursor-pointer border-none shadow-sm" /></div>
             </div>
-            <SelectInp label="Tipografía Global" value={cfg.fontBody} options={FONTS} onChange={v => update("fontBody", v)} />
+
+            <div className="border-t border-gray-100 pt-4">
+              <SelectInp label="Tipografía Global" value={cfg.fontBody} options={FONTS} onChange={v => update("fontBody", v)} />
+            </div>
+
+            {/* SECCIÓN DE TAMAÑOS INDEPENDIENTES */}
+            <div className="mb-4 mt-4 border-t border-gray-100 pt-4">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 text-left flex items-center gap-2"><MoveVertical size={14}/> Tamaños de Letra (px)</label>
+              <div className="space-y-5">
+                <div>
+                  <div className="flex justify-between text-[9px] font-bold text-slate-500 mb-1"><span>Nombre Principal</span><span>{cfg.honoreeSize ?? 48}px</span></div>
+                  <input type="range" min={30} max={80} value={cfg.honoreeSize ?? 48} onChange={e => update("honoreeSize", Number(e.target.value))} className="w-full accent-violet-600 cursor-pointer" />
+                </div>
+                <div>
+                  <div className="flex justify-between text-[9px] font-bold text-slate-500 mb-1"><span>Frase (Estás invitado...)</span><span>{cfg.eventTypeSize ?? 11}px</span></div>
+                  <input type="range" min={8} max={24} value={cfg.eventTypeSize ?? 11} onChange={e => update("eventTypeSize", Number(e.target.value))} className="w-full accent-violet-600 cursor-pointer" />
+                </div>
+                <div>
+                  <div className="flex justify-between text-[9px] font-bold text-slate-500 mb-1"><span>Textos de Fecha/Lugar</span><span>{cfg.dateSize ?? 18}px</span></div>
+                  <input type="range" min={12} max={30} value={cfg.dateSize ?? 18} onChange={e => update("dateSize", Number(e.target.value))} className="w-full accent-violet-600 cursor-pointer" />
+                </div>
+                <div>
+                  <div className="flex justify-between text-[9px] font-bold text-slate-500 mb-1"><span>Títulos (Menú, Regalos...)</span><span>{cfg.titlesSize ?? 10}px</span></div>
+                  <input type="range" min={8} max={20} value={cfg.titlesSize ?? 10} onChange={e => update("titlesSize", Number(e.target.value))} className="w-full accent-violet-600 cursor-pointer" />
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-4 border-t border-gray-100 pt-4">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-left">
+                Sombreado de Portada — <span className="text-violet-500">{cfg.coverGradientIntensity ?? 70}%</span>
+              </label>
+              <input type="range" min={0} max={100} step={5} value={cfg.coverGradientIntensity ?? 70} onChange={e => update("coverGradientIntensity", Number(e.target.value))} className="w-full accent-violet-600 cursor-pointer" />
+            </div>
+
+            <div className="mb-2 border-t border-gray-100 pt-4">
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-left">Partículas Flotantes</label>
+              <div className="grid grid-cols-2 gap-2">
+                {EFFECTS.map(eff => (
+                  <button key={eff.id} type="button" onClick={() => update("particleEffect", eff.id)} className={`p-2.5 rounded-xl border text-left text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${cfg.particleEffect === eff.id ? 'border-violet-400 bg-violet-50 text-violet-700' : 'border-gray-200 bg-white text-slate-600 hover:border-violet-200'}`}>
+                    <span className="text-base">{eff.icon}</span> {eff.name}
+                  </button>
+                ))}
+              </div>
+            </div>
           </Acc>
 
           <Acc title="Animación de Entrada" icon={Sparkles} iconColor="#f59e0b">
-             <SelectInp label="Tipo de Animación" value={cfg.openingAnimation} options={OPENING_ANIMATIONS.map(a => ({label: a.name, value: a.id}))} onChange={v => { update("openingAnimation", v); setPreviewAnim(true); }} />
+             <div className="flex items-center justify-between mb-4 bg-gray-50 p-2 rounded-xl border border-gray-200">
+               <span className="text-xs font-bold text-slate-600 ml-2">¿Usar Animación?</span>
+               <Toggle checked={cfg.openingAnimation !== 'none'} onChange={v => update("openingAnimation", v ? "envelope" : "none")} />
+             </div>
              
              {cfg.openingAnimation !== 'none' && (
                <>
-                 <SelectInp label="Efecto de Salida" value={cfg.animationTransition || 'fade'} options={TRANSITION_OPTS} onChange={v => update("animationTransition", v)} />
-                 <div className="mb-4 text-left">
-                    <div className="flex justify-between text-[9px] font-black text-slate-400 uppercase mb-1.5"><span>Duración</span><span>{cfg.animationDuration || 2} seg</span></div>
-                    <input type="range" min={1} max={3} step={0.5} value={cfg.animationDuration || 2} onChange={e => update("animationDuration", Number(e.target.value))} className="w-full accent-violet-600 cursor-pointer" />
+                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-left">Categorías</label>
+                 <div className="flex gap-2 overflow-x-auto fd-sb pb-2 mb-4">
+                   {Object.keys(ANIMATION_CATEGORIES).map(c => (
+                     <button key={c} onClick={() => setAnimCategory(c)} type="button" className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest shrink-0 transition-colors ${animCat === c ? 'bg-violet-600 text-white shadow-md' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
+                       {c === 'quince' ? '15 Años' : c}
+                     </button>
+                   ))}
                  </div>
-                 <button onClick={() => setPreviewAnim(true)} className="w-full py-3 bg-violet-50 text-violet-700 rounded-xl font-black text-[10px] tracking-widest flex items-center justify-center gap-2 hover:bg-violet-100 transition-colors border border-violet-100 shadow-sm">
-                   ▶ REPRODUCIR VISTA PREVIA
+
+                 <div className="grid grid-cols-2 gap-2 mb-4">
+                   {ANIMATION_CATEGORIES[animCat].map(anim => (
+                     <button key={anim.id} onClick={() => { update('openingAnimation', anim.id); setPreviewAnim(true); }} type="button" className={`p-2.5 border rounded-xl text-xs font-bold flex flex-col items-center gap-1 transition-all ${cfg.openingAnimation === anim.id ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 bg-white text-slate-600 hover:bg-gray-50'}`}>
+                       <span className="text-2xl mb-1">{anim.emoji}</span>
+                       <span className="text-center text-[10px] leading-tight">{anim.name}</span>
+                     </button>
+                   ))}
+                 </div>
+
+                 <div className="border-t border-gray-100 pt-4 mb-4">
+                   <SelectInp label="Efecto de Salida" value={cfg.animationTransition || 'fade'} options={TRANSITION_OPTS} onChange={v => update("animationTransition", v)} />
+                   <div className="mt-4">
+                      <div className="flex justify-between text-[9px] font-black text-slate-400 uppercase mb-1.5"><span>Duración en pantalla</span><span>{cfg.animationDuration || 2} seg</span></div>
+                      <input type="range" min={1} max={3} step={0.5} value={cfg.animationDuration || 2} onChange={e => update("animationDuration", Number(e.target.value))} className="w-full accent-violet-600 cursor-pointer" />
+                   </div>
+                 </div>
+
+                 <button type="button" onClick={() => setPreviewAnim(true)} className="w-full py-3 bg-amber-50 text-amber-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-amber-100 transition-colors flex items-center justify-center gap-2 border border-amber-200 shadow-sm">
+                   ▶ PROBAR ANIMACIÓN ELEGIDA
                  </button>
                </>
              )}
@@ -348,12 +728,41 @@ export const EditorScreen = ({ invitations, onSave }) => {
 
           <Acc title="Textos de Portada" icon={Type} iconColor="#0d9488">
             <Inp label="Nombre Agasajado" value={cfg.honoreeName} onChange={v => update("honoreeName", v)} />
-            <div className="grid grid-cols-2 gap-2 mb-4">
-               <SelectInp label="Fuente" value={cfg.honoreeFont} options={FONTS} onChange={v => update("honoreeFont", v)} className="!mb-0" />
-               <Inp label="Tamaño (px)" type="number" value={cfg.honoreeSize} onChange={v => update("honoreeSize", v)} className="!mb-0" />
+            <div className="flex gap-2 mb-4 bg-gray-50 p-2 rounded-xl border border-gray-200">
+               <SelectInp className="flex-1 !mb-0" label="Fuente Especial" value={cfg.honoreeFont || cfg.fontTitle} options={FONTS} onChange={v => update("honoreeFont", v)} />
+               <div className="w-10 flex flex-col justify-end"><input type="color" value={cfg.honoreeColor || cfg.text} onChange={e => update('honoreeColor', e.target.value)} className="w-full h-11 rounded-lg cursor-pointer" /></div>
             </div>
-            <Inp label="Frase de Invitación" value={cfg.eventType} onChange={v => update("eventType", v)} />
+
+            <div className="flex gap-2 mt-4">
+              <EmojiPicker value={cfg.eventTypeEmoji || "✨"} onSelect={v => update("eventTypeEmoji", v)} />
+              <div className="flex-1"><Inp label="Frase (Ej: Estás invitado a...)" value={cfg.eventType} onChange={v => update("eventType", v)} /></div>
+            </div>
+            <div className="flex gap-2 mb-4 bg-gray-50 p-2 rounded-xl border border-gray-200">
+               <SelectInp className="flex-1 !mb-0" label="Fuente" value={cfg.eventTypeFont || cfg.fontBody} options={FONTS} onChange={v => update("eventTypeFont", v)} />
+               <div className="w-10 flex flex-col justify-end"><input type="color" value={cfg.eventTypeColor || cfg.primary} onChange={e => update('eventTypeColor', e.target.value)} className="w-full h-11 rounded-lg cursor-pointer" /></div>
+            </div>
+
+            <div className="flex gap-2 mt-4">
+              <EmojiPicker value={cfg.badgeEmoji} onSelect={v => update("badgeEmoji", v)} />
+              <div className="flex-1"><Inp label="Texto Medalla (Ej: 5 añitos)" value={cfg.badgeText} onChange={v => update("badgeText", v)} /></div>
+            </div>
             <FileUpload label="Foto Principal de Portada" value={cfg.coverPhoto} onChange={v => update("coverPhoto", v)} />
+          </Acc>
+
+          <Acc title="Temática de la Fiesta" icon={Star} iconColor="#eab308">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-xs font-bold text-slate-500">Mostrar Temática</span>
+              <Toggle checked={cfg.showTheme} onChange={v => update("showTheme", v)} />
+            </div>
+            {cfg.showTheme && (
+              <>
+                <Inp label="Etiqueta (Ej: Temática, Dress Code)" value={cfg.themeLabel} onChange={v => update("themeLabel", v)} />
+                <div className="flex gap-2 mb-2">
+                  <EmojiPicker value={cfg.themeIcon} onSelect={v => update("themeIcon", v)} />
+                  <div className="flex-1"><Inp value={cfg.themeText} onChange={v => update("themeText", v)} placeholder="Ej: Dinosaurios, Sirenita..." className="!mb-0" /></div>
+                </div>
+              </>
+            )}
           </Acc>
 
           <Acc title="Banner Promocional" icon={ImageIcon} iconColor="#d97706">
@@ -378,37 +787,142 @@ export const EditorScreen = ({ invitations, onSave }) => {
           </Acc>
 
           <Acc title="Fecha, Hora y Lugar" icon={Calendar} iconColor="#e11d48">
-            <Inp label="Texto de Fecha" value={cfg.dateText} onChange={v => update("dateText", v)} placeholder="Ej: Sábado 15 de Mayo" />
-            <Inp label="Texto de Horario" value={cfg.timeText} onChange={v => update("timeText", v)} placeholder="Ej: de 17:00 a 21:00 hs" />
-            <Inp label="Nombre del Salón" value={cfg.locationName} onChange={v => update("locationName", v)} />
-            <Inp label="Dirección Exacta" value={cfg.locationAddress} onChange={v => update("locationAddress", v)} />
+            <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Mostrar cuenta regresiva</span><Toggle checked={cfg.showCountdown || false} onChange={v => update("showCountdown", v)} /></div>
+            {cfg.showCountdown && (
+              <Inp label="Fecha exacta" type="datetime-local" value={cfg.countdownDate || ""} onChange={v => update("countdownDate", v)} />
+            )}
+
+            <div className="flex items-center justify-between mt-4 mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Mostrar Cuadro de Fecha</span><Toggle checked={cfg.showDate} onChange={v => update("showDate", v)} /></div>
+            {cfg.showDate && <Inp label="Texto de Fecha" value={cfg.dateText} onChange={v => update("dateText", v)} />}
+
+            <div className="flex items-center justify-between mt-4 mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Mostrar Cuadro de Horario</span><Toggle checked={cfg.showTime} onChange={v => update("showTime", v)} /></div>
+            {cfg.showTime && <Inp label="Texto de Horario" value={cfg.timeText} onChange={v => update("timeText", v)} />}
+
+            <div className="flex items-center justify-between mt-4 mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Mostrar Ubicación y Mapa</span><Toggle checked={cfg.showLocation} onChange={v => update("showLocation", v)} /></div>
+            {cfg.showLocation && (
+              <>
+                <Inp label="Nombre del Salón" value={cfg.locationName} onChange={v => update("locationName", v)} />
+                <Inp label="Dirección Exacta" value={cfg.locationAddress} onChange={v => update("locationAddress", v)} />
+                <div className="flex items-center justify-between mt-4 mb-2"><span className="text-xs font-bold text-slate-500">Aclarar Estacionamiento</span><Toggle checked={cfg.showParking} onChange={v => update("showParking", v)} /></div>
+                {cfg.showParking && (
+                  <SelectInp label="Tipo" value={cfg.parkingType} options={[{label:"Público en la calle", value:"Estacionamiento público"}, {label:"Cubierto / Privado", value:"Estacionamiento privado cubierto"}, {label:"Personalizado...", value:"otro"}]} onChange={v => update("parkingType", v)} />
+                )}
+                {cfg.showParking && cfg.parkingType === 'otro' && <Inp placeholder="Escribe aquí..." value={cfg.customParking || ""} onChange={v => update("customParking", v)} />}
+              </>
+            )}
           </Acc>
 
-          <Acc title="Itinerario y Menú" icon={List} iconColor="#ca8a04">
-             <div className="space-y-4 mb-6">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left">Cronograma</p>
-                {cfg.itinerary?.map((item, i) => (
-                  <div key={i} className="flex gap-2 bg-white p-2 rounded-xl border border-slate-100 shadow-sm">
-                    <input className="w-16 p-2 text-xs border rounded-lg" value={item.time} onChange={e => { const n = [...cfg.itinerary]; n[i].time = e.target.value; update("itinerary", n); }} />
-                    <input className="flex-1 p-2 text-xs border rounded-lg" value={item.title} onChange={e => { const n = [...cfg.itinerary]; n[i].title = e.target.value; update("itinerary", n); }} />
-                  </div>
-                ))}
-             </div>
-             <div className="space-y-4">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left">Menú Sugerido</p>
-                {cfg.menuItems?.map((m, i) => (
-                  <div key={i} className="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-100 shadow-sm">
-                    <EmojiPicker list={FOOD_EMOJIS} value={m.emoji} onSelect={e => { const n = [...cfg.menuItems]; n[i].emoji = e; update("menuItems", n); }} />
-                    <input className="flex-1 p-2 text-xs border rounded-lg" value={m.label} onChange={e => { const n = [...cfg.menuItems]; n[i].label = e.target.value; update("menuItems", n); }} />
-                  </div>
-                ))}
-             </div>
+          <Acc title="Logo y Web del Salón" icon={LinkIcon} iconColor="#6366f1">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-xs font-bold text-slate-500">Mostrar Logo</span>
+              <Toggle checked={cfg.showVenueLogo || false} onChange={v => update("showVenueLogo", v)} />
+            </div>
+            {cfg.showVenueLogo && (
+              <>
+                <Inp label="Nombre del lugar" value={cfg.venueName || ""} onChange={v => update("venueName", v)} />
+                <FileUpload label="Logo (imagen)" value={cfg.venueLogoUrl || ""} onChange={v => update("venueLogoUrl", v)} />
+                <SelectInp label="Tipo de botón" value={cfg.venueLinkType || "web"} options={[{ label: "🌐 Ir al Sitio Web", value: "web" }, { label: "📱 Chatear por WhatsApp", value: "whatsapp" }]} onChange={v => update("venueLinkType", v)} />
+                <Inp label="Link o Número" value={cfg.venueLink || ""} onChange={v => update("venueLink", v)} />
+              </>
+            )}
+          </Acc>
+
+          <Acc title="Video de Invitación" icon={Video} iconColor="#8b5cf6">
+            <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Agregar video</span><Toggle checked={cfg.showVideo || false} onChange={v => update("showVideo", v)} /></div>
+            {cfg.showVideo && (
+              <>
+                <Inp label="Título del video" value={cfg.videoTitle || ""} onChange={v => update("videoTitle", v)} />
+                <Inp label="Enlace de YouTube" value={cfg.videoUrl || ""} onChange={v => update("videoUrl", v)} />
+              </>
+            )}
+          </Acc>
+
+          <Acc title="Cronograma (Itinerario)" icon={Clock} iconColor="#ec4899">
+             <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Cronograma</span><Toggle checked={cfg.showItinerary} onChange={v => update("showItinerary", v)} /></div>
+             {cfg.showItinerary && (
+               <>
+                 <div className="space-y-4 mb-6">
+                    {cfg.itinerary?.map((item, i) => (
+                      <div key={i} className="flex flex-col gap-2 bg-white p-3 rounded-xl border border-slate-100 shadow-sm relative">
+                        <button onClick={() => update("itinerary", cfg.itinerary.filter((_, idx) => idx !== i))} type="button" className="absolute top-2 right-2 text-red-400 hover:text-red-600"><Trash2 size={14}/></button>
+                        <div className="flex gap-2 pr-6">
+                          <input className="w-16 p-2 text-xs border bg-gray-50 rounded-lg outline-none focus:border-violet-300" value={item.time} onChange={e => { const n = [...cfg.itinerary]; n[i].time = e.target.value; update("itinerary", n); }} />
+                          <input className="flex-1 p-2 text-xs border bg-gray-50 rounded-lg outline-none focus:border-violet-300" value={item.title} onChange={e => { const n = [...cfg.itinerary]; n[i].title = e.target.value; update("itinerary", n); }} />
+                        </div>
+                        <input className="w-full p-2 text-xs border bg-gray-50 rounded-lg outline-none focus:border-violet-300" value={item.sub} placeholder="Descripción (opcional)" onChange={e => { const n = [...cfg.itinerary]; n[i].sub = e.target.value; update("itinerary", n); }} />
+                      </div>
+                    ))}
+                 </div>
+                 <button onClick={() => update("itinerary", [...(cfg.itinerary || []), { time: "16:00", title: "Nuevo Evento", sub: "" }])} type="button" className="w-full py-3 bg-white border-2 border-dashed border-gray-200 rounded-xl text-xs font-bold text-slate-400 hover:border-violet-300 hover:text-violet-600 transition-all cursor-pointer">+ AÑADIR HORARIO</button>
+               </>
+             )}
+          </Acc>
+
+          <Acc title="Menú de Comida" icon={List} iconColor="#10b981">
+             <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Menú</span><Toggle checked={cfg.showMenu} onChange={v => update("showMenu", v)} /></div>
+             {cfg.showMenu && (
+               <>
+                 <div className="space-y-3 mb-6">
+                    {cfg.menuItems?.map((m, i) => (
+                      <div key={i} className="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-100 shadow-sm">
+                        <EmojiPicker list={FOOD_EMOJIS} value={m.emoji} onSelect={e => { const n = [...cfg.menuItems]; n[i].emoji = e; update("menuItems", n); }} />
+                        <input className="flex-1 p-2 text-xs border bg-gray-50 rounded-lg outline-none focus:border-violet-300" value={m.label} onChange={e => { const n = [...cfg.menuItems]; n[i].label = e.target.value; update("menuItems", n); }} />
+                        <button onClick={() => update("menuItems", cfg.menuItems.filter((_, idx) => idx !== i))} type="button" className="text-red-400 p-2 hover:bg-red-50 rounded-lg"><Trash2 size={14}/></button>
+                      </div>
+                    ))}
+                 </div>
+                 <button onClick={() => update("menuItems", [...(cfg.menuItems || []), { emoji: "🍕", label: "Nueva Opción" }])} type="button" className="w-full py-3 bg-white border-2 border-dashed border-gray-200 rounded-xl text-xs font-bold text-slate-400 hover:border-violet-300 hover:text-violet-600 transition-all cursor-pointer">+ AÑADIR COMIDA</button>
+               </>
+             )}
+          </Acc>
+
+          <Acc title="Dress Code y Regalos" icon={Layout} iconColor="#f43f5e">
+             <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Vestimenta</span><Toggle checked={cfg.showDressCode} onChange={v => update("showDressCode", v)} /></div>
+             {cfg.showDressCode && (
+               <div className="flex gap-2 mb-6">
+                 <EmojiPicker list={CLOTHES_EMOJIS} value={cfg.dressCodeIcon} onSelect={e => update("dressCodeIcon", e)} />
+                 <div className="flex-1"><Inp value={cfg.dressCodeText} onChange={v => update("dressCodeText", v)} placeholder="Ej: Elegante Sport" className="!mb-0"/></div>
+               </div>
+             )}
+
+             <div className="flex items-center justify-between mb-4 pt-4 border-t border-gray-100"><span className="text-xs font-bold text-slate-500">Activar Regalos</span><Toggle checked={cfg.showGifts} onChange={v => update("showGifts", v)} /></div>
+             {cfg.showGifts && (
+               <>
+                 <div className="flex gap-2 mb-2">
+                   <EmojiPicker value={cfg.giftIcon} onSelect={e => update("giftIcon", e)} />
+                   <div className="w-24"><Inp value={cfg.giftLabel} onChange={v => update("giftLabel", v)} placeholder="Título" className="!mb-0"/></div>
+                   <div className="flex-1"><Inp value={cfg.giftText} onChange={v => update("giftText", v)} placeholder="Lluvia de sobres..." className="!mb-0"/></div>
+                 </div>
+                 <div className="flex items-center justify-between mt-4 mb-2"><span className="text-[10px] font-bold text-slate-500 uppercase">Aclaración Extra</span><Toggle checked={cfg.showGiftNote} onChange={v => update("showGiftNote", v)} /></div>
+                 {cfg.showGiftNote && <Inp value={cfg.giftNoteText} onChange={v => update("giftNoteText", v)} placeholder="Ej: No traer cosas grandes" multiline />}
+               </>
+             )}
+          </Acc>
+
+          <Acc title="Galería de Fotos" icon={ImageIcon} iconColor="#ec4899">
+             <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Galería</span><Toggle checked={cfg.showGallery} onChange={v => update("showGallery", v)} /></div>
+             {cfg.showGallery && (
+               <>
+                 <Inp label="Título de la Sección" value={cfg.galleryTitle} onChange={v => update("galleryTitle", v)} />
+                 <div className="space-y-4 mb-4 mt-2">
+                   {cfg.galleryPhotos?.map((p, i) => (
+                     <div key={i} className="bg-white border border-gray-200 rounded-xl p-2 relative">
+                       <FileUpload onChange={v => { const n = [...cfg.galleryPhotos]; n[i] = v; update("galleryPhotos", n); }} value={p} />
+                       <button onClick={() => update("galleryPhotos", cfg.galleryPhotos.filter((_, idx) => idx !== i))} type="button" className="absolute top-2 right-2 p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100"><Trash2 size={14}/></button>
+                     </div>
+                   ))}
+                 </div>
+                 <button onClick={() => update("galleryPhotos", [...(cfg.galleryPhotos || []), ""])} type="button" className="w-full py-3 bg-white border-2 border-dashed border-gray-200 rounded-xl text-xs font-bold text-slate-400 hover:border-violet-300 hover:text-violet-600 transition-all cursor-pointer">+ AÑADIR FOTO</button>
+               </>
+             )}
           </Acc>
 
           <Acc title="WhatsApp de Confirmación" icon={CheckCircle2} iconColor="#22c55e">
-            <Inp label="Número de WhatsApp (con código de país)" value={cfg.whatsappNumber} onChange={v => update("whatsappNumber", v)} placeholder="5491122334455" />
-            <Inp label="Mensaje Predefinido" value={cfg.whatsappMessage} onChange={v => update("whatsappMessage", v)} multiline />
+            <Inp label="Número Celular (con código de país, sin +)" value={cfg.whatsappNumber} onChange={v => update("whatsappNumber", v)} placeholder="5491123456789" />
+            <p className="text-[9px] text-gray-400 mb-2">Usa {"{nombre}"} para incluir el nombre del agasajado automáticamente en el mensaje.</p>
+            <Inp label="Mensaje a enviar" value={cfg.whatsappMessage} onChange={v => update("whatsappMessage", v)} multiline />
           </Acc>
+
         </aside>
 
         {/* VISTA PREVIA CENTRAL */}
