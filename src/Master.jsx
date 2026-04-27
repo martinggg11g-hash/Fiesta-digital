@@ -20,6 +20,7 @@ export const Toast = ({ msg }) => (
   </div>
 );
 
+// LE APLICAMOS EL lang="es-AR" A TODOS LOS INPUTS POR DEFECTO PARA FORZAR FORMATO ARGENTINO
 const Inp = ({ label, value, onChange, placeholder, type="text", multiline = false, className="", prefix=null }) => (
   <div className={`mb-4 text-left ${className}`}>
     {label && <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{label}</label>}
@@ -28,7 +29,7 @@ const Inp = ({ label, value, onChange, placeholder, type="text", multiline = fal
       {multiline ? (
         <textarea value={value || ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={3} className={`w-full py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all resize-none ${prefix ? 'pl-9 pr-4' : 'px-4'}`} />
       ) : (
-        <input type={type} value={value || ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} className={`w-full py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all ${prefix ? 'pl-9 pr-4' : 'px-4'}`} />
+        <input type={type} lang={(type === 'date' || type === 'time') ? "es-AR" : undefined} value={value || ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} className={`w-full py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all ${prefix ? 'pl-9 pr-4' : 'px-4'}`} />
       )}
     </div>
   </div>
@@ -125,8 +126,8 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
       const dueDate = new Date(paymentDateStr); dueDate.setHours(0,0,0,0); dueDate.setDate(dueDate.getDate() + 1);
       const diffDays = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
 
-      if (diffDays < 0) { alertType = 'red'; alertMsg = `Abono vencido el ${dueDate.toLocaleDateString('es-ES')}. Regularizá el pago pronto.`; }
-      else if (diffDays <= 5) { alertType = 'yellow'; alertMsg = `Recordatorio: Tu pago vence en ${diffDays} días (${dueDate.toLocaleDateString('es-ES')}).`; }
+      if (diffDays < 0) { alertType = 'red'; alertMsg = `Abono vencido el ${dueDate.toLocaleDateString('es-AR')}. Regularizá el pago pronto.`; }
+      else if (diffDays <= 5) { alertType = 'yellow'; alertMsg = `Recordatorio: Tu pago vence en ${diffDays} días (${dueDate.toLocaleDateString('es-AR')}).`; }
     }
 
     const handleChangePassword = () => {
@@ -264,6 +265,7 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                       <Inp label="Edad / Motivo" placeholder="Ej: Cumple 5" value={activeInv.eventReason || ''} onChange={v => onUpdateInternal(activeInv.id, 'eventReason', v)} />
                    </div>
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* FORZAMOS IDIOMA ARGENTINO Y 24HS CON LANG="es-AR" */}
                       <Inp label="Fecha (DD/MM/AÑO)" type="date" value={activeInv.internalDate || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalDate', v)} />
                       <Inp label="Horario (24hs)" type="time" value={activeInv.internalTime || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalTime', v)} />
                    </div>
