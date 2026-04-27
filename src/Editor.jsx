@@ -19,7 +19,7 @@ import {
 const gf = new GiphyFetch('32PbboqCveiWSlj9vROPmyjv8l8cuaj1');
 
 /* ============================================================================
-   CATEGORÍAS DE ANIMACIONES (BLINDADAS ACÁ ADENTRO)
+   CATEGORÍAS DE ANIMACIONES
 ============================================================================ */
 export const ANIMATION_CATEGORIES = {
   infantil: [
@@ -97,10 +97,9 @@ export const TRANSITION_OPTS = [
 export const DEF_CONFIG = {
   theme:"violet", fontTitle:"'Pacifico', cursive", fontBody:"'DM Sans', sans-serif",
   
-  // TAMAÑOS INDEPENDIENTES
   honoreeSize: 48, honoreeFont: "'Pacifico', cursive", honoreeColor: "#f0ecff",
   eventTypeSize: 11, eventTypeFont: "'DM Sans', sans-serif", eventTypeColor: "#7c3aed",
-  dateSize: 18, locationSize: 18, titlesSize: 10, badgeSize: 14, // <-- Medalla Size añadido
+  dateSize: 18, locationSize: 18, titlesSize: 10, badgeSize: 14,
   
   bg1:"#08060f", bg2:"#120d24", primary:"#7c3aed", card:"#1a1035", text:"#f0ecff", muted:"#9b8ec4",
   coverGradientIntensity: 70, particleEffect: "none", 
@@ -108,7 +107,7 @@ export const DEF_CONFIG = {
   eventTypeEmoji:"✨", eventType:"Estás invitado al cumple de", honoreeName:"Valentina", badgeEmoji:"🎂", badgeText:"5 añitos",
   
   coverPhoto:"https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=800&q=80",
-  useGiphyCover: false, // <-- Nuevo Giphy para Portada
+  useGiphyCover: false, 
   
   showBanner:true, bannerTitle:"La festejada", bannerPhoto:"https://images.unsplash.com/photo-1545912452-8aea7e25a3d3?auto=format&fit=crop&w=400&q=80",
   useGiphyBanner: false,
@@ -121,7 +120,7 @@ export const DEF_CONFIG = {
   showItinerary:true, itinerary:[{ time:"16:00", title:"Bienvenida", sub:"Recepción de invitados" }],
   showMenu:true, menuItems:[{ emoji:"🍕", label:"Pizza Party" }, { emoji:"🥤", label:"Gaseosas" }],
   showDressCode:true, dressCodeIcon:"👗", dressCodeText:"Elegante Sport",
-  showGifts:true, giftIcon:"🎁", giftLabel:"Regalos", giftText:"Lluvia de sobres", showGiftNote:false, giftNoteText:"",
+  showGifts:true, giftIcon:"🎁", giftLabel:"Regalos", giftText:"Lluvia de sobres", showGiftNote:false, giftNoteText:"", giftNoteColor: "#7c3aed", giftNoteSize: 11,
   showGallery:false, galleryTitle:"Fotos", galleryPhotos:[],
   showVideo:false, videoUrl:"", videoTitle:"Mirá el video",
   showVenueLogo:false, venueLogoUrl:"", venueName:"", venueLink:"", venueLinkType:"web",
@@ -129,7 +128,7 @@ export const DEF_CONFIG = {
 };
 
 /* ============================================================================
-   COMPONENTES GIPHY Y UI
+   COMPONENTES UI Y GIPHY
 ============================================================================ */
 const GiphySearch = ({ onSelect, placeholder = "Buscar GIF..." }) => {
   const [term, setTerm] = useState("fiesta");
@@ -150,7 +149,7 @@ const GiphySearch = ({ onSelect, placeholder = "Buscar GIF..." }) => {
         placeholder={placeholder} 
         className="w-full px-4 py-2.5 rounded-xl text-xs border border-slate-200 focus:border-violet-400 outline-none mb-3 shadow-sm" 
       />
-      <div className="h-48 overflow-y-auto fd-sb rounded-xl bg-white border border-slate-100">
+      <div className="h-48 overflow-y-auto fd-sb rounded-xl bg-white border border-slate-100 relative z-50">
         <Grid width={300} columns={2} fetchGifs={fetchGifs} key={debouncedTerm} onGifClick={(gif, e) => { e.preventDefault(); onSelect(gif.images.original.url); }} />
       </div>
     </div>
@@ -207,7 +206,7 @@ const EmojiPicker = ({ value, onSelect, list = GENERAL_EMOJIS }) => {
   const ref = useRef(null);
   useEffect(() => { const fn = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }; document.addEventListener("mousedown", fn); return () => document.removeEventListener("mousedown", fn); }, []);
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative z-50">
       <button onClick={() => setOpen(!open)} type="button" className="w-12 h-12 rounded-xl bg-gray-50 border border-gray-200 text-2xl flex items-center justify-center hover:bg-gray-100 transition-colors cursor-pointer">{value}</button>
       {open && (
         <div className="absolute top-14 left-0 z-50 bg-white border border-gray-200 rounded-2xl p-3 w-64 shadow-2xl">
@@ -220,10 +219,20 @@ const EmojiPicker = ({ value, onSelect, list = GENERAL_EMOJIS }) => {
   );
 };
 
+// MODIFICADO: Soluciona el problema de los Emojis ocultos detrás de las tarjetas
 const Acc = ({ title, icon: Icon, children, defaultOpen = false, iconColor = "#7c3aed" }) => {
   const [open, setOpen] = useState(defaultOpen);
+  const [fullyOpen, setFullyOpen] = useState(defaultOpen);
+
+  useEffect(() => {
+    let t;
+    if (open) t = setTimeout(() => setFullyOpen(true), 300); // Espera a que abra para liberar el overflow
+    else setFullyOpen(false);
+    return () => clearTimeout(t);
+  }, [open]);
+
   return (
-    <div className="mb-3 rounded-2xl border border-gray-100 bg-white overflow-hidden shadow-sm">
+    <div className={`mb-3 rounded-2xl border border-gray-100 bg-white shadow-sm relative transition-all ${open ? 'z-40' : 'z-10'}`}>
       <button onClick={() => setOpen(!open)} type="button" className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors text-left cursor-pointer">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${iconColor}15` }}>
@@ -233,7 +242,7 @@ const Acc = ({ title, icon: Icon, children, defaultOpen = false, iconColor = "#7
         </div>
         <ChevronDown size={18} className={`text-slate-300 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
-      <div className="overflow-hidden transition-all duration-300 ease-in-out" style={{ maxHeight: open ? '3000px' : '0', opacity: open ? 1 : 0 }}>
+      <div className={`transition-all duration-300 ease-in-out ${fullyOpen ? 'overflow-visible' : 'overflow-hidden'}`} style={{ maxHeight: open ? '3000px' : '0', opacity: open ? 1 : 0 }}>
         <div className="p-4 pt-0 border-t border-gray-50">{children}</div>
       </div>
     </div>
@@ -473,7 +482,6 @@ export const InvitePreview = ({ cfg }) => {
           <h1 style={{ fontFamily: cfg.honoreeFont || cfg.fontTitle, color: cfg.honoreeColor || textC, fontSize: `${cfg.honoreeSize ?? 48}px` }} className="leading-tight mb-4">
             {cfg.honoreeName}
           </h1>
-          {/* MEDALLA CON TAMAÑO CONFIGURABLE */}
           <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-white/10 backdrop-blur-md bg-black/30 font-black" style={{ color: textC, fontSize: `${cfg.badgeSize ?? 14}px` }}>
             {cfg.badgeEmoji} {cfg.badgeText}
           </span>
@@ -572,9 +580,13 @@ export const InvitePreview = ({ cfg }) => {
           )}
         </div>
 
+        {/* MODIFICADO: Aclaración Extra multilínea y personalizable */}
         {cfg.showGifts && cfg.showGiftNote && cfg.giftNoteText && (
           <div className="text-center pt-2">
-            <span className="inline-flex py-2 px-4 rounded-full text-[10px] font-bold border" style={{ background: `${primary}15`, borderColor: `${primary}33`, color: primary, fontFamily: cfg.fontBody }}>{cfg.giftNoteText}</span>
+            <span className="inline-block py-3 px-6 rounded-3xl font-bold border whitespace-pre-wrap leading-relaxed shadow-sm" 
+                  style={{ background: `${cfg.card}ee`, borderColor: `${primary}33`, color: cfg.giftNoteColor || primary, fontSize: `${cfg.giftNoteSize || 11}px`, fontFamily: cfg.fontBody }}>
+              {cfg.giftNoteText}
+            </span>
           </div>
         )}
 
@@ -626,6 +638,15 @@ export const EditorScreen = ({ invitations, onSave }) => {
 
   return (
     <div className="h-screen flex flex-col bg-slate-950 overflow-hidden">
+      
+      {/* ESTILOS INYECTADOS: Esto engrosa la barra de scroll de tu panel izquierdo */}
+      <style>{`
+        .fd-sb::-webkit-scrollbar { width: 8px !important; height: 8px !important; }
+        .fd-sb::-webkit-scrollbar-thumb { background: #b4aee8 !important; border-radius: 10px !important; }
+        .fd-sb::-webkit-scrollbar-thumb:hover { background: #8b5cf6 !important; }
+        .fd-sb::-webkit-scrollbar-track { background: #f1f0f5 !important; border-radius: 10px !important; }
+      `}</style>
+
       <header className="h-16 border-b border-white/10 px-6 flex items-center justify-between shrink-0 bg-slate-950/80 backdrop-blur z-20">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate("/dashboard")} className="w-10 h-10 bg-white/5 rounded-xl text-white flex items-center justify-center hover:bg-white/10 cursor-pointer"><ArrowLeft size={20}/></button>
@@ -778,7 +799,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
               <div className="flex-1"><Inp label="Texto Medalla (Ej: 5 añitos)" value={cfg.badgeText} onChange={v => update("badgeText", v)} /></div>
             </div>
             
-            {/* NUEVO: GIPHY EN PORTADA */}
             <div className="border-t border-gray-100 pt-4 mt-2">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">¿Usar GIF Animado de Fondo?</span>
@@ -841,11 +861,15 @@ export const EditorScreen = ({ invitations, onSave }) => {
             <div className="flex items-center justify-between mt-4 mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Mostrar Cuadro de Horario</span><Toggle checked={cfg.showTime} onChange={v => update("showTime", v)} /></div>
             {cfg.showTime && <Inp label="Texto de Horario" value={cfg.timeText} onChange={v => update("timeText", v)} />}
 
+            {/* MODIFICADO: Dirección fija desde el Master, solo se oculta/muestra */}
             <div className="flex items-center justify-between mt-4 mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Mostrar Ubicación y Mapa</span><Toggle checked={cfg.showLocation} onChange={v => update("showLocation", v)} /></div>
             {cfg.showLocation && (
               <>
-                <Inp label="Nombre del Salón" value={cfg.locationName} onChange={v => update("locationName", v)} />
-                <Inp label="Dirección Exacta" value={cfg.locationAddress} onChange={v => update("locationAddress", v)} />
+                <div className="p-3 bg-violet-50 rounded-xl border border-violet-100 mb-4 opacity-80">
+                  <p className="text-[10px] font-black text-violet-800 uppercase tracking-widest mb-1">📍 Dirección (Fijada por Master)</p>
+                  <p className="text-xs font-bold text-violet-900">{cfg.locationName || "Nombre del Salón"}</p>
+                  <p className="text-xs text-violet-700">{cfg.locationAddress || "Dirección configurada desde tu panel"}</p>
+                </div>
                 <div className="flex items-center justify-between mt-4 mb-2"><span className="text-xs font-bold text-slate-500">Aclarar Estacionamiento</span><Toggle checked={cfg.showParking} onChange={v => update("showParking", v)} /></div>
                 {cfg.showParking && (
                   <SelectInp label="Tipo" value={cfg.parkingType} options={[{label:"Público en la calle", value:"Estacionamiento público"}, {label:"Cubierto / Privado", value:"Estacionamiento privado cubierto"}, {label:"Personalizado...", value:"otro"}]} onChange={v => update("parkingType", v)} />
@@ -936,8 +960,24 @@ export const EditorScreen = ({ invitations, onSave }) => {
                    <div className="w-24"><Inp value={cfg.giftLabel} onChange={v => update("giftLabel", v)} placeholder="Título" className="!mb-0"/></div>
                    <div className="flex-1"><Inp value={cfg.giftText} onChange={v => update("giftText", v)} placeholder="Lluvia de sobres..." className="!mb-0"/></div>
                  </div>
+                 
+                 {/* MODIFICADO: Aclaración Extra multilínea, tamaño y color */}
                  <div className="flex items-center justify-between mt-4 mb-2"><span className="text-[10px] font-bold text-slate-500 uppercase">Aclaración Extra</span><Toggle checked={cfg.showGiftNote} onChange={v => update("showGiftNote", v)} /></div>
-                 {cfg.showGiftNote && <Inp value={cfg.giftNoteText} onChange={v => update("giftNoteText", v)} placeholder="Ej: No traer cosas grandes" multiline />}
+                 {cfg.showGiftNote && (
+                   <div className="mt-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                     <Inp value={cfg.giftNoteText} onChange={v => update("giftNoteText", v)} placeholder="Ej: No traer cajas grandes.\nSolo transferencia." multiline className="!mb-2" />
+                     <div className="flex gap-3 mt-3">
+                       <div className="flex flex-col gap-1 flex-1">
+                         <label className="text-[9px] font-bold text-slate-400 uppercase">Color Texto</label>
+                         <input type="color" value={cfg.giftNoteColor || cfg.primary} onChange={e => update('giftNoteColor', e.target.value)} className="w-full h-8 rounded-lg cursor-pointer border-none shadow-sm" />
+                       </div>
+                       <div className="flex flex-col gap-1 flex-1">
+                         <label className="text-[9px] font-bold text-slate-400 uppercase">Tamaño (px)</label>
+                         <input type="number" min={8} max={24} value={cfg.giftNoteSize || 11} onChange={e => update('giftNoteSize', Number(e.target.value))} className="w-full h-8 px-2 rounded-lg text-xs border border-gray-200 outline-none focus:border-violet-400" />
+                       </div>
+                     </div>
+                   </div>
+                 )}
                </>
              )}
           </Acc>
