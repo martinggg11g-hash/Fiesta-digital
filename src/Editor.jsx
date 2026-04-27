@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { OpeningAnimation } from "./Lotties"; // Mirá cómo importo solo la animación, cero errores.
+import { OpeningAnimation } from "./Lotties"; 
 
 // INTEGRACIÓN DE GIPHY
 import { GiphyFetch } from '@giphy/js-fetch-api';
@@ -100,13 +100,15 @@ export const DEF_CONFIG = {
   // TAMAÑOS INDEPENDIENTES
   honoreeSize: 48, honoreeFont: "'Pacifico', cursive", honoreeColor: "#f0ecff",
   eventTypeSize: 11, eventTypeFont: "'DM Sans', sans-serif", eventTypeColor: "#7c3aed",
-  dateSize: 18, locationSize: 18, titlesSize: 10,
+  dateSize: 18, locationSize: 18, titlesSize: 10, badgeSize: 14, // <-- Medalla Size añadido
   
   bg1:"#08060f", bg2:"#120d24", primary:"#7c3aed", card:"#1a1035", text:"#f0ecff", muted:"#9b8ec4",
   coverGradientIntensity: 70, particleEffect: "none", 
   openingAnimation: "envelope", animationDuration: 2, animationTransition: "fade",
   eventTypeEmoji:"✨", eventType:"Estás invitado al cumple de", honoreeName:"Valentina", badgeEmoji:"🎂", badgeText:"5 añitos",
+  
   coverPhoto:"https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=800&q=80",
+  useGiphyCover: false, // <-- Nuevo Giphy para Portada
   
   showBanner:true, bannerTitle:"La festejada", bannerPhoto:"https://images.unsplash.com/photo-1545912452-8aea7e25a3d3?auto=format&fit=crop&w=400&q=80",
   useGiphyBanner: false,
@@ -129,9 +131,9 @@ export const DEF_CONFIG = {
 /* ============================================================================
    COMPONENTES GIPHY Y UI
 ============================================================================ */
-const GiphySearch = ({ onSelect }) => {
-  const [term, setTerm] = useState("cumpleaños");
-  const [debouncedTerm, setDebouncedTerm] = useState("cumpleaños");
+const GiphySearch = ({ onSelect, placeholder = "Buscar GIF..." }) => {
+  const [term, setTerm] = useState("fiesta");
+  const [debouncedTerm, setDebouncedTerm] = useState("fiesta");
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedTerm(term), 600);
@@ -145,7 +147,7 @@ const GiphySearch = ({ onSelect }) => {
       <input 
         value={term} 
         onChange={(e) => setTerm(e.target.value)} 
-        placeholder="Buscar GIF (ej: infantil, azul, globos...)" 
+        placeholder={placeholder} 
         className="w-full px-4 py-2.5 rounded-xl text-xs border border-slate-200 focus:border-violet-400 outline-none mb-3 shadow-sm" 
       />
       <div className="h-48 overflow-y-auto fd-sb rounded-xl bg-white border border-slate-100">
@@ -471,7 +473,8 @@ export const InvitePreview = ({ cfg }) => {
           <h1 style={{ fontFamily: cfg.honoreeFont || cfg.fontTitle, color: cfg.honoreeColor || textC, fontSize: `${cfg.honoreeSize ?? 48}px` }} className="leading-tight mb-4">
             {cfg.honoreeName}
           </h1>
-          <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-white/10 backdrop-blur-md bg-black/30 font-black text-sm" style={{ color: textC }}>
+          {/* MEDALLA CON TAMAÑO CONFIGURABLE */}
+          <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-white/10 backdrop-blur-md bg-black/30 font-black" style={{ color: textC, fontSize: `${cfg.badgeSize ?? 14}px` }}>
             {cfg.badgeEmoji} {cfg.badgeText}
           </span>
         </div>
@@ -680,6 +683,10 @@ export const EditorScreen = ({ invitations, onSave }) => {
                   <input type="range" min={8} max={24} value={cfg.eventTypeSize ?? 11} onChange={e => update("eventTypeSize", Number(e.target.value))} className="w-full accent-violet-600 cursor-pointer" />
                 </div>
                 <div>
+                  <div className="flex justify-between text-[9px] font-bold text-slate-500 mb-1"><span>Texto Medalla</span><span>{cfg.badgeSize ?? 14}px</span></div>
+                  <input type="range" min={10} max={30} value={cfg.badgeSize ?? 14} onChange={e => update("badgeSize", Number(e.target.value))} className="w-full accent-violet-600 cursor-pointer" />
+                </div>
+                <div>
                   <div className="flex justify-between text-[9px] font-bold text-slate-500 mb-1"><span>Textos de Fecha/Lugar</span><span>{cfg.dateSize ?? 18}px</span></div>
                   <input type="range" min={12} max={30} value={cfg.dateSize ?? 18} onChange={e => update("dateSize", Number(e.target.value))} className="w-full accent-violet-600 cursor-pointer" />
                 </div>
@@ -770,7 +777,19 @@ export const EditorScreen = ({ invitations, onSave }) => {
               <EmojiPicker value={cfg.badgeEmoji} onSelect={v => update("badgeEmoji", v)} />
               <div className="flex-1"><Inp label="Texto Medalla (Ej: 5 añitos)" value={cfg.badgeText} onChange={v => update("badgeText", v)} /></div>
             </div>
-            <FileUpload label="Foto Principal de Portada" value={cfg.coverPhoto} onChange={v => update("coverPhoto", v)} />
+            
+            {/* NUEVO: GIPHY EN PORTADA */}
+            <div className="border-t border-gray-100 pt-4 mt-2">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">¿Usar GIF Animado de Fondo?</span>
+                <Toggle checked={cfg.useGiphyCover || false} onChange={v => update("useGiphyCover", v)} />
+              </div>
+              {cfg.useGiphyCover ? (
+                <GiphySearch onSelect={url => update("coverPhoto", url)} placeholder="Buscar fondo (ej: spiderman, brillos...)" />
+              ) : (
+                <FileUpload label="Foto Principal de Portada" value={cfg.coverPhoto} onChange={v => update("coverPhoto", v)} />
+              )}
+            </div>
           </Acc>
 
           <Acc title="Temática de la Fiesta" icon={Star} iconColor="#eab308">
@@ -802,7 +821,7 @@ export const EditorScreen = ({ invitations, onSave }) => {
                   <Toggle checked={cfg.useGiphyBanner || false} onChange={v => update("useGiphyBanner", v)} />
                 </div>
                 {cfg.useGiphyBanner ? (
-                  <GiphySearch onSelect={url => update("bannerPhoto", url)} />
+                  <GiphySearch onSelect={url => update("bannerPhoto", url)} placeholder="Buscar GIF (ej: infantil, azul, globos...)" />
                 ) : (
                   <FileUpload label="Imagen de Banner" value={cfg.bannerPhoto} onChange={v => update("bannerPhoto", v)} />
                 )}
