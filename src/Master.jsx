@@ -3,10 +3,16 @@ import { useNavigate } from "react-router-dom";
 import {
   PartyPopper, ShieldCheck, AlertCircle, Loader2, LogOut, Plus, Trash2, Copy, CheckCircle2, Lock, 
   MapPin, CalendarClock, AlertTriangle, KeyRound, Building, Edit2, X, MessageCircle, ExternalLink, Eye, Search,
-  ChevronDown, Phone, Users, Utensils, Music, CreditCard, Clock
+  ChevronDown, Phone, Users, Utensils, Music, CreditCard, Clock, Settings, UserCheck, Calculator, Receipt
 } from "lucide-react";
 
 const slugify = (text) => text?.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') || 'salon';
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return 'Sin fecha';
+  const [y, m, d] = dateStr.split('-');
+  return `${d}/${m}/${y}`;
+};
 
 export const Toast = ({ msg }) => (
   <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[999] bg-slate-900 text-white px-6 py-3 rounded-full font-bold text-sm flex items-center gap-3 shadow-2xl border border-white/10 anim-pop">
@@ -14,14 +20,17 @@ export const Toast = ({ msg }) => (
   </div>
 );
 
-const Inp = ({ label, value, onChange, placeholder, type="text", multiline = false, className="" }) => (
+const Inp = ({ label, value, onChange, placeholder, type="text", multiline = false, className="", prefix=null }) => (
   <div className={`mb-4 text-left ${className}`}>
     {label && <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{label}</label>}
-    {multiline ? (
-      <textarea value={value || ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={3} className="w-full px-4 py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all resize-none" />
-    ) : (
-      <input type={type} value={value || ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} className="w-full px-4 py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all" />
-    )}
+    <div className="relative flex items-center">
+      {prefix && <span className="absolute left-4 text-slate-400 font-bold">{prefix}</span>}
+      {multiline ? (
+        <textarea value={value || ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={3} className={`w-full py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all resize-none ${prefix ? 'pl-9 pr-4' : 'px-4'}`} />
+      ) : (
+        <input type={type} value={value || ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} className={`w-full py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all ${prefix ? 'pl-9 pr-4' : 'px-4'}`} />
+      )}
+    </div>
   </div>
 );
 
@@ -80,7 +89,12 @@ export const LoginScreen = ({ isMaster = false, onLogin, users }) => {
 export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateSalon, onDeleteSalon, invitations, onCreateInv, onDeleteInv, onUpdateInternal }) => {
   const [toast, setToast] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [openCrm, setOpenCrm] = useState({});
+  
+  // Estados para Modal de CRM y Configuración
+  const [activeCrmId, setActiveCrmId] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+
   const navigate = useNavigate();
   if (!user) return null;
 
@@ -88,9 +102,9 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
   const myInvs = isOwner ? invitations : invitations.filter(i => i.salonId === user.email);
   const mySalons = users.filter(u => u.role === "salon");
   const notify = (m) => { setToast(m); setTimeout(() => setToast(""), 2500); };
-  const toggleCrm = (id) => setOpenCrm(p => ({ ...p, [id]: !p[id] }));
 
   const filteredInvs = myInvs.filter(inv => inv.title.toLowerCase().includes(searchTerm.toLowerCase()));
+  const activeInv = myInvs.find(i => i.id === activeCrmId);
 
   // ==============================
   // VISTA DEL DUEÑO DEL SALÓN (CLIENTE)
@@ -115,15 +129,25 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
       else if (diffDays <= 5) { alertType = 'yellow'; alertMsg = `Recordatorio: Tu pago vence en ${diffDays} días (${dueDate.toLocaleDateString('es-ES')}).`; }
     }
 
+    const handleChangePassword = () => {
+      if(!newPassword) return alert("Escribí una nueva contraseña");
+      onUpdateUser(user.email, { pass: newPassword });
+      setShowSettings(false);
+      setNewPassword("");
+      notify("¡Contraseña actualizada!");
+    };
+
     return (
       <div className="min-h-screen bg-[#f1f3f9] pb-20">
-        <nav className="h-20 bg-white border-b border-slate-200 px-8 flex items-center justify-between sticky top-0 z-50">
+        {/* NAV PREMIUM */}
+        <nav className="h-20 bg-white border-b border-slate-200 px-6 sm:px-8 flex items-center justify-between sticky top-0 z-40">
           <div className="flex items-center gap-4">
              <div className="w-10 h-10 bg-violet-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-violet-200"><Building size={20}/></div>
              <div className="font-black text-xl tracking-tight text-slate-800">{user.name} <span className="text-violet-500 text-sm opacity-60 ml-2 hidden sm:inline-block">| Panel de Gestión</span></div>
           </div>
-          <div className="flex items-center gap-6">
-             <button onClick={() => { onLogout(); navigate("/"); }} className="w-10 h-10 bg-slate-100 text-slate-500 rounded-xl flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition-all cursor-pointer" title="Cerrar Sesión"><LogOut size={18}/></button>
+          <div className="flex items-center gap-4">
+             <button onClick={() => setShowSettings(true)} className="w-10 h-10 bg-slate-50 text-slate-600 rounded-xl flex items-center justify-center hover:bg-slate-200 transition-all cursor-pointer" title="Configuración"><Settings size={18}/></button>
+             <button onClick={() => { onLogout(); navigate("/"); }} className="w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center hover:bg-red-100 transition-all cursor-pointer" title="Cerrar Sesión"><LogOut size={18}/></button>
           </div>
         </nav>
         
@@ -134,6 +158,7 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
         )}
 
         <main className="max-w-7xl mx-auto p-6 md:p-12">
+          {/* HEADER DASHBOARD */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
             <div className="text-left">
               <h1 className="text-4xl font-black text-slate-900 tracking-tight leading-tight">Mis Eventos</h1>
@@ -156,108 +181,47 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
             </div>
           </div>
 
+          {/* GRID DE EVENTOS */}
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
             {filteredInvs.map(inv => {
-              const crmOpen = openCrm[inv.id];
               const pStatus = inv.paymentStatus || 'Pendiente';
-              const statusColors = { 'Pendiente': 'bg-red-100 text-red-700', 'Seña / Parcial': 'bg-amber-100 text-amber-700', 'Pagado Total': 'bg-green-100 text-green-700' };
+              const statusColors = { 'Pendiente': 'bg-red-100 text-red-700 border-red-200', 'Seña / Parcial': 'bg-amber-100 text-amber-700 border-amber-200', 'Pagado Total': 'bg-green-100 text-green-700 border-green-200' };
 
               return (
                 <div key={inv.id} className="bg-white rounded-[2.5rem] border border-slate-200/60 overflow-hidden shadow-sm hover:shadow-xl transition-all group flex flex-col h-full border-b-4 border-b-violet-500/10">
                   
-                  <div className="h-40 relative overflow-hidden">
+                  {/* PREVIEW IMAGE */}
+                  <div className="h-44 relative overflow-hidden">
                     <img src={inv.config?.coverPhoto || "https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=800&q=80"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" alt="Event" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/30 to-transparent" />
                     <div className="absolute bottom-4 left-5 right-5 flex justify-between items-end">
                        <div>
-                          <p className="text-white/70 text-[10px] font-black uppercase tracking-widest mb-1">{inv.internalDate ? new Date(inv.internalDate).toLocaleDateString('es-AR') : 'Fecha sin asignar'}</p>
+                          <p className="text-white/70 text-[10px] font-black uppercase tracking-widest mb-1">{formatDate(inv.internalDate)} {inv.internalTime ? `• ${inv.internalTime} hs` : ''}</p>
                           <h3 className="font-black text-xl text-white truncate max-w-[200px]">{inv.internalHonoree || inv.config?.honoreeName || inv.title}</h3>
                        </div>
-                       <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border border-white/20 backdrop-blur-md ${statusColors[pStatus] || statusColors['Pendiente']}`}>{pStatus}</span>
+                       <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border backdrop-blur-md ${statusColors[pStatus] || statusColors['Pendiente']}`}>{pStatus}</span>
                     </div>
                     <button onClick={() => { if(window.confirm("¿Seguro que querés eliminar esta invitación?")) onDeleteInv(inv.id); }} className="absolute top-4 right-4 w-9 h-9 bg-red-500/90 text-white rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-red-600 shadow-lg cursor-pointer"><Trash2 size={16}/></button>
                   </div>
 
+                  {/* MAIN ACTIONS */}
                   <div className="p-6">
                     <div className="flex gap-2 mb-4">
-                      <button onClick={() => navigate(`/editor/${inv.id}`)} className="flex-1 py-3 bg-slate-900 hover:bg-black text-white rounded-xl font-black text-[11px] tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer">
+                      <button onClick={() => navigate(`/editor/${inv.id}`)} className="flex-1 py-3.5 bg-slate-900 hover:bg-black text-white rounded-2xl font-black text-[11px] tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer shadow-md">
                         <Edit2 size={14}/> DISEÑAR INVITACIÓN
                       </button>
-                      <button onClick={() => window.open(`${window.location.origin}/i/${slugify(user.name)}/${inv.id}`)} title="Ver en vivo" className="w-12 h-12 bg-violet-50 text-violet-600 rounded-xl flex items-center justify-center hover:bg-violet-100 transition-all cursor-pointer border border-violet-100">
+                      <button onClick={() => window.open(`${window.location.origin}/i/${slugify(user.name)}/${inv.id}`)} title="Ver en vivo" className="w-12 h-12 bg-violet-50 text-violet-600 rounded-2xl flex items-center justify-center hover:bg-violet-100 transition-all cursor-pointer border border-violet-100 shadow-sm">
                         <Eye size={18}/>
                       </button>
-                      <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/i/${slugify(user.name)}/${inv.id}`); notify("¡Link Copiado!"); }} title="Copiar Link" className="w-12 h-12 bg-slate-50 text-slate-600 border border-slate-100 rounded-xl flex items-center justify-center hover:bg-slate-100 transition-all cursor-pointer">
+                      <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/i/${slugify(user.name)}/${inv.id}`); notify("¡Link Copiado!"); }} title="Copiar Link" className="w-12 h-12 bg-slate-50 text-slate-600 border border-slate-200 rounded-2xl flex items-center justify-center hover:bg-slate-100 transition-all cursor-pointer shadow-sm">
                         <Copy size={18}/>
                       </button>
                     </div>
 
-                    <button onClick={() => toggleCrm(inv.id)} className={`w-full py-3 rounded-xl font-bold text-xs flex justify-between items-center px-4 transition-colors border cursor-pointer ${crmOpen ? 'bg-violet-600 text-white border-violet-600 shadow-md' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}`}>
-                       <span className="flex items-center gap-2"><Lock size={14}/> Ficha del Evento (CRM)</span>
-                       <ChevronDown size={16} className={`transition-transform ${crmOpen ? 'rotate-180' : ''}`}/>
+                    <button onClick={() => setActiveCrmId(inv.id)} className="w-full py-3.5 rounded-2xl font-black text-xs flex justify-center items-center gap-2 transition-all border cursor-pointer bg-white text-violet-600 border-violet-200 hover:bg-violet-50 shadow-sm">
+                       <Lock size={14}/> ABRIR FICHA DEL EVENTO (CRM)
                     </button>
                   </div>
-
-                  {crmOpen && (
-                    <div className="px-6 pb-6 pt-0 bg-slate-50/50 border-t border-slate-100 anim-pop">
-                       
-                       <div className="grid grid-cols-12 gap-2 mt-4">
-                          <div className="col-span-12 sm:col-span-5">
-                             <label className="block text-[9px] font-black text-slate-400 uppercase mb-1 flex items-center gap-1"><PartyPopper size={10}/> Agasajado</label>
-                             <input type="text" className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:border-violet-400" placeholder="Nombre..." value={inv.internalHonoree || ''} onChange={e => onUpdateInternal(inv.id, 'internalHonoree', e.target.value)} />
-                          </div>
-                          <div className="col-span-6 sm:col-span-4">
-                             <label className="block text-[9px] font-black text-slate-400 uppercase mb-1 flex items-center gap-1"><CalendarClock size={10}/> Fecha</label>
-                             <input type="date" className="w-full bg-white border border-slate-200 rounded-lg px-2 py-2 text-xs font-bold text-slate-700 outline-none focus:border-violet-400" value={inv.internalDate || ''} onChange={e => onUpdateInternal(inv.id, 'internalDate', e.target.value)} />
-                          </div>
-                          <div className="col-span-6 sm:col-span-3">
-                             <label className="block text-[9px] font-black text-slate-400 uppercase mb-1 flex items-center gap-1"><Clock size={10}/> Horario</label>
-                             <input type="time" className="w-full bg-white border border-slate-200 rounded-lg px-2 py-2 text-xs font-bold text-slate-700 outline-none focus:border-violet-400" value={inv.internalTime || ''} onChange={e => onUpdateInternal(inv.id, 'internalTime', e.target.value)} />
-                          </div>
-                       </div>
-
-                       <div className="grid grid-cols-12 gap-2 mt-3">
-                          <div className="col-span-12 sm:col-span-7">
-                             <label className="block text-[9px] font-black text-slate-400 uppercase mb-1 flex items-center gap-1"><Phone size={10}/> Celular Responsable</label>
-                             <div className="flex gap-2">
-                                <input type="text" className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:border-violet-400" placeholder="Ej: 54911234567" value={inv.clientPhone || ''} onChange={e => onUpdateInternal(inv.id, 'clientPhone', e.target.value)} />
-                                <button onClick={() => inv.clientPhone ? window.open(`https://wa.me/${inv.clientPhone}`) : alert("Ingresá el número primero")} className="bg-green-500 hover:bg-green-600 text-white px-3 rounded-lg flex items-center justify-center transition-colors cursor-pointer" title="Enviar WhatsApp"><MessageCircle size={14}/></button>
-                             </div>
-                          </div>
-                          <div className="col-span-12 sm:col-span-5">
-                             <label className="block text-[9px] font-black text-slate-400 uppercase mb-1 flex items-center gap-1"><Users size={10}/> Invitados (Aprox)</label>
-                             <input type="number" className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:border-violet-400" placeholder="0" value={inv.guestCount || ''} onChange={e => onUpdateInternal(inv.id, 'guestCount', e.target.value)} />
-                          </div>
-                       </div>
-
-                       <div className="grid grid-cols-12 gap-2 mt-3 p-3 bg-white border border-slate-100 rounded-xl">
-                          <div className="col-span-12 sm:col-span-6">
-                             <label className="block text-[9px] font-black text-slate-400 uppercase mb-1 flex items-center gap-1"><CreditCard size={10}/> Estado de Pago</label>
-                             <select className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 text-xs font-bold text-slate-700 outline-none cursor-pointer" value={inv.paymentStatus || 'Pendiente'} onChange={e => onUpdateInternal(inv.id, 'paymentStatus', e.target.value)}>
-                                <option value="Pendiente">🔴 Pendiente</option>
-                                <option value="Seña / Parcial">🟡 Seña / Parcial</option>
-                                <option value="Pagado Total">🟢 Pagado Total</option>
-                             </select>
-                          </div>
-                          <div className="col-span-12 sm:col-span-6">
-                             <label className="block text-[9px] font-black text-slate-400 uppercase mb-1">Abonado hasta ahora ($)</label>
-                             <input type="number" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-green-700 outline-none focus:border-green-400" placeholder="$ 0" value={inv.paymentAmount || ''} onChange={e => onUpdateInternal(inv.id, 'paymentAmount', e.target.value)} />
-                          </div>
-                       </div>
-
-                       <div className="grid grid-cols-1 gap-2 mt-3">
-                          <div>
-                             <label className="block text-[9px] font-black text-slate-400 uppercase mb-1 flex items-center gap-1"><Utensils size={10}/> Menús Especiales (Dietas)</label>
-                             <input type="text" className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:border-violet-400" placeholder="Ej: 2 Celíacos, 1 Vegano" value={inv.dietaryNotes || ''} onChange={e => onUpdateInternal(inv.id, 'dietaryNotes', e.target.value)} />
-                          </div>
-                          <div>
-                             <label className="block text-[9px] font-black text-slate-400 uppercase mb-1 flex items-center gap-1"><Music size={10}/> Indicaciones Adicionales</label>
-                             <textarea rows={2} className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-700 outline-none focus:border-violet-400 resize-none" placeholder="Canción de entrada, temáticas, juegos..." value={inv.extraNotes || ''} onChange={e => onUpdateInternal(inv.id, 'extraNotes', e.target.value)} />
-                          </div>
-                       </div>
-
-                    </div>
-                  )}
-
                 </div>
               );
             })}
@@ -271,13 +235,134 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
              </div>
           )}
         </main>
+        
+        {/* =========================================
+            MODAL DE FICHA CRM (VENTANA NUEVA)
+        ============================================= */}
+        {activeCrmId && activeInv && (
+          <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-[2rem] overflow-hidden flex flex-col shadow-2xl anim-pop relative">
+              
+              {/* HEADER MODAL */}
+              <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center shrink-0">
+                 <div>
+                    <h2 className="font-black text-xl text-slate-800 flex items-center gap-2"><Lock className="text-violet-500" size={20}/> Ficha de Gestión Interna</h2>
+                    <p className="text-xs font-bold text-slate-400">ID del Evento: {activeInv.id}</p>
+                 </div>
+                 <button onClick={() => setActiveCrmId(null)} className="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors cursor-pointer shadow-sm"><X size={20}/></button>
+              </div>
+
+              {/* CONTENIDO MODAL CON SCROLL */}
+              <div className="p-6 sm:p-8 overflow-y-auto fd-sb flex-1 bg-white">
+                
+                {/* SECCIÓN 1: DATOS DEL EVENTO */}
+                <div className="mb-8">
+                   <h3 className="text-xs font-black text-violet-600 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2 flex items-center gap-2"><PartyPopper size={14}/> Datos Principales</h3>
+                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <Inp label="Tipo de Evento" placeholder="Ej: Cumpleaños, Boda, 15 Años..." value={activeInv.eventType || ''} onChange={v => onUpdateInternal(activeInv.id, 'eventType', v)} />
+                      <Inp label="Nombre Agasajado" placeholder="Ej: Valentina" value={activeInv.internalHonoree || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalHonoree', v)} />
+                      <Inp label="Edad / Motivo" placeholder="Ej: Cumple 5" value={activeInv.eventReason || ''} onChange={v => onUpdateInternal(activeInv.id, 'eventReason', v)} />
+                   </div>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Inp label="Fecha (DD/MM/AÑO)" type="date" value={activeInv.internalDate || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalDate', v)} />
+                      <Inp label="Horario (24hs)" type="time" value={activeInv.internalTime || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalTime', v)} />
+                   </div>
+                </div>
+
+                {/* SECCIÓN 2: CONTACTO */}
+                <div className="mb-8">
+                   <h3 className="text-xs font-black text-blue-500 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2 flex items-center gap-2"><UserCheck size={14}/> Cliente y Contacto</h3>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Inp label="Nombre del Cliente / Padre" placeholder="Ej: Juan Pérez" value={activeInv.clientName || ''} onChange={v => onUpdateInternal(activeInv.id, 'clientName', v)} />
+                      
+                      <div>
+                         <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">WhatsApp Cliente (Sin +)</label>
+                         <div className="flex gap-2">
+                            <div className="relative flex-1">
+                               <input type="text" className="w-full pl-4 pr-4 py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all" placeholder="54911234567" value={activeInv.clientPhone || ''} onChange={e => onUpdateInternal(activeInv.id, 'clientPhone', e.target.value)} />
+                            </div>
+                            <button onClick={() => activeInv.clientPhone ? window.open(`https://wa.me/${activeInv.clientPhone}?text=Hola ${activeInv.clientName || ''}, te escribimos desde ${user.name} para...`) : alert("Ingresá el número de teléfono primero.")} className="px-4 bg-green-500 hover:bg-green-600 text-white rounded-xl flex items-center justify-center transition-colors cursor-pointer shadow-sm font-bold text-xs gap-2" title="Contactar por WhatsApp">
+                               <MessageCircle size={16}/> Enviar Info
+                            </button>
+                         </div>
+                      </div>
+                   </div>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                      <Inp label="Cantidad Aprox. Invitados" type="number" placeholder="Ej: 50" value={activeInv.guestCount || ''} onChange={v => onUpdateInternal(activeInv.id, 'guestCount', v)} />
+                      <Inp label="Menús Especiales (Dietas)" placeholder="Ej: 2 Celíacos, 1 Vegano" value={activeInv.dietaryNotes || ''} onChange={v => onUpdateInternal(activeInv.id, 'dietaryNotes', v)} />
+                   </div>
+                </div>
+
+                {/* SECCIÓN 3: FINANZAS Y PAGOS */}
+                <div className="mb-8">
+                   <h3 className="text-xs font-black text-green-600 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2 flex items-center gap-2"><Receipt size={14}/> Finanzas</h3>
+                   <div className="p-5 bg-green-50/50 rounded-2xl border border-green-100">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                         
+                         <div>
+                           <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Estado</label>
+                           <select className="w-full py-3 px-4 rounded-xl text-slate-800 bg-white border border-gray-200 text-sm focus:border-green-400 outline-none cursor-pointer font-bold" value={activeInv.paymentStatus || 'Pendiente'} onChange={e => onUpdateInternal(activeInv.id, 'paymentStatus', e.target.value)}>
+                              <option value="Pendiente">🔴 Pendiente</option>
+                              <option value="Seña / Parcial">🟡 Seña / Parcial</option>
+                              <option value="Pagado Total">🟢 Pagado Total</option>
+                           </select>
+                         </div>
+
+                         <Inp label="Presupuesto Total" type="number" prefix="$" placeholder="0" value={activeInv.totalBudget || ''} onChange={v => onUpdateInternal(activeInv.id, 'totalBudget', v)} />
+                         <Inp label="Abonado / Seña" type="number" prefix="$" placeholder="0" value={activeInv.paymentAmount || ''} onChange={v => onUpdateInternal(activeInv.id, 'paymentAmount', v)} />
+                         
+                         <div>
+                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Saldo Restante</label>
+                            <div className="w-full py-3 px-4 rounded-xl bg-white border border-gray-200 text-sm font-black text-slate-700 flex items-center gap-1 shadow-inner">
+                               <span className="text-slate-400">$</span> 
+                               {(Number(activeInv.totalBudget || 0) - Number(activeInv.paymentAmount || 0)).toLocaleString('es-AR')}
+                            </div>
+                         </div>
+
+                      </div>
+                   </div>
+                </div>
+
+                {/* SECCIÓN 4: OBSERVACIONES */}
+                <div>
+                   <h3 className="text-xs font-black text-amber-500 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2 flex items-center gap-2"><Music size={14}/> Animación y Detalles</h3>
+                   <Inp label="Indicaciones (Música seleccionada, temáticas, juegos, decoración...)" multiline placeholder="Escribí acá todas las notas necesarias para el día del evento..." value={activeInv.extraNotes || ''} onChange={v => onUpdateInternal(activeInv.id, 'extraNotes', v)} />
+                </div>
+
+              </div>
+              
+              {/* FOOTER MODAL */}
+              <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 shrink-0 flex justify-end">
+                 <button onClick={() => setActiveCrmId(null)} className="px-8 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-black text-sm shadow-md transition-colors cursor-pointer">
+                    CERRAR FICHA
+                 </button>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* MODAL DE CONFIGURACIÓN (CAMBIAR CLAVE SALÓN) */}
+        {showSettings && (
+          <div className="fixed inset-0 z-[110] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+             <div className="bg-white w-full max-w-sm rounded-[2rem] p-8 shadow-2xl relative anim-pop text-center">
+                <button onClick={() => setShowSettings(false)} className="absolute top-4 right-4 w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 cursor-pointer"><X size={16}/></button>
+                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-600"><KeyRound size={28}/></div>
+                <h2 className="text-xl font-black text-slate-900 mb-2">Mi Seguridad</h2>
+                <p className="text-xs text-slate-500 mb-6">Actualizá la contraseña de acceso a tu panel.</p>
+                <Inp label="Nueva Contraseña" type="text" placeholder="Ingresá la nueva clave..." value={newPassword} onChange={setNewPassword} />
+                <button onClick={handleChangePassword} className="w-full py-3 mt-2 bg-slate-900 hover:bg-black text-white rounded-xl font-black text-sm transition-transform active:scale-95 cursor-pointer">GUARDAR CLAVE</button>
+             </div>
+          </div>
+        )}
+
         {toast && <Toast msg={toast} />}
       </div>
     );
   }
 
   // ==============================
-  // VISTA MASTER (ADMIN)
+  // VISTA MASTER (ADMIN) - INTACTA
   // ==============================
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState("create"); 
