@@ -1,12 +1,22 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { OpeningAnimation } from "./Lotties";
+
+// IMPORTAMOS GIPHY
+import { GiphyFetch } from '@giphy/js-fetch-api';
+import { Grid } from '@giphy/react-components';
+
 import {
   MapPin, Clock, Calendar, Palette, CheckCircle2,
   ChevronDown, Type, Edit2, ArrowLeft, Save, X,
   Star, Image as ImageIcon, Layout, List, Trash2, Loader2, Check,
   Video, Link as LinkIcon, Sparkles, Mail, Goal, Gift, Music, Key, Ghost, Cat
 } from "lucide-react";
+
+/* ============================================================================
+   CONFIGURACIÓN DE GIPHY (¡PONÉ TU API KEY ACÁ!)
+============================================================================ */
+const gf = new GiphyFetch('32PbboqCveiWSlj9vROPmyjv8l8cuaj1');
 
 /* ============================================================================
    CONFIGURACIONES Y CONSTANTES
@@ -81,6 +91,7 @@ export const DEF_CONFIG = {
   eventTypeEmoji:"✨", eventType:"Estás invitado al cumple de", honoreeName:"Valentina", badgeEmoji:"🎂", badgeText:"5 añitos",
   coverPhoto:"https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=800&q=80",
   showBanner:true, bannerTitle:"La festejada", bannerPhoto:"https://images.unsplash.com/photo-1545912452-8aea7e25a3d3?auto=format&fit=crop&w=400&q=80",
+  useGiphyBanner: false, // Nueva configuración para alternar
   showDate:true, dateText:"Sábado 24 de Octubre", showTime:true, timeText:"16:00 a 20:00 hs", showCountdown: false, countdownDate:"",
   showTheme:true, themeIcon:"🦕", themeLabel:"Temática", themeText:"Dinosaurios",
   showLocation:true, locationName:"Aventura Kids", locationAddress:"Av. San Martín 1234", showParking:true, parkingType:"Estacionamiento público", customParking:"",
@@ -95,8 +106,49 @@ export const DEF_CONFIG = {
 };
 
 /* ============================================================================
-   MICRO COMPONENTES DE UI
+   MICRO COMPONENTES DE UI Y BUSCADOR GIPHY
 ============================================================================ */
+
+// Componente Buscador de Giphy
+const GiphySearch = ({ onSelect }) => {
+  const [term, setTerm] = useState("cumpleaños");
+  const [debouncedTerm, setDebouncedTerm] = useState("cumpleaños");
+
+  // Espera 500ms después de que el usuario deja de escribir para buscar (Optimización)
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedTerm(term), 500);
+    return () => clearTimeout(timer);
+  }, [term]);
+
+  const fetchGifs = (offset) => gf.search(debouncedTerm || "cumpleaños", { offset, limit: 10, lang: 'es' });
+
+  return (
+    <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 mt-2 mb-4">
+      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Buscar en Giphy</p>
+      <input 
+        value={term} 
+        onChange={(e) => setTerm(e.target.value)} 
+        placeholder="Ej: fiesta, dinosaurio, baile..." 
+        className="w-full px-3 py-2 rounded-lg text-xs border border-gray-200 focus:border-violet-400 outline-none mb-3" 
+      />
+      <div className="h-48 overflow-y-auto fd-sb rounded-lg bg-white border border-gray-100">
+        <Grid 
+          width={290} // Ancho fijo para que encaje en tu sidebar
+          columns={2} 
+          fetchGifs={fetchGifs} 
+          key={debouncedTerm} 
+          noResultsMessage={<p className="text-xs p-4 text-center text-gray-400">No hay resultados</p>} 
+          onGifClick={(gif, e) => {
+            e.preventDefault();
+            onSelect(gif.images.original.url);
+          }} 
+        />
+      </div>
+      <p className="text-[9px] text-gray-400 mt-2 text-center">Tocá un GIF para aplicarlo automáticamente.</p>
+    </div>
+  );
+};
+
 const Inp = ({ label, value, onChange, placeholder, type="text", multiline = false, className="" }) => (
   <div className={`mb-4 text-left ${className}`}>
     {label && <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{label}</label>}
@@ -639,7 +691,7 @@ export const EditorScreen = ({ invitations, onSave }) => {
                   
                   <div className="mb-4">
                     <div className="flex justify-between text-[9px] font-bold text-slate-500 mb-1">
-                      <span>Duración de la animación en pantalla</span>
+                      <span>Duración de la animación</span>
                       <span>{cfg.animationDuration || 2}s</span>
                     </div>
                     <input type="range" min={1} max={3} step={0.5} value={cfg.animationDuration || 2} onChange={e => update("animationDuration", Number(e.target.value))} className="w-full accent-violet-600 cursor-pointer" />
@@ -690,10 +742,21 @@ export const EditorScreen = ({ invitations, onSave }) => {
               <span className="text-xs font-bold text-slate-500">Mostrar Banner central</span>
               <Toggle checked={cfg.showBanner} onChange={v => update("showBanner", v)} />
             </div>
+            
             {cfg.showBanner && (
               <>
                 <Inp label="Título Banner (Ej: La Festejada)" value={cfg.bannerTitle} onChange={v => update("bannerTitle", v)} />
-                <FileUpload label="Foto del Banner (Subir imagen)" value={cfg.bannerPhoto} onChange={v => update("bannerPhoto", v)} />
+                
+                <div className="flex items-center justify-between mt-4 mb-2">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">¿Usar GIF de Giphy?</span>
+                  <Toggle checked={cfg.useGiphyBanner || false} onChange={v => update("useGiphyBanner", v)} />
+                </div>
+                
+                {cfg.useGiphyBanner ? (
+                  <GiphySearch onSelect={url => update("bannerPhoto", url)} />
+                ) : (
+                  <FileUpload label="Foto del Banner (Subir imagen)" value={cfg.bannerPhoto} onChange={v => update("bannerPhoto", v)} />
+                )}
               </>
             )}
           </Acc>
