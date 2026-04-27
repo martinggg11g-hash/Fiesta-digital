@@ -1,18 +1,42 @@
 import React, { useState, useEffect } from "react";
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 
-// Diccionario de animaciones Premium
-const LOTTIE_MAP = {
+// CATEGORÍAS DE ANIMACIONES
+export const ANIMATION_CATEGORIES = {
+  infantil: [
+    { id: "amongus", name: "Among Us", emoji: "👾" },
+    { id: "tiger", name: "Tigre Animado", emoji: "🐯" },
+    { id: "chest", name: "Cofre Pirata", emoji: "🏴‍☠️" },
+    { id: "soccer", name: "Cancha Fútbol", emoji: "⚽" }
+  ],
+  quince: [
+    { id: "musicbox", name: "Caja Musical", emoji: "🎵" },
+    { id: "gift", name: "Regalo", emoji: "🎁" }
+  ],
+  bodas: [
+    { id: "envelope", name: "Sobre Elegante", emoji: "✉️" },
+    { id: "rings", name: "Anillos (Próx)", emoji: "💍" } // Relleno para que tengas la estructura
+  ],
+  adultos: [
+    { id: "cheers", name: "Brindis (Próx)", emoji: "🥂" }, // Relleno
+    { id: "disco", name: "Fiesta Disco", emoji: "🪩" } // Relleno
+  ]
+};
+
+// URLS DE CADA ANIMACIÓN
+export const LOTTIE_MAP = {
   envelope: "https://lottie.host/79010496-e08b-4a5e-8557-0a4176378e90/4x9xLpSUnp.json", 
   chest: "https://lottie.host/2672eef6-88bc-4912-ab48-eb80aa0c1288/SPCECwdwgK.lottie", 
   soccer: "https://lottie.host/85002f23-389f-431a-8588-348128330f81/T6tU811z3I.lottie", 
   musicbox: "https://lottie.host/62e08e61-9c6a-4933-911b-85e68379207e/t5vR0ZtI7V.json", 
   gift: "https://lottie.host/93278564-96d5-45a7-96a8-f8648348630c/183xLpSUnp.json",
   amongus: "https://lottie.host/4d6d5ca1-2c8b-443a-a3e8-add97bfa7007/KxUqcK88DH.lottie", 
-  tiger: "https://lottie.host/19d90dc5-4d0a-4693-af95-96f949c67386/iW4Roe7QD1.lottie"    
+  tiger: "https://lottie.host/19d90dc5-4d0a-4693-af95-96f949c67386/iW4Roe7QD1.lottie",
+  rings: "https://lottie.host/79010496-e08b-4a5e-8557-0a4176378e90/4x9xLpSUnp.json", // Reemplazar luego
+  cheers: "https://lottie.host/93278564-96d5-45a7-96a8-f8648348630c/183xLpSUnp.json", // Reemplazar luego
+  disco: "https://lottie.host/62e08e61-9c6a-4933-911b-85e68379207e/t5vR0ZtI7V.json" // Reemplazar luego
 };
 
-// Diccionario de transiciones de salida
 const TRANSITIONS = {
   fade: "opacity-0",
   slideUp: "opacity-0 -translate-y-full",
@@ -25,29 +49,22 @@ export const OpeningAnimation = ({ cfg, onOpen, isPreview = false }) => {
   const type = cfg?.openingAnimation || "envelope";
   
   useEffect(() => {
-    // Si eligen "Sin Animación", abrimos la invitación inmediatamente
     if (type === "none") {
       onOpen();
       return;
     }
 
-    // Sonido mágico de entrada
     const audio = new Audio("https://actions.google.com/sounds/v1/magic/magic_chimes.ogg");
     audio.volume = 0.4;
     audio.play().catch(() => {});
 
-    // Calculamos el tiempo en milisegundos (según el slider del editor)
     const durationMs = (cfg?.animationDuration || 2) * 1000;
 
-    // Timer principal: Espera el tiempo configurado y arranca la salida
     const exitTimer = setTimeout(() => {
-      setIsExiting(true); // Activa la animación CSS de salida
-      
-      // Esperamos 800ms (lo que tarda la transición CSS) y abrimos la invitación
+      setIsExiting(true);
       setTimeout(() => {
         onOpen(); 
       }, 800); 
-      
     }, durationMs);
 
     return () => clearTimeout(exitTimer);
@@ -67,16 +84,10 @@ export const OpeningAnimation = ({ cfg, onOpen, isPreview = false }) => {
         ${isExiting ? transitionClass : 'opacity-100 bg-slate-950'}
       `}
     >
-      {/* Overlay de color suave basado en el tema */}
       <div className="absolute inset-0 opacity-30" style={{ background: cfg?.primary || '#7c3aed' }} />
-      
       <div className="relative z-10 w-full h-full flex flex-col items-center justify-center">
         <div className={`w-[320px] h-[320px] transition-transform duration-700 ${isExiting ? 'scale-110' : 'scale-100'}`}>
-          <DotLottieReact
-            src={url}
-            loop={true}
-            autoplay
-          />
+          <DotLottieReact src={url} loop={true} autoplay />
         </div>
       </div>
     </div>
