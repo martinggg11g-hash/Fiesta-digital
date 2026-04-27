@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   PartyPopper, ShieldCheck, AlertCircle, Loader2, LogOut, Plus, Trash2, Copy, CheckCircle2, Lock, 
-  MapPin, CalendarClock, AlertTriangle, KeyRound, Building, Edit2, X
+  MapPin, CalendarClock, AlertTriangle, KeyRound, Building, Edit2, X, MessageCircle
 } from "lucide-react";
 
 const slugify = (text) => text?.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') || 'salon';
@@ -90,7 +90,36 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
   // VISTA DEL DUEÑO DEL SALÓN (CLIENTE)
   // ==============================
   if (!isOwner) {
-    const salonAlert = users.find(u => u.email === user.email)?.paymentAlert;
+    const salonInfo = users.find(u => u.email === user.email);
+    const isManualBlocked = salonInfo?.paymentAlert;
+    const paymentDateStr = salonInfo?.paymentDate;
+    
+    let alertMsg = null;
+    let alertType = null; // 'red' o 'yellow'
+
+    // Lógica Automática de Fechas
+    if (isManualBlocked) {
+      alertType = 'red';
+      alertMsg = "Tu cuenta presenta un atraso en el pago o fue suspendida temporalmente. Por favor regularizá tu situación.";
+    } else if (paymentDateStr) {
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const dueDate = new Date(paymentDateStr);
+      dueDate.setHours(0,0,0,0);
+      dueDate.setDate(dueDate.getDate() + 1); // Compensar zona horaria
+      
+      const diffTime = dueDate - today;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays < 0) {
+        alertType = 'red';
+        alertMsg = `Atención: Tu abono venció el ${dueDate.toLocaleDateString('es-ES')}. Por favor regularizá el pago para evitar la suspensión del servicio.`;
+      } else if (diffDays <= 5) {
+        alertType = 'yellow';
+        alertMsg = `Recordatorio: Tu próximo pago vence el ${dueDate.toLocaleDateString('es-ES')} (en ${diffDays} días).`;
+      }
+    }
+
     return (
       <div className="min-h-screen bg-[#f8f7ff]">
         <nav className="h-16 bg-white border-b border-gray-100 px-6 flex items-center justify-between sticky top-0 z-50">
@@ -98,9 +127,10 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
           <button onClick={() => { onLogout(); navigate("/"); }} className="w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center hover:bg-red-100 transition-colors"><LogOut size={18}/></button>
         </nav>
         
-        {salonAlert && (
-          <div className="bg-red-500 text-white p-4 text-center font-bold text-sm flex items-center justify-center gap-3">
-            <AlertTriangle size={18}/> Tu cuenta presenta un atraso en el pago. Por favor regularizá tu situación.
+        {/* ALERTAS INTELIGENTES */}
+        {alertMsg && (
+          <div className={`${alertType === 'red' ? 'bg-red-500 text-white' : 'bg-amber-400 text-slate-900'} p-4 text-center font-bold text-sm flex items-center justify-center gap-3`}>
+            <AlertTriangle size={18}/> {alertMsg}
           </div>
         )}
 
@@ -156,6 +186,7 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
   // Estados del Formulario de Salón
   const [fName, setFName] = useState("");
   const [fEmail, setFEmail] = useState("");
+  const [fPhone, setFPhone] = useState(""); // Nuevo Campo para WhatsApp
   const [fPass, setFPass] = useState("");
   const [fAddress, setFAddress] = useState("");
   const [fPayDate, setFPayDate] = useState("");
@@ -163,14 +194,14 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
 
   const openCreateModal = () => {
     setModalMode("create");
-    setFName(""); setFEmail(""); setFPass(""); setFAddress(""); setFPayDate(""); setFAlert(false);
+    setFName(""); setFEmail(""); setFPhone(""); setFPass(""); setFAddress(""); setFPayDate(""); setFAlert(false);
     setShowModal(true);
   };
 
   const openEditModal = (salon) => {
     setModalMode("edit");
     setEditingEmail(salon.email);
-    setFName(salon.name); setFEmail(salon.email); setFAddress(salon.address || ""); setFPayDate(salon.paymentDate || ""); setFAlert(salon.paymentAlert || false);
+    setFName(salon.name); setFEmail(salon.email); setFPhone(salon.phone || ""); setFAddress(salon.address || ""); setFPayDate(salon.paymentDate || ""); setFAlert(salon.paymentAlert || false);
     setShowModal(true);
   };
 
@@ -184,10 +215,10 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
   const handleSaveModal = () => {
     if (modalMode === "create") {
       if(!fName || !fEmail || !fPass) return alert("Completá nombre, email y contraseña");
-      onCreateSalon({ name: fName, email: fEmail, pass: fPass, role: "salon", address: fAddress, paymentDate: fPayDate, paymentAlert: fAlert, createdAt: new Date().toISOString() });
+      onCreateSalon({ name: fName, email: fEmail, pass: fPass, role: "salon", address: fAddress, phone: fPhone, paymentDate: fPayDate, paymentAlert: fAlert, createdAt: new Date().toISOString() });
       notify("Salón creado con éxito");
     } else if (modalMode === "edit") {
-      onUpdateUser(editingEmail, { name: fName, address: fAddress, paymentDate: fPayDate, paymentAlert: fAlert });
+      onUpdateUser(editingEmail, { name: fName, phone: fPhone, address: fAddress, paymentDate: fPayDate, paymentAlert: fAlert });
       notify("Datos del salón actualizados");
     } else if (modalMode === "password") {
       if(!fPass) return alert("Ingresá una nueva contraseña");
@@ -215,14 +246,14 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
           </button>
         </div>
 
-        {/* LISTA DE SALONES (SaaS Style) */}
+        {/* LISTA DE SALONES */}
         <div className="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-gray-100 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  <th className="p-5">Salón / Email</th>
-                  <th className="p-5">Ubicación Google Maps</th>
+                  <th className="p-5">Salón / Contacto</th>
+                  <th className="p-5">Ubicación</th>
                   <th className="p-5">Vencimiento</th>
                   <th className="p-5">Estado</th>
                   <th className="p-5 text-right">Acciones</th>
@@ -231,6 +262,22 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
               <tbody className="text-sm text-slate-700">
                 {mySalons.map(salon => {
                   const sInvs = invitations.filter(i => i.salonId === salon.email).length;
+                  
+                  // Calcular estado automático para mostrar en el panel maestro
+                  let statusUi = <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-100 text-green-700 font-bold text-xs"><CheckCircle2 size={14}/> Al día</span>;
+                  if (salon.paymentAlert) {
+                     statusUi = <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-100 text-red-700 font-bold text-xs"><AlertTriangle size={14}/> Bloqueado</span>;
+                  } else if (salon.paymentDate) {
+                     const today = new Date(); today.setHours(0,0,0,0);
+                     const due = new Date(salon.paymentDate); due.setHours(0,0,0,0); due.setDate(due.getDate() + 1);
+                     const diff = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
+                     if (diff < 0) statusUi = <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-100 text-red-700 font-bold text-xs"><AlertTriangle size={14}/> Vencido</span>;
+                     else if (diff <= 5) statusUi = <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-700 font-bold text-xs"><AlertTriangle size={14}/> Vence pronto</span>;
+                  }
+
+                  // Mensaje Pre-armado para WhatsApp
+                  const wpMsg = `Hola ${salon.name}, desde FiestaDigital te contactamos para recordarte el pago de tu suscripción mensual.`;
+
                   return (
                     <tr key={salon.email} className="border-b border-gray-50 hover:bg-slate-50/50 transition-colors group">
                       <td className="p-5">
@@ -239,7 +286,7 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                         <p className="text-[10px] font-black text-violet-500 uppercase tracking-widest mt-2">{sInvs} invitaciones creadas</p>
                       </td>
                       <td className="p-5">
-                        <div className="flex items-start gap-2 max-w-[250px]">
+                        <div className="flex items-start gap-2 max-w-[200px]">
                           <MapPin size={16} className="text-slate-400 shrink-0 mt-0.5" />
                           <span className="text-xs font-medium leading-relaxed">{salon.address || <span className="text-gray-300 italic">No configurada</span>}</span>
                         </div>
@@ -247,18 +294,15 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                       <td className="p-5">
                         <div className="flex items-center gap-2">
                           <CalendarClock size={16} className="text-slate-400" />
-                          <span className="font-bold">{salon.paymentDate ? new Date(salon.paymentDate).toLocaleDateString('es-ES') : '--/--/----'}</span>
+                          <span className="font-bold">{salon.paymentDate ? new Date(salon.paymentDate).toLocaleDateString('es-ES', {timeZone: 'UTC'}) : '--/--/----'}</span>
                         </div>
                       </td>
-                      <td className="p-5">
-                        {salon.paymentAlert ? (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-100 text-red-700 font-bold text-xs"><AlertTriangle size={14}/> Moroso</span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-100 text-green-700 font-bold text-xs"><CheckCircle2 size={14}/> Al día</span>
-                        )}
-                      </td>
+                      <td className="p-5">{statusUi}</td>
                       <td className="p-5 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          {/* BOTÓN MÁGICO DE WHATSAPP */}
+                          <button onClick={() => { salon.phone ? window.open(`https://wa.me/${salon.phone}?text=${encodeURIComponent(wpMsg)}`) : alert("Este salón no tiene teléfono guardado.") }} title="Avisar por WhatsApp" className="w-10 h-10 rounded-xl bg-white border border-green-200 text-green-600 flex items-center justify-center hover:bg-green-50 transition-all cursor-pointer"><MessageCircle size={16}/></button>
+                          
                           <button onClick={() => openEditModal(salon)} title="Editar Datos" className="w-10 h-10 rounded-xl bg-white border border-gray-200 text-slate-600 flex items-center justify-center hover:bg-violet-50 hover:text-violet-600 hover:border-violet-200 transition-all cursor-pointer"><Edit2 size={16}/></button>
                           <button onClick={() => openPassModal(salon)} title="Resetear Contraseña" className="w-10 h-10 rounded-xl bg-white border border-gray-200 text-slate-600 flex items-center justify-center hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-all cursor-pointer"><KeyRound size={16}/></button>
                           <button onClick={() => { if(window.confirm(`¿Seguro que querés eliminar el salón ${salon.name} y todas sus invitaciones? Esta acción no se puede deshacer.`)) onDeleteSalon(salon.email); }} title="Eliminar Salón" className="w-10 h-10 rounded-xl bg-white border border-red-100 text-red-400 flex items-center justify-center hover:bg-red-50 hover:text-red-600 transition-all cursor-pointer"><Trash2 size={16}/></button>
@@ -283,40 +327,44 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
             <button onClick={() => setShowModal(false)} className="absolute top-6 right-6 w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 cursor-pointer"><X size={20}/></button>
             
             <h2 className="text-2xl font-black text-slate-900 mb-8 flex items-center gap-3">
-              {modalMode === 'create' && <><Building className="text-violet-500"/> Registrar Nuevo Salón</>}
+              {modalMode === 'create' && <><Building className="text-violet-500"/> Nuevo Salón</>}
               {modalMode === 'edit' && <><Edit2 className="text-violet-500"/> Editar Salón</>}
-              {modalMode === 'password' && <><KeyRound className="text-violet-500"/> Nueva Contraseña</>}
+              {modalMode === 'password' && <><KeyRound className="text-violet-500"/> Nueva Clave</>}
             </h2>
 
             <div className="space-y-2">
               {/* MODO CREAR O EDITAR */}
               {(modalMode === 'create' || modalMode === 'edit') && (
                 <>
-                  <Inp label="Nombre del Salón" value={fName} onChange={setFName} placeholder="Ej: Aventura Kids" />
-                  <Inp label="Correo de Acceso (No se puede cambiar)" value={fEmail} onChange={modalMode === 'create' ? setFEmail : undefined} placeholder="salon@email.com" className={modalMode === 'edit' ? 'opacity-50 pointer-events-none' : ''} />
+                  <div className="grid grid-cols-2 gap-3">
+                    <Inp label="Nombre del Salón" value={fName} onChange={setFName} placeholder="Ej: Aventura Kids" />
+                    <Inp label="WhatsApp (Sin +)" value={fPhone} onChange={setFPhone} placeholder="54911234567" />
+                  </div>
+                  
+                  <Inp label="Correo de Acceso (Inmodificable luego)" value={fEmail} onChange={modalMode === 'create' ? setFEmail : undefined} placeholder="salon@email.com" className={modalMode === 'edit' ? 'opacity-50 pointer-events-none' : ''} />
+                  
                   {modalMode === 'create' && <Inp label="Contraseña Inicial" value={fPass} onChange={setFPass} type="password" />}
                   
                   <div className="h-px bg-gray-100 my-6" />
-                  <h4 className="text-[10px] font-black text-violet-500 uppercase tracking-widest mb-4">Configuración Fija</h4>
+                  <h4 className="text-[10px] font-black text-violet-500 uppercase tracking-widest mb-4">Configuración Fija y Pagos</h4>
                   
-                  <Inp label="Dirección para Google Maps (Se fijará en todas sus invitaciones)" value={fAddress} onChange={setFAddress} placeholder="Ej: Av. San Martín 1234, Buenos Aires" />
+                  <Inp label="Dirección de Google Maps (Se aplica a sus invitaciones)" value={fAddress} onChange={setFAddress} placeholder="Ej: Av. San Martín 1234, Buenos Aires" />
                   
                   <div className="flex gap-4">
                     <div className="flex-1"><Inp label="Próximo Vencimiento" type="date" value={fPayDate} onChange={setFPayDate} /></div>
                     <div className="flex flex-col items-center justify-center pt-2">
-                      <span className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-2">Bloquear Salón</span>
+                      <span className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-2">Bloqueo Manual</span>
                       <Toggle checked={fAlert} onChange={setFAlert} />
                     </div>
                   </div>
-                  {fAlert && <p className="text-[10px] text-red-500 font-bold mt-1 bg-red-50 p-2 rounded-lg text-center">⚠️ El cliente verá un aviso de falta de pago en su panel.</p>}
                 </>
               )}
 
               {/* MODO RESETEAR CONTRASEÑA */}
               {modalMode === 'password' && (
                 <>
-                  <p className="text-sm text-slate-500 mb-6">Estás cambiando la contraseña de acceso para <b>{editingEmail}</b>. Sus invitaciones no se borrarán.</p>
-                  <Inp label="Escribir Nueva Contraseña" value={fPass} onChange={setFPass} type="text" placeholder="Nueva clave alfanumérica..." />
+                  <p className="text-sm text-slate-500 mb-6">Estás cambiando la contraseña de acceso para <b>{editingEmail}</b>. Sus invitaciones no se borrarán ni se verán afectadas.</p>
+                  <Inp label="Escribir Nueva Contraseña" value={fPass} onChange={setFPass} type="text" placeholder="Ej: clave123" />
                 </>
               )}
             </div>
