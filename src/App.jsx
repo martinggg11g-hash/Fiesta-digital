@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, useParams, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useParams, Navigate, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { EditorScreen, InvitePreview, DEF_CONFIG } from "./Editor";
 import { OpeningAnimation } from "./Lotties";
