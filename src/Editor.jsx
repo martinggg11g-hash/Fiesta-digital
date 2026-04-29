@@ -718,8 +718,27 @@ export const InvitePreview = ({ cfg }) => {
         )}
 
         {/* Dress Code y Regalos */}
-        <div className="grid grid-cols-2 gap-3 pt-4">
-          {cfg.showDressCode && (
+        {(cfg.showDressCode || cfg.showGifts) && (
+          <div className="pt-6">
+            <SectionTitle>A tener en cuenta</SectionTitle>
+            <div className="grid grid-cols-2 gap-3">
+              {cfg.showDressCode && (
+                <div className="p-5 rounded-2xl text-center border border-white/5 shadow-sm" style={{ background: cardC }}>
+                  <span className="text-3xl block mb-2">{cfg.dressCodeIcon}</span>
+                  <p className="text-[9px] font-black uppercase tracking-widest mb-1" style={{ color: mutedC }}>Vestimenta</p>
+                  <p className="font-bold text-xs" style={{ color: textC, fontFamily: cfg.fontBody }}>{cfg.dressCodeText}</p>
+                </div>
+              )}
+              {cfg.showGifts && (
+                <div className="p-5 rounded-2xl text-center border border-white/5 shadow-sm" style={{ background: cardC }}>
+                  <span className="text-3xl block mb-2">{cfg.giftIcon}</span>
+                  <p className="text-[9px] font-black uppercase tracking-widest mb-1" style={{ color: mutedC }}>{cfg.giftLabel}</p>
+                  <p className="font-bold text-xs" style={{ color: textC, fontFamily: cfg.fontBody }}>{cfg.giftText}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
             <div className="p-5 rounded-2xl text-center border border-white/5" style={{ background: cardC }}>
               <span className="text-3xl block mb-2">{cfg.dressCodeIcon}</span>
               <p className="text-[9px] font-black uppercase tracking-widest mb-1" style={{ color: mutedC }}>Vestimenta</p>
