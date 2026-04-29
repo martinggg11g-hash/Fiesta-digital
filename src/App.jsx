@@ -72,8 +72,39 @@ export default function App() {
   };
   
   const handleUpdateUser = async (email, updateData) => {
-    const { error } = await supabase.from('salones').update(updateData).eq('email', email);
-    if (!error) setUsers(prev => prev.map(u => u.email === email ? {...u, ...updateData} : u));
+    // 1. Primero actualizamos el Salón en la base de datos
+    const { error: salonError } = await supabase.from('salones').update(updateData).eq('email', email);
+    
+    if (!salonError) {
+      // 2. Si se cambió la dirección (address), hay que avisarle a las invitaciones
+      if (updateData.address) {
+        // Traemos todas las invitaciones que pertenecen a este salón
+        const { data: currentInvs } = await supabase.from('invitaciones').select('*').eq('salon_id', email);
+        
+        if (currentInvs) {
+          // Recorremos cada invitación y le actualizamos la dirección dentro de su config
+          for (let inv of currentInvs) {
+            const updatedConfig = { ...inv.config, locationAddress: updateData.address };
+            await supabase.from('invitaciones')
+              .update({ config: updatedConfig })
+              .eq('id', inv.id);
+          }
+        }
+      }
+      
+      // 3. Actualizamos el estado de React para que los cambios se vean al instante sin F5
+      setUsers(prev => prev.map(u => u.email === email ? {...u, ...updateData} : u));
+      
+      // Refrescamos las invitaciones en memoria para que el Editor tome la dirección nueva
+      const { data: freshInvs } = await supabase.from('invitaciones').select('*');
+      if (freshInvs) {
+        setInvitations(freshInvs.map(i => ({ 
+          ...i, 
+          salonId: i.salon_id, 
+          internal_data: i.internal_data || {} 
+        })));
+      }
+    }
   };
   
   const handleDeleteSalon = async (email) => {
