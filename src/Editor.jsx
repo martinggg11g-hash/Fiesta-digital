@@ -654,7 +654,7 @@ export const EditorScreen = ({ invitations, onSave }) => {
   return (
     <div className="h-screen flex flex-col bg-slate-950 overflow-hidden">
       
-      {/* ESTILOS INYECTADOS: Esto engrosa la barra de scroll de tu panel izquierdo */}
+      {/* ESTILOS INYECTADOS */}
       <style>{`
         .fd-sb::-webkit-scrollbar { width: 8px !important; height: 8px !important; }
         .fd-sb::-webkit-scrollbar-thumb { background: #b4aee8 !important; border-radius: 10px !important; }
@@ -675,37 +675,31 @@ export const EditorScreen = ({ invitations, onSave }) => {
       {/* CONTENEDOR DESLIZABLE TIPO CARRUSEL */}
       <div className="flex-1 flex overflow-x-auto overflow-y-hidden snap-x snap-mandatory scroll-smooth relative">
         
-        {/* PISTA VISUAL MOBILE (Cartelito flotante) */}
+        {/* PISTA VISUAL MOBILE */}
         <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] flex gap-2 bg-slate-900/90 backdrop-blur p-1.5 rounded-full shadow-2xl border border-white/20 pointer-events-none anim-pop">
           <span className="text-white text-[10px] font-bold px-4 py-2 flex items-center gap-2">
             🛠️ Editar <span className="animate-bounce">👉</span> Ver Previa
           </span>
         </div>
 
-        {/* PANEL LATERAL (Pantalla 1 en Celu, Barra lateral en PC) */}
+        {/* PANEL LATERAL */}
         <aside className="w-[100vw] md:w-[380px] h-full shrink-0 snap-center bg-[#f8f7ff] overflow-y-auto p-6 border-r border-gray-100 z-10 relative fd-sb">
            
-           {/* ACÁ QUEDA EXACTAMENTE TODO TU CÓDIGO DE LOS ACORDEONES QUE YA TENÉS */}
            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 text-left">Personalización Completa</h3>
-           
-           {/* ... NO BORRES TUS ACORDEONES (<Acc title="Estilo y Colores"...), DEJALOS ACÁ ADENTRO ... */}
-           
-        </aside>
 
-        {/* VISTA PREVIA CENTRAL (Pantalla 2 en Celu, Centro en PC) */}
-        <main className="w-[100vw] md:flex-1 h-full shrink-0 snap-center bg-slate-900 flex items-center justify-center p-6 md:p-10 relative overflow-hidden">
-          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:20px_20px]" />
-          <div className="invite-phone anim-pop border-[8px] border-slate-800 shadow-2xl relative z-10 max-h-full">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-7 bg-[#1a1a2e] rounded-b-2xl z-50 flex items-center justify-center"><div className="w-10 h-1 bg-slate-800 rounded-full" /></div>
-            
-            {previewAnim && <OpeningAnimation cfg={cfg} onOpen={() => setPreviewAnim(false)} isPreview={true} />}
-            
-            <div className="h-full w-full overflow-y-auto bg-black pb-10 fd-sb" style={{ scrollBehavior: 'smooth' }}>
-              <InvitePreview cfg={cfg} />
+          <Acc title="Estilo y Colores" icon={Palette} defaultOpen iconColor="#7c3aed">
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-left">Temas Sugeridos</label>
+            <div className="flex flex-wrap gap-2.5 mb-6">
+              {THEMES.map(th => (
+                <button
+                  key={th.id}
+                  title={th.name}
+                  onClick={() => setInv({...inv, config: {...cfg, theme: th.id, ...th}})}
+                  className={`w-9 h-9 rounded-full border-2 transition-all hover:scale-110 ${cfg.theme === th.id ? 'border-violet-600 ring-2 ring-violet-200' : 'border-transparent'}`}
+                  style={{ background: th.primary }}
+                />
+              ))}
             </div>
-          </div>
-        </main>
-      </div>
 
             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-left mt-4 border-t border-gray-100 pt-4">Colores Manuales</label>
             <div className="grid grid-cols-2 gap-3 mb-6">
@@ -721,7 +715,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
               <SelectInp label="Tipografía Global" value={cfg.fontBody} options={FONTS} onChange={v => update("fontBody", v)} />
             </div>
 
-            {/* SECCIÓN DE TAMAÑOS INDEPENDIENTES */}
             <div className="mb-4 mt-4 border-t border-gray-100 pt-4">
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 text-left flex items-center gap-2"><MoveVertical size={14}/> Tamaños de Letra (px)</label>
               <div className="space-y-5">
@@ -899,7 +892,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
             <div className="flex items-center justify-between mt-4 mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Mostrar Cuadro de Horario</span><Toggle checked={cfg.showTime} onChange={v => update("showTime", v)} /></div>
             {cfg.showTime && <Inp label="Texto de Horario" value={cfg.timeText} onChange={v => update("timeText", v)} />}
 
-            {/* MODIFICADO: Dirección fija desde el Master, solo se oculta/muestra */}
             <div className="flex items-center justify-between mt-4 mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Mostrar Ubicación y Mapa</span><Toggle checked={cfg.showLocation} onChange={v => update("showLocation", v)} /></div>
             {cfg.showLocation && (
               <>
@@ -999,7 +991,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
                    <div className="flex-1"><Inp value={cfg.giftText} onChange={v => update("giftText", v)} placeholder="Lluvia de sobres..." className="!mb-0"/></div>
                  </div>
                  
-                 {/* MODIFICADO: Aclaración Extra multilínea, tamaño y color */}
                  <div className="flex items-center justify-between mt-4 mb-2"><span className="text-[10px] font-bold text-slate-500 uppercase">Aclaración Extra</span><Toggle checked={cfg.showGiftNote} onChange={v => update("showGiftNote", v)} /></div>
                  {cfg.showGiftNote && (
                    <div className="mt-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
@@ -1047,14 +1038,22 @@ export const EditorScreen = ({ invitations, onSave }) => {
         </aside>
 
         {/* VISTA PREVIA CENTRAL */}
-        <main className="flex-1 bg-slate-900 flex items-center justify-center p-6 relative">
+        <main className="w-[100vw] md:flex-1 h-full shrink-0 snap-center bg-slate-900 flex items-center justify-center p-6 md:p-10 relative overflow-hidden">
           <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:20px_20px]" />
-          <div className="invite-phone anim-pop border-[8px] border-slate-800 shadow-2xl relative z-10">
+          <div className="invite-phone anim-pop border-[8px] border-slate-800 shadow-2xl relative z-10 max-h-full">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-7 bg-[#1a1a2e] rounded-b-2xl z-50 flex items-center justify-center"><div className="w-10 h-1 bg-slate-800 rounded-full" /></div>
             
             {previewAnim && <OpeningAnimation cfg={cfg} onOpen={() => setPreviewAnim(false)} isPreview={true} />}
             
             <div className="h-full w-full overflow-y-auto bg-black pb-10 fd-sb" style={{ scrollBehavior: 'smooth' }}>
+              <InvitePreview cfg={cfg} />
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+};
               <InvitePreview cfg={cfg} />
             </div>
           </div>
