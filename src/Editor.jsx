@@ -459,7 +459,7 @@ export const InvitePreview = ({ cfg }) => {
   const textC = cfg.text || th.text;
   const mutedC = cfg.muted || th.muted;
   const cardC  = cfg.card  || th.card;
-  const gradOpacity = ((cfg.coverGradientIntensity ?? 70) / 100).toFixed(2);
+  const gradOpacity = cfg.showCoverGradient === false ? 0 : ((cfg.coverGradientIntensity ?? 70) / 100).toFixed(2);
 
   const SectionTitle = ({ children }) => (
     <h4 className="font-black uppercase tracking-[0.3em] text-center mb-6" style={{ color: mutedC, fontSize: `${cfg.titlesSize ?? 10}px` }}>
@@ -672,25 +672,40 @@ export const EditorScreen = ({ invitations, onSave }) => {
         </button>
       </header>
 
-      <div className="flex-1 flex overflow-hidden">
-        {/* PANEL LATERAL */}
-        <aside className="w-[380px] bg-[#f8f7ff] overflow-y-auto p-6 border-r border-gray-100 z-10 relative fd-sb">
-          
-          <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 text-left">Personalización Completa</h3>
+      {/* CONTENEDOR DESLIZABLE TIPO CARRUSEL */}
+      <div className="flex-1 flex overflow-x-auto overflow-y-hidden snap-x snap-mandatory scroll-smooth relative">
+        
+        {/* PISTA VISUAL MOBILE (Cartelito flotante) */}
+        <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] flex gap-2 bg-slate-900/90 backdrop-blur p-1.5 rounded-full shadow-2xl border border-white/20 pointer-events-none anim-pop">
+          <span className="text-white text-[10px] font-bold px-4 py-2 flex items-center gap-2">
+            🛠️ Editar <span className="animate-bounce">👉</span> Ver Previa
+          </span>
+        </div>
 
-          <Acc title="Estilo y Colores" icon={Palette} defaultOpen iconColor="#7c3aed">
-            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-left">Temas Sugeridos</label>
-            <div className="flex flex-wrap gap-2.5 mb-6">
-              {THEMES.map(th => (
-                <button
-                  key={th.id}
-                  title={th.name}
-                  onClick={() => setInv({...inv, config: {...cfg, theme: th.id, ...th}})}
-                  className={`w-9 h-9 rounded-full border-2 transition-all hover:scale-110 ${cfg.theme === th.id ? 'border-violet-600 ring-2 ring-violet-200' : 'border-transparent'}`}
-                  style={{ background: th.primary }}
-                />
-              ))}
+        {/* PANEL LATERAL (Pantalla 1 en Celu, Barra lateral en PC) */}
+        <aside className="w-[100vw] md:w-[380px] h-full shrink-0 snap-center bg-[#f8f7ff] overflow-y-auto p-6 border-r border-gray-100 z-10 relative fd-sb">
+           
+           {/* ACÁ QUEDA EXACTAMENTE TODO TU CÓDIGO DE LOS ACORDEONES QUE YA TENÉS */}
+           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 text-left">Personalización Completa</h3>
+           
+           {/* ... NO BORRES TUS ACORDEONES (<Acc title="Estilo y Colores"...), DEJALOS ACÁ ADENTRO ... */}
+           
+        </aside>
+
+        {/* VISTA PREVIA CENTRAL (Pantalla 2 en Celu, Centro en PC) */}
+        <main className="w-[100vw] md:flex-1 h-full shrink-0 snap-center bg-slate-900 flex items-center justify-center p-6 md:p-10 relative overflow-hidden">
+          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:20px_20px]" />
+          <div className="invite-phone anim-pop border-[8px] border-slate-800 shadow-2xl relative z-10 max-h-full">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-7 bg-[#1a1a2e] rounded-b-2xl z-50 flex items-center justify-center"><div className="w-10 h-1 bg-slate-800 rounded-full" /></div>
+            
+            {previewAnim && <OpeningAnimation cfg={cfg} onOpen={() => setPreviewAnim(false)} isPreview={true} />}
+            
+            <div className="h-full w-full overflow-y-auto bg-black pb-10 fd-sb" style={{ scrollBehavior: 'smooth' }}>
+              <InvitePreview cfg={cfg} />
             </div>
+          </div>
+        </main>
+      </div>
 
             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-left mt-4 border-t border-gray-100 pt-4">Colores Manuales</label>
             <div className="grid grid-cols-2 gap-3 mb-6">
@@ -734,10 +749,18 @@ export const EditorScreen = ({ invitations, onSave }) => {
             </div>
 
             <div className="mb-4 border-t border-gray-100 pt-4">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-left">
-                Sombreado de Portada — <span className="text-violet-500">{cfg.coverGradientIntensity ?? 70}%</span>
-              </label>
-              <input type="range" min={0} max={100} step={5} value={cfg.coverGradientIntensity ?? 70} onChange={e => update("coverGradientIntensity", Number(e.target.value))} className="w-full accent-violet-600 cursor-pointer" />
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sombreado de Portada</span>
+                <Toggle checked={cfg.showCoverGradient !== false} onChange={v => update("showCoverGradient", v)} />
+              </div>
+              {cfg.showCoverGradient !== false && (
+                <div className="mt-2">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-left text-violet-500">
+                    Intensidad: {cfg.coverGradientIntensity ?? 70}%
+                  </label>
+                  <input type="range" min={0} max={100} step={5} value={cfg.coverGradientIntensity ?? 70} onChange={e => update("coverGradientIntensity", Number(e.target.value))} className="w-full accent-violet-600 cursor-pointer" />
+                </div>
+              )}
             </div>
 
             <div className="mb-2 border-t border-gray-100 pt-4">
