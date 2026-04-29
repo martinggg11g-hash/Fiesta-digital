@@ -4,7 +4,7 @@ import { Loader2 } from "lucide-react";
 import { LoginScreen, DashboardScreen } from "./Master";
 import { EditorScreen, InvitePreview, DEF_CONFIG } from "./Editor";
 import { OpeningAnimation } from "./Lotties";
-import { supabase } from "./supabase"; // <--- Importamos la conexión
+import { supabase } from "./supabase"; 
 
 const GlobalStyles = () => {
   useEffect(() => {
@@ -49,10 +49,24 @@ const PublicInviteScreen = ({ invitations }) => {
 };
 
 export default function App() {
-  const [user, setUser] = useState(null);
+  // === MAGIA ANTI-F5: Iniciar el estado leyendo el Local Storage ===
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem("fiesta_user");
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+
   const [users, setUsers] = useState([]);
   const [invitations, setInvitations] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // === MAGIA ANTI-F5: Guardar al usuario en el Local Storage cada vez que inicia o cierra sesión ===
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem("fiesta_user", JSON.stringify(user));
+    } else {
+      localStorage.removeItem("fiesta_user");
+    }
+  }, [user]);
 
   // CARGAR DATOS DESDE SUPABASE AL INICIAR
   useEffect(() => {
@@ -72,30 +86,21 @@ export default function App() {
   };
   
   const handleUpdateUser = async (email, updateData) => {
-    // 1. Primero actualizamos el Salón en la base de datos
     const { error: salonError } = await supabase.from('salones').update(updateData).eq('email', email);
     
     if (!salonError) {
-      // 2. Si se cambió la dirección (address), hay que avisarle a las invitaciones
       if (updateData.address) {
-        // Traemos todas las invitaciones que pertenecen a este salón
         const { data: currentInvs } = await supabase.from('invitaciones').select('*').eq('salon_id', email);
-        
         if (currentInvs) {
-          // Recorremos cada invitación y le actualizamos la dirección dentro de su config
           for (let inv of currentInvs) {
             const updatedConfig = { ...inv.config, locationAddress: updateData.address };
-            await supabase.from('invitaciones')
-              .update({ config: updatedConfig })
-              .eq('id', inv.id);
+            await supabase.from('invitaciones').update({ config: updatedConfig }).eq('id', inv.id);
           }
         }
       }
       
-      // 3. Actualizamos el estado de React para que los cambios se vean al instante sin F5
       setUsers(prev => prev.map(u => u.email === email ? {...u, ...updateData} : u));
       
-      // Refrescamos las invitaciones en memoria para que el Editor tome la dirección nueva
       const { data: freshInvs } = await supabase.from('invitaciones').select('*');
       if (freshInvs) {
         setInvitations(freshInvs.map(i => ({ 
