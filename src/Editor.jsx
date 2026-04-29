@@ -390,11 +390,15 @@ const ParticleCanvas = ({ effect, primary }) => {
 };
 
 const MapEmbed = ({ name, address, primary }) => {
-  // Le pasamos a Google SOLO la dirección para que no se maree con nombres raros de salones
+  // Obligamos a que use la dirección. Si está en blanco, usa el nombre.
   const query = address ? address : name;
   if (!query) return null;
   
-  const gMapsUrl = `https://maps.google.com/maps?q=${encodeURIComponent(query)}`;
+  // Link directo para celulares (abre la app de Maps)
+  const gMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+  
+  // Link oficial para el Iframe
+  const embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(query)}&t=m&z=15&output=embed&iwloc=near`;
   
   return (
     <div className="rounded-2xl overflow-hidden border border-white/10 relative" style={{ background: "#1a1a2e" }}>
@@ -405,7 +409,7 @@ const MapEmbed = ({ name, address, primary }) => {
         style={{ border: 0, display: "block", filter: "invert(90%) hue-rotate(180deg)" }} 
         loading="lazy" 
         referrerPolicy="no-referrer-when-downgrade" 
-        src={`https://maps.google.com/maps?q=${encodeURIComponent(query)}&t=m&z=15&output=embed&iwloc=near`} 
+        src={embedUrl} 
       />
       <a href={gMapsUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-3 text-xs font-black uppercase tracking-wider transition-colors" style={{ background: `${primary}22`, color: primary }}>
         <MapPin size={14} /> Abrir en Google Maps
