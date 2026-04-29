@@ -40,9 +40,20 @@ const compressImage = (base64, maxWidth = 800) => {
 
 const getSpotifyEmbed = (url) => {
   if (!url) return null;
-  const id = url.split("track/")[1]?.split("?")[0] || url.split("playlist/")[1]?.split("?")[0];
-  const type = url.includes("playlist") ? "playlist" : "track";
-  return id ? `https://open.spotify.com/embed/${type}/${id}?utm_source=generator&theme=0` : null;
+  
+  // Detectamos si es una playlist, un álbum o una canción normal
+  let type = "track";
+  if (url.includes("playlist/")) type = "playlist";
+  if (url.includes("album/")) type = "album";
+  
+  // Extraemos el ID exacto separando la URL
+  const idPart = url.split(`${type}/`)[1];
+  if (!idPart) return null;
+  
+  const id = idPart.split("?")[0];
+  
+  // Usamos el enlace oficial de Spotify para Iframes (con HTTPS para que Vercel no lo bloquee)
+  return `https://open.spotify.com/embed/${type}/${id}?utm_source=generator&theme=0`;
 };
 
 const getYouTubeId = (url) => {
