@@ -102,7 +102,7 @@ export const DEF_CONFIG = {
   dateSize: 18, locationSize: 18, titlesSize: 10, badgeSize: 14,
   
   bg1:"#08060f", bg2:"#120d24", primary:"#7c3aed", card:"#1a1035", text:"#f0ecff", muted:"#9b8ec4",
-  coverGradientIntensity: 70, particleEffect: "none", 
+  coverGradientIntensity: 70, showCoverGradient: true, particleEffect: "none", 
   openingAnimation: "envelope", animationDuration: 2, animationTransition: "fade",
   eventTypeEmoji:"✨", eventType:"Estás invitado al cumple de", honoreeName:"Valentina", badgeEmoji:"🎂", badgeText:"5 añitos",
   
@@ -219,14 +219,13 @@ const EmojiPicker = ({ value, onSelect, list = GENERAL_EMOJIS }) => {
   );
 };
 
-// MODIFICADO: Soluciona el problema de los Emojis ocultos detrás de las tarjetas
 const Acc = ({ title, icon: Icon, children, defaultOpen = false, iconColor = "#7c3aed" }) => {
   const [open, setOpen] = useState(defaultOpen);
   const [fullyOpen, setFullyOpen] = useState(defaultOpen);
 
   useEffect(() => {
     let t;
-    if (open) t = setTimeout(() => setFullyOpen(true), 300); // Espera a que abra para liberar el overflow
+    if (open) t = setTimeout(() => setFullyOpen(true), 300);
     else setFullyOpen(false);
     return () => clearTimeout(t);
   }, [open]);
@@ -390,27 +389,20 @@ const ParticleCanvas = ({ effect, primary }) => {
 };
 
 const MapEmbed = ({ name, address, primary }) => {
-  // 1. Forzamos a que use la dirección. Si está vacía, recién ahí usa el nombre.
-  const query = (address && address.trim() !== "") ? address : name;
-  if (!query) return null;
-  
-  // 2. Link OFICIAL de Google Maps para abrir en celular
+  if (!address || address.trim() === "") {
+     return (
+       <div className="w-full h-32 bg-[#1a1a2e] rounded-xl flex items-center justify-center text-white/50 text-xs font-bold border border-white/10 text-center px-4">
+         📍 Falta cargar la dirección de este salón en el Panel Maestro
+       </div>
+     );
+  }
+  const query = address;
   const gMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
-  
-  // 3. Link OFICIAL de Google Maps para el Iframe (sin API Key)
   const embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(query)}&t=m&z=15&output=embed&iwloc=near`;
   
   return (
     <div className="rounded-2xl overflow-hidden border border-white/10 relative" style={{ background: "#1a1a2e" }}>
-      <iframe 
-        title="map" 
-        width="100%" 
-        height="200" 
-        style={{ border: 0, display: "block", filter: "invert(90%) hue-rotate(180deg)" }} 
-        loading="lazy" 
-        referrerPolicy="no-referrer-when-downgrade" 
-        src={embedUrl} 
-      />
+      <iframe title="map" width="100%" height="200" style={{ border: 0, display: "block", filter: "invert(90%) hue-rotate(180deg)" }} loading="lazy" referrerPolicy="no-referrer-when-downgrade" src={embedUrl} />
       <a href={gMapsUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-3 text-xs font-black uppercase tracking-wider transition-colors" style={{ background: `${primary}22`, color: primary }}>
         <MapPin size={14} /> Abrir en Google Maps
       </a>
@@ -595,7 +587,6 @@ export const InvitePreview = ({ cfg }) => {
           )}
         </div>
 
-        {/* MODIFICADO: Aclaración Extra multilínea y personalizable */}
         {cfg.showGifts && cfg.showGiftNote && cfg.giftNoteText && (
           <div className="text-center pt-2">
             <span className="inline-block py-3 px-6 rounded-3xl font-bold border whitespace-pre-wrap leading-relaxed shadow-sm" 
@@ -1046,14 +1037,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
             {previewAnim && <OpeningAnimation cfg={cfg} onOpen={() => setPreviewAnim(false)} isPreview={true} />}
             
             <div className="h-full w-full overflow-y-auto bg-black pb-10 fd-sb" style={{ scrollBehavior: 'smooth' }}>
-              <InvitePreview cfg={cfg} />
-            </div>
-          </div>
-        </main>
-      </div>
-    </div>
-  );
-};
               <InvitePreview cfg={cfg} />
             </div>
           </div>
