@@ -390,14 +390,14 @@ const ParticleCanvas = ({ effect, primary }) => {
 };
 
 const MapEmbed = ({ name, address, primary }) => {
-  // Obligamos a que el mapa use SÓLO la dirección.
+  // Usamos estrictamente la dirección si existe. Si no hay dirección, intentamos con el nombre.
   const query = address ? address : name;
   if (!query) return null;
   
-  // Link directo para el botón (Abre la app en celulares)
+  // URL perfecta para el botón (Abre directo en la App de Maps del celular)
   const gMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
   
-  // Link oficial de Google Maps para Iframes
+  // URL oficial para el Iframe (el cuadradito del mapa en la página)
   const embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(query)}&t=m&z=15&output=embed&iwloc=near`;
   
   return (
