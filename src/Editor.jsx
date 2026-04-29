@@ -390,13 +390,14 @@ const ParticleCanvas = ({ effect, primary }) => {
 };
 
 const MapEmbed = ({ name, address, primary }) => {
-  const query = `${name || ""} ${address || ""}`.trim();
+  // Le pasamos a Google SOLO la dirección para que no se maree con nombres raros de salones
+  const query = address ? address : name;
   if (!query) return null;
-  const gMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+  
+  const gMapsUrl = `https://maps.google.com/maps?q=${encodeURIComponent(query)}`;
   
   return (
     <div className="rounded-2xl overflow-hidden border border-white/10 relative" style={{ background: "#1a1a2e" }}>
-      {/* ⚠️ CORRECCIÓN DE GOOGLE MAPS IFRAME ⚠️ */}
       <iframe 
         title="map" 
         width="100%" 
