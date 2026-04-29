@@ -96,23 +96,33 @@ export const TRANSITION_OPTS = [
 
 export const DEF_CONFIG = {
   theme:"violet", fontTitle:"'Pacifico', cursive", fontBody:"'DM Sans', sans-serif",
+  
   honoreeSize: 48, honoreeFont: "'Pacifico', cursive", honoreeColor: "#f0ecff",
   eventTypeSize: 11, eventTypeFont: "'DM Sans', sans-serif", eventTypeColor: "#7c3aed",
   dateSize: 18, locationSize: 18, titlesSize: 10, badgeSize: 14,
+  
   bg1:"#08060f", bg2:"#120d24", primary:"#7c3aed", card:"#1a1035", text:"#f0ecff", muted:"#9b8ec4",
   coverGradientIntensity: 70, showCoverGradient: true, particleEffect: "none", 
   openingAnimation: "envelope", animationDuration: 2, animationTransition: "fade",
   eventTypeEmoji:"✨", eventType:"Estás invitado al cumple de", honoreeName:"Valentina", badgeEmoji:"🎂", badgeText:"5 añitos",
+  
   coverPhoto:"https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=800&q=80",
-  useGiphyCover: false, showBanner:true, bannerTitle:"La festejada", bannerPhoto:"https://images.unsplash.com/photo-1545912452-8aea7e25a3d3?auto=format&fit=crop&w=400&q=80",
-  useGiphyBanner: false, showTheme:true, themeIcon:"🦕", themeLabel:"Temática", themeText:"Dinosaurios",
+  useGiphyCover: false, 
+  
+  showBanner:true, bannerTitle:"La festejada", bannerPhoto:"https://images.unsplash.com/photo-1545912452-8aea7e25a3d3?auto=format&fit=crop&w=400&q=80",
+  useGiphyBanner: false,
+  
+  showTheme:true, themeIcon:"🦕", themeLabel:"Temática", themeText:"Dinosaurios",
+  
   showDate:true, dateText:"Sábado 24 de Octubre", showTime:true, timeText:"16:00 a 20:00 hs", showCountdown: false, countdownDate:"",
   showLocation:true, locationName:"Aventura Kids", locationAddress:"Av. San Martín 1234", showParking:true, parkingType:"Estacionamiento público", customParking:"",
+  
   showItinerary:true, itinerary:[{ time:"16:00", title:"Bienvenida", sub:"Recepción de invitados" }],
   showMenu:true, menuItems:[{ emoji:"🍕", label:"Pizza Party" }, { emoji:"🥤", label:"Gaseosas" }],
   showDressCode:true, dressCodeIcon:"👗", dressCodeText:"Elegante Sport",
   showGifts:true, giftIcon:"🎁", giftLabel:"Regalos", giftText:"Lluvia de sobres", showGiftNote:false, giftNoteText:"", giftNoteColor: "#7c3aed", giftNoteSize: 11,
-  showGallery:false, galleryTitle:"Fotos", galleryPhotos:[], showVideo:false, videoUrl:"", videoTitle:"Mirá el video",
+  showGallery:false, galleryTitle:"Fotos", galleryPhotos:[],
+  showVideo:false, videoUrl:"", videoTitle:"Mirá el video",
   showVenueLogo:false, venueLogoUrl:"", venueName:"", venueLink:"", venueLinkType:"web",
   whatsappNumber:"5491123456789", whatsappMessage:"¡Hola! Confirmo mi asistencia para el evento 🎉",
 };
@@ -194,7 +204,12 @@ const FileUpload = ({ label, onChange, value }) => {
   return (
     <div className="mb-4 text-left">
       {label && <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{label}</label>}
-      <input type="file" accept="image/*" onChange={handleFile} className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 cursor-pointer" />
+      <input 
+        type="file" 
+        accept="image/*" 
+        onChange={handleFile} 
+        className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 cursor-pointer" 
+      />
       {value && <img src={value} alt="preview" className="mt-3 h-20 w-full object-cover rounded-xl border border-gray-200" />}
     </div>
   );
@@ -212,18 +227,26 @@ const EmojiPicker = ({ value, onSelect, list = GENERAL_EMOJIS }) => {
   const ref = useRef(null);
   
   useEffect(() => { 
-    const fn = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }; 
+    const fn = e => { 
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false); 
+    }; 
     document.addEventListener("mousedown", fn); 
     return () => document.removeEventListener("mousedown", fn); 
   }, []);
 
   return (
     <div ref={ref} className="relative z-50">
-      <button onClick={() => setOpen(!open)} type="button" className="w-12 h-12 rounded-xl bg-gray-50 border border-gray-200 text-2xl flex items-center justify-center hover:bg-gray-100 transition-colors cursor-pointer">{value}</button>
+      <button onClick={() => setOpen(!open)} type="button" className="w-12 h-12 rounded-xl bg-gray-50 border border-gray-200 text-2xl flex items-center justify-center hover:bg-gray-100 transition-colors cursor-pointer">
+        {value}
+      </button>
       {open && (
         <div className="absolute top-14 left-0 z-50 bg-white border border-gray-200 rounded-2xl p-3 w-64 shadow-2xl">
           <div className="grid grid-cols-6 gap-1 max-h-48 overflow-y-auto fd-sb">
-            {list.map(e => <button key={e} type="button" onClick={() => { onSelect(e); setOpen(false); }} className="p-2 text-xl hover:bg-gray-100 rounded-lg cursor-pointer">{e}</button>)}
+            {list.map(e => (
+              <button key={e} type="button" onClick={() => { onSelect(e); setOpen(false); }} className="p-2 text-xl hover:bg-gray-100 rounded-lg cursor-pointer">
+                {e}
+              </button>
+            ))}
           </div>
         </div>
       )}
@@ -406,7 +429,6 @@ const ParticleCanvas = ({ effect, primary }) => {
 };
 
 const MapEmbed = ({ name, address, primary }) => {
-  // Aseguramos que la dirección tenga prioridad
   const query = (address && address.trim() !== "") ? address : name;
   
   if (!query) {
@@ -417,8 +439,7 @@ const MapEmbed = ({ name, address, primary }) => {
      );
   }
   
-  // SOLUCIÓN OFICIAL GOOGLE MAPS (Ahora sí, con las variables correctas y sin cortar)
-  const gMapsUrl = `https://maps.google.com/maps?q=${encodeURIComponent(query)}`;
+  const gMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
   const embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(query)}&t=m&z=15&output=embed&iwloc=near`;
   
   return (
@@ -444,11 +465,17 @@ const VenueCard = ({ cfg, primary, text, muted, card }) => {
   const href = cfg.venueLinkType === "whatsapp" ? `https://wa.me/${cfg.venueLink}` : cfg.venueLink;
   return (
     <a href={href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4 rounded-2xl border border-white/5 no-underline transition-opacity hover:opacity-80" style={{ background: card }}>
-      {cfg.venueLogoUrl ? <img src={cfg.venueLogoUrl} alt="logo" className="w-14 h-14 rounded-xl object-contain border border-white/10 bg-white/5" /> : <div className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl" style={{ background: `${primary}22` }}>🏠</div>}
+      {cfg.venueLogoUrl ? (
+        <img src={cfg.venueLogoUrl} alt="logo" className="w-14 h-14 rounded-xl object-contain border border-white/10 bg-white/5" />
+      ) : (
+        <div className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl" style={{ background: `${primary}22` }}>🏠</div>
+      )}
       <div className="text-left flex-1">
         <p className="text-[9px] uppercase font-black tracking-widest mb-0.5" style={{ color: muted }}>Lugar del evento</p>
         <p className="font-bold text-sm" style={{ color: text }}>{cfg.venueName || "Ver lugar"}</p>
-        <p className="text-[10px] mt-0.5 font-bold" style={{ color: primary }}>{cfg.venueLinkType === "whatsapp" ? "📱 Consultar por WhatsApp" : "🌐 Ver sitio web"}</p>
+        <p className="text-[10px] mt-0.5 font-bold" style={{ color: primary }}>
+          {cfg.venueLinkType === "whatsapp" ? "📱 Consultar por WhatsApp" : "🌐 Ver sitio web"}
+        </p>
       </div>
     </a>
   );
@@ -457,9 +484,14 @@ const VenueCard = ({ cfg, primary, text, muted, card }) => {
 const VideoSection = ({ cfg, primary, text, muted, card }) => {
   if (!cfg.showVideo || !cfg.videoUrl) return null;
   const ytId = getYouTubeId(cfg.videoUrl);
+  
   return (
     <div className="rounded-3xl overflow-hidden border border-white/5" style={{ background: card }}>
-      {cfg.videoTitle && <p className="text-center text-[10px] font-black uppercase tracking-widest pt-4 pb-2" style={{ color: muted }}>{cfg.videoTitle}</p>}
+      {cfg.videoTitle && (
+        <p className="text-center text-[10px] font-black uppercase tracking-widest pt-4 pb-2" style={{ color: muted }}>
+          {cfg.videoTitle}
+        </p>
+      )}
       {ytId ? (
         <iframe width="100%" height="250" src={`https://www.youtube.com/embed/${ytId}?rel=0`} title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="block w-full"></iframe>
       ) : (
@@ -491,7 +523,9 @@ export const InvitePreview = ({ cfg }) => {
 
   const InfoCard = ({ icon: Icon, label, value, sub, fontSize }) => (
     <div className="flex items-center gap-4 p-4 rounded-2xl border border-white/5" style={{ background: cardC }}>
-      <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: primary }}><Icon size={20} color="white" /></div>
+      <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: primary }}>
+        <Icon size={20} color="white" />
+      </div>
       <div className="text-left">
         <p className="text-[9px] uppercase font-black tracking-widest mb-0.5" style={{ color: mutedC }}>{label}</p>
         <p className="font-bold" style={{ color: textC, fontFamily: cfg.fontBody, fontSize: `${fontSize}px` }}>{value}</p>
@@ -675,6 +709,7 @@ export const EditorScreen = ({ invitations, onSave }) => {
   return (
     <div className="h-screen flex flex-col bg-slate-950 overflow-hidden">
       
+      {/* ESTILOS INYECTADOS */}
       <style>{`
         .fd-sb::-webkit-scrollbar { width: 8px !important; height: 8px !important; }
         .fd-sb::-webkit-scrollbar-thumb { background: #b4aee8 !important; border-radius: 10px !important; }
@@ -853,7 +888,7 @@ export const EditorScreen = ({ invitations, onSave }) => {
             <div className="border-t border-gray-100 pt-4 mt-2">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">¿Usar GIF Animado de Fondo?</span>
-                <Toggle checked={cfg.useGiphyCover || false} onChange={v => update("useGiphyCover", v)} />
+                <Toggle checked={cfg.useGiphyCover || false} onChange={v => update("showCoverGradient", v)} />
               </div>
               {cfg.useGiphyCover ? (
                 <GiphySearch onSelect={url => update("coverPhoto", url)} placeholder="Buscar fondo (ej: spiderman, brillos...)" />
