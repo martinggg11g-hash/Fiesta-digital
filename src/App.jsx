@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, useParams } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useParams, Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { LoginScreen, DashboardScreen } from "./Master";
 import { EditorScreen, InvitePreview, DEF_CONFIG } from "./Editor";
@@ -49,26 +49,34 @@ const PublicInviteScreen = ({ invitations }) => {
 };
 
 export default function App() {
-  // === MAGIA ANTI-F5: Iniciar el estado leyendo el Local Storage ===
+  // === LEER LA MEMORIA (Busca primero en la memoria permanente, y si no, en la temporal) ===
   const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem("fiesta_user");
-    return savedUser ? JSON.parse(savedUser) : null;
+    const local = localStorage.getItem("fiesta_user");
+    const session = sessionStorage.getItem("fiesta_user");
+    return local ? JSON.parse(local) : (session ? JSON.parse(session) : null);
   });
 
   const [users, setUsers] = useState([]);
   const [invitations, setInvitations] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // === MAGIA ANTI-F5: Guardar al usuario en el Local Storage cada vez que inicia o cierra sesión ===
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem("fiesta_user", JSON.stringify(user));
+  // === FUNCIÓN DE LOGIN (Guarda en la memoria correcta según el checkbox) ===
+  const handleLogin = (userData, rememberMe) => {
+    setUser(userData);
+    if (rememberMe) {
+      localStorage.setItem("fiesta_user", JSON.stringify(userData));
     } else {
-      localStorage.removeItem("fiesta_user");
+      sessionStorage.setItem("fiesta_user", JSON.stringify(userData));
     }
-  }, [user]);
+  };
 
-  // CARGAR DATOS DESDE SUPABASE AL INICIAR
+  // === FUNCIÓN DE LOGOUT (Limpia las dos memorias por las dudas) ===
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem("fiesta_user");
+    sessionStorage.removeItem("fiesta_user");
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       const { data: salones } = await supabase.from('salones').select('*');
@@ -87,7 +95,6 @@ export default function App() {
   
   const handleUpdateUser = async (email, updateData) => {
     const { error: salonError } = await supabase.from('salones').update(updateData).eq('email', email);
-    
     if (!salonError) {
       if (updateData.address) {
         const { data: currentInvs } = await supabase.from('invitaciones').select('*').eq('salon_id', email);
@@ -98,16 +105,10 @@ export default function App() {
           }
         }
       }
-      
       setUsers(prev => prev.map(u => u.email === email ? {...u, ...updateData} : u));
-      
       const { data: freshInvs } = await supabase.from('invitaciones').select('*');
       if (freshInvs) {
-        setInvitations(freshInvs.map(i => ({ 
-          ...i, 
-          salonId: i.salon_id, 
-          internal_data: i.internal_data || {} 
-        })));
+        setInvitations(freshInvs.map(i => ({ ...i, salonId: i.salon_id, internal_data: i.internal_data || {} })));
       }
     }
   };
@@ -160,9 +161,9 @@ export default function App() {
       <GlobalStyles />
       <Router>
         <Routes>
-          <Route path="/" element={<LoginScreen onLogin={setUser} users={users} />} />
-          <Route path="/master" element={<LoginScreen isMaster={true} onLogin={setUser} users={users} />} />
-          <Route path="/dashboard" element={<DashboardScreen user={user} users={users} invitations={invitations} onCreateSalon={handleCreateSalon} onDeleteSalon={handleDeleteSalon} onCreateInv={handleCreateInv} onDeleteInv={handleDeleteInv} onUpdateUser={handleUpdateUser} onUpdateInternal={handleUpdateInternal} onLogout={() => setUser(null)} />} />
+          <Route path="/" element={user ? <Navigate to="/dashboard" /> : <LoginScreen onLogin={handleLogin} users={users} />} />
+          <Route path="/master" element={user ? <Navigate to="/dashboard" /> : <LoginScreen isMaster={true} onLogin={handleLogin} users={users} />} />
+          <Route path="/dashboard" element={user ? <DashboardScreen user={user} users={users} invitations={invitations} onCreateSalon={handleCreateSalon} onDeleteSalon={handleDeleteSalon} onCreateInv={handleCreateInv} onDeleteInv={handleDeleteInv} onUpdateUser={handleUpdateUser} onUpdateInternal={handleUpdateInternal} onLogout={handleLogout} /> : <Navigate to="/" />} />
           <Route path="/editor/:id" element={<EditorScreen invitations={invitations} onSave={handleSaveInv} />} />
           <Route path="/i/:salon/:invId" element={<PublicInviteScreen invitations={invitations} />} />
         </Routes>
