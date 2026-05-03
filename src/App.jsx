@@ -7,13 +7,14 @@ import { supabase } from "./supabase";
 import {
   PartyPopper, ShieldCheck, AlertCircle, LogOut, Plus, Trash2, Copy, CheckCircle2, Lock, 
   MapPin, CalendarClock, AlertTriangle, KeyRound, Building, Edit2, X, MessageCircle, ExternalLink, Eye, Search,
-  ChevronDown, Phone, Users, Utensils, Music, CreditCard, Clock, Settings, UserCheck, Calculator, Receipt
+  ChevronDown, Phone, Users, Utensils, Music, CreditCard, Clock, Settings, UserCheck, Calculator, Receipt,
+  Moon, Sun, Printer, ClipboardList
 } from "lucide-react";
 
 const slugify = (text) => text?.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') || 'salon';
 
 const formatDate = (dateStr) => {
-  if (!dateStr || typeof dateStr !== 'string') return 'Sin fecha';
+  if (!dateStr) return 'Sin fecha';
   if (dateStr.includes('-')) {
     const [y, m, d] = dateStr.split('-');
     return `${d}/${m}/${y}`;
@@ -27,20 +28,25 @@ export const Toast = ({ msg }) => (
   </div>
 );
 
-const Inp = ({ label, value, onChange, placeholder, type="text", multiline = false, className="", icon: Icon = null, prefix=null }) => (
-  <div className={`mb-4 text-left ${className}`}>
-    {label && <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{label}</label>}
-    <div className="relative flex items-center">
-      {Icon && <div className="absolute left-4 text-slate-400"><Icon size={16}/></div>}
-      {prefix && <span className="absolute left-4 text-slate-400 font-bold">{prefix}</span>}
-      {multiline ? (
-        <textarea value={value || ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={3} className={`w-full py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all resize-none ${(Icon || prefix) ? 'pl-11 pr-4' : 'px-4'}`} />
-      ) : (
-        <input type={type} value={value || ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} className={`w-full py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all ${(Icon || prefix) ? 'pl-11 pr-4' : 'px-4'}`} />
-      )}
+const Inp = ({ label, value, onChange, placeholder, type="text", multiline = false, className="", icon: Icon = null, prefix=null, isDark=false }) => {
+  const bgClass = isDark ? "bg-slate-700 border-slate-600 text-white focus:bg-slate-600" : "bg-gray-50 border-gray-200 text-slate-800 focus:bg-white";
+  const labelClass = isDark ? "text-slate-400" : "text-slate-500";
+  
+  return (
+    <div className={`mb-4 text-left ${className}`}>
+      {label && <label className={`block text-[10px] font-black uppercase tracking-widest mb-1.5 ${labelClass}`}>{label}</label>}
+      <div className="relative flex items-center">
+        {Icon && <div className="absolute left-4 text-slate-400"><Icon size={16}/></div>}
+        {prefix && <span className="absolute left-4 text-slate-400 font-bold">{prefix}</span>}
+        {multiline ? (
+          <textarea value={value || ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={3} className={`w-full py-3 rounded-xl text-sm focus:border-violet-400 outline-none transition-all resize-none ${bgClass} ${(Icon || prefix) ? 'pl-11 pr-4' : 'px-4'}`} />
+        ) : (
+          <input type={type} value={value || ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} className={`w-full py-3 rounded-xl text-sm focus:border-violet-400 outline-none transition-all ${bgClass} ${(Icon || prefix) ? 'pl-11 pr-4' : 'px-4'}`} />
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const Toggle = ({ checked, onChange }) => (
   <label className="relative w-11 h-6 flex-shrink-0 cursor-pointer inline-block">
@@ -52,7 +58,7 @@ const Toggle = ({ checked, onChange }) => (
 export const LoginScreen = ({ isMaster = false, onLogin, users }) => {
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
-  const [rememberMe, setRememberMe] = useState(false); 
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -118,6 +124,16 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
   const [activeCrmId, setActiveCrmId] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [newPassword, setNewPassword] = useState("");
+  
+  // MODO OSCURO
+  const [isDark, setIsDark] = useState(() => {
+    const saved = localStorage.getItem("fiesta_darkmode");
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  useEffect(() => {
+    localStorage.setItem("fiesta_darkmode", JSON.stringify(isDark));
+  }, [isDark]);
 
   const navigate = useNavigate();
   if (!user) return null;
@@ -127,57 +143,78 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
   const mySalons = users.filter(u => u.role === "salon");
   const notify = (m) => { setToast(m); setTimeout(() => setToast(""), 2500); };
 
-  // Salvavidas: Si alguna invitación no tiene título, usamos un texto por defecto para que el .toLowerCase() no rompa la app
-  const filteredInvs = myInvs.filter(inv => (inv.title || "Evento").toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredInvs = myInvs.filter(inv => (inv.title || "").toLowerCase().includes(searchTerm.toLowerCase()));
   const activeInv = myInvs.find(i => i.id === activeCrmId);
 
+  const themeBg = isDark ? "bg-slate-900" : "bg-[#f1f3f9]";
+  const themeNav = isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200";
+  const themeText = isDark ? "text-white" : "text-slate-800";
+  const themeCard = isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200/60";
+
+  // VISTA CRM DEL SALÓN
   if (!isOwner) {
     const salonInfo = users.find(u => u.email === user.email);
     const isManualBlocked = salonInfo?.payment_alert;
     
-    let alertMsg = null;
-
-    if (isManualBlocked) {
-      alertMsg = "Tu cuenta presenta un atraso en el pago. Por favor regularizá tu situación.";
-    }
-
     const handleChangePassword = () => {
-      if(!newPassword) return alert("Escribí una nueva contraseña");
+      if(!newPassword) return notify("Escribí una nueva contraseña");
       onUpdateUser(user.email, { pass: newPassword });
       setShowSettings(false);
       setNewPassword("");
       notify("¡Contraseña actualizada!");
     };
 
+    const handleResetPassword = () => {
+      if(window.confirm("¿Seguro querés volver a la clave por defecto 'salon1234'?")) {
+        onUpdateUser(user.email, { pass: "salon1234" });
+        setShowSettings(false);
+        notify("Clave reseteada a salon1234");
+      }
+    };
+
     return (
-      <div className="min-h-screen bg-[#f1f3f9] pb-20 text-left">
-        <nav className="h-20 bg-white border-b border-slate-200 px-6 sm:px-8 flex items-center justify-between sticky top-0 z-40">
+      <div className={`min-h-screen pb-20 text-left transition-colors duration-300 ${themeBg}`}>
+        
+        <style>{`
+          @media print {
+            body * { visibility: hidden; }
+            #crm-print-area, #crm-print-area * { visibility: visible; color: black !important; }
+            #crm-print-area { position: absolute; left: 0; top: 0; width: 100%; background: white !important; padding: 20px; }
+            .print-hide { display: none !important; }
+            input, select, textarea { border: none !important; background: transparent !important; resize: none !important; }
+          }
+        `}</style>
+
+        <nav className={`h-20 border-b px-6 sm:px-8 flex items-center justify-between sticky top-0 z-40 transition-colors duration-300 ${themeNav}`}>
           <div className="flex items-center gap-4">
-             <div className="w-10 h-10 bg-violet-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-violet-200"><Building size={20}/></div>
-             <div className="font-black text-xl tracking-tight text-slate-800">{user.name} <span className="text-violet-500 text-sm opacity-60 ml-2 hidden sm:inline-block">| Panel de Gestión</span></div>
+             <div className="w-10 h-10 bg-violet-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-violet-200/20"><Building size={20}/></div>
+             <div className={`font-black text-xl tracking-tight ${themeText}`}>{user.name} <span className="text-violet-500 text-sm opacity-60 ml-2 hidden sm:inline-block">| Panel de Gestión</span></div>
           </div>
-          <div className="flex items-center gap-4">
-             <button onClick={() => setShowSettings(true)} className="w-10 h-10 bg-slate-50 text-slate-600 rounded-xl flex items-center justify-center hover:bg-slate-200 transition-all cursor-pointer"><Settings size={18}/></button>
-             <button onClick={() => { onLogout(); navigate("/"); }} className="w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center hover:bg-red-100 transition-all cursor-pointer"><LogOut size={18}/></button>
+          <div className="flex items-center gap-3">
+             <button onClick={() => setIsDark(!isDark)} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${isDark ? 'bg-slate-700 text-yellow-400 hover:bg-slate-600' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
+               {isDark ? <Sun size={18}/> : <Moon size={18}/>}
+             </button>
+             <button onClick={() => setShowSettings(true)} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}><Settings size={18}/></button>
+             <button onClick={() => { onLogout(); navigate("/"); }} className="w-10 h-10 bg-red-500/10 text-red-500 rounded-xl flex items-center justify-center hover:bg-red-500/20 transition-all cursor-pointer"><LogOut size={18}/></button>
           </div>
         </nav>
         
-        {alertMsg && (
+        {isManualBlocked && (
           <div className="bg-red-500 text-white p-3 text-center font-bold text-xs flex items-center justify-center gap-3">
-            <AlertTriangle size={16}/> {alertMsg}
+            <AlertTriangle size={16}/> Tu cuenta presenta un atraso en el pago. Por favor regularizá tu situación.
           </div>
         )}
 
         <main className="max-w-7xl mx-auto p-6 md:p-12">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
             <div>
-              <h1 className="text-4xl font-black text-slate-900 tracking-tight">Mis Eventos</h1>
-              <p className="text-slate-500 mt-1 font-medium italic">Gestioná tus invitaciones y clientes en tiempo real.</p>
+              <h1 className={`text-4xl font-black tracking-tight ${themeText}`}>Mis Eventos</h1>
+              <p className="text-slate-500 mt-1 font-medium italic">Gestioná tus invitaciones y la logística en tiempo real.</p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
                <div className="relative group flex-1 md:flex-none">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-violet-500 transition-colors" size={18}/>
-                  <input className="w-full md:w-64 pl-11 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-medium outline-none transition-all focus:ring-2 focus:ring-violet-200" placeholder="Buscar evento..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                  <input className={`w-full md:w-64 pl-11 pr-4 py-3.5 border rounded-2xl text-sm font-medium outline-none transition-all focus:ring-2 focus:ring-violet-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500' : 'bg-white border-slate-200 text-slate-800'}`} placeholder="Buscar evento..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                </div>
                <button onClick={async () => { const id = await onCreateInv(user.email, user.name); navigate(`/editor/${id}`); }} className="px-8 py-3.5 bg-violet-600 hover:bg-violet-700 text-white rounded-2xl font-black text-sm shadow-xl flex items-center gap-3 transition-all active:scale-95 cursor-pointer">
                  <Plus size={20}/> Nuevo Evento
@@ -189,29 +226,34 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
             {filteredInvs.map(inv => {
               const data = inv.internal_data || {};
               const pStatus = data.paymentStatus || 'Pendiente';
+              const eStatus = data.eventStatus || 'Nuevo';
               const statusColors = { 'Pendiente': 'bg-red-100 text-red-700', 'Seña / Parcial': 'bg-amber-100 text-amber-700', 'Pagado Total': 'bg-green-100 text-green-700' };
+              const evColors = { 'Nuevo': 'bg-blue-100 text-blue-700', 'Confirmado': 'bg-violet-100 text-violet-700', 'Finalizado': 'bg-slate-200 text-slate-700', 'Cancelado': 'bg-red-200 text-red-800' };
 
               return (
-                <div key={inv.id} className="bg-white rounded-[2.5rem] border border-slate-200/60 overflow-hidden shadow-sm hover:shadow-xl transition-all group flex flex-col h-full border-b-4 border-b-violet-500/10">
+                <div key={inv.id} className={`rounded-[2.5rem] border overflow-hidden shadow-sm hover:shadow-xl transition-all group flex flex-col h-full border-b-4 border-b-violet-500/30 ${themeCard}`}>
                   <div className="h-44 relative overflow-hidden">
                     <img src={inv.config?.coverPhoto || "https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=800&q=80"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" alt="Event" />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/30 to-transparent" />
+                    <div className="absolute top-4 left-4 flex gap-2">
+                       <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest backdrop-blur-md shadow-sm ${evColors[eStatus] || evColors['Nuevo']}`}>{eStatus}</span>
+                    </div>
                     <div className="absolute bottom-4 left-5 right-5 flex justify-between items-end">
                        <div>
-                          <p className="text-white/70 text-[10px] font-black uppercase tracking-widest mb-1">{formatDate(data.internalDate)} {data.internalTime ? `• ${data.internalTime} hs` : ''}</p>
+                          <p className="text-white/70 text-[10px] font-black uppercase tracking-widest mb-1">{data.internalDate ? formatDate(data.internalDate) : 'Sin fecha'} {data.internalTime ? `• ${data.internalTime} hs` : ''}</p>
                           <h3 className="font-black text-xl text-white truncate max-w-[200px]">{data.internalHonoree || inv.config?.honoreeName || inv.title}</h3>
                        </div>
-                       <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border backdrop-blur-md ${statusColors[pStatus] || statusColors['Pendiente']}`}>{pStatus}</span>
+                       <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border border-white/20 backdrop-blur-md shadow-sm ${statusColors[pStatus] || statusColors['Pendiente']}`}>{pStatus}</span>
                     </div>
-                    <button onClick={() => { if(window.confirm("¿Seguro?")) onDeleteInv(inv.id); }} className="absolute top-4 right-4 w-9 h-9 bg-red-500/90 text-white rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-red-600 shadow-lg cursor-pointer"><Trash2 size={16}/></button>
+                    <button onClick={() => { if(window.confirm("¿Borrar definitivamente este evento?")) onDeleteInv(inv.id); }} className="absolute top-4 right-4 w-9 h-9 bg-red-500/90 text-white rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-red-600 shadow-lg cursor-pointer"><Trash2 size={16}/></button>
                   </div>
                   <div className="p-6">
                     <div className="flex gap-2 mb-4">
-                      <button onClick={() => navigate(`/editor/${inv.id}`)} className="flex-1 py-3.5 bg-slate-900 hover:bg-black text-white rounded-2xl font-black text-[11px] tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer shadow-md"><Edit2 size={14}/> DISEÑAR</button>
-                      <button onClick={() => window.open(`${window.location.origin}/i/${slugify(user.name)}/${inv.id}`)} className="w-12 h-12 bg-violet-50 text-violet-600 rounded-2xl flex items-center justify-center hover:bg-violet-100 transition-all border border-violet-100 shadow-sm cursor-pointer"><Eye size={18}/></button>
-                      <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/i/${slugify(user.name)}/${inv.id}`); notify("¡Link Copiado!"); }} className="w-12 h-12 bg-slate-50 text-slate-600 border border-slate-200 rounded-2xl flex items-center justify-center hover:bg-slate-100 transition-all shadow-sm cursor-pointer"><Copy size={18}/></button>
+                      <button onClick={() => navigate(`/editor/${inv.id}`)} className="flex-1 py-3.5 bg-violet-600 hover:bg-violet-700 text-white rounded-2xl font-black text-[11px] tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer shadow-md"><Edit2 size={14}/> DISEÑAR</button>
+                      <button onClick={() => window.open(`${window.location.origin}/i/${slugify(user.name)}/${inv.id}`)} className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all cursor-pointer ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}><Eye size={18}/></button>
+                      <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/i/${slugify(user.name)}/${inv.id}`); notify("¡Link Copiado!"); }} className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all cursor-pointer ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}><Copy size={18}/></button>
                     </div>
-                    <button onClick={() => setActiveCrmId(inv.id)} className="w-full py-3.5 rounded-2xl font-black text-xs flex justify-center items-center gap-2 border bg-white text-violet-600 border-violet-200 hover:bg-violet-50 shadow-sm cursor-pointer"><Lock size={14}/> ABRIR FICHA (CRM)</button>
+                    <button onClick={() => setActiveCrmId(inv.id)} className={`w-full py-3.5 rounded-2xl font-black text-xs flex justify-center items-center gap-2 border shadow-sm cursor-pointer transition-colors ${isDark ? 'bg-slate-800 border-slate-600 text-slate-300 hover:bg-slate-700' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}><Lock size={14}/> ABRIR FICHA (CRM)</button>
                   </div>
                 </div>
               );
@@ -219,73 +261,107 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
           </div>
         </main>
         
+        {/* MODAL CRM */}
         {activeCrmId && activeInv && (
-          <div className="fixed inset-0 z-[100] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-[2rem] overflow-hidden flex flex-col shadow-2xl anim-pop">
-              <div className="px-6 py-4 bg-slate-50 border-b flex justify-between items-center shrink-0">
-                 <h2 className="font-black text-xl text-slate-800 flex items-center gap-2"><Lock className="text-violet-500" size={20}/> Gestión Interna</h2>
-                 <button onClick={() => setActiveCrmId(null)} className="w-10 h-10 bg-white border rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-100 cursor-pointer shadow-sm"><X size={20}/></button>
+          <div className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+            <div id="crm-print-area" className={`w-full max-w-4xl max-h-[95vh] rounded-[2rem] overflow-hidden flex flex-col shadow-2xl anim-pop ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
+              
+              <div className={`px-6 py-4 border-b flex justify-between items-center shrink-0 print-hide ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                 <h2 className={`font-black text-xl flex items-center gap-2 ${themeText}`}><ClipboardList className="text-violet-500" size={20}/> Ficha de Logística</h2>
+                 <div className="flex gap-3">
+                   <button onClick={() => window.print()} className="px-4 py-2 bg-slate-200 text-slate-700 hover:bg-slate-300 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer"><Printer size={14}/> Exportar PDF</button>
+                   <button onClick={() => setActiveCrmId(null)} className="w-10 h-10 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-full flex items-center justify-center transition-colors cursor-pointer"><X size={20}/></button>
+                 </div>
               </div>
-              <div className="p-6 sm:p-8 overflow-y-auto fd-sb flex-1 bg-white">
+
+              <div className="p-6 sm:p-8 overflow-y-auto fd-sb flex-1">
+                
                 <div className="mb-8">
-                   <h3 className="text-xs font-black text-violet-600 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2 flex items-center gap-2"><PartyPopper size={14}/> Datos Principales</h3>
-                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <Inp label="Tipo de Evento" value={activeInv.internal_data.eventType || ''} onChange={v => onUpdateInternal(activeInv.id, 'eventType', v)} />
-                      <Inp label="Nombre Agasajado" value={activeInv.internal_data.internalHonoree || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalHonoree', v)} />
-                      <Inp label="Motivo" value={activeInv.internal_data.eventReason || ''} onChange={v => onUpdateInternal(activeInv.id, 'eventReason', v)} />
-                   </div>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Inp label="Fecha (Día/Mes/Año)" type="text" placeholder="Ej: 24/10/2026" icon={CalendarClock} value={activeInv.internal_data.internalDate || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalDate', v)} />
-                      <Inp label="Horario (24hs)" type="text" placeholder="Ej: 14:00" icon={Clock} value={activeInv.internal_data.internalTime || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalTime', v)} />
-                   </div>
-                </div>
-                <div className="mb-8">
-                   <h3 className="text-xs font-black text-blue-500 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2 flex items-center gap-2"><UserCheck size={14}/> Cliente</h3>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Inp label="Nombre Cliente" value={activeInv.internal_data.clientName || ''} onChange={v => onUpdateInternal(activeInv.id, 'clientName', v)} />
-                      <div className="flex gap-2 items-end">
-                         <Inp label="WhatsApp Cliente" className="flex-1 !mb-0" value={activeInv.internal_data.clientPhone || ''} onChange={v => onUpdateInternal(activeInv.id, 'clientPhone', v)} />
-                         <button onClick={() => window.open(`https://wa.me/${activeInv.internal_data.clientPhone}`)} className="h-11 px-4 bg-green-500 text-white rounded-xl flex items-center justify-center cursor-pointer shadow-md"><MessageCircle size={18}/></button>
+                   <h3 className="text-xs font-black text-violet-500 uppercase tracking-widest mb-4 border-b border-slate-200/20 pb-2 flex items-center gap-2"><PartyPopper size={14}/> 1. Detalles del Evento</h3>
+                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div className="md:col-span-2"><Inp label="Nombre del Agasajado/s" value={activeInv.internal_data.internalHonoree || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalHonoree', v)} isDark={isDark} /></div>
+                      <Inp label="Tipo de Evento" placeholder="Ej: Cumpleaños, Boda" value={activeInv.internal_data.eventType || ''} onChange={v => onUpdateInternal(activeInv.id, 'eventType', v)} isDark={isDark} />
+                      <div>
+                        <label className={`block text-[10px] font-black uppercase mb-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Estado</label>
+                        <select className={`w-full py-3 px-4 rounded-xl text-sm font-bold outline-none cursor-pointer border ${isDark ? 'bg-slate-800 text-white border-slate-700' : 'bg-white text-slate-800 border-slate-200'}`} value={activeInv.internal_data.eventStatus || 'Nuevo'} onChange={e => onUpdateInternal(activeInv.id, 'eventStatus', e.target.value)}>
+                           <option value="Nuevo">🔵 Nuevo / Borrador</option>
+                           <option value="Confirmado">🟣 Confirmado</option>
+                           <option value="Finalizado">⚪ Finalizado</option>
+                           <option value="Cancelado">🔴 Cancelado</option>
+                        </select>
                       </div>
                    </div>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                      <Inp label="Fecha Confirmada" type="date" icon={CalendarClock} value={activeInv.internal_data.internalDate || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalDate', v)} isDark={isDark} />
+                      <Inp label="Horario del Salón (24hs)" type="text" placeholder="Ej: 14:00 a 20:00" icon={Clock} value={activeInv.internal_data.internalTime || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalTime', v)} isDark={isDark} />
+                   </div>
                 </div>
+
                 <div className="mb-8">
-                   <h3 className="text-xs font-black text-green-600 uppercase tracking-widest mb-4 border-b border-slate-100 pb-2 flex items-center gap-2"><Receipt size={14}/> Finanzas</h3>
-                   <div className="p-5 bg-green-50/50 rounded-2xl border border-green-100 grid grid-cols-1 md:grid-cols-4 gap-4">
+                   <h3 className="text-xs font-black text-blue-500 uppercase tracking-widest mb-4 border-b border-slate-200/20 pb-2 flex items-center gap-2"><UserCheck size={14}/> 2. Datos del Cliente</h3>
+                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <Inp label="Nombre Completo" value={activeInv.internal_data.clientName || ''} onChange={v => onUpdateInternal(activeInv.id, 'clientName', v)} isDark={isDark} />
+                      <div className="flex gap-2 items-end">
+                         <Inp label="WhatsApp" placeholder="54911..." className="flex-1 !mb-0" value={activeInv.internal_data.clientPhone || ''} onChange={v => onUpdateInternal(activeInv.id, 'clientPhone', v)} isDark={isDark} />
+                         <button onClick={() => window.open(`https://wa.me/${activeInv.internal_data.clientPhone}`)} className="h-[46px] px-4 bg-green-500 text-white rounded-xl flex items-center justify-center cursor-pointer shadow-md print-hide"><MessageCircle size={18}/></button>
+                      </div>
+                      <Inp label="Cantidad de Invitados (Aprox)" type="number" placeholder="Ej: 80" value={activeInv.internal_data.guestCount || ''} onChange={v => onUpdateInternal(activeInv.id, 'guestCount', v)} isDark={isDark} />
+                   </div>
+                </div>
+
+                <div className="mb-8">
+                   <h3 className="text-xs font-black text-amber-500 uppercase tracking-widest mb-4 border-b border-slate-200/20 pb-2 flex items-center gap-2"><ClipboardList size={14}/> 3. Logística y Servicios</h3>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Inp label="Servicios Solicitados" placeholder="Ej: DJ, Fotógrafo, Show de Magia..." multiline value={activeInv.internal_data.requestedServices || ''} onChange={v => onUpdateInternal(activeInv.id, 'requestedServices', v)} isDark={isDark} />
+                      <Inp label="Menús Especiales / Alergias" placeholder="Ej: 2 Celíacos, 1 Vegano..." multiline value={activeInv.internal_data.specialMenus || ''} onChange={v => onUpdateInternal(activeInv.id, 'specialMenus', v)} isDark={isDark} />
+                   </div>
+                   <Inp label="Notas Internas / Observaciones" placeholder="Anotaciones privadas del salón sobre este evento..." multiline className="mt-2" value={activeInv.internal_data.internalNotes || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalNotes', v)} isDark={isDark} />
+                </div>
+
+                <div className="mb-8">
+                   <h3 className="text-xs font-black text-green-500 uppercase tracking-widest mb-4 border-b border-slate-200/20 pb-2 flex items-center gap-2"><Receipt size={14}/> 4. Finanzas</h3>
+                   <div className={`p-5 rounded-2xl border grid grid-cols-1 md:grid-cols-4 gap-4 ${isDark ? 'bg-green-500/10 border-green-500/20' : 'bg-green-50 border-green-200'}`}>
                       <div>
-                        <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5">Estado</label>
-                        <select className="w-full py-3 px-4 rounded-xl text-slate-800 bg-white border border-gray-200 text-sm focus:border-green-400 outline-none cursor-pointer font-bold" value={activeInv.internal_data.paymentStatus || 'Pendiente'} onChange={e => onUpdateInternal(activeInv.id, 'paymentStatus', e.target.value)}>
+                        <label className={`block text-[10px] font-black uppercase mb-1.5 ${isDark ? 'text-green-400' : 'text-slate-500'}`}>Estado de Pago</label>
+                        <select className={`w-full py-3 px-4 rounded-xl text-sm font-bold outline-none cursor-pointer border ${isDark ? 'bg-slate-800 text-white border-green-900' : 'bg-white text-slate-800 border-green-200'}`} value={activeInv.internal_data.paymentStatus || 'Pendiente'} onChange={e => onUpdateInternal(activeInv.id, 'paymentStatus', e.target.value)}>
                            <option value="Pendiente">🔴 Pendiente</option>
-                           <option value="Seña / Parcial">🟡 Seña / Parcial</option>
+                           <option value="Seña / Parcial">🟡 Seña Adelantada</option>
                            <option value="Pagado Total">🟢 Pagado Total</option>
                         </select>
                       </div>
-                      <Inp label="Presupuesto Total" type="number" prefix="$" value={activeInv.internal_data.totalBudget || ''} onChange={v => onUpdateInternal(activeInv.id, 'totalBudget', v)} />
-                      <Inp label="Abonado / Seña" type="number" prefix="$" value={activeInv.internal_data.paymentAmount || ''} onChange={v => onUpdateInternal(activeInv.id, 'paymentAmount', v)} />
+                      <Inp label="Presupuesto Total" type="number" prefix="$" value={activeInv.internal_data.totalBudget || ''} onChange={v => onUpdateInternal(activeInv.id, 'totalBudget', v)} isDark={isDark} />
+                      <Inp label="Abonado / Seña" type="number" prefix="$" value={activeInv.internal_data.paymentAmount || ''} onChange={v => onUpdateInternal(activeInv.id, 'paymentAmount', v)} isDark={isDark} />
                       <div>
-                         <label className="block text-[10px] font-black text-slate-400 uppercase mb-1.5">Saldo Restante</label>
-                         <div className="w-full py-3 px-4 rounded-xl bg-white border border-gray-200 text-sm font-black text-slate-700 flex items-center gap-1">
-                            <span className="text-slate-400">$</span> {(Number(activeInv.internal_data.totalBudget || 0) - Number(activeInv.internal_data.paymentAmount || 0)).toLocaleString('es-AR')}
+                         <label className={`block text-[10px] font-black uppercase mb-1.5 ${isDark ? 'text-green-400' : 'text-slate-500'}`}>Saldo Restante</label>
+                         <div className={`w-full py-3 px-4 rounded-xl text-sm font-black flex items-center gap-1 border ${isDark ? 'bg-slate-800 border-green-900 text-white' : 'bg-white border-green-200 text-slate-800'}`}>
+                            <span className="text-slate-400 opacity-50">$</span> {(Number(activeInv.internal_data.totalBudget || 0) - Number(activeInv.internal_data.paymentAmount || 0)).toLocaleString('es-AR')}
                          </div>
                       </div>
                    </div>
                 </div>
+
               </div>
-              <div className="px-6 py-4 bg-slate-50 border-t flex justify-end">
-                 <button onClick={() => setActiveCrmId(null)} className="px-8 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-black text-sm shadow-md cursor-pointer">CERRAR FICHA</button>
+              <div className={`px-6 py-4 flex justify-end print-hide ${isDark ? 'bg-slate-800 border-t border-slate-700' : 'bg-slate-50 border-t border-slate-200'}`}>
+                 <button onClick={() => setActiveCrmId(null)} className="px-8 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-black text-sm shadow-md cursor-pointer transition-colors">CERRAR FICHA</button>
               </div>
             </div>
           </div>
         )}
 
+        {/* MODAL AJUSTES DE SEGURIDAD */}
         {showSettings && (
-          <div className="fixed inset-0 z-[110] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-             <div className="bg-white w-full max-w-sm rounded-[2rem] p-8 shadow-2xl relative anim-pop text-center">
-                <button onClick={() => setShowSettings(false)} className="absolute top-4 right-4 w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 cursor-pointer"><X size={16}/></button>
-                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-600"><KeyRound size={28}/></div>
+          <div className="fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+             <div className={`w-full max-w-sm rounded-[2rem] p-8 shadow-2xl relative anim-pop text-center ${isDark ? 'bg-slate-800 text-white' : 'bg-white text-slate-800'}`}>
+                <button onClick={() => setShowSettings(false)} className={`absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-colors ${isDark ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-100 hover:bg-slate-200'}`}><X size={16}/></button>
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isDark ? 'bg-slate-700 text-violet-400' : 'bg-violet-100 text-violet-600'}`}><KeyRound size={28}/></div>
                 <h2 className="text-xl font-black mb-2">Mi Seguridad</h2>
-                <Inp label="Nueva Contraseña" type="text" placeholder="..." value={newPassword} onChange={setNewPassword} />
-                <button onClick={handleChangePassword} className="w-full py-3 mt-2 bg-slate-900 hover:bg-black text-white rounded-xl font-black text-sm transition-transform active:scale-95 cursor-pointer">GUARDAR CLAVE</button>
+                <Inp label="Escribí Nueva Contraseña" type="text" placeholder="Min. 6 caracteres..." value={newPassword} onChange={setNewPassword} isDark={isDark} />
+                <button onClick={handleChangePassword} className="w-full py-3 mt-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-black text-sm transition-transform active:scale-95 cursor-pointer shadow-md">GUARDAR CLAVE</button>
+                
+                <div className="mt-6 pt-6 border-t border-slate-200/20">
+                  <p className="text-[10px] text-slate-400 mb-2 font-bold uppercase">¿Olvidaste tu clave anterior?</p>
+                  <button onClick={handleResetPassword} className="w-full py-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-xl font-bold text-xs transition-colors cursor-pointer border border-red-500/20">BLANQUEAR CLAVE POR DEFECTO</button>
+                </div>
              </div>
           </div>
         )}
@@ -294,7 +370,7 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
     );
   }
 
-  // VISTA MASTER (ADMIN)
+  // VISTA MASTER (ADMIN - SOLO DUEÑO ORIGINAL)
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState("create"); 
   const [editingEmail, setEditingEmail] = useState("");
@@ -327,11 +403,11 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
     <div className="min-h-screen bg-slate-50 text-left">
       <nav className="h-16 bg-slate-950 px-6 flex items-center justify-between sticky top-0 z-40 text-white">
         <div className="font-extrabold text-xl flex items-center gap-3"><ShieldCheck className="text-violet-400"/> Panel Maestro</div>
-        <button onClick={() => { onLogout(); navigate("/master"); }} className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center hover:bg-white/20 transition-colors"><LogOut size={18}/></button>
+        <button onClick={() => { onLogout(); navigate("/master"); }} className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center hover:bg-white/20 transition-colors cursor-pointer"><LogOut size={18}/></button>
       </nav>
       <div className="max-w-7xl mx-auto p-6 sm:p-12">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-12">
-          <div><h1 className="text-4xl font-black text-slate-900 tracking-tight tracking-tight">Gestión de Salones</h1><p className="text-slate-500 mt-2 font-medium font-medium">Administrando {mySalons.length} clientes activos</p></div>
+          <div><h1 className="text-4xl font-black text-slate-900 tracking-tight">Gestión de Salones</h1><p className="text-slate-500 mt-2 font-medium">Administrando {mySalons.length} clientes activos</p></div>
           <button onClick={openCreateModal} className="px-8 py-4 bg-violet-600 hover:bg-violet-700 text-white rounded-[1.5rem] font-black text-sm shadow-xl flex items-center gap-3 transition-transform active:scale-95 cursor-pointer"><Plus size={20}/> Nuevo Salón</button>
         </div>
         <div className="bg-white rounded-3xl shadow-sm border overflow-hidden">
@@ -373,7 +449,7 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                   <Inp label="Email" value={fEmail} onChange={setFEmail} className={modalMode === 'edit' ? 'opacity-50 pointer-events-none' : ''} />
                   {modalMode === 'create' && <Inp label="Contraseña" value={fPass} onChange={setFPass} type="password" />}
                   <Inp label="Ubicación Google Maps" value={fAddress} onChange={setFAddress} />
-                  <div className="flex gap-4"><Inp label="Próximo Vencimiento" type="text" placeholder="Ej: 10/05/2026" icon={CalendarClock} value={fPayDate} onChange={setFPayDate} className="flex-1" /><div className="flex flex-col items-center"><span className="text-[10px] font-black uppercase mb-2 text-red-500">Bloqueo</span><Toggle checked={fAlert} onChange={setFAlert} /></div></div>
+                  <div className="flex gap-4"><Inp label="Próximo Vencimiento" type="date" icon={CalendarClock} value={fPayDate} onChange={setFPayDate} className="flex-1" /><div className="flex flex-col items-center"><span className="text-[10px] font-black uppercase mb-2 text-red-500">Bloqueo</span><Toggle checked={fAlert} onChange={setFAlert} /></div></div>
                 </>
               )}
               {modalMode === 'password' && <Inp label="Escribí Nueva Contraseña" value={fPass} onChange={setFPass} />}
@@ -398,7 +474,7 @@ const GlobalStyles = () => {
       const s = document.createElement("style");
       s.id = "fd-global";
       s.textContent = `
-        @import url('https://fonts.googleapis.com/css2?family=Amatic+SC:wght@400;700&family=Bebas+Neue&family=Caveat:wght@600;700&family=Cinzel:wght@400;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Dancing+Script:wght@400;600;700&family=Montserrat:wght@400;700;900&family=Nunito:wght@400;600;700&family=Oswald:wght@400;500;700&family=Pacifico&family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Syne:wght@400;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Pacifico&family=Caveat:wght@600;700&family=Playfair+Display:ital,wght@0,700;1,600&display=swap');
         body { margin: 0; padding: 0; background: #f8f7ff; font-family: 'DM Sans', sans-serif; -webkit-font-smoothing: antialiased; }
         .fd-sb::-webkit-scrollbar { width: 8px !important; height: 8px !important; }
         .fd-sb::-webkit-scrollbar-thumb { background: #b4aee8 !important; border-radius: 10px !important; }
@@ -430,7 +506,7 @@ const PublicInviteScreen = ({ invitations }) => {
 };
 
 export default function App() {
-  // === LECTURA SEGURA DE MEMORIA (EVITA PANTALLA BLANCA) ===
+  // === LEER LA MEMORIA ===
   const [user, setUser] = useState(() => {
     try {
       const local = localStorage.getItem("fiesta_user");
@@ -439,7 +515,6 @@ export default function App() {
       if (session) return JSON.parse(session);
       return null;
     } catch (e) {
-      // Si la memoria tiene datos corruptos, la limpiamos para no crashear
       localStorage.removeItem("fiesta_user");
       sessionStorage.removeItem("fiesta_user");
       return null;
