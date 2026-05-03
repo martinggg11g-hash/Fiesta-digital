@@ -61,7 +61,6 @@ const SelectInp = ({ label, value, onChange, options, className="" }) => (
   </div>
 );
 
-// NUEVO COMPONENTE: Agrupa Fuente, Color y Tamaño pegado al input
 const TypoControl = ({ label, fontVal, onFont, colorVal, onColor, sizeVal, onSize, minSize=10, maxSize=80 }) => (
   <div className="bg-gray-50/70 p-3 rounded-xl border border-gray-100 shadow-sm mb-5 relative overflow-hidden">
     <div className="absolute left-0 top-0 bottom-0 w-1 bg-violet-200" />
@@ -81,6 +80,7 @@ const TypoControl = ({ label, fontVal, onFont, colorVal, onColor, sizeVal, onSiz
   </div>
 );
 
+// NUEVO BOTÓN TRADUCIDO "SUBIR IMAGEN"
 const FileUpload = ({ label, onChange, value }) => {
   const [uploading, setUploading] = useState(false);
   const handleFile = async (e) => {
@@ -100,8 +100,13 @@ const FileUpload = ({ label, onChange, value }) => {
     <div className="mb-4 text-left relative">
       {label && <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{label}</label>}
       <div className="relative">
-        <input type="file" accept="image/*" onChange={handleFile} disabled={uploading} className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 cursor-pointer disabled:opacity-50" />
-        {uploading && <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center rounded-xl z-10 border border-violet-200"><span className="text-xs font-bold text-violet-600 flex items-center gap-2"><Loader2 size={14} className="animate-spin" /> Subiendo...</span></div>}
+        <label className={`flex items-center justify-center w-full py-3 px-4 rounded-xl text-xs font-bold border transition-all cursor-pointer ${uploading ? 'bg-violet-100 border-violet-200 text-violet-400 cursor-not-allowed' : 'bg-white border-violet-200 text-violet-600 hover:bg-violet-50 hover:border-violet-300 shadow-sm'}`}>
+          <span className="flex items-center gap-2">
+            {uploading ? <><Loader2 size={14} className="animate-spin" /> Subiendo...</> : <>📸 Subir imagen de tu galería</>}
+          </span>
+          {/* El input oculto para que no se lea en inglés */}
+          <input type="file" accept="image/*" onChange={handleFile} disabled={uploading} className="hidden" />
+        </label>
       </div>
       {value && !uploading && (
         <div className="relative mt-3 group">
@@ -161,7 +166,7 @@ const Acc = ({ title, icon: Icon, children, defaultOpen = false, iconColor = "#7
 };
 
 /* ============================================================================
-   PANTALLA DEL EDITOR (EL PANEL QUE USA EL SALÓN)
+   PANTALLA DEL EDITOR PRINCIPAL
 ============================================================================ */
 export const EditorScreen = ({ invitations, onSave }) => {
   const { id } = useParams();
@@ -213,16 +218,14 @@ export const EditorScreen = ({ invitations, onSave }) => {
           <button onClick={() => setMobileView("preview")} className={`px-6 py-2.5 rounded-full text-[11px] font-black tracking-widest uppercase transition-all duration-300 flex items-center gap-2 ${mobileView === "preview" ? 'bg-violet-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>👀 Previa</button>
         </div>
 
-        {/* PANEL LATERAL DE CONTROLES (JERARQUÍA VISUAL EXACTA) */}
+        {/* PANEL LATERAL DE CONTROLES */}
         <aside className={`w-[100vw] md:w-[420px] h-full shrink-0 bg-[#f8f7ff] overflow-y-auto p-6 pb-24 md:pb-6 border-r border-gray-100 z-10 fd-sb ${mobileView === 'editor' ? 'block' : 'hidden md:block'}`}>
             
           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 text-left">Flujo de Edición</h3>
 
           {/* 0. DISEÑO GLOBAL Y ANIMACIÓN */}
           <Acc title="🎨 Diseño Base y Animación" icon={Palette} iconColor="#6366f1">
-            
-            {/* Animación Inicial */}
-            <div className="flex items-center justify-between mb-4 bg-gray-50 p-2 rounded-xl border border-gray-200">
+             <div className="flex items-center justify-between mb-4 bg-gray-50 p-2 rounded-xl border border-gray-200">
                <span className="text-xs font-bold text-slate-600 ml-2">¿Animación de Entrada?</span>
                <Toggle checked={cfg.openingAnimation !== 'none'} onChange={v => update("openingAnimation", v ? "envelope" : "none")} />
              </div>
@@ -243,7 +246,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
                </div>
              )}
 
-            {/* Tema y Colores */}
             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Temas Sugeridos</label>
             <div className="flex flex-wrap gap-2.5 mb-6">
               {THEMES.map(th => <button key={th.id} title={th.name} onClick={() => setInv({...inv, config: {...cfg, theme: th.id, ...th}})} className={`w-9 h-9 rounded-full border-2 transition-all hover:scale-110 ${cfg.theme === th.id ? 'border-violet-600 ring-2 ring-violet-200' : 'border-transparent'}`} style={{ background: th.primary }} />)}
@@ -277,7 +279,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
 
           {/* 1. PORTADA */}
           <Acc title="1️⃣ Portada Principal" icon={ImageIcon} defaultOpen iconColor="#ec4899">
-            
             <div className="mb-6 bg-gray-50 p-3 rounded-xl border border-gray-200">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">¿Fondo GIF Animado?</span>
@@ -286,7 +287,7 @@ export const EditorScreen = ({ invitations, onSave }) => {
               {cfg.useGiphyCover ? (
                 <GiphySearch onSelect={url => update("coverPhoto", url)} placeholder="Ej: brillos, spiderman..." />
               ) : (
-                <FileUpload label="Foto Principal (Subir)" value={cfg.coverPhoto} onChange={v => update("coverPhoto", v)} />
+                <FileUpload value={cfg.coverPhoto} onChange={v => update("coverPhoto", v)} />
               )}
               
               <div className="flex items-center justify-between mt-3 mb-1 pt-3 border-t border-gray-200">
@@ -294,8 +295,26 @@ export const EditorScreen = ({ invitations, onSave }) => {
                 <Toggle checked={cfg.showCoverGradient !== false} onChange={v => update("showCoverGradient", v)} />
               </div>
               {cfg.showCoverGradient !== false && (
-                <input type="range" min={0} max={100} step={5} value={cfg.coverGradientIntensity ?? 70} onChange={e => update("coverGradientIntensity", Number(e.target.value))} className="w-full accent-violet-600 cursor-pointer mt-2" />
+                <input type="range" min={0} max={100} step={5} value={cfg.coverGradientIntensity ?? 50} onChange={e => update("coverGradientIntensity", Number(e.target.value))} className="w-full accent-violet-600 cursor-pointer mt-2" />
               )}
+            </div>
+
+            {/* NUEVO CONTROLES DE SOMBRA EN TEXTO */}
+            <div className="bg-gray-50/70 p-3 rounded-xl border border-gray-100 shadow-sm mb-5 relative overflow-hidden">
+              <div className="absolute left-0 top-0 bottom-0 w-1 bg-slate-400" />
+              <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3 pl-2">Sombreado de Letras</label>
+              <div className="flex gap-3 pl-2">
+                <div className="flex flex-col gap-1 shrink-0">
+                  <label className="text-[9px] font-bold text-slate-400 uppercase">Color</label>
+                  <input type="color" value={cfg.coverTextShadowColor || "#000000"} onChange={e => update('coverTextShadowColor', e.target.value)} className="w-10 h-9 rounded-lg cursor-pointer border-none shadow-sm" />
+                </div>
+                <div className="flex flex-col gap-1 flex-1">
+                  <label className="flex justify-between items-center text-[9px] font-bold text-slate-400 uppercase">
+                    <span>Intensidad</span><span className="text-slate-500 bg-slate-200 px-2 py-0.5 rounded-full">{cfg.coverTextShadowSize ?? 10}px</span>
+                  </label>
+                  <input type="range" min={0} max={30} value={cfg.coverTextShadowSize ?? 10} onChange={e => update("coverTextShadowSize", Number(e.target.value))} className="w-full accent-slate-500 cursor-pointer mt-1" />
+                </div>
+              </div>
             </div>
 
             <div className="flex gap-2">
@@ -311,7 +330,7 @@ export const EditorScreen = ({ invitations, onSave }) => {
               <EmojiPicker value={cfg.badgeEmoji} onSelect={v => update("badgeEmoji", v)} />
               <div className="flex-1"><Inp label="Medalla Flotante" value={cfg.badgeText} onChange={v => update("badgeText", v)} placeholder="Ej: 5 añitos" /></div>
             </div>
-            <TypoControl label="Tamaño Medalla" sizeVal={cfg.badgeSize ?? 14} onSize={v => update("badgeSize", v)} minSize={10} maxSize={30} />
+            <TypoControl label="Tamaño Medalla" sizeVal={cfg.badgeSize ?? 14} onSize={v => update("badgeSize", v)} minSize={10} max={30} />
           </Acc>
 
           {/* 2. CUENTA REGRESIVA */}
@@ -335,7 +354,7 @@ export const EditorScreen = ({ invitations, onSave }) => {
                 {cfg.useGiphyBanner ? (
                   <GiphySearch onSelect={url => update("bannerPhoto", url)} placeholder="Buscar GIF..." />
                 ) : (
-                  <FileUpload label="Subir Foto Ancha" value={cfg.bannerPhoto} onChange={v => update("bannerPhoto", v)} />
+                  <FileUpload value={cfg.bannerPhoto} onChange={v => update("bannerPhoto", v)} />
                 )}
               </>
             )}
@@ -346,7 +365,8 @@ export const EditorScreen = ({ invitations, onSave }) => {
             <TypoControl label="Tamaño Textos Fecha y Lugar" sizeVal={cfg.dateSize ?? 18} onSize={v => update("dateSize", v)} minSize={12} maxSize={30} />
             
             <div className="flex items-center justify-between mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Día de la fiesta</span><Toggle checked={cfg.showDate} onChange={v => update("showDate", v)} /></div>
-            {cfg.showDate && <Inp placeholder="Sábado 24 de Octubre" value={cfg.dateText} onChange={v => update("dateText", v)} />}
+            {/* NUEVO INPUT TYPE DATE */}
+            {cfg.showDate && <Inp type="date" value={cfg.dateText} onChange={v => update("dateText", v)} />}
 
             <div className="flex items-center justify-between mt-4 mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Horario de la fiesta</span><Toggle checked={cfg.showTime} onChange={v => update("showTime", v)} /></div>
             {cfg.showTime && <Inp placeholder="16:00 a 20:00 hs" value={cfg.timeText} onChange={v => update("timeText", v)} />}
@@ -388,7 +408,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
                 <Inp label="Enlace de YouTube" value={cfg.videoUrl || ""} onChange={v => update("videoUrl", v)} />
               </div>
             )}
-
             <div className="flex items-center justify-between mb-4 pt-4 border-t border-gray-100"><span className="text-xs font-bold text-slate-500">Música de Spotify</span><Toggle checked={cfg.showMusic || false} onChange={v => update("showMusic", v)} /></div>
             {cfg.showMusic && (
               <div className="bg-gray-50 p-3 rounded-xl border border-gray-200">
