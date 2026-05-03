@@ -1,7 +1,3 @@
-// ============================================================================
-// CONFIGURACIÓN GLOBAL, DATOS Y UTILIDADES
-// ============================================================================
-
 export const getSpotifyEmbed = (url) => {
   if (!url) return null;
   let type = "track";
@@ -18,6 +14,16 @@ export const getYouTubeId = (url) => {
   const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
   const match = url.match(regExp);
   return (match && match[2] && match[2].length === 11) ? match[2] : null;
+};
+
+// NUEVO: Formateador de fechas de YYYY-MM-DD a DD/MM/YYYY
+export const formatToDDMMYYYY = (dateStr) => {
+  if (!dateStr) return "";
+  if (dateStr.includes("-") && dateStr.split("-")[0].length === 4) {
+    const [y, m, d] = dateStr.split("-");
+    return `${d}/${m}/${y}`;
+  }
+  return dateStr;
 };
 
 export const ANIMATION_CATEGORIES = {
@@ -91,18 +97,22 @@ export const TRANSITION_OPTS = [
 
 export const DEF_CONFIG = {
   theme:"violet", fontTitle:"'Pacifico', cursive", fontBody:"'DM Sans', sans-serif",
-  honoreeSize: 48, honoreeFont: "'Pacifico', cursive", honoreeColor: "#f0ecff",
-  eventTypeSize: 11, eventTypeFont: "'DM Sans', sans-serif", eventTypeColor: "#7c3aed",
+  honoreeSize: 48, honoreeFont: "'Pacifico', cursive", honoreeColor: "#ffffff",
+  eventTypeSize: 11, eventTypeFont: "'DM Sans', sans-serif", eventTypeColor: "#ffffff",
+  
+  // NUEVO: Variables de sombreado por defecto
+  coverTextShadowColor: "#000000", coverTextShadowSize: 10,
+  
   dateSize: 18, locationSize: 18, titlesSize: 10, badgeSize: 14,
   bg1:"#08060f", bg2:"#120d24", primary:"#7c3aed", card:"#1a1035", text:"#f0ecff", muted:"#9b8ec4",
-  coverGradientIntensity: 70, showCoverGradient: true, particleEffect: "none", 
+  coverGradientIntensity: 50, showCoverGradient: true, particleEffect: "none", 
   openingAnimation: "envelope", animationDuration: 2, animationTransition: "fade",
   eventTypeEmoji:"✨", eventType:"Estás invitado al cumple de", honoreeName:"Valentina", badgeEmoji:"🎂", badgeText:"5 añitos",
   coverPhoto:"https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=800&q=80",
   useGiphyCover: false, 
   showBanner:true, bannerTitle:"La festejada", bannerPhoto:"https://images.unsplash.com/photo-1545912452-8aea7e25a3d3?auto=format&fit=crop&w=400&q=80",
   useGiphyBanner: false, showTheme:true, themeIcon:"🦕", themeLabel:"Temática", themeText:"Dinosaurios",
-  showDate:true, dateText:"Sábado 24 de Octubre", showTime:true, timeText:"16:00 a 20:00 hs", showCountdown: false, countdownDate:"",
+  showDate:true, dateText:"2026-10-24", showTime:true, timeText:"16:00 a 20:00 hs", showCountdown: false, countdownDate:"",
   showLocation:true, locationName:"Aventura Kids", locationAddress:"Av. San Martín 1234", showParking:true, parkingType:"Estacionamiento público", customParking:"",
   showItinerary:true, itinerary:[{ time:"16:00", title:"Bienvenida", sub:"Recepción de invitados" }],
   showMenu:true, menuItems:[{ emoji:"🍕", label:"Pizza Party" }, { emoji:"🥤", label:"Gaseosas" }],
