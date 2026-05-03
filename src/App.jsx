@@ -398,7 +398,7 @@ const GlobalStyles = () => {
       const s = document.createElement("style");
       s.id = "fd-global";
       s.textContent = `
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Pacifico&family=Caveat:wght@600;700&family=Playfair+Display:ital,wght@0,700;1,600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Amatic+SC:wght@400;700&family=Bebas+Neue&family=Caveat:wght@600;700&family=Cinzel:wght@400;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Dancing+Script:wght@400;600;700&family=Montserrat:wght@400;700;900&family=Nunito:wght@400;600;700&family=Oswald:wght@400;500;700&family=Pacifico&family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Syne:wght@400;600;700;800&display=swap');
         body { margin: 0; padding: 0; background: #f8f7ff; font-family: 'DM Sans', sans-serif; -webkit-font-smoothing: antialiased; }
         .fd-sb::-webkit-scrollbar { width: 8px !important; height: 8px !important; }
         .fd-sb::-webkit-scrollbar-thumb { background: #b4aee8 !important; border-radius: 10px !important; }
