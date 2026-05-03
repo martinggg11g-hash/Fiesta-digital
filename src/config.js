@@ -59,10 +59,16 @@ export const THEMES = [
 export const FONTS = [
   { label: "DM Sans (Moderna)", value: "'DM Sans', sans-serif" },
   { label: "Montserrat (Limpia)", value: "'Montserrat', sans-serif" },
+  { label: "Nunito (Amigable)", value: "'Nunito', sans-serif" },
+  { label: "Oswald (Condensada)", value: "'Oswald', sans-serif" },
   { label: "Syne (Elegante)", value: "'Syne', sans-serif" },
+  { label: "Cinzel (Bodas/Clásica)", value: "'Cinzel', serif" },
+  { label: "Playfair (Sofisticada)", value: "'Playfair Display', serif" },
+  { label: "Bebas Neue (Impactante)", value: "'Bebas Neue', sans-serif" },
   { label: "Pacifico (Divertida)", value: "'Pacifico', cursive" },
+  { label: "Dancing Script (Romántica)", value: "'Dancing Script', cursive" },
+  { label: "Amatic SC (Rústica)", value: "'Amatic SC', cursive" },
   { label: "Caveat (Manuscrita)", value: "'Caveat', cursive" },
-  { label: "Playfair (Clásica)", value: "'Playfair Display', serif" },
 ];
 
 export const EFFECTS = [
