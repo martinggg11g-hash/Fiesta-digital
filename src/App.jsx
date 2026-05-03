@@ -735,15 +735,36 @@ export default function App() {
   
   const handleUpdateUser = async (email, updateData) => {
     const { error: salonError } = await supabase.from('salones').update(updateData).eq('email', email);
-    if (!salonError) {
-      if (updateData.address) {
-        const { data: currentInvs } = await supabase.from('invitaciones').select('*').eq('salon_id', email);
-        if (currentInvs) {
-          for (let inv of currentInvs) {
-            const updatedConfig = { ...inv.config, locationAddress: updateData.address };
-            await supabase.from('invitaciones').update({ config: updatedConfig }).eq('id', inv.id);
-          }
+    
+    // NUEVO: Si Supabase se queja, nos tira el error en la cara
+    if (salonError) {
+      alert("Error en la Base de Datos: " + salonError.message);
+      return; 
+    }
+
+    if (updateData.address) {
+      const { data: currentInvs } = await supabase.from('invitaciones').select('*').eq('salon_id', email);
+      if (currentInvs) {
+        for (let inv of currentInvs) {
+          const updatedConfig = { ...inv.config, locationAddress: updateData.address };
+          await supabase.from('invitaciones').update({ config: updatedConfig }).eq('id', inv.id);
         }
+      }
+    }
+    setUsers(prev => prev.map(u => u.email === email ? {...u, ...updateData} : u));
+    
+    // Actualizamos el usuario actual si somos nosotros mismos editando nuestro perfil
+    if (user && user.email === email) {
+      const updatedUser = { ...user, ...updateData };
+      setUser(updatedUser);
+      localStorage.setItem("fiesta_user", JSON.stringify(updatedUser));
+    }
+
+    const { data: freshInvs } = await supabase.from('invitaciones').select('*');
+    if (freshInvs) {
+      setInvitations(freshInvs.map(i => ({ ...i, salonId: i.salon_id, internal_data: i.internal_data || {} })));
+    }
+  };
       }
       setUsers(prev => prev.map(u => u.email === email ? {...u, ...updateData} : u));
       const { data: freshInvs } = await supabase.from('invitaciones').select('*');
