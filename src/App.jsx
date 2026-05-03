@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { BrowserRouter as Router, Routes, Route, useParams, Navigate, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { EditorScreen, InvitePreview, DEF_CONFIG } from "./Editor";
@@ -28,20 +28,28 @@ export const Toast = ({ msg }) => (
   </div>
 );
 
-// NUEVO INP INTELIGENTE PARA EL DASHBOARD (Anti-Lag)
+// NUEVO INP BLINDADO: Tiene escudo protector (useRef) mientras escribís
 const Inp = ({ label, value, onChange, placeholder, type="text", multiline = false, className="", icon: Icon = null, prefix=null, isDark=false }) => {
   const [localVal, setLocalVal] = useState(value || "");
+  const isFocused = useRef(false);
 
-  // Actualiza si viene data de afuera
-  useEffect(() => { setLocalVal(value || ""); }, [value]);
+  // 1. Escudo Protector: Solo actualiza el valor si NO estás escribiendo
+  useEffect(() => { 
+    if (!isFocused.current) setLocalVal(value || ""); 
+  }, [value]);
 
-  // Espera 300ms antes de avisarle a la App entera que algo cambió
+  // 2. Debounce: Espera 400ms después de que dejás de teclear para avisar el cambio
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (localVal !== (value || "")) onChange(localVal);
-    }, 300);
+    }, 400);
     return () => clearTimeout(timeout);
   }, [localVal, onChange, value]);
+
+  const handleBlur = () => {
+    isFocused.current = false;
+    if (localVal !== (value || "")) onChange(localVal);
+  };
 
   const bgClass = isDark ? "bg-slate-700 border-slate-600 text-white focus:bg-slate-600" : "bg-gray-50 border-gray-200 text-slate-800 focus:bg-white";
   const labelClass = isDark ? "text-slate-400" : "text-slate-500";
@@ -53,9 +61,25 @@ const Inp = ({ label, value, onChange, placeholder, type="text", multiline = fal
         {Icon && <div className="absolute left-4 text-slate-400"><Icon size={16}/></div>}
         {prefix && <span className="absolute left-4 text-slate-400 font-bold">{prefix}</span>}
         {multiline ? (
-          <textarea value={localVal} onChange={e => setLocalVal(e.target.value)} placeholder={placeholder} rows={3} className={`w-full py-3 rounded-xl text-sm focus:border-violet-400 outline-none transition-all resize-none ${bgClass} ${(Icon || prefix) ? 'pl-11 pr-4' : 'px-4'}`} />
+          <textarea 
+            value={localVal} 
+            onChange={e => setLocalVal(e.target.value)} 
+            onFocus={() => isFocused.current = true}
+            onBlur={handleBlur}
+            placeholder={placeholder} 
+            rows={3} 
+            className={`w-full py-3 rounded-xl text-sm focus:border-violet-400 outline-none transition-all resize-none ${bgClass} ${(Icon || prefix) ? 'pl-11 pr-4' : 'px-4'}`} 
+          />
         ) : (
-          <input type={type} value={localVal} onChange={e => setLocalVal(e.target.value)} placeholder={placeholder} className={`w-full py-3 rounded-xl text-sm focus:border-violet-400 outline-none transition-all ${bgClass} ${(Icon || prefix) ? 'pl-11 pr-4' : 'px-4'}`} />
+          <input 
+            type={type} 
+            value={localVal} 
+            onChange={e => setLocalVal(e.target.value)} 
+            onFocus={() => isFocused.current = true}
+            onBlur={handleBlur}
+            placeholder={placeholder} 
+            className={`w-full py-3 rounded-xl text-sm focus:border-violet-400 outline-none transition-all ${bgClass} ${(Icon || prefix) ? 'pl-11 pr-4' : 'px-4'}`} 
+          />
         )}
       </div>
     </div>
@@ -139,7 +163,6 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
   const [showSettings, setShowSettings] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   
-  // MODO OSCURO
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem("fiesta_darkmode");
     return saved ? JSON.parse(saved) : false;
@@ -165,7 +188,6 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
   const themeText = isDark ? "text-white" : "text-slate-800";
   const themeCard = isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200/60";
 
-  // VISTA CRM DEL SALÓN
   if (!isOwner) {
     const salonInfo = users.find(u => u.email === user.email);
     const isManualBlocked = salonInfo?.payment_alert;
@@ -520,7 +542,6 @@ const PublicInviteScreen = ({ invitations }) => {
 };
 
 export default function App() {
-  // === LEER LA MEMORIA ===
   const [user, setUser] = useState(() => {
     try {
       const local = localStorage.getItem("fiesta_user");
@@ -539,7 +560,6 @@ export default function App() {
   const [invitations, setInvitations] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // === FUNCIÓN DE LOGIN ===
   const handleLogin = (userData, rememberMe) => {
     setUser(userData);
     if (rememberMe) {
@@ -549,7 +569,6 @@ export default function App() {
     }
   };
 
-  // === FUNCIÓN DE LOGOUT ===
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem("fiesta_user");
@@ -626,11 +645,22 @@ export default function App() {
     setInvitations(prev => prev.filter(inv => inv.id !== id));
   };
 
+  // NUEVO: Manejo súper rápido para evitar lag visual (Optimistic Update)
   const handleUpdateInternal = async (id, field, val) => {
+    // 1. Cambiamos la vista inmediatamente en la pantalla (Sin lag)
+    setInvitations(prev => prev.map(i => {
+      if (i.id === id) {
+        return { ...i, internal_data: { ...i.internal_data, [field]: val } };
+      }
+      return i;
+    }));
+
+    // 2. Lo mandamos por atrás a Supabase en silencio
     const inv = invitations.find(i => i.id === id);
-    const updatedData = { ...inv.internal_data, [field]: val };
-    const { error } = await supabase.from('invitaciones').update({ internal_data: updatedData }).eq('id', id);
-    if (!error) setInvitations(prev => prev.map(i => i.id === id ? {...i, internal_data: updatedData} : i));
+    if(inv) {
+      const updatedData = { ...inv.internal_data, [field]: val };
+      await supabase.from('invitaciones').update({ internal_data: updatedData }).eq('id', id);
+    }
   };
 
   if (loading) return <div className="h-screen bg-slate-950 flex flex-col items-center justify-center text-white gap-4"><Loader2 className="animate-spin" size={40}/><p className="font-bold animate-pulse">Conectando con la base de datos...</p></div>;
