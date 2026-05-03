@@ -8,10 +8,11 @@ import {
   PartyPopper, ShieldCheck, AlertCircle, LogOut, Plus, Trash2, Copy, CheckCircle2, Lock, 
   MapPin, CalendarClock, AlertTriangle, KeyRound, Building, Edit2, X, MessageCircle, ExternalLink, Eye, Search,
   ChevronDown, Phone, Users, Utensils, Music, CreditCard, Clock, Settings, UserCheck, Calculator, Receipt,
-  Moon, Sun, Printer, ClipboardList
+  Moon, Sun, Printer, ClipboardList, ImageIcon
 } from "lucide-react";
 
 const slugify = (text) => text?.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') || 'salon';
+const IMGBB_API_KEY = "904f81caf05efe58a799abdb1fedc2ce";
 
 const formatDate = (dateStr) => {
   if (!dateStr) return 'Sin fecha';
@@ -28,17 +29,12 @@ export const Toast = ({ msg }) => (
   </div>
 );
 
-// NUEVO INP BLINDADO: Tiene escudo protector (useRef) mientras escribís
 const Inp = ({ label, value, onChange, placeholder, type="text", multiline = false, className="", icon: Icon = null, prefix=null, isDark=false }) => {
   const [localVal, setLocalVal] = useState(value || "");
   const isFocused = useRef(false);
 
-  // 1. Escudo Protector: Solo actualiza el valor si NO estás escribiendo
-  useEffect(() => { 
-    if (!isFocused.current) setLocalVal(value || ""); 
-  }, [value]);
+  useEffect(() => { if (!isFocused.current) setLocalVal(value || ""); }, [value]);
 
-  // 2. Debounce: Espera 400ms después de que dejás de teclear para avisar el cambio
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (localVal !== (value || "")) onChange(localVal);
@@ -61,27 +57,50 @@ const Inp = ({ label, value, onChange, placeholder, type="text", multiline = fal
         {Icon && <div className="absolute left-4 text-slate-400"><Icon size={16}/></div>}
         {prefix && <span className="absolute left-4 text-slate-400 font-bold">{prefix}</span>}
         {multiline ? (
-          <textarea 
-            value={localVal} 
-            onChange={e => setLocalVal(e.target.value)} 
-            onFocus={() => isFocused.current = true}
-            onBlur={handleBlur}
-            placeholder={placeholder} 
-            rows={3} 
-            className={`w-full py-3 rounded-xl text-sm focus:border-violet-400 outline-none transition-all resize-none ${bgClass} ${(Icon || prefix) ? 'pl-11 pr-4' : 'px-4'}`} 
-          />
+          <textarea value={localVal} onChange={e => setLocalVal(e.target.value)} onFocus={() => isFocused.current = true} onBlur={handleBlur} placeholder={placeholder} rows={3} className={`w-full py-3 rounded-xl text-sm focus:border-violet-400 outline-none transition-all resize-none ${bgClass} ${(Icon || prefix) ? 'pl-11 pr-4' : 'px-4'}`} />
         ) : (
-          <input 
-            type={type} 
-            value={localVal} 
-            onChange={e => setLocalVal(e.target.value)} 
-            onFocus={() => isFocused.current = true}
-            onBlur={handleBlur}
-            placeholder={placeholder} 
-            className={`w-full py-3 rounded-xl text-sm focus:border-violet-400 outline-none transition-all ${bgClass} ${(Icon || prefix) ? 'pl-11 pr-4' : 'px-4'}`} 
-          />
+          <input type={type} value={localVal} onChange={e => setLocalVal(e.target.value)} onFocus={() => isFocused.current = true} onBlur={handleBlur} placeholder={placeholder} className={`w-full py-3 rounded-xl text-sm focus:border-violet-400 outline-none transition-all ${bgClass} ${(Icon || prefix) ? 'pl-11 pr-4' : 'px-4'}`} />
         )}
       </div>
+    </div>
+  );
+};
+
+const FileUpload = ({ label, onChange, value, isDark=false }) => {
+  const [uploading, setUploading] = useState(false);
+  const handleFile = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    const formData = new FormData(); formData.append("image", file);
+    try {
+      const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: "POST", body: formData });
+      const data = await res.json();
+      if (data.success) onChange(data.data.url);
+      else alert("Error al subir imagen.");
+    } catch (err) { alert("Error de conexión."); } 
+    finally { setUploading(false); }
+  };
+  
+  const bgClass = isDark ? "bg-slate-700 border-slate-600 text-violet-400 hover:bg-slate-600" : "bg-white border-violet-200 text-violet-600 hover:bg-violet-50";
+
+  return (
+    <div className="mb-4 text-left relative">
+      {label && <label className={`block text-[10px] font-black uppercase tracking-widest mb-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{label}</label>}
+      <div className="relative">
+        <label className={`flex items-center justify-center w-full py-3 px-4 rounded-xl text-xs font-bold border transition-all cursor-pointer ${uploading ? 'opacity-50 cursor-not-allowed' : bgClass}`}>
+          <span className="flex items-center gap-2">
+            {uploading ? <><Loader2 size={14} className="animate-spin" /> Subiendo...</> : <><ImageIcon size={16}/> Subir logo del Salón</>}
+          </span>
+          <input type="file" accept="image/*" onChange={handleFile} disabled={uploading} className="hidden" />
+        </label>
+      </div>
+      {value && !uploading && (
+        <div className="relative mt-3 group">
+          <img src={value} alt="preview" className="h-16 w-auto object-contain rounded-xl border border-gray-200 shadow-sm bg-white p-2" />
+          <button type="button" onClick={() => onChange("")} className="absolute top-0 -right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg cursor-pointer"><Trash2 size={12} /></button>
+        </div>
+      )}
     </div>
   );
 };
@@ -137,16 +156,11 @@ export const LoginScreen = ({ isMaster = false, onLogin, users }) => {
             <Inp label="Clave" type="password" value={pass} onChange={setPass} />
             
             <label className="flex items-center gap-2 mb-4 mt-4 cursor-pointer">
-              <input 
-                type="checkbox" 
-                checked={rememberMe} 
-                onChange={(e) => setRememberMe(e.target.checked)} 
-                className="w-4 h-4 text-violet-600 rounded border-gray-300 focus:ring-violet-500"
-              />
+              <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="w-4 h-4 text-violet-600 rounded border-gray-300 focus:ring-violet-500" />
               <span className="text-sm text-slate-300 font-bold">Mantener sesión iniciada</span>
             </label>
 
-            <button className="w-full py-4 mt-2 bg-violet-600 text-white rounded-2xl font-black text-sm transition-transform active:scale-95 flex justify-center items-center">
+            <button className="w-full py-4 mt-2 bg-violet-600 text-white rounded-2xl font-black text-sm transition-transform active:scale-95 flex justify-center items-center cursor-pointer">
               {loading ? <Loader2 size={18} className="animate-spin"/> : "INGRESAR"}
             </button>
           </form>
@@ -162,15 +176,14 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
   const [activeCrmId, setActiveCrmId] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [newPassword, setNewPassword] = useState("");
+  const [newLogo, setNewLogo] = useState(user?.logo || ""); // ESTADO PARA EL LOGO DEL SALON
   
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem("fiesta_darkmode");
     return saved ? JSON.parse(saved) : false;
   });
 
-  useEffect(() => {
-    localStorage.setItem("fiesta_darkmode", JSON.stringify(isDark));
-  }, [isDark]);
+  useEffect(() => { localStorage.setItem("fiesta_darkmode", JSON.stringify(isDark)); }, [isDark]);
 
   const navigate = useNavigate();
   if (!user) return null;
@@ -188,16 +201,19 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
   const themeText = isDark ? "text-white" : "text-slate-800";
   const themeCard = isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200/60";
 
+  // VISTA CRM DEL SALÓN
   if (!isOwner) {
     const salonInfo = users.find(u => u.email === user.email);
     const isManualBlocked = salonInfo?.payment_alert;
     
-    const handleChangePassword = () => {
-      if(!newPassword) return notify("Escribí una nueva contraseña");
-      onUpdateUser(user.email, { pass: newPassword });
+    const handleSaveSettings = () => {
+      let dataToUpdate = { logo: newLogo };
+      if (newPassword) dataToUpdate.pass = newPassword;
+      
+      onUpdateUser(user.email, dataToUpdate);
       setShowSettings(false);
       setNewPassword("");
-      notify("¡Contraseña actualizada!");
+      notify("¡Ajustes guardados correctamente!");
     };
 
     const handleResetPassword = () => {
@@ -211,98 +227,102 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
     return (
       <div className={`min-h-screen pb-20 text-left transition-colors duration-300 ${themeBg}`}>
         
+        {/* CSS PARA OCULTAR LA APP E IMPRIMIR SOLO LA PLANTILLA PDF */}
         <style>{`
           @media print {
-            body * { visibility: hidden; }
-            #crm-print-area, #crm-print-area * { visibility: visible; color: black !important; }
-            #crm-print-area { position: absolute; left: 0; top: 0; width: 100%; background: white !important; padding: 20px; }
+            body { background: white !important; }
             .print-hide { display: none !important; }
-            input, select, textarea { border: none !important; background: transparent !important; resize: none !important; }
           }
         `}</style>
 
-        <nav className={`h-20 border-b px-6 sm:px-8 flex items-center justify-between sticky top-0 z-40 transition-colors duration-300 ${themeNav}`}>
-          <div className="flex items-center gap-4">
-             <div className="w-10 h-10 bg-violet-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-violet-200/20"><Building size={20}/></div>
-             <div className={`font-black text-xl tracking-tight ${themeText}`}>{user.name} <span className="text-violet-500 text-sm opacity-60 ml-2 hidden sm:inline-block">| Panel de Gestión</span></div>
-          </div>
-          <div className="flex items-center gap-3">
-             <button onClick={() => setIsDark(!isDark)} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${isDark ? 'bg-slate-700 text-yellow-400 hover:bg-slate-600' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
-               {isDark ? <Sun size={18}/> : <Moon size={18}/>}
-             </button>
-             <button onClick={() => setShowSettings(true)} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}><Settings size={18}/></button>
-             <button onClick={() => { onLogout(); navigate("/"); }} className="w-10 h-10 bg-red-500/10 text-red-500 rounded-xl flex items-center justify-center hover:bg-red-500/20 transition-all cursor-pointer"><LogOut size={18}/></button>
-          </div>
-        </nav>
-        
-        {isManualBlocked && (
-          <div className="bg-red-500 text-white p-3 text-center font-bold text-xs flex items-center justify-center gap-3">
-            <AlertTriangle size={16}/> Tu cuenta presenta un atraso en el pago. Por favor regularizá tu situación.
-          </div>
-        )}
-
-        <main className="max-w-7xl mx-auto p-6 md:p-12">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
-            <div>
-              <h1 className={`text-4xl font-black tracking-tight ${themeText}`}>Mis Eventos</h1>
-              <p className="text-slate-500 mt-1 font-medium italic">Gestioná tus invitaciones y la logística en tiempo real.</p>
+        <div className="print-hide">
+          <nav className={`h-20 border-b px-6 sm:px-8 flex items-center justify-between sticky top-0 z-40 transition-colors duration-300 ${themeNav}`}>
+            <div className="flex items-center gap-4">
+               {salonInfo?.logo ? (
+                 <img src={salonInfo.logo} alt="Logo" className="h-10 object-contain" />
+               ) : (
+                 <div className="w-10 h-10 bg-violet-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-violet-200/20"><Building size={20}/></div>
+               )}
+               <div className={`font-black text-xl tracking-tight ${themeText}`}>{user.name} <span className="text-violet-500 text-sm opacity-60 ml-2 hidden sm:inline-block">| Panel de Gestión</span></div>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
-               <div className="relative group flex-1 md:flex-none">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-violet-500 transition-colors" size={18}/>
-                  <input className={`w-full md:w-64 pl-11 pr-4 py-3.5 border rounded-2xl text-sm font-medium outline-none transition-all focus:ring-2 focus:ring-violet-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500' : 'bg-white border-slate-200 text-slate-800'}`} placeholder="Buscar evento..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-               </div>
-               <button onClick={async () => { const id = await onCreateInv(user.email, user.name); navigate(`/editor/${id}`); }} className="px-8 py-3.5 bg-violet-600 hover:bg-violet-700 text-white rounded-2xl font-black text-sm shadow-xl flex items-center gap-3 transition-all active:scale-95 cursor-pointer">
-                 <Plus size={20}/> Nuevo Evento
+            <div className="flex items-center gap-3">
+               <button onClick={() => setIsDark(!isDark)} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${isDark ? 'bg-slate-700 text-yellow-400 hover:bg-slate-600' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
+                 {isDark ? <Sun size={18}/> : <Moon size={18}/>}
                </button>
+               <button onClick={() => setShowSettings(true)} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}><Settings size={18}/></button>
+               <button onClick={() => { onLogout(); navigate("/"); }} className="w-10 h-10 bg-red-500/10 text-red-500 rounded-xl flex items-center justify-center hover:bg-red-500/20 transition-all cursor-pointer"><LogOut size={18}/></button>
             </div>
-          </div>
+          </nav>
+          
+          {isManualBlocked && (
+            <div className="bg-red-500 text-white p-3 text-center font-bold text-xs flex items-center justify-center gap-3">
+              <AlertTriangle size={16}/> Tu cuenta presenta un atraso en el pago. Por favor regularizá tu situación.
+            </div>
+          )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
-            {filteredInvs.map(inv => {
-              const data = inv.internal_data || {};
-              const pStatus = data.paymentStatus || 'Pendiente';
-              const eStatus = data.eventStatus || 'Nuevo';
-              const statusColors = { 'Pendiente': 'bg-red-100 text-red-700', 'Seña / Parcial': 'bg-amber-100 text-amber-700', 'Pagado Total': 'bg-green-100 text-green-700' };
-              const evColors = { 'Nuevo': 'bg-blue-100 text-blue-700', 'Confirmado': 'bg-violet-100 text-violet-700', 'Finalizado': 'bg-slate-200 text-slate-700', 'Cancelado': 'bg-red-200 text-red-800' };
+          <main className="max-w-7xl mx-auto p-6 md:p-12">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
+              <div>
+                <h1 className={`text-4xl font-black tracking-tight ${themeText}`}>Mis Eventos</h1>
+                <p className="text-slate-500 mt-1 font-medium italic">Gestioná tus invitaciones y la logística en tiempo real.</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                 <div className="relative group flex-1 md:flex-none">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-violet-500 transition-colors" size={18}/>
+                    <input className={`w-full md:w-64 pl-11 pr-4 py-3.5 border rounded-2xl text-sm font-medium outline-none transition-all focus:ring-2 focus:ring-violet-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500' : 'bg-white border-slate-200 text-slate-800'}`} placeholder="Buscar evento..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                 </div>
+                 <button onClick={async () => { const id = await onCreateInv(user.email, user.name); navigate(`/editor/${id}`); }} className="px-8 py-3.5 bg-violet-600 hover:bg-violet-700 text-white rounded-2xl font-black text-sm shadow-xl flex items-center gap-3 transition-all active:scale-95 cursor-pointer">
+                   <Plus size={20}/> Nuevo Evento
+                 </button>
+              </div>
+            </div>
 
-              return (
-                <div key={inv.id} className={`rounded-[2.5rem] border overflow-hidden shadow-sm hover:shadow-xl transition-all group flex flex-col h-full border-b-4 border-b-violet-500/30 ${themeCard}`}>
-                  <div className="h-44 relative overflow-hidden">
-                    <img src={inv.config?.coverPhoto || "https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=800&q=80"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" alt="Event" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/30 to-transparent" />
-                    <div className="absolute top-4 left-4 flex gap-2">
-                       <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest backdrop-blur-md shadow-sm ${evColors[eStatus] || evColors['Nuevo']}`}>{eStatus}</span>
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
+              {filteredInvs.map(inv => {
+                const data = inv.internal_data || {};
+                const pStatus = data.paymentStatus || 'Pendiente';
+                const eStatus = data.eventStatus || 'Nuevo';
+                const statusColors = { 'Pendiente': 'bg-red-100 text-red-700', 'Seña / Parcial': 'bg-amber-100 text-amber-700', 'Pagado Total': 'bg-green-100 text-green-700' };
+                const evColors = { 'Nuevo': 'bg-blue-100 text-blue-700', 'Confirmado': 'bg-violet-100 text-violet-700', 'Finalizado': 'bg-slate-200 text-slate-700', 'Cancelado': 'bg-red-200 text-red-800' };
+
+                return (
+                  <div key={inv.id} className={`rounded-[2.5rem] border overflow-hidden shadow-sm hover:shadow-xl transition-all group flex flex-col h-full border-b-4 border-b-violet-500/30 ${themeCard}`}>
+                    <div className="h-44 relative overflow-hidden">
+                      <img src={inv.config?.coverPhoto || "https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=800&q=80"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" alt="Event" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/30 to-transparent" />
+                      <div className="absolute top-4 left-4 flex gap-2">
+                         <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest backdrop-blur-md shadow-sm ${evColors[eStatus] || evColors['Nuevo']}`}>{eStatus}</span>
+                      </div>
+                      <div className="absolute bottom-4 left-5 right-5 flex justify-between items-end">
+                         <div>
+                            <p className="text-white/70 text-[10px] font-black uppercase tracking-widest mb-1">{data.internalDate ? formatDate(data.internalDate) : 'Sin fecha'} {data.internalTime ? `• ${data.internalTime} hs` : ''}</p>
+                            <h3 className="font-black text-xl text-white truncate max-w-[200px]">{data.internalHonoree || inv.config?.honoreeName || inv.title}</h3>
+                         </div>
+                         <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border border-white/20 backdrop-blur-md shadow-sm ${statusColors[pStatus] || statusColors['Pendiente']}`}>{pStatus}</span>
+                      </div>
+                      <button onClick={() => { if(window.confirm("¿Borrar definitivamente este evento?")) onDeleteInv(inv.id); }} className="absolute top-4 right-4 w-9 h-9 bg-red-500/90 text-white rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-red-600 shadow-lg cursor-pointer"><Trash2 size={16}/></button>
                     </div>
-                    <div className="absolute bottom-4 left-5 right-5 flex justify-between items-end">
-                       <div>
-                          <p className="text-white/70 text-[10px] font-black uppercase tracking-widest mb-1">{data.internalDate ? formatDate(data.internalDate) : 'Sin fecha'} {data.internalTime ? `• ${data.internalTime} hs` : ''}</p>
-                          <h3 className="font-black text-xl text-white truncate max-w-[200px]">{data.internalHonoree || inv.config?.honoreeName || inv.title}</h3>
-                       </div>
-                       <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border border-white/20 backdrop-blur-md shadow-sm ${statusColors[pStatus] || statusColors['Pendiente']}`}>{pStatus}</span>
+                    <div className="p-6">
+                      <div className="flex gap-2 mb-4">
+                        <button onClick={() => navigate(`/editor/${inv.id}`)} className="flex-1 py-3.5 bg-violet-600 hover:bg-violet-700 text-white rounded-2xl font-black text-[11px] tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer shadow-md"><Edit2 size={14}/> DISEÑAR</button>
+                        <button onClick={() => window.open(`${window.location.origin}/i/${slugify(user.name)}/${inv.id}`)} className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all cursor-pointer ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}><Eye size={18}/></button>
+                        <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/i/${slugify(user.name)}/${inv.id}`); notify("¡Link Copiado!"); }} className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all cursor-pointer ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}><Copy size={18}/></button>
+                      </div>
+                      <button onClick={() => setActiveCrmId(inv.id)} className={`w-full py-3.5 rounded-2xl font-black text-xs flex justify-center items-center gap-2 border shadow-sm cursor-pointer transition-colors ${isDark ? 'bg-slate-800 border-slate-600 text-slate-300 hover:bg-slate-700' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}><Lock size={14}/> ABRIR FICHA (CRM)</button>
                     </div>
-                    <button onClick={() => { if(window.confirm("¿Borrar definitivamente este evento?")) onDeleteInv(inv.id); }} className="absolute top-4 right-4 w-9 h-9 bg-red-500/90 text-white rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-red-600 shadow-lg cursor-pointer"><Trash2 size={16}/></button>
                   </div>
-                  <div className="p-6">
-                    <div className="flex gap-2 mb-4">
-                      <button onClick={() => navigate(`/editor/${inv.id}`)} className="flex-1 py-3.5 bg-violet-600 hover:bg-violet-700 text-white rounded-2xl font-black text-[11px] tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer shadow-md"><Edit2 size={14}/> DISEÑAR</button>
-                      <button onClick={() => window.open(`${window.location.origin}/i/${slugify(user.name)}/${inv.id}`)} className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all cursor-pointer ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}><Eye size={18}/></button>
-                      <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/i/${slugify(user.name)}/${inv.id}`); notify("¡Link Copiado!"); }} className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all cursor-pointer ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}><Copy size={18}/></button>
-                    </div>
-                    <button onClick={() => setActiveCrmId(inv.id)} className={`w-full py-3.5 rounded-2xl font-black text-xs flex justify-center items-center gap-2 border shadow-sm cursor-pointer transition-colors ${isDark ? 'bg-slate-800 border-slate-600 text-slate-300 hover:bg-slate-700' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}><Lock size={14}/> ABRIR FICHA (CRM)</button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </main>
-        
-        {/* MODAL CRM */}
+                );
+              })}
+            </div>
+          </main>
+        </div>
+
+        {/* MODAL CRM (VISIBLE EN PANTALLA, OCULTO AL IMPRIMIR) */}
         {activeCrmId && activeInv && (
-          <div className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
-            <div id="crm-print-area" className={`w-full max-w-4xl max-h-[95vh] rounded-[2rem] overflow-hidden flex flex-col shadow-2xl anim-pop ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
+          <div className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 print-hide">
+            <div className={`w-full max-w-4xl max-h-[95vh] rounded-[2rem] overflow-hidden flex flex-col shadow-2xl anim-pop ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
               
-              <div className={`px-6 py-4 border-b flex justify-between items-center shrink-0 print-hide ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+              <div className={`px-6 py-4 border-b flex justify-between items-center shrink-0 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
                  <h2 className={`font-black text-xl flex items-center gap-2 ${themeText}`}><ClipboardList className="text-violet-500" size={20}/> Ficha de Logística</h2>
                  <div className="flex gap-3">
                    <button onClick={() => window.print()} className="px-4 py-2 bg-slate-200 text-slate-700 hover:bg-slate-300 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer"><Printer size={14}/> Exportar PDF</button>
@@ -311,7 +331,6 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
               </div>
 
               <div className="p-6 sm:p-8 overflow-y-auto fd-sb flex-1">
-                
                 <div className="mb-8">
                    <h3 className="text-xs font-black text-violet-500 uppercase tracking-widest mb-4 border-b border-slate-200/20 pb-2 flex items-center gap-2"><PartyPopper size={14}/> 1. Detalles del Evento</h3>
                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -339,9 +358,9 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                       <Inp label="Nombre Completo" value={activeInv.internal_data.clientName || ''} onChange={v => onUpdateInternal(activeInv.id, 'clientName', v)} isDark={isDark} />
                       <div className="flex gap-2 items-end">
                          <Inp label="WhatsApp" placeholder="54911..." className="flex-1 !mb-0" value={activeInv.internal_data.clientPhone || ''} onChange={v => onUpdateInternal(activeInv.id, 'clientPhone', v)} isDark={isDark} />
-                         <button onClick={() => window.open(`https://wa.me/${activeInv.internal_data.clientPhone}`)} className="h-[46px] px-4 bg-green-500 text-white rounded-xl flex items-center justify-center cursor-pointer shadow-md print-hide"><MessageCircle size={18}/></button>
+                         <button onClick={() => window.open(`https://wa.me/${activeInv.internal_data.clientPhone}`)} className="h-[46px] px-4 bg-green-500 text-white rounded-xl flex items-center justify-center cursor-pointer shadow-md"><MessageCircle size={18}/></button>
                       </div>
-                      <Inp label="Cantidad de Invitados (Aprox)" type="number" placeholder="Ej: 80" value={activeInv.internal_data.guestCount || ''} onChange={v => onUpdateInternal(activeInv.id, 'guestCount', v)} isDark={isDark} />
+                      <Inp label="Cantidad Invitados" type="number" placeholder="Ej: 80" value={activeInv.internal_data.guestCount || ''} onChange={v => onUpdateInternal(activeInv.id, 'guestCount', v)} isDark={isDark} />
                    </div>
                 </div>
 
@@ -377,27 +396,123 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                 </div>
 
               </div>
-              <div className={`px-6 py-4 flex justify-end print-hide ${isDark ? 'bg-slate-800 border-t border-slate-700' : 'bg-slate-50 border-t border-slate-200'}`}>
+              <div className={`px-6 py-4 flex justify-end ${isDark ? 'bg-slate-800 border-t border-slate-700' : 'bg-slate-50 border-t border-slate-200'}`}>
                  <button onClick={() => setActiveCrmId(null)} className="px-8 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-black text-sm shadow-md cursor-pointer transition-colors">CERRAR FICHA</button>
               </div>
             </div>
           </div>
         )}
 
-        {/* MODAL AJUSTES DE SEGURIDAD */}
+        {/* PLANTILLA DE IMPRESIÓN (VISIBLE SOLO AL IMPRIMIR) */}
+        {activeCrmId && activeInv && (
+          <div className="hidden print:block w-full bg-white text-black p-8 font-sans">
+             
+             {/* CABECERA (Logo, Datos del Salón y Título) */}
+             <div className="flex justify-between items-end border-b-2 border-slate-800 pb-6 mb-8">
+                <div className="flex items-center gap-4">
+                  {salonInfo?.logo ? (
+                    <img src={salonInfo.logo} className="h-20 object-contain" alt="Logo" />
+                  ) : (
+                    <div className="w-16 h-16 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400"><Building size={30}/></div>
+                  )}
+                  <div>
+                    <h1 className="text-2xl font-black text-slate-900 m-0 leading-none">{user.name}</h1>
+                    <p className="text-slate-500 text-sm mt-1">{salonInfo?.address || 'Sin dirección registrada'}</p>
+                    <p className="text-slate-500 text-sm">{salonInfo?.phone || 'Sin teléfono'}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <h2 className="text-xl font-black text-slate-800 tracking-widest uppercase mb-1">FICHA DE EVENTO</h2>
+                  <p className="text-sm font-bold text-slate-500 bg-slate-100 inline-block px-3 py-1 rounded-lg">ID: {activeInv.id.split('-')[1].toUpperCase()}</p>
+                </div>
+             </div>
+
+             {/* BLOQUE 1: EVENTO Y CLIENTE */}
+             <div className="grid grid-cols-2 gap-8 mb-8">
+                <div>
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b pb-1">1. Datos del Evento</h3>
+                  <div className="space-y-2 text-sm">
+                    <p><span className="font-bold text-slate-700 w-24 inline-block">Agasajado:</span> <span className="font-black text-lg">{activeInv.internal_data.internalHonoree || '---'}</span></p>
+                    <p><span className="font-bold text-slate-700 w-24 inline-block">Tipo:</span> {activeInv.internal_data.eventType || '---'}</p>
+                    <p><span className="font-bold text-slate-700 w-24 inline-block">Fecha:</span> {formatDate(activeInv.internal_data.internalDate)}</p>
+                    <p><span className="font-bold text-slate-700 w-24 inline-block">Horario:</span> {activeInv.internal_data.internalTime || '---'} hs</p>
+                    <p><span className="font-bold text-slate-700 w-24 inline-block">Estado:</span> <span className="uppercase font-bold border border-slate-300 px-2 py-0.5 rounded text-[10px]">{activeInv.internal_data.eventStatus || 'Nuevo'}</span></p>
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b pb-1">2. Datos del Cliente</h3>
+                  <div className="space-y-2 text-sm">
+                    <p><span className="font-bold text-slate-700 w-24 inline-block">Nombre:</span> <span className="font-bold">{activeInv.internal_data.clientName || '---'}</span></p>
+                    <p><span className="font-bold text-slate-700 w-24 inline-block">Teléfono:</span> {activeInv.internal_data.clientPhone || '---'}</p>
+                    <p><span className="font-bold text-slate-700 w-24 inline-block">Invitados:</span> {activeInv.internal_data.guestCount || '---'} aprox.</p>
+                  </div>
+                </div>
+             </div>
+
+             {/* BLOQUE 2: LOGÍSTICA */}
+             <div className="mb-8">
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b pb-1">3. Logística y Notas</h3>
+                <div className="grid grid-cols-2 gap-8 text-sm">
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <p className="font-black text-slate-700 mb-1">Servicios Solicitados:</p>
+                    <p className="whitespace-pre-wrap">{activeInv.internal_data.requestedServices || 'Ninguno especificado.'}</p>
+                  </div>
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <p className="font-black text-slate-700 mb-1">Menús Especiales / Alergias:</p>
+                    <p className="whitespace-pre-wrap">{activeInv.internal_data.specialMenus || 'Ninguno especificado.'}</p>
+                  </div>
+                </div>
+                <div className="mt-4 p-4 border border-slate-300 rounded-xl">
+                  <p className="font-black text-slate-700 mb-1">Notas Internas del Salón:</p>
+                  <p className="whitespace-pre-wrap">{activeInv.internal_data.internalNotes || '---'}</p>
+                </div>
+             </div>
+
+             {/* BLOQUE 3: FINANZAS */}
+             <div>
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b pb-1">4. Estado Financiero</h3>
+                <div className="flex justify-between items-center bg-slate-100 p-5 rounded-xl border border-slate-300">
+                  <div className="text-center">
+                    <p className="text-[10px] font-black uppercase text-slate-500">Presupuesto Total</p>
+                    <p className="text-xl font-bold">${Number(activeInv.internal_data.totalBudget || 0).toLocaleString('es-AR')}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[10px] font-black uppercase text-slate-500">Abonado / Seña</p>
+                    <p className="text-xl font-bold text-green-700">${Number(activeInv.internal_data.paymentAmount || 0).toLocaleString('es-AR')}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[10px] font-black uppercase text-slate-500">Saldo Pendiente</p>
+                    <p className="text-2xl font-black text-red-600">${(Number(activeInv.internal_data.totalBudget || 0) - Number(activeInv.internal_data.paymentAmount || 0)).toLocaleString('es-AR')}</p>
+                  </div>
+                  <div className="text-center border-l-2 pl-6">
+                    <p className="text-[10px] font-black uppercase text-slate-500 mb-1">Estado</p>
+                    <span className="font-black uppercase tracking-widest text-xs border-b-2 border-slate-800 pb-1">{activeInv.internal_data.paymentStatus || 'Pendiente'}</span>
+                  </div>
+                </div>
+             </div>
+             
+             {/* FOOTER DEL PDF */}
+             <div className="mt-12 text-center text-xs text-slate-400 font-bold border-t pt-4">
+                Documento generado automáticamente por FiestaDigital - www.fiestadigital.com
+             </div>
+          </div>
+        )}
+
+        {/* MODAL AJUSTES DE SEGURIDAD Y PERFIL (NUEVO: LOGO) */}
         {showSettings && (
-          <div className="fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 print-hide">
              <div className={`w-full max-w-sm rounded-[2rem] p-8 shadow-2xl relative anim-pop text-center ${isDark ? 'bg-slate-800 text-white' : 'bg-white text-slate-800'}`}>
                 <button onClick={() => setShowSettings(false)} className={`absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-colors ${isDark ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-100 hover:bg-slate-200'}`}><X size={16}/></button>
-                <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isDark ? 'bg-slate-700 text-violet-400' : 'bg-violet-100 text-violet-600'}`}><KeyRound size={28}/></div>
-                <h2 className="text-xl font-black mb-2">Mi Seguridad</h2>
-                <Inp label="Escribí Nueva Contraseña" type="text" placeholder="Min. 6 caracteres..." value={newPassword} onChange={setNewPassword} isDark={isDark} />
-                <button onClick={handleChangePassword} className="w-full py-3 mt-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-black text-sm transition-transform active:scale-95 cursor-pointer shadow-md">GUARDAR CLAVE</button>
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isDark ? 'bg-slate-700 text-violet-400' : 'bg-violet-100 text-violet-600'}`}><Settings size={28}/></div>
+                <h2 className="text-xl font-black mb-6">Ajustes del Salón</h2>
+                
+                <FileUpload label="Logo de tu Salón (Aparecerá en el PDF)" value={newLogo} onChange={setNewLogo} isDark={isDark} />
                 
                 <div className="mt-6 pt-6 border-t border-slate-200/20">
-                  <p className="text-[10px] text-slate-400 mb-2 font-bold uppercase">¿Olvidaste tu clave anterior?</p>
-                  <button onClick={handleResetPassword} className="w-full py-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-xl font-bold text-xs transition-colors cursor-pointer border border-red-500/20">BLANQUEAR CLAVE POR DEFECTO</button>
+                  <Inp label="Cambiar Contraseña" type="password" placeholder="Nueva clave..." value={newPassword} onChange={setNewPassword} isDark={isDark} />
                 </div>
+
+                <button onClick={handleSaveSettings} className="w-full py-4 mt-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-black text-sm transition-transform active:scale-95 cursor-pointer shadow-md">GUARDAR AJUSTES</button>
              </div>
           </div>
         )}
@@ -645,9 +760,7 @@ export default function App() {
     setInvitations(prev => prev.filter(inv => inv.id !== id));
   };
 
-  // NUEVO: Manejo súper rápido para evitar lag visual (Optimistic Update)
   const handleUpdateInternal = async (id, field, val) => {
-    // 1. Cambiamos la vista inmediatamente en la pantalla (Sin lag)
     setInvitations(prev => prev.map(i => {
       if (i.id === id) {
         return { ...i, internal_data: { ...i.internal_data, [field]: val } };
@@ -655,7 +768,6 @@ export default function App() {
       return i;
     }));
 
-    // 2. Lo mandamos por atrás a Supabase en silencio
     const inv = invitations.find(i => i.id === id);
     if(inv) {
       const updatedData = { ...inv.internal_data, [field]: val };
