@@ -8,7 +8,7 @@ import {
   PartyPopper, ShieldCheck, AlertCircle, LogOut, Plus, Trash2, Copy, CheckCircle2, Lock, 
   MapPin, CalendarClock, AlertTriangle, KeyRound, Building, Edit2, X, MessageCircle, ExternalLink, Eye, Search,
   ChevronDown, Phone, Users, Utensils, Music, CreditCard, Clock, Settings, UserCheck, Calculator, Receipt,
-  Moon, Sun, Printer, ClipboardList, ImageIcon
+  Moon, Sun, Printer, ClipboardList, ImageIcon, FileText
 } from "lucide-react";
 
 const slugify = (text) => text?.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') || 'salon';
@@ -96,9 +96,9 @@ const FileUpload = ({ label, onChange, value, isDark=false }) => {
         </label>
       </div>
       {value && !uploading && (
-        <div className="relative mt-3 group">
+        <div className="relative mt-3 group w-fit">
           <img src={value} alt="preview" className="h-16 w-auto object-contain rounded-xl border border-gray-200 shadow-sm bg-white p-2" />
-          <button type="button" onClick={() => onChange("")} className="absolute top-0 -right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg cursor-pointer"><Trash2 size={12} /></button>
+          <button type="button" onClick={() => onChange("")} className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg cursor-pointer"><Trash2 size={12} /></button>
         </div>
       )}
     </div>
@@ -174,10 +174,16 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
   const [toast, setToast] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [activeCrmId, setActiveCrmId] = useState(null);
+  
+  // ESTADOS DE CONFIGURACIÓN
   const [showSettings, setShowSettings] = useState(false);
   const [newPassword, setNewPassword] = useState("");
-  const [newLogo, setNewLogo] = useState(user?.logo || ""); // ESTADO PARA EL LOGO DEL SALON
+  const [newLogo, setNewLogo] = useState("");
+  const [newPhone, setNewPhone] = useState(""); 
   
+  // MODO DE IMPRESIÓN (Ficha Interna vs Presupuesto Cliente)
+  const [printMode, setPrintMode] = useState("ficha"); 
+
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem("fiesta_darkmode");
     return saved ? JSON.parse(saved) : false;
@@ -201,27 +207,32 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
   const themeText = isDark ? "text-white" : "text-slate-800";
   const themeCard = isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200/60";
 
+  // ==========================================
   // VISTA CRM DEL SALÓN
+  // ==========================================
   if (!isOwner) {
     const salonInfo = users.find(u => u.email === user.email);
     const isManualBlocked = salonInfo?.payment_alert;
     
+    const openSettings = () => {
+      setNewLogo(salonInfo?.logo || "");
+      setNewPhone(salonInfo?.phone || "");
+      setNewPassword("");
+      setShowSettings(true);
+    };
+
     const handleSaveSettings = () => {
-      let dataToUpdate = { logo: newLogo };
+      let dataToUpdate = { logo: newLogo, phone: newPhone };
       if (newPassword) dataToUpdate.pass = newPassword;
       
       onUpdateUser(user.email, dataToUpdate);
       setShowSettings(false);
-      setNewPassword("");
       notify("¡Ajustes guardados correctamente!");
     };
 
-    const handleResetPassword = () => {
-      if(window.confirm("¿Seguro querés volver a la clave por defecto 'salon1234'?")) {
-        onUpdateUser(user.email, { pass: "salon1234" });
-        setShowSettings(false);
-        notify("Clave reseteada a salon1234");
-      }
+    const handlePrint = (mode) => {
+      setPrintMode(mode);
+      setTimeout(() => window.print(), 200); // Pequeña espera para que React actualice la vista
     };
 
     return (
@@ -230,16 +241,18 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
         {/* CSS PARA OCULTAR LA APP E IMPRIMIR SOLO LA PLANTILLA PDF */}
         <style>{`
           @media print {
-            body { background: white !important; }
-            .print-hide { display: none !important; }
+            body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .no-print { display: none !important; }
+            .only-print { display: block !important; }
           }
         `}</style>
 
-        <div className="print-hide">
+        {/* ---------------- INTERFAZ VISUAL (NO SE IMPRIME) ---------------- */}
+        <div className="no-print">
           <nav className={`h-20 border-b px-6 sm:px-8 flex items-center justify-between sticky top-0 z-40 transition-colors duration-300 ${themeNav}`}>
             <div className="flex items-center gap-4">
                {salonInfo?.logo ? (
-                 <img src={salonInfo.logo} alt="Logo" className="h-10 object-contain" />
+                 <img src={salonInfo.logo} alt="Logo" className="h-10 object-contain drop-shadow-sm" />
                ) : (
                  <div className="w-10 h-10 bg-violet-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-violet-200/20"><Building size={20}/></div>
                )}
@@ -249,7 +262,7 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                <button onClick={() => setIsDark(!isDark)} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${isDark ? 'bg-slate-700 text-yellow-400 hover:bg-slate-600' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
                  {isDark ? <Sun size={18}/> : <Moon size={18}/>}
                </button>
-               <button onClick={() => setShowSettings(true)} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}><Settings size={18}/></button>
+               <button onClick={openSettings} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}><Settings size={18}/></button>
                <button onClick={() => { onLogout(); navigate("/"); }} className="w-10 h-10 bg-red-500/10 text-red-500 rounded-xl flex items-center justify-center hover:bg-red-500/20 transition-all cursor-pointer"><LogOut size={18}/></button>
             </div>
           </nav>
@@ -315,132 +328,158 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
               })}
             </div>
           </main>
-        </div>
+          
+          {/* MODAL AJUSTES DE SEGURIDAD Y PERFIL */}
+          {showSettings && (
+            <div className="fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+               <div className={`w-full max-w-sm rounded-[2rem] p-8 shadow-2xl relative anim-pop text-center ${isDark ? 'bg-slate-800 text-white' : 'bg-white text-slate-800'}`}>
+                  <button onClick={() => setShowSettings(false)} className={`absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-colors ${isDark ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-100 hover:bg-slate-200'}`}><X size={16}/></button>
+                  <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isDark ? 'bg-slate-700 text-violet-400' : 'bg-violet-100 text-violet-600'}`}><Settings size={28}/></div>
+                  <h2 className="text-xl font-black mb-6">Ajustes del Salón</h2>
+                  
+                  <FileUpload label="Logo (Aparecerá en el PDF)" value={newLogo} onChange={setNewLogo} isDark={isDark} />
+                  <Inp label="Teléfono de Contacto" placeholder="Ej: +54 9 11 1234-5678" icon={Phone} value={newPhone} onChange={setNewPhone} isDark={isDark} />
+                  
+                  <div className="mt-6 pt-6 border-t border-slate-200/20">
+                    <Inp label="Cambiar Contraseña" type="password" placeholder="Nueva clave..." value={newPassword} onChange={setNewPassword} isDark={isDark} />
+                  </div>
 
-        {/* MODAL CRM (VISIBLE EN PANTALLA, OCULTO AL IMPRIMIR) */}
-        {activeCrmId && activeInv && (
-          <div className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 print-hide">
-            <div className={`w-full max-w-4xl max-h-[95vh] rounded-[2rem] overflow-hidden flex flex-col shadow-2xl anim-pop ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
-              
-              <div className={`px-6 py-4 border-b flex justify-between items-center shrink-0 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                 <h2 className={`font-black text-xl flex items-center gap-2 ${themeText}`}><ClipboardList className="text-violet-500" size={20}/> Ficha de Logística</h2>
-                 <div className="flex gap-3">
-                   <button onClick={() => window.print()} className="px-4 py-2 bg-slate-200 text-slate-700 hover:bg-slate-300 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer"><Printer size={14}/> Exportar PDF</button>
-                   <button onClick={() => setActiveCrmId(null)} className="w-10 h-10 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-full flex items-center justify-center transition-colors cursor-pointer"><X size={20}/></button>
-                 </div>
-              </div>
+                  <button onClick={handleSaveSettings} className="w-full py-4 mt-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-black text-sm transition-transform active:scale-95 cursor-pointer shadow-md">GUARDAR AJUSTES</button>
+               </div>
+            </div>
+          )}
 
-              <div className="p-6 sm:p-8 overflow-y-auto fd-sb flex-1">
-                <div className="mb-8">
-                   <h3 className="text-xs font-black text-violet-500 uppercase tracking-widest mb-4 border-b border-slate-200/20 pb-2 flex items-center gap-2"><PartyPopper size={14}/> 1. Detalles del Evento</h3>
-                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                      <div className="md:col-span-2"><Inp label="Nombre del Agasajado/s" value={activeInv.internal_data.internalHonoree || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalHonoree', v)} isDark={isDark} /></div>
-                      <Inp label="Tipo de Evento" placeholder="Ej: Cumpleaños, Boda" value={activeInv.internal_data.eventType || ''} onChange={v => onUpdateInternal(activeInv.id, 'eventType', v)} isDark={isDark} />
-                      <div>
-                        <label className={`block text-[10px] font-black uppercase mb-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Estado</label>
-                        <select className={`w-full py-3 px-4 rounded-xl text-sm font-bold outline-none cursor-pointer border ${isDark ? 'bg-slate-800 text-white border-slate-700' : 'bg-white text-slate-800 border-slate-200'}`} value={activeInv.internal_data.eventStatus || 'Nuevo'} onChange={e => onUpdateInternal(activeInv.id, 'eventStatus', e.target.value)}>
-                           <option value="Nuevo">🔵 Nuevo / Borrador</option>
-                           <option value="Confirmado">🟣 Confirmado</option>
-                           <option value="Finalizado">⚪ Finalizado</option>
-                           <option value="Cancelado">🔴 Cancelado</option>
-                        </select>
-                      </div>
-                   </div>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                      <Inp label="Fecha Confirmada" type="date" icon={CalendarClock} value={activeInv.internal_data.internalDate || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalDate', v)} isDark={isDark} />
-                      <Inp label="Horario del Salón (24hs)" type="text" placeholder="Ej: 14:00 a 20:00" icon={Clock} value={activeInv.internal_data.internalTime || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalTime', v)} isDark={isDark} />
-                   </div>
-                </div>
-
-                <div className="mb-8">
-                   <h3 className="text-xs font-black text-blue-500 uppercase tracking-widest mb-4 border-b border-slate-200/20 pb-2 flex items-center gap-2"><UserCheck size={14}/> 2. Datos del Cliente</h3>
-                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <Inp label="Nombre Completo" value={activeInv.internal_data.clientName || ''} onChange={v => onUpdateInternal(activeInv.id, 'clientName', v)} isDark={isDark} />
-                      <div className="flex gap-2 items-end">
-                         <Inp label="WhatsApp" placeholder="54911..." className="flex-1 !mb-0" value={activeInv.internal_data.clientPhone || ''} onChange={v => onUpdateInternal(activeInv.id, 'clientPhone', v)} isDark={isDark} />
-                         <button onClick={() => window.open(`https://wa.me/${activeInv.internal_data.clientPhone}`)} className="h-[46px] px-4 bg-green-500 text-white rounded-xl flex items-center justify-center cursor-pointer shadow-md"><MessageCircle size={18}/></button>
-                      </div>
-                      <Inp label="Cantidad Invitados" type="number" placeholder="Ej: 80" value={activeInv.internal_data.guestCount || ''} onChange={v => onUpdateInternal(activeInv.id, 'guestCount', v)} isDark={isDark} />
+          {/* MODAL CRM */}
+          {activeCrmId && activeInv && (
+            <div className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+              <div className={`w-full max-w-4xl max-h-[95vh] rounded-[2rem] overflow-hidden flex flex-col shadow-2xl anim-pop ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
+                
+                <div className={`px-6 py-4 border-b flex justify-between items-center shrink-0 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                   <h2 className={`font-black text-xl flex items-center gap-2 ${themeText}`}><ClipboardList className="text-violet-500" size={20}/> Logística y Presupuesto</h2>
+                   <div className="flex gap-2">
+                     {/* BOTONES DE IMPRESIÓN (Doble Plantilla) */}
+                     <button onClick={() => handlePrint('presupuesto')} className="px-4 py-2 bg-green-100 text-green-700 hover:bg-green-200 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer"><FileText size={14}/> Presupuesto</button>
+                     <button onClick={() => handlePrint('ficha')} className="px-4 py-2 bg-slate-200 text-slate-700 hover:bg-slate-300 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer"><Printer size={14}/> Ficha Interna</button>
+                     <button onClick={() => setActiveCrmId(null)} className="w-10 h-10 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-full flex items-center justify-center transition-colors cursor-pointer ml-2"><X size={20}/></button>
                    </div>
                 </div>
 
-                <div className="mb-8">
-                   <h3 className="text-xs font-black text-amber-500 uppercase tracking-widest mb-4 border-b border-slate-200/20 pb-2 flex items-center gap-2"><ClipboardList size={14}/> 3. Logística y Servicios</h3>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Inp label="Servicios Solicitados" placeholder="Ej: DJ, Fotógrafo, Show de Magia..." multiline value={activeInv.internal_data.requestedServices || ''} onChange={v => onUpdateInternal(activeInv.id, 'requestedServices', v)} isDark={isDark} />
-                      <Inp label="Menús Especiales / Alergias" placeholder="Ej: 2 Celíacos, 1 Vegano..." multiline value={activeInv.internal_data.specialMenus || ''} onChange={v => onUpdateInternal(activeInv.id, 'specialMenus', v)} isDark={isDark} />
-                   </div>
-                   <Inp label="Notas Internas / Observaciones" placeholder="Anotaciones privadas del salón sobre este evento..." multiline className="mt-2" value={activeInv.internal_data.internalNotes || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalNotes', v)} isDark={isDark} />
-                </div>
+                <div className="p-6 sm:p-8 overflow-y-auto fd-sb flex-1">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                     
+                     {/* COLUMNA IZQUIERDA */}
+                     <div>
+                        <h3 className="text-xs font-black text-blue-500 uppercase tracking-widest mb-4 border-b border-slate-200/20 pb-2 flex items-center gap-2"><UserCheck size={14}/> Datos del Cliente</h3>
+                        <Inp label="Nombre Completo" value={activeInv.internal_data.clientName || ''} onChange={v => onUpdateInternal(activeInv.id, 'clientName', v)} isDark={isDark} />
+                        <div className="flex gap-2 items-end mb-4">
+                           <Inp label="WhatsApp del Cliente" placeholder="54911..." className="flex-1 !mb-0" value={activeInv.internal_data.clientPhone || ''} onChange={v => onUpdateInternal(activeInv.id, 'clientPhone', v)} isDark={isDark} />
+                           <button onClick={() => window.open(`https://wa.me/${activeInv.internal_data.clientPhone}`)} className="h-[46px] px-4 bg-green-500 text-white rounded-xl flex items-center justify-center cursor-pointer shadow-md"><MessageCircle size={18}/></button>
+                        </div>
+                        <Inp label="Cantidad de Invitados (Aprox)" type="number" placeholder="Ej: 80" value={activeInv.internal_data.guestCount || ''} onChange={v => onUpdateInternal(activeInv.id, 'guestCount', v)} isDark={isDark} />
+                     </div>
 
-                <div className="mb-8">
-                   <h3 className="text-xs font-black text-green-500 uppercase tracking-widest mb-4 border-b border-slate-200/20 pb-2 flex items-center gap-2"><Receipt size={14}/> 4. Finanzas</h3>
-                   <div className={`p-5 rounded-2xl border grid grid-cols-1 md:grid-cols-4 gap-4 ${isDark ? 'bg-green-500/10 border-green-500/20' : 'bg-green-50 border-green-200'}`}>
-                      <div>
-                        <label className={`block text-[10px] font-black uppercase mb-1.5 ${isDark ? 'text-green-400' : 'text-slate-500'}`}>Estado de Pago</label>
-                        <select className={`w-full py-3 px-4 rounded-xl text-sm font-bold outline-none cursor-pointer border ${isDark ? 'bg-slate-800 text-white border-green-900' : 'bg-white text-slate-800 border-green-200'}`} value={activeInv.internal_data.paymentStatus || 'Pendiente'} onChange={e => onUpdateInternal(activeInv.id, 'paymentStatus', e.target.value)}>
-                           <option value="Pendiente">🔴 Pendiente</option>
-                           <option value="Seña / Parcial">🟡 Seña Adelantada</option>
-                           <option value="Pagado Total">🟢 Pagado Total</option>
-                        </select>
-                      </div>
-                      <Inp label="Presupuesto Total" type="number" prefix="$" value={activeInv.internal_data.totalBudget || ''} onChange={v => onUpdateInternal(activeInv.id, 'totalBudget', v)} isDark={isDark} />
-                      <Inp label="Abonado / Seña" type="number" prefix="$" value={activeInv.internal_data.paymentAmount || ''} onChange={v => onUpdateInternal(activeInv.id, 'paymentAmount', v)} isDark={isDark} />
-                      <div>
-                         <label className={`block text-[10px] font-black uppercase mb-1.5 ${isDark ? 'text-green-400' : 'text-slate-500'}`}>Saldo Restante</label>
-                         <div className={`w-full py-3 px-4 rounded-xl text-sm font-black flex items-center gap-1 border ${isDark ? 'bg-slate-800 border-green-900 text-white' : 'bg-white border-green-200 text-slate-800'}`}>
-                            <span className="text-slate-400 opacity-50">$</span> {(Number(activeInv.internal_data.totalBudget || 0) - Number(activeInv.internal_data.paymentAmount || 0)).toLocaleString('es-AR')}
-                         </div>
-                      </div>
-                   </div>
-                </div>
+                     {/* COLUMNA DERECHA */}
+                     <div>
+                        <h3 className="text-xs font-black text-violet-500 uppercase tracking-widest mb-4 border-b border-slate-200/20 pb-2 flex items-center gap-2"><PartyPopper size={14}/> Detalles del Evento</h3>
+                        <Inp label="Nombre del Agasajado/s" value={activeInv.internal_data.internalHonoree || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalHonoree', v)} isDark={isDark} />
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                          <Inp label="Tipo de Evento" placeholder="Ej: Boda" value={activeInv.internal_data.eventType || ''} onChange={v => onUpdateInternal(activeInv.id, 'eventType', v)} isDark={isDark} />
+                          <div>
+                            <label className={`block text-[10px] font-black uppercase mb-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Estado</label>
+                            <select className={`w-full py-3 px-4 rounded-xl text-sm font-bold outline-none cursor-pointer border ${isDark ? 'bg-slate-800 text-white border-slate-700' : 'bg-white text-slate-800 border-slate-200'}`} value={activeInv.internal_data.eventStatus || 'Nuevo'} onChange={e => onUpdateInternal(activeInv.id, 'eventStatus', e.target.value)}>
+                               <option value="Nuevo">🔵 Nuevo / Borrador</option>
+                               <option value="Confirmado">🟣 Confirmado</option>
+                               <option value="Finalizado">⚪ Finalizado</option>
+                               <option value="Cancelado">🔴 Cancelado</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                           <Inp label="Fecha" type="date" icon={CalendarClock} value={activeInv.internal_data.internalDate || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalDate', v)} isDark={isDark} />
+                           <Inp label="Horario" type="text" placeholder="Ej: 14:00 a 20:00" icon={Clock} value={activeInv.internal_data.internalTime || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalTime', v)} isDark={isDark} />
+                        </div>
+                     </div>
+                  </div>
 
-              </div>
-              <div className={`px-6 py-4 flex justify-end ${isDark ? 'bg-slate-800 border-t border-slate-700' : 'bg-slate-50 border-t border-slate-200'}`}>
-                 <button onClick={() => setActiveCrmId(null)} className="px-8 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-black text-sm shadow-md cursor-pointer transition-colors">CERRAR FICHA</button>
+                  <div className="mb-8">
+                     <h3 className="text-xs font-black text-amber-500 uppercase tracking-widest mb-4 border-b border-slate-200/20 pb-2 flex items-center gap-2"><ClipboardList size={14}/> Logística y Servicios</h3>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Inp label="Servicios Solicitados (Para Presupuesto)" placeholder="Ej: DJ, Fotógrafo, Show de Magia..." multiline value={activeInv.internal_data.requestedServices || ''} onChange={v => onUpdateInternal(activeInv.id, 'requestedServices', v)} isDark={isDark} />
+                        <Inp label="Menús Especiales / Alergias" placeholder="Ej: 2 Celíacos, 1 Vegano..." multiline value={activeInv.internal_data.specialMenus || ''} onChange={v => onUpdateInternal(activeInv.id, 'specialMenus', v)} isDark={isDark} />
+                     </div>
+                     <Inp label="Notas Internas (Privadas, no se imprimen al cliente)" placeholder="Anotaciones para la cocina o administración..." multiline className="mt-2" value={activeInv.internal_data.internalNotes || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalNotes', v)} isDark={isDark} />
+                  </div>
+
+                  <div className="mb-8">
+                     <h3 className="text-xs font-black text-green-500 uppercase tracking-widest mb-4 border-b border-slate-200/20 pb-2 flex items-center gap-2"><Receipt size={14}/> Finanzas</h3>
+                     <div className={`p-5 rounded-2xl border grid grid-cols-1 md:grid-cols-4 gap-4 ${isDark ? 'bg-green-500/10 border-green-500/20' : 'bg-green-50 border-green-200'}`}>
+                        <div>
+                          <label className={`block text-[10px] font-black uppercase mb-1.5 ${isDark ? 'text-green-400' : 'text-slate-500'}`}>Estado de Pago</label>
+                          <select className={`w-full py-3 px-4 rounded-xl text-sm font-bold outline-none cursor-pointer border ${isDark ? 'bg-slate-800 text-white border-green-900' : 'bg-white text-slate-800 border-green-200'}`} value={activeInv.internal_data.paymentStatus || 'Pendiente'} onChange={e => onUpdateInternal(activeInv.id, 'paymentStatus', e.target.value)}>
+                             <option value="Pendiente">🔴 Pendiente</option>
+                             <option value="Seña / Parcial">🟡 Seña Adelantada</option>
+                             <option value="Pagado Total">🟢 Pagado Total</option>
+                          </select>
+                        </div>
+                        <Inp label="Presupuesto Total" type="number" prefix="$" value={activeInv.internal_data.totalBudget || ''} onChange={v => onUpdateInternal(activeInv.id, 'totalBudget', v)} isDark={isDark} />
+                        <Inp label="Abonado / Seña" type="number" prefix="$" value={activeInv.internal_data.paymentAmount || ''} onChange={v => onUpdateInternal(activeInv.id, 'paymentAmount', v)} isDark={isDark} />
+                        <div>
+                           <label className={`block text-[10px] font-black uppercase mb-1.5 ${isDark ? 'text-green-400' : 'text-slate-500'}`}>Saldo Restante</label>
+                           <div className={`w-full py-3 px-4 rounded-xl text-sm font-black flex items-center gap-1 border ${isDark ? 'bg-slate-800 border-green-900 text-white' : 'bg-white border-green-200 text-slate-800'}`}>
+                              <span className="text-slate-400 opacity-50">$</span> {(Number(activeInv.internal_data.totalBudget || 0) - Number(activeInv.internal_data.paymentAmount || 0)).toLocaleString('es-AR')}
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
-        {/* PLANTILLA DE IMPRESIÓN (VISIBLE SOLO AL IMPRIMIR) */}
+        {/* ---------------- LA HOJA A4 PARA IMPRIMIR (DOBLE PLANTILLA) ---------------- */}
         {activeCrmId && activeInv && (
-          <div className="hidden print:block w-full bg-white text-black p-8 font-sans">
+          <div className="hidden only-print w-full bg-white text-black p-8 font-sans max-w-4xl mx-auto">
              
-             {/* CABECERA (Logo, Datos del Salón y Título) */}
-             <div className="flex justify-between items-end border-b-2 border-slate-800 pb-6 mb-8">
-                <div className="flex items-center gap-4">
+             {/* CABECERA (Logo y Datos del Salón) */}
+             <div className="flex justify-between items-center border-b-2 border-slate-800 pb-6 mb-8">
+                <div className="flex items-center gap-6">
                   {salonInfo?.logo ? (
-                    <img src={salonInfo.logo} className="h-20 object-contain" alt="Logo" />
+                    <img src={salonInfo.logo} className="max-h-24 max-w-[200px] object-contain" alt="Logo" />
                   ) : (
-                    <div className="w-16 h-16 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400"><Building size={30}/></div>
+                    <div className="text-3xl font-black tracking-tighter text-slate-900">{user.name}</div>
                   )}
                   <div>
-                    <h1 className="text-2xl font-black text-slate-900 m-0 leading-none">{user.name}</h1>
-                    <p className="text-slate-500 text-sm mt-1">{salonInfo?.address || 'Sin dirección registrada'}</p>
-                    <p className="text-slate-500 text-sm">{salonInfo?.phone || 'Sin teléfono'}</p>
+                    {salonInfo?.logo && <h1 className="text-xl font-black text-slate-900 m-0 leading-none mb-1">{user.name}</h1>}
+                    <p className="text-slate-600 text-sm">{salonInfo?.address || 'Sin dirección registrada'}</p>
+                    <p className="text-slate-600 text-sm">{salonInfo?.phone || 'Sin teléfono'}</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <h2 className="text-xl font-black text-slate-800 tracking-widest uppercase mb-1">FICHA DE EVENTO</h2>
-                  <p className="text-sm font-bold text-slate-500 bg-slate-100 inline-block px-3 py-1 rounded-lg">ID: {activeInv.id.split('-')[1].toUpperCase()}</p>
+                  <h2 className="text-2xl font-black text-slate-800 tracking-widest uppercase mb-1">
+                    {printMode === 'presupuesto' ? 'PRESUPUESTO' : 'FICHA DE EVENTO'}
+                  </h2>
+                  <p className="text-sm font-bold text-slate-500 bg-slate-100 inline-block px-3 py-1 rounded-lg border border-slate-200">Ref: {activeInv.id.split('-')[1].toUpperCase()}</p>
                 </div>
              </div>
 
              {/* BLOQUE 1: EVENTO Y CLIENTE */}
              <div className="grid grid-cols-2 gap-8 mb-8">
                 <div>
-                  <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b pb-1">1. Datos del Evento</h3>
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b border-slate-200 pb-1">1. Detalles del Evento</h3>
                   <div className="space-y-2 text-sm">
                     <p><span className="font-bold text-slate-700 w-24 inline-block">Agasajado:</span> <span className="font-black text-lg">{activeInv.internal_data.internalHonoree || '---'}</span></p>
                     <p><span className="font-bold text-slate-700 w-24 inline-block">Tipo:</span> {activeInv.internal_data.eventType || '---'}</p>
                     <p><span className="font-bold text-slate-700 w-24 inline-block">Fecha:</span> {formatDate(activeInv.internal_data.internalDate)}</p>
                     <p><span className="font-bold text-slate-700 w-24 inline-block">Horario:</span> {activeInv.internal_data.internalTime || '---'} hs</p>
-                    <p><span className="font-bold text-slate-700 w-24 inline-block">Estado:</span> <span className="uppercase font-bold border border-slate-300 px-2 py-0.5 rounded text-[10px]">{activeInv.internal_data.eventStatus || 'Nuevo'}</span></p>
+                    {printMode === 'ficha' && (
+                      <p><span className="font-bold text-slate-700 w-24 inline-block">Estado (Int):</span> <span className="uppercase font-bold border border-slate-300 px-2 py-0.5 rounded text-[10px] bg-slate-100">{activeInv.internal_data.eventStatus || 'Nuevo'}</span></p>
+                    )}
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b pb-1">2. Datos del Cliente</h3>
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b border-slate-200 pb-1">2. Datos del Cliente</h3>
                   <div className="space-y-2 text-sm">
                     <p><span className="font-bold text-slate-700 w-24 inline-block">Nombre:</span> <span className="font-bold">{activeInv.internal_data.clientName || '---'}</span></p>
                     <p><span className="font-bold text-slate-700 w-24 inline-block">Teléfono:</span> {activeInv.internal_data.clientPhone || '---'}</p>
@@ -451,7 +490,7 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
 
              {/* BLOQUE 2: LOGÍSTICA */}
              <div className="mb-8">
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b pb-1">3. Logística y Notas</h3>
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b border-slate-200 pb-1">3. Servicios Incluidos</h3>
                 <div className="grid grid-cols-2 gap-8 text-sm">
                   <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
                     <p className="font-black text-slate-700 mb-1">Servicios Solicitados:</p>
@@ -462,66 +501,54 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                     <p className="whitespace-pre-wrap">{activeInv.internal_data.specialMenus || 'Ninguno especificado.'}</p>
                   </div>
                 </div>
-                <div className="mt-4 p-4 border border-slate-300 rounded-xl">
-                  <p className="font-black text-slate-700 mb-1">Notas Internas del Salón:</p>
-                  <p className="whitespace-pre-wrap">{activeInv.internal_data.internalNotes || '---'}</p>
-                </div>
+                
+                {/* Las notas internas SOLO se imprimen si es la Ficha de Logística */}
+                {printMode === 'ficha' && (
+                  <div className="mt-4 p-4 border border-slate-300 rounded-xl bg-yellow-50">
+                    <p className="font-black text-slate-700 mb-1 flex items-center gap-2"><AlertTriangle size={14}/> Notas Internas del Salón:</p>
+                    <p className="whitespace-pre-wrap italic text-slate-600">{activeInv.internal_data.internalNotes || 'Sin observaciones.'}</p>
+                  </div>
+                )}
              </div>
 
-             {/* BLOQUE 3: FINANZAS */}
+             {/* BLOQUE 3: VALORES */}
              <div>
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b pb-1">4. Estado Financiero</h3>
-                <div className="flex justify-between items-center bg-slate-100 p-5 rounded-xl border border-slate-300">
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b border-slate-200 pb-1">
+                  {printMode === 'presupuesto' ? '4. Detalle de Valores' : '4. Estado Financiero Interno'}
+                </h3>
+                <div className="flex justify-between items-center bg-slate-50 p-6 rounded-xl border border-slate-200">
                   <div className="text-center">
-                    <p className="text-[10px] font-black uppercase text-slate-500">Presupuesto Total</p>
-                    <p className="text-xl font-bold">${Number(activeInv.internal_data.totalBudget || 0).toLocaleString('es-AR')}</p>
+                    <p className="text-[10px] font-black uppercase text-slate-500">Valor Total</p>
+                    <p className="text-2xl font-bold text-slate-800">${Number(activeInv.internal_data.totalBudget || 0).toLocaleString('es-AR')}</p>
                   </div>
                   <div className="text-center">
                     <p className="text-[10px] font-black uppercase text-slate-500">Abonado / Seña</p>
-                    <p className="text-xl font-bold text-green-700">${Number(activeInv.internal_data.paymentAmount || 0).toLocaleString('es-AR')}</p>
+                    <p className="text-2xl font-bold text-green-700">${Number(activeInv.internal_data.paymentAmount || 0).toLocaleString('es-AR')}</p>
                   </div>
-                  <div className="text-center">
-                    <p className="text-[10px] font-black uppercase text-slate-500">Saldo Pendiente</p>
-                    <p className="text-2xl font-black text-red-600">${(Number(activeInv.internal_data.totalBudget || 0) - Number(activeInv.internal_data.paymentAmount || 0)).toLocaleString('es-AR')}</p>
-                  </div>
-                  <div className="text-center border-l-2 pl-6">
-                    <p className="text-[10px] font-black uppercase text-slate-500 mb-1">Estado</p>
-                    <span className="font-black uppercase tracking-widest text-xs border-b-2 border-slate-800 pb-1">{activeInv.internal_data.paymentStatus || 'Pendiente'}</span>
+                  <div className="text-center bg-slate-800 text-white px-6 py-3 rounded-xl shadow-lg">
+                    <p className="text-[10px] font-black uppercase text-slate-300 opacity-80">Saldo Pendiente</p>
+                    <p className="text-3xl font-black">${(Number(activeInv.internal_data.totalBudget || 0) - Number(activeInv.internal_data.paymentAmount || 0)).toLocaleString('es-AR')}</p>
                   </div>
                 </div>
              </div>
              
-             {/* FOOTER DEL PDF */}
-             <div className="mt-12 text-center text-xs text-slate-400 font-bold border-t pt-4">
-                Documento generado automáticamente por FiestaDigital - www.fiestadigital.com
+             {/* FOOTER DEL PDF MARCA BLANCA */}
+             <div className="mt-16 text-center text-xs text-slate-400 font-bold border-t border-slate-200 pt-4">
+                {printMode === 'presupuesto' ? (
+                  <p>Documento emitido el {new Date().toLocaleDateString('es-AR')} • Los valores expresados pueden estar sujetos a modificaciones.</p>
+                ) : (
+                  <p>Hoja de ruta interna generada el {new Date().toLocaleDateString('es-AR')}</p>
+                )}
              </div>
           </div>
         )}
-
-        {/* MODAL AJUSTES DE SEGURIDAD Y PERFIL (NUEVO: LOGO) */}
-        {showSettings && (
-          <div className="fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 print-hide">
-             <div className={`w-full max-w-sm rounded-[2rem] p-8 shadow-2xl relative anim-pop text-center ${isDark ? 'bg-slate-800 text-white' : 'bg-white text-slate-800'}`}>
-                <button onClick={() => setShowSettings(false)} className={`absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-colors ${isDark ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-100 hover:bg-slate-200'}`}><X size={16}/></button>
-                <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isDark ? 'bg-slate-700 text-violet-400' : 'bg-violet-100 text-violet-600'}`}><Settings size={28}/></div>
-                <h2 className="text-xl font-black mb-6">Ajustes del Salón</h2>
-                
-                <FileUpload label="Logo de tu Salón (Aparecerá en el PDF)" value={newLogo} onChange={setNewLogo} isDark={isDark} />
-                
-                <div className="mt-6 pt-6 border-t border-slate-200/20">
-                  <Inp label="Cambiar Contraseña" type="password" placeholder="Nueva clave..." value={newPassword} onChange={setNewPassword} isDark={isDark} />
-                </div>
-
-                <button onClick={handleSaveSettings} className="w-full py-4 mt-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-black text-sm transition-transform active:scale-95 cursor-pointer shadow-md">GUARDAR AJUSTES</button>
-             </div>
-          </div>
-        )}
-        {toast && <Toast msg={toast} />}
       </div>
     );
   }
 
+  // ==========================================
   // VISTA MASTER (ADMIN - SOLO DUEÑO ORIGINAL)
+  // ==========================================
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState("create"); 
   const [editingEmail, setEditingEmail] = useState("");
