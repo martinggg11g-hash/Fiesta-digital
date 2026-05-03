@@ -1,175 +1,33 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { OpeningAnimation } from "./Lotties"; 
-
-// INTEGRACIÓN DE GIPHY
 import { GiphyFetch } from '@giphy/js-fetch-api';
 import { Grid } from '@giphy/react-components';
-
+import { OpeningAnimation } from "./Lotties"; 
 import {
-  MapPin, Clock, Calendar, Palette, CheckCircle2,
-  ChevronDown, Type, Edit2, ArrowLeft, Save, X,
-  Star, Image as ImageIcon, Layout, List, Trash2, Loader2, Check,
-  Video, Link as LinkIcon, Sparkles, MoveVertical, Music, LayoutGrid, Smartphone
+  Palette, ChevronDown, Type, ArrowLeft, Save, Star, Image as ImageIcon, 
+  Layout, List, Trash2, Loader2, Video, Link as LinkIcon, Sparkles, 
+  MoveVertical, Music, LayoutGrid, Smartphone, Calendar, Clock, CheckCircle2
 } from "lucide-react";
 
-/* ============================================================================
-   CONFIGURACIÓN DE GIPHY
-============================================================================ */
+// 1. IMPORTAMOS LO QUE SEPARAMOS A LOS OTROS ARCHIVOS
+import { 
+  DEF_CONFIG, ANIMATION_CATEGORIES, THEMES, FONTS, EFFECTS, 
+  TRANSITION_OPTS, GENERAL_EMOJIS, FOOD_EMOJIS, CLOTHES_EMOJIS 
+} from "./config";
+import { InvitePreview } from "./Preview";
+
+// 2. RE-EXPORTAMOS PARA NO ROMPER APP.JSX
+export { DEF_CONFIG } from "./config";
+export { InvitePreview } from "./Preview";
+
+// 3. CONFIGURACIÓN DE APIS (Giphy e ImgBB)
 const gf = new GiphyFetch('32PbboqCveiWSlj9vROPmyjv8l8cuaj1');
+const IMGBB_API_KEY = "904f81caf05efe58a799abdb1fedc2ce";
 
 /* ============================================================================
-   FUNCIONES DE UTILIDAD Y COMPRESIÓN
+   MINI-COMPONENTES DE INTERFAZ (Inputs, Botones, Acordeones)
 ============================================================================ */
-// Compresión de imágenes nativa para no saturar Supabase con Base64 gigantes
-const compressImage = (base64, maxWidth = 800) => {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.src = base64;
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const ratio = maxWidth / img.width;
-      canvas.width = maxWidth;
-      canvas.height = img.height * ratio;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      resolve(canvas.toDataURL('image/jpeg', 0.7)); // Calidad al 70%
-    };
-  });
-};
 
-const getSpotifyEmbed = (url) => {
-  if (!url) return null;
-  
-  // Detectamos si es una playlist, un álbum o una canción normal
-  let type = "track";
-  if (url.includes("playlist/")) type = "playlist";
-  if (url.includes("album/")) type = "album";
-  
-  // Extraemos el ID exacto separando la URL
-  const idPart = url.split(`${type}/`)[1];
-  if (!idPart) return null;
-  
-  const id = idPart.split("?")[0];
-  
-  // Usamos el enlace oficial de Spotify para Iframes (con HTTPS para que Vercel no lo bloquee)
-  return `https://open.spotify.com/embed/${type}/${id}?utm_source=generator&theme=0`;
-};
-
-const getYouTubeId = (url) => {
-  if (!url) return null;
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-  const match = url.match(regExp);
-  return (match && match[2] && match[2].length === 11) ? match[2] : null;
-};
-
-/* ============================================================================
-   CATEGORÍAS DE ANIMACIONES
-============================================================================ */
-export const ANIMATION_CATEGORIES = {
-  infantil: [
-    { id: "amongus", name: "Among Us", emoji: "👾" },
-    { id: "tiger", name: "Tigre Animado", emoji: "🐯" },
-    { id: "chest", name: "Cofre Pirata", emoji: "🏴‍☠️" },
-    { id: "soccer", name: "Cancha Fútbol", emoji: "⚽" }
-  ],
-  quince: [
-    { id: "musicbox", name: "Caja Musical", emoji: "🎵" },
-    { id: "gift", name: "Regalo", emoji: "🎁" }
-  ],
-  bodas: [
-    { id: "envelope", name: "Sobre Elegante", emoji: "✉️" },
-    { id: "rings", name: "Anillos", emoji: "💍" } 
-  ],
-  adultos: [
-    { id: "cheers", name: "Brindis", emoji: "🥂" }, 
-    { id: "disco", name: "Fiesta Disco", emoji: "🪩" } 
-  ]
-};
-
-/* ============================================================================
-   CONSTANTES
-============================================================================ */
-export const GENERAL_EMOJIS = ['🎂','🎈','🎉','🥳','🎁','🎊','👶','💍','🎓','✨','🌟','❤️','💖','🦖','🦄','⚽','🎮','👑','🌸','🔥','💎','🎪','🎠','🎡','🦋','🌺','🎵','🏆'];
-export const FOOD_EMOJIS = ['🍕','🍔','🍟','🌭','🍿','🍳','🥞','🍞','🥐','🥨','🧀','🥗','🌮','🌯','🍖','🍗','🥟','🍣','🍤','🍩','🍪','🍰','🧁','🥧','🍫','🍬','🍭','🍺','☕'];
-export const CLOTHES_EMOJIS = ['👕','👖','👔','👗','👙','👘','🥻','👠','👡','👢','👞','👟','🥿','🧦','🧤','🧣','🎩','🧢','👒','🎓','👑','💍','👛','👜','💼','🎒','🕶','👓'];
-
-export const THEMES = [
-  { id:"violet", name:"Violeta",   bg1:"#08060f", bg2:"#120d24", primary:"#7c3aed", card:"#1a1035", text:"#f0ecff", muted:"#9b8ec4" },
-  { id:"rose",   name:"Rosa",      bg1:"#150510", bg2:"#200a16", primary:"#e11d48", card:"#2a0e1a", text:"#fff1f3", muted:"#fda4af" },
-  { id:"teal",   name:"Teal",      bg1:"#020f10", bg2:"#031a1c", primary:"#0d9488", card:"#062020", text:"#f0fdfb", muted:"#5eead4" },
-  { id:"amber",  name:"Ámbar",     bg1:"#0f0800", bg2:"#1c1200", primary:"#d97706", card:"#1a1000", text:"#fffbeb", muted:"#fcd34d" },
-  { id:"p-pink", name:"P. Rosa",   bg1:"#fdf2f8", bg2:"#fce7f3", primary:"#ec4899", card:"#ffffff", text:"#831843", muted:"#f472b6" },
-  { id:"p-blue", name:"P. Azul",   bg1:"#eff6ff", bg2:"#e0f2fe", primary:"#3b82f6", card:"#ffffff", text:"#1e3a8a", muted:"#60a5fa" },
-  { id:"p-green",name:"P. Verde",  bg1:"#f0fdf4", bg2:"#dcfce7", primary:"#22c55e", card:"#ffffff", text:"#14532d", muted:"#4ade80" },
-  { id:"p-yellow",name:"P. Amar.", bg1:"#fefce8", bg2:"#fef9c3", primary:"#eab308", card:"#ffffff", text:"#713f12", muted:"#facc15" },
-];
-
-export const FONTS = [
-  { label: "DM Sans (Moderna)", value: "'DM Sans', sans-serif" },
-  { label: "Montserrat (Limpia)", value: "'Montserrat', sans-serif" },
-  { label: "Syne (Elegante)", value: "'Syne', sans-serif" },
-  { label: "Pacifico (Divertida)", value: "'Pacifico', cursive" },
-  { label: "Caveat (Manuscrita)", value: "'Caveat', cursive" },
-  { label: "Playfair (Clásica)", value: "'Playfair Display', serif" },
-];
-
-export const EFFECTS = [
-  { id: "none",     name: "Sin efecto",  icon: "✖️" },
-  { id: "confetti", name: "Confeti",     icon: "🎊" },
-  { id: "hearts",   name: "Corazones",   icon: "❤️" },
-  { id: "stars",    name: "Estrellas",   icon: "⭐" },
-  { id: "bubbles",  name: "Burbujas",    icon: "🫧" },
-  { id: "snow",     name: "Nieve",       icon: "❄️" },
-  { id: "petals",   name: "Pétalos",     icon: "🌸" },
-  { id: "emojis",   name: "Emojis mix",  icon: "🎉" },
-];
-
-export const TRANSITION_OPTS = [
-  { label: "Desvanecer (Fade)", value: "fade" },
-  { label: "Deslizar arriba", value: "slideUp" },
-  { label: "Zoom Salida", value: "zoomOut" },
-  { label: "Zoom Entrada", value: "zoomIn" }
-];
-
-export const DEF_CONFIG = {
-  theme:"violet", fontTitle:"'Pacifico', cursive", fontBody:"'DM Sans', sans-serif",
-  
-  honoreeSize: 48, honoreeFont: "'Pacifico', cursive", honoreeColor: "#f0ecff",
-  eventTypeSize: 11, eventTypeFont: "'DM Sans', sans-serif", eventTypeColor: "#7c3aed",
-  dateSize: 18, locationSize: 18, titlesSize: 10, badgeSize: 14,
-  
-  bg1:"#08060f", bg2:"#120d24", primary:"#7c3aed", card:"#1a1035", text:"#f0ecff", muted:"#9b8ec4",
-  coverGradientIntensity: 70, showCoverGradient: true, particleEffect: "none", 
-  openingAnimation: "envelope", animationDuration: 2, animationTransition: "fade",
-  eventTypeEmoji:"✨", eventType:"Estás invitado al cumple de", honoreeName:"Valentina", badgeEmoji:"🎂", badgeText:"5 añitos",
-  
-  coverPhoto:"https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=800&q=80",
-  useGiphyCover: false, 
-  
-  showBanner:true, bannerTitle:"La festejada", bannerPhoto:"https://images.unsplash.com/photo-1545912452-8aea7e25a3d3?auto=format&fit=crop&w=400&q=80",
-  useGiphyBanner: false,
-  
-  showTheme:true, themeIcon:"🦕", themeLabel:"Temática", themeText:"Dinosaurios",
-  
-  showDate:true, dateText:"Sábado 24 de Octubre", showTime:true, timeText:"16:00 a 20:00 hs", showCountdown: false, countdownDate:"",
-  showLocation:true, locationName:"Aventura Kids", locationAddress:"Av. San Martín 1234", showParking:true, parkingType:"Estacionamiento público", customParking:"",
-  
-  showItinerary:true, itinerary:[{ time:"16:00", title:"Bienvenida", sub:"Recepción de invitados" }],
-  showMenu:true, menuItems:[{ emoji:"🍕", label:"Pizza Party" }, { emoji:"🥤", label:"Gaseosas" }],
-  showDressCode:true, dressCodeIcon:"👗", dressCodeText:"Elegante Sport",
-  showGifts:true, giftIcon:"🎁", giftLabel:"Regalos", giftText:"Lluvia de sobres", showGiftNote:false, giftNoteText:"", giftNoteColor: "#7c3aed", giftNoteSize: 11,
-  
-  showGallery:false, galleryTitle:"Fotos", galleryPhotos:[], galleryLayout: 'carousel',
-  showMusic: false, spotifyUrl: "",
-  showVideo:false, videoUrl:"", videoTitle:"Mirá el video",
-  showVenueLogo:false, venueLogoUrl:"", venueName:"", venueLink:"", venueLinkType:"web",
-  whatsappNumber:"5491123456789", whatsappMessage:"¡Hola! Confirmo mi asistencia para el evento 🎉",
-};
-
-/* ============================================================================
-   COMPONENTES UI Y GIPHY
-============================================================================ */
 const GiphySearch = ({ onSelect, placeholder = "Buscar GIF..." }) => {
   const [term, setTerm] = useState("fiesta");
   const [debouncedTerm, setDebouncedTerm] = useState("fiesta");
@@ -200,21 +58,9 @@ const Inp = ({ label, value, onChange, placeholder, type="text", multiline = fal
   <div className={`mb-4 text-left ${className}`}>
     {label && <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{label}</label>}
     {multiline ? (
-      <textarea 
-        value={value || ""} 
-        onChange={e => onChange(e.target.value)} 
-        placeholder={placeholder} 
-        rows={3} 
-        className="w-full px-4 py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm resize-none focus:bg-white focus:border-violet-400 outline-none transition-all" 
-      />
+      <textarea value={value || ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={3} className="w-full px-4 py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm resize-none focus:bg-white focus:border-violet-400 outline-none transition-all" />
     ) : (
-      <input 
-        type={type} 
-        value={value || ""} 
-        onChange={e => onChange(e.target.value)} 
-        placeholder={placeholder} 
-        className="w-full px-4 py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all" 
-      />
+      <input type={type} value={value || ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} className="w-full px-4 py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all" />
     )}
   </div>
 );
@@ -222,40 +68,68 @@ const Inp = ({ label, value, onChange, placeholder, type="text", multiline = fal
 const SelectInp = ({ label, value, onChange, options, className="" }) => (
   <div className={`mb-4 text-left ${className}`}>
     {label && <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{label}</label>}
-    <select 
-      value={value || ""} 
-      onChange={e => onChange(e.target.value)} 
-      className="w-full px-4 py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all cursor-pointer"
-    >
+    <select value={value || ""} onChange={e => onChange(e.target.value)} className="w-full px-4 py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all cursor-pointer">
       {options.map((opt, i) => <option key={i} value={opt.value}>{opt.label}</option>)}
     </select>
   </div>
 );
 
 const FileUpload = ({ label, onChange, value }) => {
+  const [uploading, setUploading] = useState(false);
+
   const handleFile = async (e) => {
     const file = e.target.files[0];
-    if(file) {
-      const reader = new FileReader();
-      reader.onload = async (ev) => {
-        // Acá se comprime la imagen antes de subirla
-        const compressed = await compressImage(ev.target.result);
-        onChange(compressed);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+      const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        onChange(data.data.url);
+      } else {
+        alert("Error al subir la imagen a la nube. Intentalo de nuevo.");
+      }
+    } catch (error) {
+      console.error("Error subiendo imagen:", error);
+      alert("Hubo un problema de conexión al subir la imagen.");
+    } finally {
+      setUploading(false);
     }
   };
 
   return (
-    <div className="mb-4 text-left">
+    <div className="mb-4 text-left relative">
       {label && <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{label}</label>}
-      <input 
-        type="file" 
-        accept="image/*" 
-        onChange={handleFile} 
-        className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 cursor-pointer" 
-      />
-      {value && <img src={value} alt="preview" className="mt-3 h-20 w-full object-cover rounded-xl border border-gray-200" />}
+      <div className="relative">
+        <input 
+          type="file" accept="image/*" onChange={handleFile} disabled={uploading}
+          className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 cursor-pointer disabled:opacity-50" 
+        />
+        {uploading && (
+          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center rounded-xl z-10 border border-violet-200">
+            <span className="text-xs font-bold text-violet-600 flex items-center gap-2">
+              <Loader2 size={14} className="animate-spin" /> Subiendo a la nube...
+            </span>
+          </div>
+        )}
+      </div>
+      {value && !uploading && (
+        <div className="relative mt-3 group">
+          <img src={value} alt="preview" className="h-20 w-full object-cover rounded-xl border border-gray-200 shadow-sm" />
+          <button type="button" onClick={() => onChange("")} className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-lg cursor-pointer hover:bg-red-600">
+            <Trash2 size={12} />
+          </button>
+        </div>
+      )}
     </div>
   );
 };
@@ -272,29 +146,21 @@ const EmojiPicker = ({ value, onSelect, list = GENERAL_EMOJIS }) => {
   const ref = useRef(null);
 
   useEffect(() => { 
-    const fn = e => { 
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false); 
-    }; 
+    const fn = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }; 
     document.addEventListener("mousedown", fn); 
     return () => document.removeEventListener("mousedown", fn); 
   }, []);
 
   return (
     <div ref={ref} className="relative z-50">
-      <button 
-        onClick={() => setOpen(!open)} 
-        type="button" 
-        className="w-12 h-12 rounded-xl bg-gray-50 border border-gray-200 text-2xl flex items-center justify-center hover:bg-gray-100 transition-colors cursor-pointer"
-      >
+      <button onClick={() => setOpen(!open)} type="button" className="w-12 h-12 rounded-xl bg-gray-50 border border-gray-200 text-2xl flex items-center justify-center hover:bg-gray-100 transition-colors cursor-pointer">
         {value}
       </button>
       {open && (
         <div className="absolute top-14 left-0 z-50 bg-white border border-gray-200 rounded-2xl p-3 w-64 shadow-2xl">
           <div className="grid grid-cols-6 gap-1 max-h-48 overflow-y-auto fd-sb">
             {list.map(e => (
-              <button key={e} type="button" onClick={() => { onSelect(e); setOpen(false); }} className="p-2 text-xl hover:bg-gray-100 rounded-lg cursor-pointer">
-                {e}
-              </button>
+              <button key={e} type="button" onClick={() => { onSelect(e); setOpen(false); }} className="p-2 text-xl hover:bg-gray-100 rounded-lg cursor-pointer">{e}</button>
             ))}
           </div>
         </div>
@@ -309,11 +175,8 @@ const Acc = ({ title, icon: Icon, children, defaultOpen = false, iconColor = "#7
 
   useEffect(() => {
     let t;
-    if (open) {
-      t = setTimeout(() => setFullyOpen(true), 300);
-    } else {
-      setFullyOpen(false);
-    }
+    if (open) { t = setTimeout(() => setFullyOpen(true), 300); } 
+    else { setFullyOpen(false); }
     return () => clearTimeout(t);
   }, [open]);
 
@@ -338,471 +201,6 @@ const Acc = ({ title, icon: Icon, children, defaultOpen = false, iconColor = "#7
 };
 
 /* ============================================================================
-   WIDGETS Y EFECTOS
-============================================================================ */
-const Countdown = ({ targetDate, primary, text }) => {
-  const [timeLeft, setTimeLeft] = useState({ d:0, h:0, m:0, s:0 });
-  const [expired, setExpired] = useState(false);
-
-  useEffect(() => {
-    if(!targetDate) return;
-    const calc = () => {
-      const target = new Date(targetDate).getTime();
-      if (isNaN(target)) return;
-      const dist = target - Date.now();
-      if(dist <= 0) { setExpired(true); return; }
-      setTimeLeft({
-        d: Math.floor(dist / 86400000),
-        h: Math.floor((dist % 86400000) / 3600000),
-        m: Math.floor((dist % 3600000) / 60000),
-        s: Math.floor((dist % 60000) / 1000),
-      });
-    };
-    calc();
-    const id = setInterval(calc, 1000);
-    return () => clearInterval(id);
-  }, [targetDate]);
-
-  if(!targetDate || isNaN(new Date(targetDate).getTime())) return null;
-  const labels = { d:"días", h:"horas", m:"min", s:"seg" };
-
-  return (
-    <div className="py-4">
-      {text && <p className="text-center text-xs font-bold mb-3 opacity-70" style={{ color: primary }}>{text}</p>}
-      {expired ? (
-        <p className="text-center font-black text-lg" style={{ color: primary }}>🎉 ¡El día llegó!</p>
-      ) : (
-        <div className="flex justify-center gap-3">
-          {Object.entries(timeLeft).map(([unit, val]) => (
-            <div key={unit} className="flex flex-col items-center gap-1">
-              <div className="w-[52px] h-[52px] rounded-2xl flex items-center justify-center text-xl font-black text-white shadow-lg" style={{ background: primary }}>
-                {(val || 0).toString().padStart(2, '0')}
-              </div>
-              <span className="text-[10px] font-bold opacity-60" style={{ color: primary }}>{labels[unit]}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-const ParticleCanvas = ({ effect, primary }) => {
-  const canvasRef = useRef(null);
-  const animRef = useRef(null);
-  const particlesRef = useRef([]);
-
-  useEffect(() => {
-    if (effect === "none" || !canvasRef.current) return;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    
-    let observer;
-    try {
-      const resize = () => { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; };
-      resize(); observer = new ResizeObserver(resize); observer.observe(canvas);
-    } catch(e) { console.warn("ResizeObserver not supported"); }
-
-    const EMOJI_MIX = ["🎉","🎊","🎈","✨","🌟","💖","🎂"];
-    const PETALS = ["🌸","🌺","🌹","🌷"];
-
-    const spawnParticle = () => {
-      const x = Math.random() * canvas.width;
-      const isBubble = effect === "bubbles";
-      
-      const base = { 
-        x, 
-        y: isBubble ? canvas.height + 20 : -20, 
-        vx: (Math.random() - 0.5) * 2, 
-        vy: Math.random() * 2 + 1, 
-        alpha: 1, 
-        rot: Math.random() * 360, 
-        rotV: (Math.random() - 0.5) * 4, 
-        size: Math.random() * 10 + 8, 
-        life: 1, 
-        decay: Math.random() * 0.003 + 0.002 
-      };
-
-      if (effect === "confetti") {
-        const colors = [primary, "#f59e0b", "#10b981", "#ef4444", "#3b82f6", "#ec4899", "#facc15"];
-        return { ...base, type: "rect", color: colors[Math.floor(Math.random() * colors.length)], w: Math.random()*10+5, h: Math.random()*5+3 };
-      }
-      if (effect === "hearts")  return { ...base, type: "text", emoji: "❤️", size: Math.random()*18+10 };
-      if (effect === "stars")   return { ...base, type: "text", emoji: "⭐", size: Math.random()*16+8 };
-      if (effect === "bubbles") return { ...base, type: "circle", color: primary, filled: false, r: Math.random()*12+4, vx: (Math.random()-0.5)*1.5, vy: -(Math.random()*2+0.5) };
-      if (effect === "snow")    return { ...base, type: "circle", color: "#ffffff", filled: true, r: Math.random()*3+1, vy: Math.random()*1.5+0.5, vx: (Math.random()-0.5)*0.8 };
-      if (effect === "petals")  return { ...base, type: "text", emoji: PETALS[Math.floor(Math.random()*PETALS.length)], size: Math.random()*20+12 };
-      if (effect === "emojis")  return { ...base, type: "text", emoji: EMOJI_MIX[Math.floor(Math.random()*EMOJI_MIX.length)], size: Math.random()*20+12 };
-      return null;
-    };
-
-    let frame = 0;
-    const loop = () => {
-      if (!ctx || !canvas) return;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      frame++;
-      
-      if (frame % 8 === 0 && particlesRef.current.length < 60) {
-        const p = spawnParticle(); if (p) particlesRef.current.push(p);
-      }
-      
-      particlesRef.current = particlesRef.current.filter(p => {
-        p.x += p.vx; p.y += p.vy; p.rot = (p.rot || 0) + (p.rotV || 0); p.life -= p.decay; p.alpha = p.life;
-        ctx.globalAlpha = Math.max(0, p.alpha);
-        
-        if (p.type === "rect") {
-          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate((p.rot || 0) * Math.PI/180);
-          ctx.fillStyle = p.color; ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h); ctx.restore();
-        } else if (p.type === "circle") {
-          ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); 
-          if (p.filled) { ctx.fillStyle = p.color; ctx.fill(); } 
-          else { ctx.strokeStyle = p.color; ctx.lineWidth = 1.5; ctx.stroke(); }
-        } else if (p.type === "text") {
-          ctx.font = `${p.size}px serif`; ctx.textAlign = "center"; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate((p.rot||0)*Math.PI/180); ctx.fillText(p.emoji, 0, 0); ctx.restore();
-        }
-        ctx.globalAlpha = 1;
-        return p.life > 0 && p.y < canvas.height + 40 && p.y > -40;
-      });
-      animRef.current = requestAnimationFrame(loop);
-    };
-    loop();
-    return () => { 
-      if(animRef.current) cancelAnimationFrame(animRef.current); 
-      if(observer && canvasRef.current) observer.unobserve(canvasRef.current); 
-      particlesRef.current = []; 
-    };
-  }, [effect, primary]);
-
-  if (effect === "none") return null;
-  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none z-20" style={{ opacity: 0.85 }} />;
-};
-
-const MapEmbed = ({ name, address, primary }) => {
-  const query = (address && address.trim() !== "") ? address : name;
-  
-  if (!query) {
-     return (
-       <div className="w-full h-32 bg-[#1a1a2e] rounded-xl flex items-center justify-center text-white/50 text-xs font-bold border border-white/10 text-center px-4">
-         📍 Falta cargar la dirección en el Panel Maestro
-       </div>
-     );
-  }
-  
-  // URL Oficial para iframe de Google Maps
-  const embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(query)}&t=m&z=15&output=embed&iwloc=near`;
-  
-  return (
-    <div className="rounded-2xl overflow-hidden border border-white/10 relative" style={{ background: "#1a1a2e" }}>
-      <iframe 
-        title="map" 
-        width="100%" 
-        height="200" 
-        style={{ border: 0, display: "block", filter: "invert(90%) hue-rotate(180deg)" }} 
-        loading="lazy" 
-        referrerPolicy="no-referrer-when-downgrade" 
-        src={embedUrl} 
-      />
-      <a href={`https://maps.google.com/?q=${encodeURIComponent(query)}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-3 text-xs font-black uppercase tracking-wider transition-colors" style={{ background: `${primary}22`, color: primary }}>
-        <MapPin size={14} /> Abrir en Google Maps
-      </a>
-    </div>
-  );
-};
-
-const VenueCard = ({ cfg, primary, text, muted, card }) => {
-  if (!cfg.showVenueLogo) return null;
-  const href = cfg.venueLinkType === "whatsapp" ? `https://wa.me/${cfg.venueLink}` : cfg.venueLink;
-  
-  return (
-    <a href={href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4 rounded-2xl border border-white/5 no-underline transition-opacity hover:opacity-80" style={{ background: card }}>
-      {cfg.venueLogoUrl ? (
-        <img src={cfg.venueLogoUrl} alt="logo" className="w-14 h-14 rounded-xl object-contain border border-white/10 bg-white/5" />
-      ) : (
-        <div className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl" style={{ background: `${primary}22` }}>🏠</div>
-      )}
-      <div className="text-left flex-1">
-        <p className="text-[9px] uppercase font-black tracking-widest mb-0.5" style={{ color: muted }}>Lugar del evento</p>
-        <p className="font-bold text-sm" style={{ color: text }}>{cfg.venueName || "Ver lugar"}</p>
-        <p className="text-[10px] mt-0.5 font-bold" style={{ color: primary }}>
-          {cfg.venueLinkType === "whatsapp" ? "📱 Consultar por WhatsApp" : "🌐 Ver sitio web"}
-        </p>
-      </div>
-    </a>
-  );
-};
-
-const VideoSection = ({ cfg, primary, text, muted, card }) => {
-  if (!cfg.showVideo || !cfg.videoUrl) return null;
-  const ytId = getYouTubeId(cfg.videoUrl);
-  
-  return (
-    <div className="rounded-3xl overflow-hidden border border-white/5" style={{ background: card }}>
-      {cfg.videoTitle && (
-        <p className="text-center text-[10px] font-black uppercase tracking-widest pt-4 pb-2" style={{ color: muted }}>
-          {cfg.videoTitle}
-        </p>
-      )}
-      {ytId ? (
-        <iframe width="100%" height="250" src={`https://www.youtube.com/embed/${ytId}?rel=0`} title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="block w-full"></iframe>
-      ) : (
-        <video src={cfg.videoUrl} controls playsInline className="w-full block" style={{ maxHeight: 300 }} />
-      )}
-    </div>
-  );
-};
-
-/* ============================================================================
-   VISTA PREVIA CELULAR (INVITACIÓN FINAL)
-============================================================================ */
-export const InvitePreview = ({ cfg }) => {
-  if (!cfg) return null;
-  const th = THEMES.find(t => t.id === cfg.theme) || THEMES[0];
-  const primary = cfg.primary || th.primary;
-  const bg = `linear-gradient(180deg, ${cfg.bg1 || th.bg1} 0%, ${cfg.bg2 || th.bg2} 100%)`;
-  const textC = cfg.text || th.text;
-  const mutedC = cfg.muted || th.muted;
-  const cardC  = cfg.card  || th.card;
-  
-  const gradOpacity = cfg.showCoverGradient === false ? 0 : ((cfg.coverGradientIntensity ?? 70) / 100).toFixed(2);
-
-  const SectionTitle = ({ children }) => (
-    <h4 className="font-black uppercase tracking-[0.3em] text-center mb-6" style={{ color: mutedC, fontSize: `${cfg.titlesSize ?? 10}px` }}>
-      {children}
-    </h4>
-  );
-
-  const InfoCard = ({ icon: Icon, label, value, sub, fontSize }) => (
-    <div className="flex items-center gap-4 p-4 rounded-2xl border border-white/5" style={{ background: cardC }}>
-      <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: primary }}>
-        <Icon size={20} color="white" />
-      </div>
-      <div className="text-left">
-        <p className="text-[9px] uppercase font-black tracking-widest mb-0.5" style={{ color: mutedC }}>{label}</p>
-        <p className="font-bold" style={{ color: textC, fontFamily: cfg.fontBody, fontSize: `${fontSize}px` }}>{value}</p>
-        {sub && <p className="text-[11px] mt-0.5 opacity-70" style={{ color: mutedC, fontFamily: cfg.fontBody }}>{sub}</p>}
-      </div>
-    </div>
-  );
-
-  const waMsg = (cfg.whatsappMessage || "").replace('{nombre}', cfg.honoreeName || "");
-
-  return (
-    <div style={{ background: bg, fontFamily: cfg.fontBody }} className="min-h-full pb-12 relative overflow-x-hidden">
-      
-      {/* Fondo Animado de Partículas */}
-      <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden" style={{ height: "100%" }}>
-        <ParticleCanvas effect={cfg.particleEffect || "none"} primary={primary} />
-      </div>
-
-      {/* Header Portada */}
-      <div className="relative h-[420px] overflow-hidden">
-        <img src={cfg.coverPhoto || DEF_CONFIG.coverPhoto} className="w-full h-full object-cover" alt="Cover" />
-        <div className="absolute inset-0" style={{ background: `linear-gradient(to top, ${cfg.bg1 || th.bg1} 5%, rgba(0,0,0,${gradOpacity}) 60%, transparent 100%)` }} />
-        
-        <div className="absolute bottom-0 left-0 right-0 p-8 text-center z-30">
-          <p className="font-black uppercase tracking-[0.2em] mb-4 flex items-center justify-center gap-2" style={{ color: cfg.eventTypeColor || primary, fontSize: `${cfg.eventTypeSize ?? 11}px`, fontFamily: cfg.eventTypeFont || cfg.fontBody }}>
-            {cfg.eventTypeEmoji} {cfg.eventType}
-          </p>
-          <h1 style={{ fontFamily: cfg.honoreeFont || cfg.fontTitle, color: cfg.honoreeColor || textC, fontSize: `${cfg.honoreeSize ?? 48}px` }} className="leading-tight mb-4">
-            {cfg.honoreeName}
-          </h1>
-          <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-white/10 backdrop-blur-md bg-black/30 font-black" style={{ color: textC, fontSize: `${cfg.badgeSize ?? 14}px` }}>
-            {cfg.badgeEmoji} {cfg.badgeText}
-          </span>
-        </div>
-      </div>
-
-      <div className="px-5 -mt-8 relative z-30 space-y-4">
-        
-        {/* Contador */}
-        {cfg.showCountdown && cfg.countdownDate && (
-          <div className="p-5 rounded-3xl border border-white/5" style={{ background: cardC, color: textC }}>
-            <h3 className="text-center text-[11px] font-black uppercase tracking-widest opacity-80 mb-1" style={{ color: mutedC }}>Falta para el gran día</h3>
-            <Countdown targetDate={cfg.countdownDate} primary={primary} />
-          </div>
-        )}
-
-        {/* Banner Central */}
-        {cfg.showBanner && (
-          <div className="relative h-48 rounded-3xl overflow-hidden border-2" style={{ borderColor: `${primary}44` }}>
-            <img src={cfg.bannerPhoto || DEF_CONFIG.bannerPhoto} className="w-full h-full object-cover" alt="Banner" />
-            <div className="absolute inset-0 bg-black/40" />
-            <div className="absolute top-4 left-4 px-3 py-1 bg-black/50 backdrop-blur rounded-full text-[9px] font-black uppercase tracking-widest text-white">{cfg.bannerTitle}</div>
-          </div>
-        )}
-
-        {/* Fecha y Hora */}
-        {cfg.showDate && <InfoCard icon={Calendar} label="¿Cuándo?" value={cfg.dateText} fontSize={cfg.dateSize ?? 18} />}
-        {cfg.showTime && <InfoCard icon={Clock} label="Horario" value={cfg.timeText} fontSize={cfg.dateSize ?? 18} />}
-        {cfg.showTheme && <InfoCard icon={Star} label={cfg.themeLabel} value={`${cfg.themeIcon} ${cfg.themeText}`} fontSize={cfg.dateSize ?? 18} />}
-
-        {/* Ubicación y Mapa */}
-        {cfg.showLocation && (
-          <div className="rounded-3xl overflow-hidden border border-white/5" style={{ background: cardC }}>
-            <div className="p-4 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: primary }}>
-                <MapPin size={20} color="white" />
-              </div>
-              <div className="text-left">
-                <p className="text-[9px] uppercase font-black tracking-widest mb-0.5" style={{ color: mutedC }}>¿Dónde?</p>
-                <p className="font-bold" style={{ color: textC, fontFamily: cfg.fontBody, fontSize: `${cfg.locationSize ?? 18}px` }}>{cfg.locationName}</p>
-                <p className="text-[11px] opacity-70" style={{ color: mutedC, fontFamily: cfg.fontBody }}>{cfg.locationAddress}</p>
-              </div>
-            </div>
-            <div className="px-4 pb-2">
-              <MapEmbed name={cfg.locationName} address={cfg.locationAddress} primary={primary} />
-            </div>
-            {cfg.showParking && (
-              <div className="p-4 text-center border-t border-white/5">
-                <span className="text-xs font-bold py-2 px-4 rounded-full inline-block" style={{ background: `${primary}22`, color: primary, fontFamily: cfg.fontBody }}>
-                  🚗 {cfg.parkingType === 'otro' ? cfg.customParking : cfg.parkingType}
-                </span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Tarjeta de Salón */}
-        <VenueCard cfg={cfg} primary={primary} text={textC} muted={mutedC} card={cardC} />
-        
-        {/* Video YouTube */}
-        <VideoSection cfg={cfg} primary={primary} text={textC} muted={mutedC} card={cardC} />
-
-        {/* Reproductor Spotify */}
-        {cfg.showMusic && cfg.spotifyUrl && (
-          <div className="pt-4">
-            <SectionTitle>Música para entrar en clima</SectionTitle>
-            <iframe 
-              style={{ borderRadius: '12px' }} 
-              src={getSpotifyEmbed(cfg.spotifyUrl)} 
-              width="100%" 
-              height="152" 
-              frameBorder="0" 
-              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
-              loading="lazy"
-            ></iframe>
-          </div>
-        )}
-
-        {/* Itinerario */}
-        {cfg.showItinerary && cfg.itinerary?.length > 0 && (
-          <div className="pt-4">
-            <SectionTitle>Programa del evento</SectionTitle>
-            <div className="relative pl-6 space-y-8 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5" style={{ '--tw-before-bg': `${primary}33` }}>
-              <div className="absolute left-[7px] top-2 bottom-2 w-[2px]" style={{ background: primary, opacity: 0.2 }} />
-              {cfg.itinerary.map((item, i) => (
-                <div key={i} className="relative text-left">
-                  <div className="absolute -left-[23px] top-1.5 w-3 h-3 rounded-full" style={{ background: primary, boxShadow: `0 0 10px ${primary}` }} />
-                  <p className="text-[10px] font-black mb-1" style={{ color: primary }}>{item.time}</p>
-                  <p className="font-bold text-sm" style={{ color: textC, fontFamily: cfg.fontBody }}>{item.title}</p>
-                  <p className="text-xs opacity-60" style={{ color: mutedC, fontFamily: cfg.fontBody }}>{item.sub}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Menú */}
-        {cfg.showMenu && cfg.menuItems?.length > 0 && (
-          <div className="pt-4">
-            <SectionTitle>¿Qué vamos a comer?</SectionTitle>
-            <div className="grid grid-cols-2 gap-3">
-              {cfg.menuItems.map((m, i) => (
-                <div key={i} className="p-4 rounded-2xl text-center border border-white/5" style={{ background: cardC }}>
-                  <span className="text-3xl block mb-2">{m.emoji}</span>
-                  <span className="text-xs font-bold" style={{ color: textC, fontFamily: cfg.fontBody }}>{m.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Dress Code y Regalos */}
-        {(cfg.showDressCode || cfg.showGifts) && (
-          <div className="pt-6">
-            <SectionTitle>A tener en cuenta</SectionTitle>
-            <div className="grid grid-cols-2 gap-3">
-              {cfg.showDressCode && (
-                <div className="p-5 rounded-2xl text-center border border-white/5 shadow-sm" style={{ background: cardC }}>
-                  <span className="text-3xl block mb-2">{cfg.dressCodeIcon}</span>
-                  <p className="text-[9px] font-black uppercase tracking-widest mb-1" style={{ color: mutedC }}>Vestimenta</p>
-                  <p className="font-bold text-xs" style={{ color: textC, fontFamily: cfg.fontBody }}>{cfg.dressCodeText}</p>
-                </div>
-              )}
-              {cfg.showGifts && (
-                <div className="p-5 rounded-2xl text-center border border-white/5 shadow-sm" style={{ background: cardC }}>
-                  <span className="text-3xl block mb-2">{cfg.giftIcon}</span>
-                  <p className="text-[9px] font-black uppercase tracking-widest mb-1" style={{ color: mutedC }}>{cfg.giftLabel}</p>
-                  <p className="font-bold text-xs" style={{ color: textC, fontFamily: cfg.fontBody }}>{cfg.giftText}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-            <div className="p-5 rounded-2xl text-center border border-white/5" style={{ background: cardC }}>
-              <span className="text-3xl block mb-2">{cfg.dressCodeIcon}</span>
-              <p className="text-[9px] font-black uppercase tracking-widest mb-1" style={{ color: mutedC }}>Vestimenta</p>
-              <p className="font-bold text-xs" style={{ color: textC, fontFamily: cfg.fontBody }}>{cfg.dressCodeText}</p>
-            </div>
-          )}
-          {cfg.showGifts && (
-            <div className="p-5 rounded-2xl text-center border border-white/5" style={{ background: cardC }}>
-              <span className="text-3xl block mb-2">{cfg.giftIcon}</span>
-              <p className="text-[9px] font-black uppercase tracking-widest mb-1" style={{ color: mutedC }}>{cfg.giftLabel}</p>
-              <p className="font-bold text-xs" style={{ color: textC, fontFamily: cfg.fontBody }}>{cfg.giftText}</p>
-            </div>
-          )}
-        </div>
-
-        {/* Aclaración de Regalos */}
-        {cfg.showGifts && cfg.showGiftNote && cfg.giftNoteText && (
-          <div className="text-center pt-2">
-            <span className="inline-block py-3 px-6 rounded-3xl font-bold border whitespace-pre-wrap leading-relaxed shadow-sm" 
-                  style={{ background: `${cfg.card}ee`, borderColor: `${primary}33`, color: cfg.giftNoteColor || primary, fontSize: `${cfg.giftNoteSize || 11}px`, fontFamily: cfg.fontBody }}>
-              {cfg.giftNoteText}
-            </span>
-          </div>
-        )}
-
-        {/* Galería (Carrusel o Cuadrícula) */}
-        {cfg.showGallery && cfg.galleryPhotos?.length > 0 && (
-          <div className="pt-4">
-            <SectionTitle>{cfg.galleryTitle}</SectionTitle>
-            
-            {cfg.galleryLayout === 'grid' ? (
-              // Vista de Cuadrícula
-              <div className="grid grid-cols-2 gap-2">
-                {cfg.galleryPhotos.map((p, i) => p && (
-                  <img key={i} src={p} className="w-full h-48 rounded-xl object-cover shadow-md border border-white/5" alt={`Galeria ${i}`} />
-                ))}
-              </div>
-            ) : (
-              // Vista de Carrusel (Por defecto)
-              <div className="flex gap-3 overflow-x-auto pb-4 -mx-5 px-5 no-scrollbar scroll-smooth">
-                {cfg.galleryPhotos.map((p, i) => p && (
-                  <img key={i} src={p} className="w-48 h-64 rounded-2xl object-cover shrink-0 shadow-lg border border-white/5" alt={`Galeria ${i}`} />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Botón WhatsApp */}
-        <button 
-          onClick={() => window.open(`https://wa.me/${cfg.whatsappNumber}?text=${encodeURIComponent(waMsg)}`)}
-          className="w-full py-5 mt-4 rounded-[1.5rem] font-black text-sm tracking-wider flex items-center justify-center gap-3 shadow-2xl transition-transform active:scale-95 cursor-pointer"
-          style={{ background: `linear-gradient(135deg, ${primary}, ${primary}dd)`, color: 'white', boxShadow: `0 15px 35px ${primary}44` }}
-        >
-          <CheckCircle2 size={20} /> CONFIRMAR ASISTENCIA
-        </button>
-        
-        <p className="text-center text-[9px] font-bold opacity-30 mt-8" style={{ color: mutedC }}>FiestaDigital © 2024</p>
-      </div>
-    </div>
-  );
-};
-
-/* ============================================================================
    PANTALLA DEL EDITOR (EL PANEL QUE USA EL SALÓN)
 ============================================================================ */
 export const EditorScreen = ({ invitations, onSave }) => {
@@ -811,8 +209,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
   const [inv, setInv] = useState(null);
   const [previewAnim, setPreviewAnim] = useState(false);
   const [animCat, setAnimCategory] = useState("infantil");
-  
-  // Estado para controlar qué se ve en celulares (Editor o Previa)
   const [mobileView, setMobileView] = useState("editor");
 
   useEffect(() => {
@@ -830,7 +226,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
   return (
     <div className="h-screen flex flex-col bg-slate-950 overflow-hidden">
       
-      {/* Scrollbars personalizadas */}
       <style>{`
         .fd-sb::-webkit-scrollbar { width: 8px !important; height: 8px !important; }
         .fd-sb::-webkit-scrollbar-thumb { background: #b4aee8 !important; border-radius: 10px !important; }
@@ -856,38 +251,26 @@ export const EditorScreen = ({ invitations, onSave }) => {
         </button>
       </header>
 
-      {/* CONTENEDOR PRINCIPAL CON BOTTOM TABS EN MOBILE */}
+      {/* CONTENEDOR PRINCIPAL */}
       <div className="flex-1 flex relative overflow-hidden bg-slate-950">
         
         {/* BOTTOM TABS FLOTANTES (Solo Mobile) */}
         <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] flex bg-slate-900/95 backdrop-blur-xl rounded-full shadow-[0_10px_40px_rgba(0,0,0,0.5)] border border-white/10 p-1.5 anim-pop">
-          <button 
-            onClick={() => setMobileView("editor")} 
-            className={`px-6 py-2.5 rounded-full text-[11px] font-black tracking-widest uppercase transition-all duration-300 flex items-center gap-2 ${mobileView === "editor" ? 'bg-violet-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
-          >
-            ✏️ Editar
-          </button>
-          <button 
-            onClick={() => setMobileView("preview")} 
-            className={`px-6 py-2.5 rounded-full text-[11px] font-black tracking-widest uppercase transition-all duration-300 flex items-center gap-2 ${mobileView === "preview" ? 'bg-violet-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
-          >
-            👀 Previa
-          </button>
+          <button onClick={() => setMobileView("editor")} className={`px-6 py-2.5 rounded-full text-[11px] font-black tracking-widest uppercase transition-all duration-300 flex items-center gap-2 ${mobileView === "editor" ? 'bg-violet-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>✏️ Editar</button>
+          <button onClick={() => setMobileView("preview")} className={`px-6 py-2.5 rounded-full text-[11px] font-black tracking-widest uppercase transition-all duration-300 flex items-center gap-2 ${mobileView === "preview" ? 'bg-violet-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>👀 Previa</button>
         </div>
 
         {/* PANEL LATERAL DE CONTROLES */}
         <aside className={`w-[100vw] md:w-[380px] h-full shrink-0 bg-[#f8f7ff] overflow-y-auto p-6 pb-24 md:pb-6 border-r border-gray-100 z-10 fd-sb ${mobileView === 'editor' ? 'block' : 'hidden md:block'}`}>
-           
+            
           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 text-left">Personalización Completa</h3>
 
-          {/* ACORDEÓN: ESTILO Y COLORES */}
           <Acc title="Estilo y Colores" icon={Palette} defaultOpen iconColor="#7c3aed">
             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 text-left">Temas Sugeridos</label>
             <div className="flex flex-wrap gap-2.5 mb-6">
               {THEMES.map(th => (
                 <button
-                  key={th.id}
-                  title={th.name}
+                  key={th.id} title={th.name}
                   onClick={() => setInv({...inv, config: {...cfg, theme: th.id, ...th}})}
                   className={`w-9 h-9 rounded-full border-2 transition-all hover:scale-110 ${cfg.theme === th.id ? 'border-violet-600 ring-2 ring-violet-200' : 'border-transparent'}`}
                   style={{ background: th.primary }}
@@ -962,7 +345,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
             </div>
           </Acc>
 
-          {/* ACORDEÓN: ANIMACIÓN */}
           <Acc title="Animación de Entrada" icon={Sparkles} iconColor="#f59e0b">
              <div className="flex items-center justify-between mb-4 bg-gray-50 p-2 rounded-xl border border-gray-200">
                <span className="text-xs font-bold text-slate-600 ml-2">¿Usar Animación?</span>
@@ -1004,7 +386,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
              )}
           </Acc>
 
-          {/* ACORDEÓN: TEXTOS */}
           <Acc title="Textos de Portada" icon={Type} iconColor="#0d9488">
             <Inp label="Nombre Agasajado" value={cfg.honoreeName} onChange={v => update("honoreeName", v)} />
             <div className="flex gap-2 mb-4 bg-gray-50 p-2 rounded-xl border border-gray-200">
@@ -1039,7 +420,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
             </div>
           </Acc>
 
-          {/* ACORDEÓN: TEMÁTICA */}
           <Acc title="Temática de la Fiesta" icon={Star} iconColor="#eab308">
             <div className="flex items-center justify-between mb-4">
               <span className="text-xs font-bold text-slate-500">Mostrar Temática</span>
@@ -1056,7 +436,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
             )}
           </Acc>
 
-          {/* ACORDEÓN: BANNER */}
           <Acc title="Banner Promocional" icon={ImageIcon} iconColor="#d97706">
             <div className="flex items-center justify-between mb-4">
               <span className="text-xs font-bold text-slate-500">Activar Banner Central</span>
@@ -1078,7 +457,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
             )}
           </Acc>
 
-          {/* ACORDEÓN: LUGAR Y FECHA */}
           <Acc title="Fecha, Hora y Lugar" icon={Calendar} iconColor="#e11d48">
             <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Mostrar cuenta regresiva</span><Toggle checked={cfg.showCountdown || false} onChange={v => update("showCountdown", v)} /></div>
             {cfg.showCountdown && (
@@ -1108,7 +486,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
             )}
           </Acc>
 
-          {/* ACORDEÓN: LOGO DEL SALÓN */}
           <Acc title="Logo y Web del Salón" icon={LinkIcon} iconColor="#6366f1">
             <div className="flex items-center justify-between mb-4">
               <span className="text-xs font-bold text-slate-500">Mostrar Logo</span>
@@ -1124,7 +501,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
             )}
           </Acc>
 
-          {/* ACORDEÓN: MÚSICA (NUEVO) */}
           <Acc title="Música (Spotify)" icon={Music} iconColor="#10b981">
             <div className="flex items-center justify-between mb-4">
               <span className="text-xs font-bold text-slate-500">Activar Música</span>
@@ -1137,7 +513,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
             )}
           </Acc>
 
-          {/* ACORDEÓN: VIDEO */}
           <Acc title="Video de Invitación" icon={Video} iconColor="#8b5cf6">
             <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Agregar video</span><Toggle checked={cfg.showVideo || false} onChange={v => update("showVideo", v)} /></div>
             {cfg.showVideo && (
@@ -1148,7 +523,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
             )}
           </Acc>
 
-          {/* ACORDEÓN: ITINERARIO */}
           <Acc title="Cronograma (Itinerario)" icon={Clock} iconColor="#ec4899">
              <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Cronograma</span><Toggle checked={cfg.showItinerary} onChange={v => update("showItinerary", v)} /></div>
              {cfg.showItinerary && (
@@ -1170,7 +544,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
              )}
           </Acc>
 
-          {/* ACORDEÓN: MENÚ */}
           <Acc title="Menú de Comida" icon={List} iconColor="#10b981">
              <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Menú</span><Toggle checked={cfg.showMenu} onChange={v => update("showMenu", v)} /></div>
              {cfg.showMenu && (
@@ -1189,7 +562,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
              )}
           </Acc>
 
-          {/* ACORDEÓN: DRESS CODE Y REGALOS */}
           <Acc title="Dress Code y Regalos" icon={Layout} iconColor="#f43f5e">
              <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Vestimenta</span><Toggle checked={cfg.showDressCode} onChange={v => update("showDressCode", v)} /></div>
              {cfg.showDressCode && (
@@ -1228,7 +600,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
              )}
           </Acc>
 
-          {/* ACORDEÓN: GALERÍA DE FOTOS (NUEVO SWITCH) */}
           <Acc title="Galería de Fotos" icon={ImageIcon} iconColor="#ec4899">
              <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Galería</span><Toggle checked={cfg.showGallery} onChange={v => update("showGallery", v)} /></div>
              {cfg.showGallery && (
@@ -1255,7 +626,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
              )}
           </Acc>
 
-          {/* ACORDEÓN: WHATSAPP */}
           <Acc title="WhatsApp de Confirmación" icon={CheckCircle2} iconColor="#22c55e">
             <Inp label="Número Celular (con código de país, sin +)" value={cfg.whatsappNumber} onChange={v => update("whatsappNumber", v)} placeholder="5491123456789" />
             <p className="text-[9px] text-gray-400 mb-2">Usa {"{nombre}"} para incluir el nombre del agasajado automáticamente en el mensaje.</p>
