@@ -28,7 +28,21 @@ export const Toast = ({ msg }) => (
   </div>
 );
 
+// NUEVO INP INTELIGENTE PARA EL DASHBOARD (Anti-Lag)
 const Inp = ({ label, value, onChange, placeholder, type="text", multiline = false, className="", icon: Icon = null, prefix=null, isDark=false }) => {
+  const [localVal, setLocalVal] = useState(value || "");
+
+  // Actualiza si viene data de afuera
+  useEffect(() => { setLocalVal(value || ""); }, [value]);
+
+  // Espera 300ms antes de avisarle a la App entera que algo cambió
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (localVal !== (value || "")) onChange(localVal);
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [localVal, onChange, value]);
+
   const bgClass = isDark ? "bg-slate-700 border-slate-600 text-white focus:bg-slate-600" : "bg-gray-50 border-gray-200 text-slate-800 focus:bg-white";
   const labelClass = isDark ? "text-slate-400" : "text-slate-500";
   
@@ -39,9 +53,9 @@ const Inp = ({ label, value, onChange, placeholder, type="text", multiline = fal
         {Icon && <div className="absolute left-4 text-slate-400"><Icon size={16}/></div>}
         {prefix && <span className="absolute left-4 text-slate-400 font-bold">{prefix}</span>}
         {multiline ? (
-          <textarea value={value || ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={3} className={`w-full py-3 rounded-xl text-sm focus:border-violet-400 outline-none transition-all resize-none ${bgClass} ${(Icon || prefix) ? 'pl-11 pr-4' : 'px-4'}`} />
+          <textarea value={localVal} onChange={e => setLocalVal(e.target.value)} placeholder={placeholder} rows={3} className={`w-full py-3 rounded-xl text-sm focus:border-violet-400 outline-none transition-all resize-none ${bgClass} ${(Icon || prefix) ? 'pl-11 pr-4' : 'px-4'}`} />
         ) : (
-          <input type={type} value={value || ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} className={`w-full py-3 rounded-xl text-sm focus:border-violet-400 outline-none transition-all ${bgClass} ${(Icon || prefix) ? 'pl-11 pr-4' : 'px-4'}`} />
+          <input type={type} value={localVal} onChange={e => setLocalVal(e.target.value)} placeholder={placeholder} className={`w-full py-3 rounded-xl text-sm focus:border-violet-400 outline-none transition-all ${bgClass} ${(Icon || prefix) ? 'pl-11 pr-4' : 'px-4'}`} />
         )}
       </div>
     </div>
