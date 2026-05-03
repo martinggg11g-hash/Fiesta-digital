@@ -2,10 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { OpeningAnimation } from "./Lotties"; 
 import { MapPin, Calendar, Clock, Star, CheckCircle2 } from "lucide-react";
 
-// Importamos lo necesario desde nuestro nuevo archivo de configuración
-import { DEF_CONFIG, THEMES, getSpotifyEmbed, getYouTubeId } from "./config";
+import { DEF_CONFIG, THEMES, getSpotifyEmbed, getYouTubeId, formatToDDMMYYYY } from "./config";
 
-// --- WIDGETS INTERNOS ---
 const Countdown = ({ targetDate, primary, text }) => {
   const [timeLeft, setTimeLeft] = useState({ d:0, h:0, m:0, s:0 });
   const [expired, setExpired] = useState(false);
@@ -192,7 +190,6 @@ const VideoSection = ({ cfg, muted, card }) => {
   );
 };
 
-// --- COMPONENTE PRINCIPAL (EL CELULAR) ---
 export const InvitePreview = ({ cfg }) => {
   if (!cfg) return null;
   const th = THEMES.find(t => t.id === cfg.theme) || THEMES[0];
@@ -201,7 +198,13 @@ export const InvitePreview = ({ cfg }) => {
   const textC = cfg.text || th.text;
   const mutedC = cfg.muted || th.muted;
   const cardC  = cfg.card  || th.card;
-  const gradOpacity = cfg.showCoverGradient === false ? 0 : ((cfg.coverGradientIntensity ?? 70) / 100).toFixed(2);
+  
+  const gradOpacity = cfg.showCoverGradient === false ? 0 : ((cfg.coverGradientIntensity ?? 50) / 100).toFixed(2);
+  
+  // Magia del sombreado
+  const coverShadow = (cfg.coverTextShadowSize > 0) 
+    ? `0px 4px ${cfg.coverTextShadowSize}px ${cfg.coverTextShadowColor || '#000000'}` 
+    : 'none';
 
   const SectionTitle = ({ children }) => (
     <h4 className="font-black uppercase tracking-[0.3em] text-center mb-6" style={{ color: mutedC, fontSize: `${cfg.titlesSize ?? 10}px` }}>{children}</h4>
@@ -234,10 +237,10 @@ export const InvitePreview = ({ cfg }) => {
         <div className="absolute inset-0" style={{ background: `linear-gradient(to top, ${cfg.bg1 || th.bg1} 5%, rgba(0,0,0,${gradOpacity}) 60%, transparent 100%)` }} />
         
         <div className="absolute bottom-0 left-0 right-0 p-8 text-center z-30">
-          <p className="font-black uppercase tracking-[0.2em] mb-4 flex items-center justify-center gap-2" style={{ color: cfg.eventTypeColor || primary, fontSize: `${cfg.eventTypeSize ?? 11}px`, fontFamily: cfg.eventTypeFont || cfg.fontBody }}>
+          <p className="font-black uppercase tracking-[0.2em] mb-4 flex items-center justify-center gap-2" style={{ color: cfg.eventTypeColor || primary, fontSize: `${cfg.eventTypeSize ?? 11}px`, fontFamily: cfg.eventTypeFont || cfg.fontBody, textShadow: coverShadow }}>
             {cfg.eventTypeEmoji} {cfg.eventType}
           </p>
-          <h1 style={{ fontFamily: cfg.honoreeFont || cfg.fontTitle, color: cfg.honoreeColor || textC, fontSize: `${cfg.honoreeSize ?? 48}px` }} className="leading-tight mb-4">
+          <h1 style={{ fontFamily: cfg.honoreeFont || cfg.fontTitle, color: cfg.honoreeColor || textC, fontSize: `${cfg.honoreeSize ?? 48}px`, textShadow: coverShadow }} className="leading-tight mb-4">
             {cfg.honoreeName}
           </h1>
           <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-white/10 backdrop-blur-md bg-black/30 font-black" style={{ color: textC, fontSize: `${cfg.badgeSize ?? 14}px` }}>
@@ -263,7 +266,9 @@ export const InvitePreview = ({ cfg }) => {
           </div>
         )}
 
-        {cfg.showDate && <InfoCard icon={Calendar} label="¿Cuándo?" value={cfg.dateText} fontSize={cfg.dateSize ?? 18} />}
+        {/* Acá le metimos el formateador de fechas latino */}
+        {cfg.showDate && <InfoCard icon={Calendar} label="¿Cuándo?" value={formatToDDMMYYYY(cfg.dateText)} fontSize={cfg.dateSize ?? 18} />}
+        
         {cfg.showTime && <InfoCard icon={Clock} label="Horario" value={cfg.timeText} fontSize={cfg.dateSize ?? 18} />}
         {cfg.showTheme && <InfoCard icon={Star} label={cfg.themeLabel} value={`${cfg.themeIcon} ${cfg.themeText}`} fontSize={cfg.dateSize ?? 18} />}
 
@@ -294,7 +299,7 @@ export const InvitePreview = ({ cfg }) => {
 
         <VenueCard cfg={cfg} primary={primary} text={textC} muted={mutedC} card={cardC} />
         
-        <VideoSection cfg={cfg} primary={primary} text={textC} muted={mutedC} card={cardC} />
+        <VideoSection cfg={cfg} muted={mutedC} card={cardC} />
 
         {cfg.showMusic && cfg.spotifyUrl && (
           <div className="pt-4">
