@@ -175,13 +175,11 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
   const [searchTerm, setSearchTerm] = useState("");
   const [activeCrmId, setActiveCrmId] = useState(null);
   
-  // ESTADOS DE CONFIGURACIÓN
   const [showSettings, setShowSettings] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [newLogo, setNewLogo] = useState("");
   const [newPhone, setNewPhone] = useState(""); 
   
-  // MODO DE IMPRESIÓN (Ficha Interna vs Presupuesto Cliente)
   const [printMode, setPrintMode] = useState("ficha"); 
 
   const [isDark, setIsDark] = useState(() => {
@@ -207,9 +205,7 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
   const themeText = isDark ? "text-white" : "text-slate-800";
   const themeCard = isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200/60";
 
-  // ==========================================
   // VISTA CRM DEL SALÓN
-  // ==========================================
   if (!isOwner) {
     const salonInfo = users.find(u => u.email === user.email);
     const isManualBlocked = salonInfo?.payment_alert;
@@ -232,13 +228,12 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
 
     const handlePrint = (mode) => {
       setPrintMode(mode);
-      setTimeout(() => window.print(), 200); // Pequeña espera para que React actualice la vista
+      setTimeout(() => window.print(), 200); 
     };
 
     return (
       <div className={`min-h-screen pb-20 text-left transition-colors duration-300 ${themeBg}`}>
         
-        {/* CSS PARA OCULTAR LA APP E IMPRIMIR SOLO LA PLANTILLA PDF */}
         <style>{`
           @media print {
             body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -247,7 +242,6 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
           }
         `}</style>
 
-        {/* ---------------- INTERFAZ VISUAL (NO SE IMPRIME) ---------------- */}
         <div className="no-print">
           <nav className={`h-20 border-b px-6 sm:px-8 flex items-center justify-between sticky top-0 z-40 transition-colors duration-300 ${themeNav}`}>
             <div className="flex items-center gap-4">
@@ -328,28 +322,8 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
               })}
             </div>
           </main>
-          
-          {/* MODAL AJUSTES DE SEGURIDAD Y PERFIL */}
-          {showSettings && (
-            <div className="fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-               <div className={`w-full max-w-sm rounded-[2rem] p-8 shadow-2xl relative anim-pop text-center ${isDark ? 'bg-slate-800 text-white' : 'bg-white text-slate-800'}`}>
-                  <button onClick={() => setShowSettings(false)} className={`absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-colors ${isDark ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-100 hover:bg-slate-200'}`}><X size={16}/></button>
-                  <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isDark ? 'bg-slate-700 text-violet-400' : 'bg-violet-100 text-violet-600'}`}><Settings size={28}/></div>
-                  <h2 className="text-xl font-black mb-6">Ajustes del Salón</h2>
-                  
-                  <FileUpload label="Logo (Aparecerá en el PDF)" value={newLogo} onChange={setNewLogo} isDark={isDark} />
-                  <Inp label="Teléfono de Contacto" placeholder="Ej: +54 9 11 1234-5678" icon={Phone} value={newPhone} onChange={setNewPhone} isDark={isDark} />
-                  
-                  <div className="mt-6 pt-6 border-t border-slate-200/20">
-                    <Inp label="Cambiar Contraseña" type="password" placeholder="Nueva clave..." value={newPassword} onChange={setNewPassword} isDark={isDark} />
-                  </div>
 
-                  <button onClick={handleSaveSettings} className="w-full py-4 mt-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-black text-sm transition-transform active:scale-95 cursor-pointer shadow-md">GUARDAR AJUSTES</button>
-               </div>
-            </div>
-          )}
-
-          {/* MODAL CRM */}
+          {/* MODAL CRM EN PANTALLA */}
           {activeCrmId && activeInv && (
             <div className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
               <div className={`w-full max-w-4xl max-h-[95vh] rounded-[2rem] overflow-hidden flex flex-col shadow-2xl anim-pop ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
@@ -357,7 +331,6 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                 <div className={`px-6 py-4 border-b flex justify-between items-center shrink-0 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
                    <h2 className={`font-black text-xl flex items-center gap-2 ${themeText}`}><ClipboardList className="text-violet-500" size={20}/> Logística y Presupuesto</h2>
                    <div className="flex gap-2">
-                     {/* BOTONES DE IMPRESIÓN (Doble Plantilla) */}
                      <button onClick={() => handlePrint('presupuesto')} className="px-4 py-2 bg-green-100 text-green-700 hover:bg-green-200 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer"><FileText size={14}/> Presupuesto</button>
                      <button onClick={() => handlePrint('ficha')} className="px-4 py-2 bg-slate-200 text-slate-700 hover:bg-slate-300 rounded-xl text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer"><Printer size={14}/> Ficha Interna</button>
                      <button onClick={() => setActiveCrmId(null)} className="w-10 h-10 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-full flex items-center justify-center transition-colors cursor-pointer ml-2"><X size={20}/></button>
@@ -366,8 +339,6 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
 
                 <div className="p-6 sm:p-8 overflow-y-auto fd-sb flex-1">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                     
-                     {/* COLUMNA IZQUIERDA */}
                      <div>
                         <h3 className="text-xs font-black text-blue-500 uppercase tracking-widest mb-4 border-b border-slate-200/20 pb-2 flex items-center gap-2"><UserCheck size={14}/> Datos del Cliente</h3>
                         <Inp label="Nombre Completo" value={activeInv.internal_data.clientName || ''} onChange={v => onUpdateInternal(activeInv.id, 'clientName', v)} isDark={isDark} />
@@ -377,8 +348,6 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                         </div>
                         <Inp label="Cantidad de Invitados (Aprox)" type="number" placeholder="Ej: 80" value={activeInv.internal_data.guestCount || ''} onChange={v => onUpdateInternal(activeInv.id, 'guestCount', v)} isDark={isDark} />
                      </div>
-
-                     {/* COLUMNA DERECHA */}
                      <div>
                         <h3 className="text-xs font-black text-violet-500 uppercase tracking-widest mb-4 border-b border-slate-200/20 pb-2 flex items-center gap-2"><PartyPopper size={14}/> Detalles del Evento</h3>
                         <Inp label="Nombre del Agasajado/s" value={activeInv.internal_data.internalHonoree || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalHonoree', v)} isDark={isDark} />
@@ -436,13 +405,32 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
               </div>
             </div>
           )}
+
+          {/* MODAL AJUSTES */}
+          {showSettings && (
+            <div className="fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+               <div className={`w-full max-w-sm rounded-[2rem] p-8 shadow-2xl relative anim-pop text-center ${isDark ? 'bg-slate-800 text-white' : 'bg-white text-slate-800'}`}>
+                  <button onClick={() => setShowSettings(false)} className={`absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-colors ${isDark ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-100 hover:bg-slate-200'}`}><X size={16}/></button>
+                  <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${isDark ? 'bg-slate-700 text-violet-400' : 'bg-violet-100 text-violet-600'}`}><Settings size={28}/></div>
+                  <h2 className="text-xl font-black mb-6">Ajustes del Salón</h2>
+                  
+                  <FileUpload label="Logo de tu Salón (Aparecerá en el PDF)" value={newLogo} onChange={setNewLogo} isDark={isDark} />
+                  
+                  <div className="mt-6 pt-6 border-t border-slate-200/20">
+                    <Inp label="Cambiar Contraseña" type="password" placeholder="Nueva clave..." value={newPassword} onChange={setNewPassword} isDark={isDark} />
+                  </div>
+
+                  <button onClick={handleSaveSettings} className="w-full py-4 mt-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-black text-sm transition-transform active:scale-95 cursor-pointer shadow-md">GUARDAR AJUSTES</button>
+               </div>
+            </div>
+          )}
         </div>
 
         {/* ---------------- LA HOJA A4 PARA IMPRIMIR (DOBLE PLANTILLA) ---------------- */}
         {activeCrmId && activeInv && (
           <div className="hidden only-print w-full bg-white text-black p-8 font-sans max-w-4xl mx-auto">
              
-             {/* CABECERA (Logo y Datos del Salón) */}
+             {/* CABECERA */}
              <div className="flex justify-between items-center border-b-2 border-slate-800 pb-6 mb-8">
                 <div className="flex items-center gap-6">
                   {salonInfo?.logo ? (
@@ -464,7 +452,6 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                 </div>
              </div>
 
-             {/* BLOQUE 1: EVENTO Y CLIENTE */}
              <div className="grid grid-cols-2 gap-8 mb-8">
                 <div>
                   <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b border-slate-200 pb-1">1. Detalles del Evento</h3>
@@ -488,7 +475,6 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                 </div>
              </div>
 
-             {/* BLOQUE 2: LOGÍSTICA */}
              <div className="mb-8">
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b border-slate-200 pb-1">3. Servicios Incluidos</h3>
                 <div className="grid grid-cols-2 gap-8 text-sm">
@@ -502,7 +488,6 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                   </div>
                 </div>
                 
-                {/* Las notas internas SOLO se imprimen si es la Ficha de Logística */}
                 {printMode === 'ficha' && (
                   <div className="mt-4 p-4 border border-slate-300 rounded-xl bg-yellow-50">
                     <p className="font-black text-slate-700 mb-1 flex items-center gap-2"><AlertTriangle size={14}/> Notas Internas del Salón:</p>
@@ -511,7 +496,6 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                 )}
              </div>
 
-             {/* BLOQUE 3: VALORES */}
              <div>
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b border-slate-200 pb-1">
                   {printMode === 'presupuesto' ? '4. Detalle de Valores' : '4. Estado Financiero Interno'}
@@ -532,7 +516,6 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                 </div>
              </div>
              
-             {/* FOOTER DEL PDF MARCA BLANCA */}
              <div className="mt-16 text-center text-xs text-slate-400 font-bold border-t border-slate-200 pt-4">
                 {printMode === 'presupuesto' ? (
                   <p>Documento emitido el {new Date().toLocaleDateString('es-AR')} • Los valores expresados pueden estar sujetos a modificaciones.</p>
@@ -542,13 +525,11 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
              </div>
           </div>
         )}
+        {toast && <Toast msg={toast} />}
       </div>
     );
   }
 
-  // ==========================================
-  // VISTA MASTER (ADMIN - SOLO DUEÑO ORIGINAL)
-  // ==========================================
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState("create"); 
   const [editingEmail, setEditingEmail] = useState("");
@@ -736,7 +717,6 @@ export default function App() {
   const handleUpdateUser = async (email, updateData) => {
     const { error: salonError } = await supabase.from('salones').update(updateData).eq('email', email);
     
-    // NUEVO: Si Supabase se queja, nos tira el error en la cara
     if (salonError) {
       alert("Error en la Base de Datos: " + salonError.message);
       return; 
@@ -750,10 +730,9 @@ export default function App() {
           await supabase.from('invitaciones').update({ config: updatedConfig }).eq('id', inv.id);
         }
       }
-    
+    }
     setUsers(prev => prev.map(u => u.email === email ? {...u, ...updateData} : u));
     
-    // Actualizamos el usuario actual si somos nosotros mismos editando nuestro perfil
     if (user && user.email === email) {
       const updatedUser = { ...user, ...updateData };
       setUser(updatedUser);
@@ -763,14 +742,6 @@ export default function App() {
     const { data: freshInvs } = await supabase.from('invitaciones').select('*');
     if (freshInvs) {
       setInvitations(freshInvs.map(i => ({ ...i, salonId: i.salon_id, internal_data: i.internal_data || {} })));
-    }
-  };
-      }
-      setUsers(prev => prev.map(u => u.email === email ? {...u, ...updateData} : u));
-      const { data: freshInvs } = await supabase.from('invitaciones').select('*');
-      if (freshInvs) {
-        setInvitations(freshInvs.map(i => ({ ...i, salonId: i.salon_id, internal_data: i.internal_data || {} })));
-      }
     }
   };
   
