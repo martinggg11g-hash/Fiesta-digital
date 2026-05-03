@@ -23,7 +23,7 @@ const gf = new GiphyFetch('32PbboqCveiWSlj9vROPmyjv8l8cuaj1');
 const IMGBB_API_KEY = "904f81caf05efe58a799abdb1fedc2ce";
 
 /* ============================================================================
-   MINI-COMPONENTES DE INTERFAZ
+   MINI-COMPONENTES DE INTERFAZ INTELIGENTES (Anti-Lag)
 ============================================================================ */
 
 const GiphySearch = ({ onSelect, placeholder = "Buscar GIF..." }) => {
@@ -41,16 +41,43 @@ const GiphySearch = ({ onSelect, placeholder = "Buscar GIF..." }) => {
   );
 };
 
-const Inp = ({ label, value, onChange, placeholder, type="text", multiline = false, className="" }) => (
-  <div className={`mb-2 text-left ${className}`}>
-    {label && <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{label}</label>}
-    {multiline ? (
-      <textarea value={value || ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={3} className="w-full px-4 py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm resize-none focus:bg-white focus:border-violet-400 outline-none transition-all" />
-    ) : (
-      <input type={type} value={value || ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} className="w-full px-4 py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all" />
-    )}
-  </div>
-);
+// NUEVO INP INTELIGENTE: Escribís fluido y actualiza la tarjeta al pausar
+const Inp = ({ label, value, onChange, placeholder, type="text", multiline = false, className="" }) => {
+  const [localVal, setLocalVal] = useState(value || "");
+
+  // Si el valor cambia desde afuera (cuando cargamos el editor), lo actualiza
+  useEffect(() => { setLocalVal(value || ""); }, [value]);
+
+  // Acá está la magia: espera 300ms después de que dejás de escribir para actualizar la tarjeta
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (localVal !== (value || "")) onChange(localVal);
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [localVal, onChange, value]);
+
+  return (
+    <div className={`mb-2 text-left ${className}`}>
+      {label && <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{label}</label>}
+      {multiline ? (
+        <textarea value={localVal} onChange={e => setLocalVal(e.target.value)} placeholder={placeholder} rows={3} className="w-full px-4 py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm resize-none focus:bg-white focus:border-violet-400 outline-none transition-all" />
+      ) : (
+        <input type={type} value={localVal} onChange={e => setLocalVal(e.target.value)} placeholder={placeholder} className="w-full px-4 py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all" />
+      )}
+    </div>
+  );
+};
+
+// HERMANO MENOR DEL INP (Para los menús y cronogramas que no llevan etiquetas grandes)
+const MiniInp = ({ value, onChange, placeholder, className }) => {
+  const [localVal, setLocalVal] = useState(value || "");
+  useEffect(() => { setLocalVal(value || ""); }, [value]);
+  useEffect(() => {
+    const timeout = setTimeout(() => { if (localVal !== (value || "")) onChange(localVal); }, 300);
+    return () => clearTimeout(timeout);
+  }, [localVal, onChange, value]);
+  return <input className={className} value={localVal} onChange={e => setLocalVal(e.target.value)} placeholder={placeholder} />;
+};
 
 const SelectInp = ({ label, value, onChange, options, className="" }) => (
   <div className={`mb-2 text-left ${className}`}>
@@ -80,7 +107,6 @@ const TypoControl = ({ label, fontVal, onFont, colorVal, onColor, sizeVal, onSiz
   </div>
 );
 
-// NUEVO BOTÓN TRADUCIDO "SUBIR IMAGEN"
 const FileUpload = ({ label, onChange, value }) => {
   const [uploading, setUploading] = useState(false);
   const handleFile = async (e) => {
@@ -104,7 +130,6 @@ const FileUpload = ({ label, onChange, value }) => {
           <span className="flex items-center gap-2">
             {uploading ? <><Loader2 size={14} className="animate-spin" /> Subiendo...</> : <>📸 Subir imagen de tu galería</>}
           </span>
-          {/* El input oculto para que no se lea en inglés */}
           <input type="file" accept="image/*" onChange={handleFile} disabled={uploading} className="hidden" />
         </label>
       </div>
@@ -202,7 +227,9 @@ export const EditorScreen = ({ invitations, onSave }) => {
       <header className="h-16 border-b border-white/10 px-6 flex items-center justify-between shrink-0 bg-slate-950/80 backdrop-blur z-20">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate("/dashboard")} className="w-10 h-10 bg-white/5 rounded-xl text-white flex items-center justify-center hover:bg-white/10 cursor-pointer"><ArrowLeft size={20}/></button>
-          <input className="bg-transparent border-none text-white font-black text-sm outline-none w-48 px-2 py-1 rounded hover:bg-white/5 focus:bg-white/10 transition-colors" value={inv.title} onChange={e => setInv({...inv, title: e.target.value})} />
+          
+          {/* USAMOS MINI-INP ACÁ TAMBIÉN PARA EL TÍTULO */}
+          <MiniInp className="bg-transparent border-none text-white font-black text-sm outline-none w-48 px-2 py-1 rounded hover:bg-white/5 focus:bg-white/10 transition-colors" value={inv.title} onChange={v => setInv({...inv, title: v})} />
         </div>
         <button onClick={handleSave} className="px-8 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-black text-xs flex items-center gap-3 shadow-xl shadow-violet-900/40 cursor-pointer transition-colors">
           <Save size={16}/> GUARDAR CAMBIOS
@@ -242,13 +269,13 @@ export const EditorScreen = ({ invitations, onSave }) => {
                    ))}
                  </div>
                  <SelectInp label="Efecto de Salida" value={cfg.animationTransition || 'fade'} options={TRANSITION_OPTS} onChange={v => update("animationTransition", v)} />
-                 <button type="button" onClick={() => setPreviewAnim(true)} className="w-full mt-2 py-3 bg-amber-50 text-amber-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-amber-100 border border-amber-200">▶ PROBAR ANIMACIÓN</button>
+                 <button type="button" onClick={() => setPreviewAnim(true)} className="w-full mt-2 py-3 bg-amber-50 text-amber-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-amber-100 border border-amber-200 cursor-pointer">▶ PROBAR ANIMACIÓN</button>
                </div>
              )}
 
             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Temas Sugeridos</label>
             <div className="flex flex-wrap gap-2.5 mb-6">
-              {THEMES.map(th => <button key={th.id} title={th.name} onClick={() => setInv({...inv, config: {...cfg, theme: th.id, ...th}})} className={`w-9 h-9 rounded-full border-2 transition-all hover:scale-110 ${cfg.theme === th.id ? 'border-violet-600 ring-2 ring-violet-200' : 'border-transparent'}`} style={{ background: th.primary }} />)}
+              {THEMES.map(th => <button key={th.id} title={th.name} onClick={() => setInv({...inv, config: {...cfg, theme: th.id, ...th}})} className={`w-9 h-9 rounded-full border-2 transition-all hover:scale-110 cursor-pointer ${cfg.theme === th.id ? 'border-violet-600 ring-2 ring-violet-200' : 'border-transparent'}`} style={{ background: th.primary }} />)}
             </div>
 
             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Colores Base Manuales</label>
@@ -291,7 +318,7 @@ export const EditorScreen = ({ invitations, onSave }) => {
               )}
               
               <div className="flex items-center justify-between mt-3 mb-1 pt-3 border-t border-gray-200">
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Sombreado para legibilidad</span>
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Sombreado Base Oscuro</span>
                 <Toggle checked={cfg.showCoverGradient !== false} onChange={v => update("showCoverGradient", v)} />
               </div>
               {cfg.showCoverGradient !== false && (
@@ -299,10 +326,10 @@ export const EditorScreen = ({ invitations, onSave }) => {
               )}
             </div>
 
-            {/* NUEVO CONTROLES DE SOMBRA EN TEXTO */}
+            {/* CONTROLES DE SOMBRA EN TEXTO */}
             <div className="bg-gray-50/70 p-3 rounded-xl border border-gray-100 shadow-sm mb-5 relative overflow-hidden">
               <div className="absolute left-0 top-0 bottom-0 w-1 bg-slate-400" />
-              <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3 pl-2">Sombreado de Letras</label>
+              <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3 pl-2">Sombreado para Legibilidad de Textos</label>
               <div className="flex gap-3 pl-2">
                 <div className="flex flex-col gap-1 shrink-0">
                   <label className="text-[9px] font-bold text-slate-400 uppercase">Color</label>
@@ -365,7 +392,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
             <TypoControl label="Tamaño Textos Fecha y Lugar" sizeVal={cfg.dateSize ?? 18} onSize={v => update("dateSize", v)} minSize={12} maxSize={30} />
             
             <div className="flex items-center justify-between mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Día de la fiesta</span><Toggle checked={cfg.showDate} onChange={v => update("showDate", v)} /></div>
-            {/* NUEVO INPUT TYPE DATE */}
             {cfg.showDate && <Inp type="date" value={cfg.dateText} onChange={v => update("dateText", v)} />}
 
             <div className="flex items-center justify-between mt-4 mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Horario de la fiesta</span><Toggle checked={cfg.showTime} onChange={v => update("showTime", v)} /></div>
@@ -399,7 +425,7 @@ export const EditorScreen = ({ invitations, onSave }) => {
             )}
           </Acc>
 
-          {/* 6. MULTIMEDIA (Video y Música) */}
+          {/* 6. MULTIMEDIA */}
           <Acc title="6️⃣ Multimedia (Video y Música)" icon={Video} iconColor="#8b5cf6">
             <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Video de Invitación</span><Toggle checked={cfg.showVideo || false} onChange={v => update("showVideo", v)} /></div>
             {cfg.showVideo && (
@@ -424,12 +450,12 @@ export const EditorScreen = ({ invitations, onSave }) => {
                  <div className="space-y-4 mb-6">
                     {cfg.itinerary?.map((item, i) => (
                       <div key={i} className="flex flex-col gap-2 bg-white p-3 rounded-xl border border-slate-100 shadow-sm relative">
-                        <button onClick={() => update("itinerary", cfg.itinerary.filter((_, idx) => idx !== i))} type="button" className="absolute top-2 right-2 text-red-400 hover:text-red-600"><Trash2 size={14}/></button>
+                        <button onClick={() => update("itinerary", cfg.itinerary.filter((_, idx) => idx !== i))} type="button" className="absolute top-2 right-2 text-red-400 hover:text-red-600 cursor-pointer"><Trash2 size={14}/></button>
                         <div className="flex gap-2 pr-6">
-                          <input className="w-16 p-2 text-xs font-bold border bg-gray-50 rounded-lg outline-none focus:border-violet-300" value={item.time} onChange={e => { const n = [...cfg.itinerary]; n[i].time = e.target.value; update("itinerary", n); }} />
-                          <input className="flex-1 p-2 text-xs border bg-gray-50 rounded-lg outline-none focus:border-violet-300" value={item.title} onChange={e => { const n = [...cfg.itinerary]; n[i].title = e.target.value; update("itinerary", n); }} />
+                          <MiniInp className="w-16 p-2 text-xs font-bold border bg-gray-50 rounded-lg outline-none focus:border-violet-300" value={item.time} onChange={v => { const n = [...cfg.itinerary]; n[i].time = v; update("itinerary", n); }} />
+                          <MiniInp className="flex-1 p-2 text-xs border bg-gray-50 rounded-lg outline-none focus:border-violet-300" value={item.title} onChange={v => { const n = [...cfg.itinerary]; n[i].title = v; update("itinerary", n); }} />
                         </div>
-                        <input className="w-full p-2 text-xs border bg-gray-50 rounded-lg outline-none focus:border-violet-300" value={item.sub} placeholder="Aclaración opcional" onChange={e => { const n = [...cfg.itinerary]; n[i].sub = e.target.value; update("itinerary", n); }} />
+                        <MiniInp className="w-full p-2 text-xs border bg-gray-50 rounded-lg outline-none focus:border-violet-300" value={item.sub} placeholder="Aclaración opcional" onChange={v => { const n = [...cfg.itinerary]; n[i].sub = v; update("itinerary", n); }} />
                       </div>
                     ))}
                  </div>
@@ -447,8 +473,8 @@ export const EditorScreen = ({ invitations, onSave }) => {
                     {cfg.menuItems?.map((m, i) => (
                       <div key={i} className="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-100 shadow-sm">
                         <EmojiPicker list={FOOD_EMOJIS} value={m.emoji} onSelect={e => { const n = [...cfg.menuItems]; n[i].emoji = e; update("menuItems", n); }} />
-                        <input className="flex-1 p-2 text-xs border bg-gray-50 rounded-lg outline-none focus:border-violet-300" value={m.label} onChange={e => { const n = [...cfg.menuItems]; n[i].label = e.target.value; update("menuItems", n); }} />
-                        <button onClick={() => update("menuItems", cfg.menuItems.filter((_, idx) => idx !== i))} type="button" className="text-red-400 p-2 hover:bg-red-50 rounded-lg"><Trash2 size={14}/></button>
+                        <MiniInp className="flex-1 p-2 text-xs border bg-gray-50 rounded-lg outline-none focus:border-violet-300" value={m.label} onChange={v => { const n = [...cfg.menuItems]; n[i].label = v; update("menuItems", n); }} />
+                        <button onClick={() => update("menuItems", cfg.menuItems.filter((_, idx) => idx !== i))} type="button" className="text-red-400 p-2 hover:bg-red-50 rounded-lg cursor-pointer"><Trash2 size={14}/></button>
                       </div>
                     ))}
                  </div>
@@ -501,7 +527,7 @@ export const EditorScreen = ({ invitations, onSave }) => {
                    {cfg.galleryPhotos?.map((p, i) => (
                      <div key={i} className="bg-white border border-gray-200 rounded-xl p-2 relative">
                        <FileUpload onChange={v => { const n = [...cfg.galleryPhotos]; n[i] = v; update("galleryPhotos", n); }} value={p} />
-                       <button onClick={() => update("galleryPhotos", cfg.galleryPhotos.filter((_, idx) => idx !== i))} type="button" className="absolute top-2 right-2 p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100"><Trash2 size={14}/></button>
+                       <button onClick={() => update("galleryPhotos", cfg.galleryPhotos.filter((_, idx) => idx !== i))} type="button" className="absolute top-2 right-2 p-2 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 cursor-pointer"><Trash2 size={14}/></button>
                      </div>
                    ))}
                  </div>
