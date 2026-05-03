@@ -750,7 +750,7 @@ export default function App() {
           await supabase.from('invitaciones').update({ config: updatedConfig }).eq('id', inv.id);
         }
       }
-    }
+    
     setUsers(prev => prev.map(u => u.email === email ? {...u, ...updateData} : u));
     
     // Actualizamos el usuario actual si somos nosotros mismos editando nuestro perfil
