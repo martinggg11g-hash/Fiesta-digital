@@ -5,7 +5,7 @@ import {
   ShieldCheck, LogOut, Plus, Trash2, Copy, CheckCircle2, Lock, 
   MapPin, CalendarClock, AlertTriangle, KeyRound, Building, Edit2, X, MessageCircle, Eye, EyeOff, Search,
   Phone, Users, Clock, Settings, UserCheck, Receipt,
-  Moon, Sun, Printer, ClipboardList, ImageIcon, FileText, ScanBarcode, FileDown, PartyPopper, Loader2
+  Moon, Sun, Printer, ClipboardList, ImageIcon, FileText, ScanBarcode, FileDown, PartyPopper, Loader2, CreditCard, Send
 } from "lucide-react";
 
 const slugify = (text) => text?.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') || 'salon';
@@ -42,7 +42,7 @@ const Inp = ({ label, value, onChange, placeholder, type="text", multiline = fal
   useEffect(() => { const timeout = setTimeout(() => { if (localVal !== (value || "")) onChange(localVal); }, 400); return () => clearTimeout(timeout); }, [localVal, onChange, value]);
 
   const handleBlur = () => { isFocused.current = false; if (localVal !== (value || "")) onChange(localVal); };
-  const bgClass = isDark ? "bg-slate-700 border-slate-600 text-white focus:bg-slate-600" : "bg-gray-50 border-gray-200 text-slate-800 focus:bg-white";
+  const bgClass = isDark ? "bg-slate-800 border-slate-700 text-white focus:bg-slate-700" : "bg-gray-50 border-gray-200 text-slate-800 focus:bg-white";
   const actualType = type === 'password' && showPwd ? 'text' : type;
   
   return (
@@ -83,7 +83,7 @@ const FileUpload = ({ label, onChange, value, isDark=false }) => {
     <div className="mb-4 text-left relative">
       {label && <label className={`block text-[10px] font-black uppercase tracking-widest mb-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{label}</label>}
       <div className="relative">
-        <label className={`flex items-center justify-center w-full py-3 px-4 rounded-xl text-xs font-bold border transition-all cursor-pointer ${uploading ? 'opacity-50 cursor-not-allowed bg-slate-700 text-white' : (isDark ? 'bg-slate-700 border-slate-600 text-violet-400 hover:bg-slate-600' : 'bg-white border-violet-200 text-violet-600 hover:bg-violet-50')}`}>
+        <label className={`flex items-center justify-center w-full py-3 px-4 rounded-xl text-xs font-bold border transition-all cursor-pointer ${uploading ? 'opacity-50 cursor-not-allowed bg-slate-700 text-white' : (isDark ? 'bg-slate-800 border-slate-700 text-violet-400 hover:bg-slate-700' : 'bg-white border-violet-200 text-violet-600 hover:bg-violet-50')}`}>
           <span className="flex items-center gap-2">{uploading ? <><Loader2 size={14} className="animate-spin" /> Subiendo...</> : <><ImageIcon size={16}/> Subir logo</>}</span>
           <input type="file" accept="image/*" onChange={handleFile} disabled={uploading} className="hidden" />
         </label>
@@ -107,12 +107,27 @@ const Toggle = ({ checked, onChange }) => (
 
 const QRScannerModal = ({ onClose, onScan }) => {
   useEffect(() => {
-    const scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1 }, false);
-    scanner.render(
-      (decodedText) => { scanner.clear(); onScan(decodedText); },
-      (error) => { }
-    );
-    return () => { scanner.clear().catch(e => console.log(e)); };
+    // Inicialización de la cámara, pidiendo permisos
+    let scanner;
+    const startScanner = async () => {
+      try {
+        scanner = new Html5QrcodeScanner("reader", { 
+          fps: 10, 
+          qrbox: { width: 250, height: 250 }, 
+          aspectRatio: 1,
+          rememberLastUsedCamera: true
+        }, false);
+        
+        scanner.render(
+          (decodedText) => { scanner.clear(); onScan(decodedText); },
+          (error) => { /* ignora errores por no enfocar */ }
+        );
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    startScanner();
+    return () => { if(scanner) scanner.clear().catch(e => console.log(e)); };
   }, [onScan]);
 
   return (
@@ -122,7 +137,7 @@ const QRScannerModal = ({ onClose, onScan }) => {
           <div className="w-16 h-16 bg-slate-900 text-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl"><ScanBarcode size={30}/></div>
           <h2 className="text-xl font-black text-slate-900 mb-2">Control de Acceso</h2>
           <p className="text-slate-500 text-xs mb-6">Enfocá el QR del invitado en el recuadro.</p>
-          <div id="reader" className="w-full overflow-hidden rounded-2xl border-4 border-slate-100"></div>
+          <div id="reader" className="w-full overflow-hidden rounded-2xl border-4 border-slate-100 bg-black"></div>
        </div>
     </div>
   );
@@ -135,13 +150,25 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
   const [activeTab, setActiveTab] = useState("info");
   
   const [showSettings, setShowSettings] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false); // Nuevo Modal de Pagos
+  
+  // Escaner
   const [scanningEvent, setScanningEvent] = useState(null);
   const [validationResult, setValidationResult] = useState(null);
 
+  // Formularios de Salón
   const [newPassword, setNewPassword] = useState("");
   const [newLogo, setNewLogo] = useState("");
   const [newPhone, setNewPhone] = useState(""); 
   const [printMode, setPrintMode] = useState("ficha"); 
+
+  // Modal para CRUD de Invitados (Crear/Editar)
+  const [showGuestModal, setShowGuestModal] = useState(false);
+  const [editingGuest, setEditingGuest] = useState(null);
+  const [gName, setGName] = useState("");
+  const [gLastname, setGLastname] = useState("");
+  const [gPax, setGPax] = useState(1);
+  const [gStatus, setGStatus] = useState("Pendiente");
 
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem("fiesta_darkmode");
@@ -167,6 +194,7 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
   const themeText = isDark ? "text-white" : "text-slate-800";
   const themeCard = isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200/60";
 
+  // MÓDULO INVITADOS: Exportar
   const handleExportCSV = () => {
     if(guestsList.length === 0) return alert("No hay invitados confirmados aún.");
     let csv = "ID Pase,Nombre Completo,Acompañantes,Estado,Fecha de Confirmación\n";
@@ -184,6 +212,46 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
     document.body.removeChild(link);
   };
 
+  // MÓDULO INVITADOS: CRUD
+  const openNewGuest = () => {
+    setEditingGuest(null);
+    setGName(""); setGLastname(""); setGPax(1); setGStatus("Pendiente");
+    setShowGuestModal(true);
+  };
+  
+  const openEditGuest = (g) => {
+    setEditingGuest(g);
+    setGName(g.name); setGLastname(g.lastname); setGPax(g.guests); setGStatus(g.status);
+    setShowGuestModal(true);
+  };
+
+  const saveGuest = () => {
+    if(!gName) return alert("Falta nombre");
+    let newList = [...guestsList];
+    
+    if (editingGuest) {
+      // Editando
+      newList = newList.map(g => g.id === editingGuest.id ? { ...g, name: gName, lastname: gLastname, guests: Number(gPax), status: gStatus } : g);
+    } else {
+      // Nuevo manual (Fake QR ID)
+      const fakeId = `MANUAL-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+      newList.push({ id: fakeId, name: gName, lastname: gLastname, guests: Number(gPax), status: gStatus, timestamp: new Date().toISOString() });
+    }
+    
+    onUpdateInternal(activeInv.id, 'guests', newList);
+    setShowGuestModal(false);
+    notify("Invitado guardado");
+  };
+
+  const deleteGuest = (guestId) => {
+    if(window.confirm("¿Seguro que querés borrar a este invitado? El QR que descargó dejará de funcionar.")) {
+      const newList = guestsList.filter(g => g.id !== guestId);
+      onUpdateInternal(activeInv.id, 'guests', newList);
+      notify("Invitado eliminado");
+    }
+  };
+
+  // ESCANER LÓGICA
   const processQRScan = (qrString) => {
     const [tId, tName, tLast, tPax] = qrString.split('|');
     const guestDb = scanningEvent.internal_data?.guests?.find(g => g.id === tId);
@@ -204,13 +272,26 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
     notify("Ingreso registrado");
   };
 
+  const handlePrint = (mode) => {
+    setPrintMode(mode);
+    setTimeout(() => window.print(), 200); 
+  };
+
+
   if (!isOwner) {
     const salonInfo = users.find(u => u.email === user.email);
     const isManualBlocked = salonInfo?.payment_alert;
     
     return (
       <div className={`min-h-screen pb-20 text-left transition-colors duration-300 ${themeBg}`}>
-        <style>{`@media print { @page { margin: 0; } body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } .no-print { display: none !important; } .only-print { display: block !important; padding: 1.5cm 2cm !important; } }`}</style>
+        <style>{`
+          @media print { 
+            @page { margin: 0; } 
+            body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; } 
+            .no-print { display: none !important; } 
+            .only-print { display: block !important; padding: 1.5cm 2cm !important; } 
+          }
+        `}</style>
 
         <div className="no-print">
           <nav className={`h-20 border-b px-6 sm:px-8 flex items-center justify-between sticky top-0 z-40 transition-colors duration-300 ${themeNav}`}>
@@ -219,6 +300,11 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
                <div className={`font-black text-xl tracking-tight ${themeText}`}>{user.name} <span className="text-violet-500 text-sm opacity-60 ml-2 hidden sm:inline-block">| Panel de Gestión</span></div>
             </div>
             <div className="flex items-center gap-3">
+               {/* BOTÓN DE PAGOS NUEVO */}
+               <button onClick={() => setShowPaymentModal(true)} className={`px-4 py-2 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all flex items-center gap-2 border cursor-pointer ${isDark ? 'border-amber-500/30 text-amber-400 bg-amber-500/10 hover:bg-amber-500/20' : 'border-amber-200 text-amber-600 bg-amber-50 hover:bg-amber-100'}`}>
+                 <CreditCard size={16}/> Pagos / Facturación
+               </button>
+
                <button onClick={() => setIsDark(!isDark)} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${isDark ? 'bg-slate-700 text-yellow-400 hover:bg-slate-600' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>{isDark ? <Sun size={18}/> : <Moon size={18}/>}</button>
                <button onClick={() => { setNewLogo(salonInfo?.logo || ""); setNewPhone(salonInfo?.phone || ""); setNewPassword(""); setShowSettings(true); }} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}><Settings size={18}/></button>
                <button onClick={() => { onLogout(); navigate("/"); }} className="w-10 h-10 bg-red-500/10 text-red-500 rounded-xl flex items-center justify-center hover:bg-red-500/20 transition-all cursor-pointer"><LogOut size={18}/></button>
@@ -264,7 +350,7 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
                          </div>
                          <div className="text-right">
                            <span className="block text-[10px] font-black uppercase text-violet-300 mb-1">Confirmados</span>
-                           <span className="px-3 py-1 rounded-full text-xs font-black border border-white/20 backdrop-blur-md bg-black/40 text-white">{confGuests} pax</span>
+                           <span className="px-3 py-1 rounded-full text-xs font-black border border-white/20 backdrop-blur-md bg-black/40 text-white">{confGuests}</span>
                          </div>
                       </div>
                       <button onClick={() => { if(window.confirm("¿Borrar definitivamente este evento?")) onDeleteInv(inv.id); }} className="absolute top-4 right-4 w-9 h-9 bg-red-500/90 text-white rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-red-600 shadow-lg cursor-pointer"><Trash2 size={16}/></button>
@@ -286,10 +372,12 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
             </div>
           </main>
 
+          {/* ESCANER DE CÁMARA */}
           {scanningEvent && !validationResult && (
             <QRScannerModal onClose={() => setScanningEvent(null)} onScan={processQRScan} />
           )}
 
+          {/* RESULTADO DE VALIDACIÓN DEL PASE */}
           {validationResult && (
             <div className="fixed inset-0 z-[130] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
                <div className="w-full max-w-sm bg-white rounded-[2rem] p-8 shadow-2xl relative text-center anim-pop border-4" style={{ borderColor: validationResult.status === 'success' ? '#22c55e' : (validationResult.status === 'error' ? '#ef4444' : '#f59e0b') }}>
@@ -316,23 +404,25 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
             </div>
           )}
 
+          {/* MODAL CRM (FICHA + LISTA DE INVITADOS) */}
           {activeCrmId && activeInv && (
             <div className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
-              <div className={`w-full max-w-4xl max-h-[95vh] h-full sm:h-auto rounded-[2rem] overflow-hidden flex flex-col shadow-2xl anim-pop ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
+              <div className={`w-full max-w-5xl max-h-[95vh] h-full sm:h-auto rounded-[2rem] overflow-hidden flex flex-col shadow-2xl anim-pop ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
                 <div className={`px-6 py-4 border-b flex justify-between items-center shrink-0 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
                    <div className="flex gap-4 border border-slate-300 rounded-xl p-1 bg-slate-100">
-                     <button onClick={() => setActiveTab('info')} className={`px-4 py-2 rounded-lg text-xs font-black transition-colors ${activeTab === 'info' ? 'bg-white shadow-sm text-violet-600' : 'text-slate-500 hover:text-slate-700'}`}><ClipboardList size={14} className="inline-block mr-1"/> Ficha Interna</button>
-                     <button onClick={() => setActiveTab('guests')} className={`px-4 py-2 rounded-lg text-xs font-black transition-colors ${activeTab === 'guests' ? 'bg-white shadow-sm text-violet-600' : 'text-slate-500 hover:text-slate-700'}`}><Users size={14} className="inline-block mr-1"/> Invitados</button>
+                     <button onClick={() => setActiveTab('info')} className={`px-4 py-2 rounded-lg text-xs font-black transition-colors cursor-pointer ${activeTab === 'info' ? 'bg-white shadow-sm text-violet-600' : 'text-slate-500 hover:text-slate-700'}`}><ClipboardList size={14} className="inline-block mr-1"/> Ficha Interna</button>
+                     <button onClick={() => setActiveTab('guests')} className={`px-4 py-2 rounded-lg text-xs font-black transition-colors cursor-pointer ${activeTab === 'guests' ? 'bg-white shadow-sm text-violet-600' : 'text-slate-500 hover:text-slate-700'}`}><Users size={14} className="inline-block mr-1"/> Invitados</button>
                    </div>
                    <button onClick={() => setActiveCrmId(null)} className="w-10 h-10 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-full flex items-center justify-center transition-colors cursor-pointer ml-2"><X size={20}/></button>
                 </div>
 
-                <div className="p-6 sm:p-8 overflow-y-auto fd-sb flex-1">
+                <div className="p-6 sm:p-8 overflow-y-auto fd-sb flex-1 relative">
+                  {/* PESTAÑA FICHA INTERNA */}
                   {activeTab === 'info' && (
-                    <>
+                    <div className="animate-in fade-in duration-300">
                       <div className="flex justify-end gap-2 mb-6">
-                        <button onClick={() => handlePrint('presupuesto')} className="px-4 py-2 bg-green-100 text-green-700 hover:bg-green-200 rounded-xl text-xs font-bold flex items-center gap-2 cursor-pointer"><FileText size={14}/> Imprimir Presupuesto</button>
-                        <button onClick={() => handlePrint('ficha')} className="px-4 py-2 bg-slate-200 text-slate-700 hover:bg-slate-300 rounded-xl text-xs font-bold flex items-center gap-2 cursor-pointer"><Printer size={14}/> Imprimir Ficha</button>
+                        <button onClick={() => handlePrint('presupuesto')} className="px-4 py-2 bg-green-100 text-green-700 hover:bg-green-200 rounded-xl text-xs font-bold flex items-center gap-2 cursor-pointer"><FileText size={14}/> Imprimir PDF Presupuesto</button>
+                        <button onClick={() => handlePrint('ficha')} className="px-4 py-2 bg-slate-200 text-slate-700 hover:bg-slate-300 rounded-xl text-xs font-bold flex items-center gap-2 cursor-pointer"><Printer size={14}/> Imprimir PDF Ficha</button>
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
@@ -397,9 +487,10 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
                             </div>
                          </div>
                       </div>
-                    </>
+                    </div>
                   )}
 
+                  {/* PESTAÑA LISTA DE INVITADOS CON CRUD */}
                   {activeTab === 'guests' && (
                     <div className="animate-in fade-in duration-300">
                       <div className="flex items-center justify-between mb-6">
@@ -407,7 +498,11 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
                           <h3 className={`font-black text-xl flex items-center gap-2 ${themeText}`}><Users className="text-violet-500" size={24}/> Control de Accesos</h3>
                           <p className="text-slate-500 text-sm mt-1">Total de asistentes confirmados: <strong className="text-violet-600">{guestsList.reduce((acc, g) => acc + g.guests, 0)}</strong></p>
                         </div>
-                        <button onClick={handleExportCSV} className="px-6 py-3 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-black text-xs flex items-center gap-2 shadow-lg transition-transform active:scale-95 cursor-pointer"><FileDown size={16}/> DESCARGAR EXCEL</button>
+                        <div className="flex gap-2">
+                           <button onClick={openNewGuest} className="px-5 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-black text-xs flex items-center gap-2 shadow-lg transition-transform active:scale-95 cursor-pointer"><Plus size={16}/> AGREGAR A MANO</button>
+                           <button onClick={() => handlePrint('invitados')} className="px-5 py-3 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-black text-xs flex items-center gap-2 shadow-lg transition-transform active:scale-95 cursor-pointer"><Printer size={16}/> IMPRIMIR LISTA</button>
+                           <button onClick={handleExportCSV} className="px-5 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-black text-xs flex items-center gap-2 shadow-lg transition-transform active:scale-95 cursor-pointer"><FileDown size={16}/> EXCEL</button>
+                        </div>
                       </div>
 
                       {guestsList.length === 0 ? (
@@ -417,15 +512,19 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
                       ) : (
                         <div className="border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
                           <table className="w-full text-left bg-white">
-                            <thead><tr className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest"><th className="p-4 border-b">Invitado</th><th className="p-4 border-b text-center">Pase VIP ID</th><th className="p-4 border-b text-center">Acompañantes</th><th className="p-4 border-b text-right">Estado</th></tr></thead>
+                            <thead><tr className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest"><th className="p-4 border-b">Invitado</th><th className="p-4 border-b text-center">Pase VIP ID</th><th className="p-4 border-b text-center">Personas</th><th className="p-4 border-b text-center">Estado</th><th className="p-4 border-b text-right">Acciones</th></tr></thead>
                             <tbody className="text-sm">
                               {guestsList.slice().reverse().map((g, i) => (
-                                <tr key={i} className="border-b border-slate-100 hover:bg-slate-50">
+                                <tr key={i} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                                   <td className="p-4 font-bold text-slate-800">{g.name} {g.lastname}<br/><span className="text-[9px] text-slate-400 font-normal uppercase tracking-wider">{new Date(g.timestamp).toLocaleDateString('es-AR')}</span></td>
-                                  <td className="p-4 text-center"><code className="bg-slate-100 px-2 py-1 rounded text-xs text-slate-500">{g.id}</code></td>
+                                  <td className="p-4 text-center"><code className="bg-slate-100 px-2 py-1 rounded text-xs text-slate-500 font-mono">{g.id}</code></td>
                                   <td className="p-4 text-center font-black text-slate-600">{g.guests}</td>
-                                  <td className="p-4 text-right">
+                                  <td className="p-4 text-center">
                                     <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${g.status === 'Ingresó' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{g.status}</span>
+                                  </td>
+                                  <td className="p-4 text-right flex justify-end gap-2">
+                                     <button onClick={() => openEditGuest(g)} className="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 hover:bg-violet-100 hover:text-violet-600 flex items-center justify-center cursor-pointer transition-colors"><Edit2 size={14}/></button>
+                                     <button onClick={() => deleteGuest(g.id)} className="w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 flex items-center justify-center cursor-pointer transition-colors"><Trash2 size={14}/></button>
                                   </td>
                                 </tr>
                               ))}
@@ -436,11 +535,37 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
                     </div>
                   )}
 
+                  {/* MODAL CREAR/EDITAR INVITADO */}
+                  {showGuestModal && (
+                    <div className="absolute inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+                       <div className={`w-full max-w-sm rounded-[2rem] p-6 shadow-2xl relative text-center anim-pop ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
+                          <button onClick={() => setShowGuestModal(false)} className="absolute top-4 right-4 w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 cursor-pointer"><X size={16}/></button>
+                          <h3 className={`font-black text-lg mb-4 ${isDark ? 'text-white' : 'text-slate-800'}`}>{editingGuest ? 'Editar Invitado' : 'Agregar Invitado Manual'}</h3>
+                          <div className="space-y-2">
+                             <Inp label="Nombre" value={gName} onChange={setGName} isDark={isDark} />
+                             <Inp label="Apellido" value={gLastname} onChange={setGLastname} isDark={isDark} />
+                             <div className="flex gap-2">
+                               <div className="flex-1"><Inp label="Cantidad" type="number" value={gPax} onChange={v => setGPax(v)} isDark={isDark} /></div>
+                               <div className="flex-1">
+                                 <label className={`block text-[10px] font-black uppercase mb-1.5 text-left ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Estado</label>
+                                 <select className={`w-full py-3 px-4 rounded-xl text-sm outline-none cursor-pointer border ${isDark ? 'bg-slate-700 text-white border-slate-600' : 'bg-gray-50 text-slate-800 border-gray-200'}`} value={gStatus} onChange={e => setGStatus(e.target.value)}>
+                                   <option value="Pendiente">Pendiente</option>
+                                   <option value="Ingresó">Ingresó</option>
+                                 </select>
+                               </div>
+                             </div>
+                             <button onClick={saveGuest} className="w-full py-4 mt-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-black text-sm transition-transform active:scale-95 cursor-pointer shadow-md">GUARDAR</button>
+                          </div>
+                       </div>
+                    </div>
+                  )}
+
                 </div>
               </div>
             </div>
           )}
 
+          {/* MODAL AJUSTES DE SALON */}
           {showSettings && (
             <div className="fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
                <div className={`w-full max-w-sm rounded-[2rem] p-8 shadow-2xl relative anim-pop text-center ${isDark ? 'bg-slate-800 text-white' : 'bg-white text-slate-800'}`}>
@@ -450,74 +575,164 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
                   <FileUpload label="Logo de tu Salón (Aparecerá en el PDF)" value={newLogo} onChange={setNewLogo} isDark={isDark} />
                   <Inp label="Teléfono de Contacto" placeholder="Ej: +54 9 11 1234-5678" icon={Phone} value={newPhone} onChange={setNewPhone} isDark={isDark} />
                   <div className="mt-6 pt-6 border-t border-slate-200/20"><Inp label="Cambiar Contraseña" type="password" placeholder="Nueva clave..." value={newPassword} onChange={setNewPassword} isDark={isDark} /></div>
-                  <button onClick={handleSaveSettings} className="w-full py-4 mt-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-black text-sm transition-transform active:scale-95 cursor-pointer shadow-md">GUARDAR AJUSTES</button>
+                  <button onClick={() => { onUpdateUser(user.email, { logo: newLogo, phone: newPhone, ...(newPassword ? {pass: newPassword} : {}) }); setShowSettings(false); notify("Ajustes guardados"); }} className="w-full py-4 mt-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-black text-sm transition-transform active:scale-95 cursor-pointer shadow-md">GUARDAR AJUSTES</button>
+               </div>
+            </div>
+          )}
+
+          {/* MODAL DE PAGOS (Suscripción del Salón) */}
+          {showPaymentModal && (
+            <div className="fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+               <div className={`w-full max-w-md rounded-[2rem] p-8 shadow-2xl relative anim-pop ${isDark ? 'bg-slate-800 text-white' : 'bg-white text-slate-800'}`}>
+                  <button onClick={() => setShowPaymentModal(false)} className={`absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-colors ${isDark ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-100 hover:bg-slate-200'}`}><X size={16}/></button>
+                  <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-amber-100 text-amber-600"><CreditCard size={28}/></div>
+                  <h2 className="text-xl font-black mb-2 text-center">Abonar Suscripción</h2>
+                  <p className="text-sm text-center mb-6 opacity-70">Para mantener tu panel activo, podés transferir tu cuota mensual a las siguientes cuentas.</p>
+                  
+                  <div className="space-y-3 mb-6 text-sm">
+                    <div className={`p-4 rounded-xl border ${isDark ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'}`}>
+                       <p className="text-[10px] font-black uppercase text-slate-400 mb-1">Para México 🇲🇽 (CLABE)</p>
+                       <p className="font-bold">Banco: BBVA</p>
+                       <p className="font-bold">Titular: Jonatán Rivas</p>
+                       <p className="font-mono text-base mt-1 text-violet-500 font-bold tracking-wider">012345678901234567</p>
+                    </div>
+                    <div className={`p-4 rounded-xl border ${isDark ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'}`}>
+                       <p className="text-[10px] font-black uppercase text-slate-400 mb-1">Para Argentina 🇦🇷 (CBU/Alias)</p>
+                       <p className="font-bold">Titular: Jonatán Rivas</p>
+                       <p className="font-mono text-base mt-1 text-violet-500 font-bold tracking-wider">defiesta.lat.mp</p>
+                    </div>
+                  </div>
+
+                  <button onClick={() => window.open(`https://t.me/jonatanrivas?text=Hola,%20soy%20el%20salón%20${user.name}.%20Te%20envío%20el%20comprobante%20de%20pago.`)} className="w-full py-4 bg-[#0088cc] hover:bg-[#0077b5] text-white rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer shadow-lg">
+                    <Send size={18}/> ENVIAR COMPROBANTE POR TELEGRAM
+                  </button>
                </div>
             </div>
           )}
         </div>
 
+        {/* ---------------- LA HOJA A4 PARA IMPRIMIR (DOBLE PLANTILLA) ---------------- */}
         {activeCrmId && activeInv && (
           <div className="hidden only-print w-full bg-white text-black font-sans max-w-4xl mx-auto">
-             <div className="flex justify-between items-center border-b-2 border-slate-800 pb-6 mb-8">
-                <div className="flex items-center gap-6">
-                  {salonInfo?.logo ? <img src={salonInfo.logo} className="max-h-24 max-w-[200px] object-contain" alt="Logo" /> : <div className="text-3xl font-black tracking-tighter text-slate-900">{user.name}</div>}
-                  <div>
-                    {salonInfo?.logo && <h1 className="text-xl font-black text-slate-900 m-0 leading-none mb-1">{user.name}</h1>}
-                    <p className="text-slate-600 text-sm">{salonInfo?.address || 'Sin dirección registrada'}</p>
-                    <p className="text-slate-600 text-sm">{salonInfo?.phone || 'Sin teléfono'}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <h2 className="text-2xl font-black text-slate-800 tracking-widest uppercase mb-1">{printMode === 'presupuesto' ? 'PRESUPUESTO' : 'FICHA DE EVENTO'}</h2>
-                  <p className="text-sm font-bold text-slate-500 bg-slate-100 inline-block px-3 py-1 rounded-lg border border-slate-200">Ref: {activeInv.id.split('-')[1].toUpperCase()}</p>
-                </div>
-             </div>
-
-             <div className="grid grid-cols-2 gap-8 mb-8">
-                <div>
-                  <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b border-slate-200 pb-1">1. Detalles del Evento</h3>
-                  <div className="space-y-2 text-sm">
-                    <p><span className="font-bold text-slate-700 w-24 inline-block">Agasajado:</span> <span className="font-black text-lg">{activeInv.internal_data.internalHonoree || '---'}</span></p>
-                    <p><span className="font-bold text-slate-700 w-24 inline-block">Tipo:</span> {activeInv.internal_data.eventType || '---'}</p>
-                    <p><span className="font-bold text-slate-700 w-24 inline-block">Fecha:</span> {formatDateSpanish(activeInv.internal_data.internalDate)}</p>
-                    <p><span className="font-bold text-slate-700 w-24 inline-block">Horario:</span> {activeInv.internal_data.internalTime || '---'} hs</p>
-                    {printMode === 'ficha' && <p><span className="font-bold text-slate-700 w-24 inline-block">Estado (Int):</span> <span className="uppercase font-bold border border-slate-300 px-2 py-0.5 rounded text-[10px] bg-slate-100">{activeInv.internal_data.eventStatus || 'Nuevo'}</span></p>}
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b border-slate-200 pb-1">2. Datos del Cliente</h3>
-                  <div className="space-y-2 text-sm">
-                    <p><span className="font-bold text-slate-700 w-24 inline-block">Nombre:</span> <span className="font-bold">{activeInv.internal_data.clientName || '---'}</span></p>
-                    <p><span className="font-bold text-slate-700 w-24 inline-block">Teléfono:</span> {activeInv.internal_data.clientPhone || '---'}</p>
-                    <p><span className="font-bold text-slate-700 w-24 inline-block">Invitados:</span> {activeInv.internal_data.guestCount || '---'} aprox.</p>
-                  </div>
-                </div>
-             </div>
-
-             <div className="mb-8">
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b border-slate-200 pb-1">3. Servicios Incluidos</h3>
-                <div className="grid grid-cols-2 gap-8 text-sm">
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200"><p className="font-black text-slate-700 mb-1">Servicios Solicitados:</p><p className="whitespace-pre-wrap">{activeInv.internal_data.requestedServices || 'Ninguno especificado.'}</p></div>
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200"><p className="font-black text-slate-700 mb-1">Menús Especiales / Alergias:</p><p className="whitespace-pre-wrap">{activeInv.internal_data.specialMenus || 'Ninguno especificado.'}</p></div>
-                </div>
-                {printMode === 'ficha' && <div className="mt-4 p-4 border border-slate-300 rounded-xl bg-yellow-50"><p className="font-black text-slate-700 mb-1 flex items-center gap-2"><AlertTriangle size={14}/> Notas Internas del Salón:</p><p className="whitespace-pre-wrap italic text-slate-600">{activeInv.internal_data.internalNotes || 'Sin observaciones.'}</p></div>}
-             </div>
-
-             <div>
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b border-slate-200 pb-1">{printMode === 'presupuesto' ? '4. Detalle de Valores' : '4. Estado Financiero Interno'}</h3>
-                <div className="flex justify-between items-center bg-slate-50 p-6 rounded-xl border border-slate-200">
-                  <div className="text-center"><p className="text-[10px] font-black uppercase text-slate-500">Valor Total</p><p className="text-2xl font-bold text-slate-800">${Number(activeInv.internal_data.totalBudget || 0).toLocaleString('es-AR')}</p></div>
-                  <div className="text-center"><p className="text-[10px] font-black uppercase text-slate-500">Abonado / Seña</p><p className="text-2xl font-bold text-green-700">${Number(activeInv.internal_data.paymentAmount || 0).toLocaleString('es-AR')}</p></div>
-                  <div className="text-center bg-slate-800 text-white px-6 py-3 rounded-xl shadow-lg"><p className="text-[10px] font-black uppercase text-slate-300 opacity-80">Saldo Pendiente</p><p className="text-3xl font-black">${(Number(activeInv.internal_data.totalBudget || 0) - Number(activeInv.internal_data.paymentAmount || 0)).toLocaleString('es-AR')}</p></div>
-                </div>
-             </div>
              
-             <div className="mt-16 text-center text-xs text-slate-400 font-bold border-t border-slate-200 pt-4">{printMode === 'presupuesto' ? <p>Documento emitido el {getTodaySpanish()} • Los valores expresados pueden estar sujetos a modificaciones.</p> : <p>Hoja de ruta interna generada el {getTodaySpanish()}</p>}</div>
+             {printMode !== 'invitados' ? (
+               <>
+                 {/* PDF: PRESUPUESTO / FICHA */}
+                 <div className="flex justify-between items-center border-b-2 border-slate-800 pb-6 mb-8">
+                    <div className="flex items-center gap-6">
+                      {salonInfo?.logo ? <img src={salonInfo.logo} className="max-h-24 max-w-[200px] object-contain" alt="Logo" /> : <div className="text-3xl font-black tracking-tighter text-slate-900">{user.name}</div>}
+                      <div>
+                        {salonInfo?.logo && <h1 className="text-xl font-black text-slate-900 m-0 leading-none mb-1">{user.name}</h1>}
+                        <p className="text-slate-600 text-sm">{salonInfo?.address || 'Sin dirección registrada'}</p>
+                        <p className="text-slate-600 text-sm">{salonInfo?.phone || 'Sin teléfono'}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <h2 className="text-2xl font-black text-slate-800 tracking-widest uppercase mb-1">{printMode === 'presupuesto' ? 'PRESUPUESTO' : 'FICHA DE EVENTO'}</h2>
+                      <p className="text-sm font-bold text-slate-500 bg-slate-100 inline-block px-3 py-1 rounded-lg border border-slate-200">Ref: {activeInv.id.split('-')[1].toUpperCase()}</p>
+                    </div>
+                 </div>
+
+                 <div className="grid grid-cols-2 gap-8 mb-8">
+                    <div>
+                      <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b border-slate-200 pb-1">1. Detalles del Evento</h3>
+                      <div className="space-y-2 text-sm">
+                        <p><span className="font-bold text-slate-700 w-24 inline-block">Agasajado:</span> <span className="font-black text-lg">{activeInv.internal_data.internalHonoree || '---'}</span></p>
+                        <p><span className="font-bold text-slate-700 w-24 inline-block">Tipo:</span> {activeInv.internal_data.eventType || '---'}</p>
+                        <p><span className="font-bold text-slate-700 w-24 inline-block">Fecha:</span> {formatDateSpanish(activeInv.internal_data.internalDate)}</p>
+                        <p><span className="font-bold text-slate-700 w-24 inline-block">Horario:</span> {activeInv.internal_data.internalTime || '---'} hs</p>
+                        {printMode === 'ficha' && <p><span className="font-bold text-slate-700 w-24 inline-block">Estado (Int):</span> <span className="uppercase font-bold border border-slate-300 px-2 py-0.5 rounded text-[10px] bg-slate-100">{activeInv.internal_data.eventStatus || 'Nuevo'}</span></p>}
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b border-slate-200 pb-1">2. Datos del Cliente</h3>
+                      <div className="space-y-2 text-sm">
+                        <p><span className="font-bold text-slate-700 w-24 inline-block">Nombre:</span> <span className="font-bold">{activeInv.internal_data.clientName || '---'}</span></p>
+                        <p><span className="font-bold text-slate-700 w-24 inline-block">Teléfono:</span> {activeInv.internal_data.clientPhone || '---'}</p>
+                        <p><span className="font-bold text-slate-700 w-24 inline-block">Invitados Aprox:</span> {activeInv.internal_data.guestCount || '---'} personas</p>
+                      </div>
+                    </div>
+                 </div>
+
+                 <div className="mb-8">
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b border-slate-200 pb-1">3. Servicios Incluidos</h3>
+                    <div className="grid grid-cols-2 gap-8 text-sm">
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200"><p className="font-black text-slate-700 mb-1">Servicios Solicitados:</p><p className="whitespace-pre-wrap">{activeInv.internal_data.requestedServices || 'Ninguno especificado.'}</p></div>
+                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200"><p className="font-black text-slate-700 mb-1">Menús Especiales / Alergias:</p><p className="whitespace-pre-wrap">{activeInv.internal_data.specialMenus || 'Ninguno especificado.'}</p></div>
+                    </div>
+                    {printMode === 'ficha' && <div className="mt-4 p-4 border border-slate-300 rounded-xl bg-yellow-50"><p className="font-black text-slate-700 mb-1 flex items-center gap-2"><AlertTriangle size={14}/> Notas Internas del Salón:</p><p className="whitespace-pre-wrap italic text-slate-600">{activeInv.internal_data.internalNotes || 'Sin observaciones.'}</p></div>}
+                 </div>
+
+                 <div>
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b border-slate-200 pb-1">{printMode === 'presupuesto' ? '4. Detalle de Valores' : '4. Estado Financiero Interno'}</h3>
+                    <div className="flex justify-between items-center bg-slate-50 p-6 rounded-xl border border-slate-200">
+                      <div className="text-center"><p className="text-[10px] font-black uppercase text-slate-500">Valor Total</p><p className="text-2xl font-bold text-slate-800">${Number(activeInv.internal_data.totalBudget || 0).toLocaleString('es-AR')}</p></div>
+                      <div className="text-center"><p className="text-[10px] font-black uppercase text-slate-500">Abonado / Seña</p><p className="text-2xl font-bold text-green-700">${Number(activeInv.internal_data.paymentAmount || 0).toLocaleString('es-AR')}</p></div>
+                      <div className="text-center bg-slate-800 text-white px-6 py-3 rounded-xl shadow-lg"><p className="text-[10px] font-black uppercase text-slate-300 opacity-80">Saldo Pendiente</p><p className="text-3xl font-black">${(Number(activeInv.internal_data.totalBudget || 0) - Number(activeInv.internal_data.paymentAmount || 0)).toLocaleString('es-AR')}</p></div>
+                    </div>
+                 </div>
+                 
+                 <div className="mt-16 text-center text-xs text-slate-400 font-bold border-t border-slate-200 pt-4">{printMode === 'presupuesto' ? <p>Documento emitido el {getTodaySpanish()} • Los valores expresados pueden estar sujetos a modificaciones.</p> : <p>Hoja de ruta interna generada el {getTodaySpanish()}</p>}</div>
+               </>
+             ) : (
+               <>
+                 {/* PDF: LISTA DE INVITADOS PARA CONTROL EN PUERTA */}
+                 <div className="flex justify-between items-center border-b-2 border-slate-800 pb-6 mb-8">
+                    <div>
+                      <h2 className="text-2xl font-black text-slate-800 tracking-widest uppercase mb-1">LISTA DE ACCESOS</h2>
+                      <p className="text-lg font-bold text-slate-600">Evento: {activeInv.title}</p>
+                      <p className="text-sm text-slate-500">Fecha: {formatDateSpanish(activeInv.internal_data.internalDate)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-3xl font-black text-violet-600">{guestsList.reduce((acc, g) => acc + g.guests, 0)}</p>
+                      <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Personas Totales</p>
+                    </div>
+                 </div>
+
+                 <table className="w-full text-left border-collapse">
+                   <thead>
+                     <tr className="bg-slate-100 text-[10px] font-black text-slate-500 uppercase tracking-widest border-y-2 border-slate-300">
+                       <th className="py-3 px-2">ID Pase</th>
+                       <th className="py-3 px-2">Nombre del Invitado</th>
+                       <th className="py-3 px-2 text-center">Pax</th>
+                       <th className="py-3 px-2 text-center">Check-in (Firma)</th>
+                     </tr>
+                   </thead>
+                   <tbody>
+                     {guestsList.map((g, i) => (
+                       <tr key={i} className="border-b border-slate-200 text-sm">
+                         <td className="py-3 px-2 font-mono text-slate-500">{g.id}</td>
+                         <td className="py-3 px-2 font-bold text-slate-800">{g.name} {g.lastname}</td>
+                         <td className="py-3 px-2 text-center font-black">{g.guests}</td>
+                         <td className="py-3 px-2 text-center">
+                           <div className="w-6 h-6 rounded border-2 border-slate-300 mx-auto"></div>
+                         </td>
+                       </tr>
+                     ))}
+                   </tbody>
+                 </table>
+                 <div className="mt-12 text-center text-xs text-slate-400 font-bold">Documento generado el {getTodaySpanish()} • {user.name}</div>
+               </>
+             )}
           </div>
         )}
       </div>
     );
   }
+
+  // ==========================================
+  // VISTA MASTER (ADMIN)
+  // ==========================================
+  const [showModal, setShowModal] = useState(false);
+  const [modalMode, setModalMode] = useState("create"); 
+  const [editingEmail, setEditingEmail] = useState("");
+  const [fName, setFName] = useState("");
+  const [fEmail, setFEmail] = useState("");
+  const [fPhone, setFPhone] = useState(""); 
+  const [fPass, setFPass] = useState("");
+  const [fAddress, setFAddress] = useState("");
+  const [fPayDate, setFPayDate] = useState("");
+  const [fAlert, setFAlert] = useState(false);
 
   const openCreateModal = () => { setModalMode("create"); setFName(""); setFEmail(""); setFPhone(""); setFPass(""); setFAddress(""); setFPayDate(""); setFAlert(false); setShowModal(true); };
   const openEditModal = (salon) => { setModalMode("edit"); setEditingEmail(salon.email); setFName(salon.name); setFEmail(salon.email); setFPhone(salon.phone || ""); setFAddress(salon.address || ""); setFPayDate(salon.payment_date || ""); setFAlert(salon.payment_alert || false); setShowModal(true); };
