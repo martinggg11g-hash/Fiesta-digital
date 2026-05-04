@@ -201,7 +201,6 @@ export const InvitePreview = ({ cfg }) => {
   
   const gradOpacity = cfg.showCoverGradient === false ? 0 : ((cfg.coverGradientIntensity ?? 50) / 100).toFixed(2);
   
-  // Magia del sombreado
   const coverShadow = (cfg.coverTextShadowSize > 0) 
     ? `0px 4px ${cfg.coverTextShadowSize}px ${cfg.coverTextShadowColor || '#000000'}` 
     : 'none';
@@ -266,7 +265,6 @@ export const InvitePreview = ({ cfg }) => {
           </div>
         )}
 
-        {/* Acá le metimos el formateador de fechas latino */}
         {cfg.showDate && <InfoCard icon={Calendar} label="¿Cuándo?" value={formatToDDMMYYYY(cfg.dateText)} fontSize={cfg.dateSize ?? 18} />}
         
         {cfg.showTime && <InfoCard icon={Clock} label="Horario" value={cfg.timeText} fontSize={cfg.dateSize ?? 18} />}
@@ -398,7 +396,10 @@ export const InvitePreview = ({ cfg }) => {
           <CheckCircle2 size={20} /> CONFIRMAR ASISTENCIA
         </button>
         
-        <p className="text-center text-[9px] font-bold opacity-30 mt-8" style={{ color: mutedC }}>FiestaDigital © 2024</p>
+        {/* EL FOOTER MODIFICADO MARCA BLANCA */}
+        <p className="text-center text-[10px] font-bold opacity-50 mt-8 pb-4" style={{ color: mutedC }}>
+          Invitación creada con <strong className="tracking-wide">defiesta.lat</strong>
+        </p>
       </div>
     </div>
   );
