@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { OpeningAnimation } from "./Lotties"; 
 import { MapPin, Calendar, Clock, Star, CheckCircle2, ChevronLeft, ChevronRight, Download, MessageCircle, Users, Loader2 } from "lucide-react";
-
 import { DEF_CONFIG, THEMES, getSpotifyEmbed, getYouTubeId, formatToDDMMYYYY } from "./config";
 
 const Countdown = ({ targetDate, primary, text }) => {
@@ -15,12 +14,7 @@ const Countdown = ({ targetDate, primary, text }) => {
       if (isNaN(target)) return;
       const dist = target - Date.now();
       if(dist <= 0) { setExpired(true); return; }
-      setTimeLeft({
-        d: Math.floor(dist / 86400000),
-        h: Math.floor((dist % 86400000) / 3600000),
-        m: Math.floor((dist % 3600000) / 60000),
-        s: Math.floor((dist % 60000) / 1000),
-      });
+      setTimeLeft({ d: Math.floor(dist / 86400000), h: Math.floor((dist % 86400000) / 3600000), m: Math.floor((dist % 3600000) / 60000), s: Math.floor((dist % 60000) / 1000) });
     };
     calc();
     const id = setInterval(calc, 1000);
@@ -39,9 +33,7 @@ const Countdown = ({ targetDate, primary, text }) => {
         <div className="flex justify-center gap-3">
           {Object.entries(timeLeft).map(([unit, val]) => (
             <div key={unit} className="flex flex-col items-center gap-1">
-              <div className="w-[52px] h-[52px] rounded-2xl flex items-center justify-center text-xl font-black text-white shadow-lg" style={{ background: primary }}>
-                {(val || 0).toString().padStart(2, '0')}
-              </div>
+              <div className="w-[52px] h-[52px] rounded-2xl flex items-center justify-center text-xl font-black text-white shadow-lg" style={{ background: primary }}>{(val || 0).toString().padStart(2, '0')}</div>
               <span className="text-[10px] font-bold opacity-60" style={{ color: primary }}>{labels[unit]}</span>
             </div>
           ))}
@@ -54,12 +46,9 @@ const Countdown = ({ targetDate, primary, text }) => {
 const GalleryCarousel = ({ photos }) => {
   const [idx, setIdx] = useState(0);
   const valid = photos.filter(p => p);
-  
   useEffect(() => {
     if (valid.length <= 1) return;
-    const timer = setInterval(() => {
-      setIdx((prev) => (prev === valid.length - 1 ? 0 : prev + 1));
-    }, 3000);
+    const timer = setInterval(() => setIdx(p => (p === valid.length - 1 ? 0 : p + 1)), 3000);
     return () => clearInterval(timer);
   }, [valid.length]);
 
@@ -72,9 +61,7 @@ const GalleryCarousel = ({ photos }) => {
        <button onClick={() => setIdx(idx === 0 ? valid.length - 1 : idx - 1)} className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white p-1.5 rounded-full backdrop-blur-md transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"><ChevronLeft size={24} /></button>
        <button onClick={() => setIdx(idx === valid.length - 1 ? 0 : idx + 1)} className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white p-1.5 rounded-full backdrop-blur-md transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"><ChevronRight size={24} /></button>
        <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
-         {valid.map((_, i) => (
-           <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === idx ? 'w-4 bg-white' : 'w-1.5 bg-white/40'}`} />
-         ))}
+         {valid.map((_, i) => <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === idx ? 'w-4 bg-white' : 'w-1.5 bg-white/40'}`} />)}
        </div>
     </div>
   );
@@ -89,38 +76,25 @@ const ParticleCanvas = ({ effect, primary }) => {
     if (effect === "none" || !canvasRef.current) return;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
-    
     let observer;
     try {
       const resize = () => { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; };
       resize(); observer = new ResizeObserver(resize); observer.observe(canvas);
-    } catch(e) { console.warn("ResizeObserver not supported"); }
+    } catch(e) { }
 
     const EMOJI_MIX = ["🎉","🎊","🎈","✨","🌟","💖","🎂"];
     const PETALS = ["🌸","🌺","🌹","🌷"];
 
     const spawnParticle = () => {
-      const isBubble = effect === "bubbles";
-      const base = { 
-        x: Math.random() * canvas.width, y: isBubble ? canvas.height + 20 : -20, 
-        vx: (Math.random() - 0.5) * 2, vy: Math.random() * 2 + 1, 
-        alpha: 1, rot: Math.random() * 360, rotV: (Math.random() - 0.5) * 4, 
-        size: Math.random() * 10 + 8, life: 1, decay: Math.random() * 0.003 + 0.002 
-      };
-
-      if (effect === "confetti") {
-        const colors = [primary, "#f59e0b", "#10b981", "#ef4444", "#3b82f6", "#ec4899", "#facc15", "#ffffff"];
-        return { ...base, x: canvas.width / 2 + (Math.random() - 0.5) * 250, y: canvas.height + 20, vx: (Math.random() - 0.5) * 12, vy: -(Math.random() * 15 + 12), type: "rect", color: colors[Math.floor(Math.random() * colors.length)], w: Math.random()*12+6, h: Math.random()*6+3, rotV: (Math.random() - 0.5) * 25, life: 2 };
-      }
-      if (effect === "glitter") {
-        return { ...base, x: Math.random() * canvas.width, y: Math.random() * canvas.height, vx: (Math.random() - 0.5) * 0.4, vy: (Math.random() - 0.5) * 0.4, alpha: Math.random(), alphaDir: Math.random() > 0.5 ? 1 : -1, type: "star", color: ["#ffffff", "#fef08a", primary][Math.floor(Math.random()*3)], size: Math.random() * 3 + 1.5 };
-      }
-      if (effect === "hearts")  return { ...base, type: "text", emoji: "❤️", size: Math.random()*18+10 };
-      if (effect === "stars")   return { ...base, type: "text", emoji: "⭐", size: Math.random()*16+8 };
+      const base = { x: Math.random() * canvas.width, y: effect === "bubbles" ? canvas.height + 20 : -20, vx: (Math.random() - 0.5) * 2, vy: Math.random() * 2 + 1, alpha: 1, rot: Math.random() * 360, rotV: (Math.random() - 0.5) * 4, size: Math.random() * 10 + 8, life: 1, decay: Math.random() * 0.003 + 0.002 };
+      if (effect === "confetti") return { ...base, x: canvas.width / 2 + (Math.random() - 0.5) * 250, y: canvas.height + 20, vx: (Math.random() - 0.5) * 12, vy: -(Math.random() * 15 + 12), type: "rect", color: [primary, "#f59e0b", "#10b981", "#ef4444", "#3b82f6", "#ec4899", "#ffffff"][Math.floor(Math.random() * 7)], w: Math.random()*12+6, h: Math.random()*6+3, rotV: (Math.random() - 0.5) * 25, life: 2 };
+      if (effect === "glitter") return { ...base, x: Math.random() * canvas.width, y: Math.random() * canvas.height, vx: (Math.random() - 0.5) * 0.4, vy: (Math.random() - 0.5) * 0.4, alpha: Math.random(), alphaDir: Math.random() > 0.5 ? 1 : -1, type: "star", color: ["#ffffff", "#fef08a", primary][Math.floor(Math.random()*3)], size: Math.random() * 3 + 1.5 };
+      if (effect === "hearts") return { ...base, type: "text", emoji: "❤️", size: Math.random()*18+10 };
+      if (effect === "stars") return { ...base, type: "text", emoji: "⭐", size: Math.random()*16+8 };
       if (effect === "bubbles") return { ...base, type: "circle", color: primary, filled: false, r: Math.random()*12+4, vx: (Math.random()-0.5)*1.5, vy: -(Math.random()*2+0.5) };
-      if (effect === "snow")    return { ...base, type: "circle", color: "#ffffff", filled: true, r: Math.random()*3+1, vy: Math.random()*1.5+0.5, vx: (Math.random()-0.5)*0.8 };
-      if (effect === "petals")  return { ...base, type: "text", emoji: PETALS[Math.floor(Math.random()*PETALS.length)], size: Math.random()*20+12 };
-      if (effect === "emojis")  return { ...base, type: "text", emoji: EMOJI_MIX[Math.floor(Math.random()*EMOJI_MIX.length)], size: Math.random()*20+12 };
+      if (effect === "snow") return { ...base, type: "circle", color: "#ffffff", filled: true, r: Math.random()*3+1, vy: Math.random()*1.5+0.5, vx: (Math.random()-0.5)*0.8 };
+      if (effect === "petals") return { ...base, type: "text", emoji: PETALS[Math.floor(Math.random()*PETALS.length)], size: Math.random()*20+12 };
+      if (effect === "emojis") return { ...base, type: "text", emoji: EMOJI_MIX[Math.floor(Math.random()*EMOJI_MIX.length)], size: Math.random()*20+12 };
       return null;
     };
 
@@ -131,11 +105,8 @@ const ParticleCanvas = ({ effect, primary }) => {
       frame++;
       
       const maxParticles = effect === "glitter" ? 100 : (effect === "confetti" ? 80 : 50);
-      const spawnFreq = effect === "confetti" ? 3 : 6;
-      const spawnCount = effect === "confetti" ? 2 : 1;
-
-      if (frame % spawnFreq === 0 && particlesRef.current.length < maxParticles) {
-        for(let i=0; i<spawnCount; i++){ const p = spawnParticle(); if (p) particlesRef.current.push(p); }
+      if (frame % (effect === "confetti" ? 3 : 6) === 0 && particlesRef.current.length < maxParticles) {
+        for(let i=0; i<(effect==="confetti"?2:1); i++) { const p = spawnParticle(); if (p) particlesRef.current.push(p); }
       }
       
       particlesRef.current = particlesRef.current.filter(p => {
@@ -179,68 +150,138 @@ const MapEmbed = ({ name, address, primary }) => {
 };
 
 // =========================================================================
-// WIDGET INTELIGENTE DE RSVP (Botón -> Formulario -> QR + WhatsApp)
+// WIDGET INTELIGENTE DE RSVP PREMIUM (CON GENERADOR DE TICKET VISUAL)
 // =========================================================================
-const RsvpWidget = ({ cfg, primary, textC, cardC }) => {
+const RsvpWidget = ({ cfg, primary, textC, cardC, onConfirmRSVP }) => {
   const [step, setStep] = useState('button'); // 'button' | 'form' | 'qr'
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ name: '', lastname: '', guests: 1 });
-  const [qrUrl, setQrUrl] = useState('');
+  const [ticketImage, setTicketImage] = useState('');
 
   const maxLimit = cfg.maxGuestsPerFamily || 5;
   const waMsg = (cfg.whatsappMessage || "").replace('{nombre}', formData.name || cfg.honoreeName || "");
 
-  const handleGenerateQR = (e) => {
+  const handleGenerateTicket = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.lastname) return alert("Por favor completá tu nombre y apellido");
     setLoading(true);
     
-    // Simulamos un delay de guardado en base de datos (Supabase)
-    setTimeout(() => {
-      // Generamos un ID único y seguro para este pase
-      const ticketId = `PASS-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    // Generamos ID único para el Pase
+    const ticketId = `PASS-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+    const qrData = `${ticketId}|${formData.name}|${formData.lastname}|${formData.guests}`;
+    const qrUrlApi = `https://chart.googleapis.com/chart?chs=400x400&cht=qr&chl=${encodeURIComponent(qrData)}&choe=UTF-8`;
+
+    try {
+      // Dibujamos el Ticket HD en un Canvas oculto
+      const img = new Image();
+      img.crossOrigin = "Anonymous";
+      img.src = qrUrlApi;
       
-      // Usamos una API gratuita y confiable para generar la imagen del QR al vuelo
-      const qrData = `${ticketId} | ${formData.name} ${formData.lastname} | ${formData.guests} personas`;
-      const generatedQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}&color=0f172a&bgcolor=ffffff&margin=10`;
-      
-      setQrUrl(generatedQrUrl);
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 800;
+        canvas.height = 1300;
+        const ctx = canvas.getContext('2d');
+
+        // Fondo Degradado Premium
+        const grd = ctx.createLinearGradient(0, 0, 0, 1300);
+        grd.addColorStop(0, primary);
+        grd.addColorStop(1, '#0f172a');
+        ctx.fillStyle = grd;
+        ctx.fillRect(0, 0, 800, 1300);
+
+        // Decoración Superior
+        ctx.fillStyle = "rgba(255,255,255,0.1)";
+        ctx.beginPath(); ctx.arc(400, -100, 300, 0, Math.PI*2); ctx.fill();
+
+        // Textos del Evento
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 30px sans-serif';
+        ctx.fillText("PASE VIP DE ACCESO", 400, 120);
+
+        ctx.font = 'bold 70px sans-serif';
+        ctx.fillText(cfg.honoreeName || 'Evento Especial', 400, 220);
+
+        ctx.font = '35px sans-serif';
+        ctx.fillText(`${formatToDDMMYYYY(cfg.dateText)} | ${cfg.timeText} hs`, 400, 290);
+
+        // Rectángulo blanco con sombra para el QR
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.shadowBlur = 30;
+        ctx.fillRect(150, 380, 500, 500);
+        ctx.shadowBlur = 0; 
+        ctx.drawImage(img, 170, 400, 460, 460);
+
+        // Línea punteada tipo Ticket de Recital
+        ctx.strokeStyle = "rgba(255,255,255,0.4)";
+        ctx.lineWidth = 6;
+        ctx.setLineDash([20, 20]);
+        ctx.beginPath();
+        ctx.moveTo(50, 980);
+        ctx.lineTo(750, 980);
+        ctx.stroke();
+
+        // Datos del Invitado (Abajo de la línea punteada)
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 60px sans-serif';
+        ctx.fillText(`${formData.name} ${formData.lastname}`.toUpperCase(), 400, 1100);
+
+        ctx.font = '40px sans-serif';
+        ctx.fillStyle = '#cbd5e1';
+        ctx.fillText(`Válido para: ${formData.guests} personas`, 400, 1180);
+
+        // ID del Pase
+        ctx.font = 'bold 24px monospace';
+        ctx.fillStyle = "rgba(255,255,255,0.3)";
+        ctx.fillText(ticketId, 400, 1250);
+
+        // Exportamos a imagen
+        const finalTicketUrl = canvas.toDataURL('image/jpeg', 0.9);
+        setTicketImage(finalTicketUrl);
+
+        // Guardamos en la Base de Datos (Supabase)
+        if (onConfirmRSVP) {
+           onConfirmRSVP({
+              id: ticketId,
+              name: formData.name,
+              lastname: formData.lastname,
+              guests: formData.guests,
+              status: 'Pendiente',
+              timestamp: new Date().toISOString()
+           });
+        }
+
+        setLoading(false);
+        setStep('qr');
+      };
+    } catch (error) {
+      alert("Hubo un error al generar el pase. Intentá de nuevo.");
       setLoading(false);
-      setStep('qr');
-    }, 1200);
+    }
   };
 
-  const handleDownload = async () => {
-    try {
-      const response = await fetch(qrUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `Pase_VIP_${formData.name}_${formData.lastname}.jpg`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (e) {
-      window.open(qrUrl, '_blank'); // Fallback por si el navegador bloquea la descarga directa
-    }
+  const handleDownload = () => {
+    const link = document.createElement('a');
+    link.href = ticketImage;
+    link.download = `Pase_VIP_${formData.name}_${formData.lastname}.jpg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   if (step === 'button') {
     return (
-      <button 
-        onClick={() => setStep('form')}
-        className="w-full py-5 mt-4 rounded-[1.5rem] font-black text-sm tracking-wider flex items-center justify-center gap-3 shadow-2xl transition-transform active:scale-95 cursor-pointer"
-        style={{ background: `linear-gradient(135deg, ${primary}, ${primary}dd)`, color: 'white', boxShadow: `0 15px 35px ${primary}44` }}
-      >
-        <Star size={20} /> GENERAR PASE VIP
+      <button onClick={() => setStep('form')} className="w-full py-5 mt-4 rounded-[1.5rem] font-black text-sm tracking-wider flex items-center justify-center gap-3 shadow-2xl transition-transform active:scale-95 cursor-pointer" style={{ background: `linear-gradient(135deg, ${primary}, ${primary}dd)`, color: 'white', boxShadow: `0 15px 35px ${primary}44` }}>
+        <Star size={20} /> OBTENER PASE VIP
       </button>
     );
   }
 
   if (step === 'form') {
     return (
-      <form onSubmit={handleGenerateQR} className="mt-4 p-5 rounded-[1.5rem] border border-white/10 anim-pop" style={{ background: cardC, color: textC }}>
+      <form onSubmit={handleGenerateTicket} className="mt-4 p-5 rounded-[1.5rem] border border-white/10 anim-pop" style={{ background: cardC, color: textC }}>
         <h4 className="text-center font-black uppercase tracking-widest text-sm mb-4" style={{ color: primary }}>Completa tus datos</h4>
         
         <div className="space-y-3 mb-5">
@@ -248,7 +289,7 @@ const RsvpWidget = ({ cfg, primary, textC, cardC }) => {
           <input type="text" placeholder="Tu Apellido" value={formData.lastname} onChange={e => setFormData({...formData, lastname: e.target.value})} className="w-full px-4 py-3 rounded-xl bg-black/20 border border-white/10 text-white outline-none focus:border-violet-500" required />
           
           <div className="flex items-center justify-between bg-black/20 px-4 py-2 rounded-xl border border-white/10">
-            <span className="text-xs font-bold opacity-80 flex items-center gap-2"><Users size={16}/> Acompañantes</span>
+            <span className="text-xs font-bold opacity-80 flex items-center gap-2"><Users size={16}/> Acompañantes en total</span>
             <div className="flex items-center gap-3">
               <button type="button" onClick={() => setFormData({...formData, guests: Math.max(1, formData.guests - 1)})} className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center font-bold hover:bg-white/20">-</button>
               <span className="font-black w-4 text-center">{formData.guests}</span>
@@ -258,7 +299,7 @@ const RsvpWidget = ({ cfg, primary, textC, cardC }) => {
         </div>
 
         <button type="submit" disabled={loading} className="w-full py-4 rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-transform active:scale-95 disabled:opacity-50" style={{ background: primary, color: 'white' }}>
-          {loading ? <><Loader2 size={16} className="animate-spin" /> Creando pase mágico...</> : "OBTENER CÓDIGO QR"}
+          {loading ? <><Loader2 size={16} className="animate-spin" /> Dibujando entrada...</> : "GENERAR MI PASE"}
         </button>
         <button type="button" onClick={() => setStep('button')} className="w-full py-3 mt-2 text-[10px] font-bold uppercase tracking-widest opacity-60 hover:opacity-100 transition-opacity">Cancelar</button>
       </form>
@@ -269,20 +310,19 @@ const RsvpWidget = ({ cfg, primary, textC, cardC }) => {
     return (
       <div className="mt-4 p-6 rounded-[1.5rem] border border-white/10 text-center anim-pop" style={{ background: cardC, color: textC }}>
         <h4 className="font-black uppercase tracking-widest text-lg mb-1" style={{ color: primary }}>¡Estás en la lista!</h4>
-        <p className="text-[10px] opacity-70 mb-4 font-bold uppercase tracking-wide">Presentá este código en la entrada</p>
+        <p className="text-[10px] opacity-70 mb-4 font-bold uppercase tracking-wide">Presentá este pase en la entrada</p>
         
-        <div className="bg-white p-3 rounded-2xl inline-block mx-auto mb-4 shadow-xl">
-          <img src={qrUrl} alt="Pase QR" className="w-48 h-48 rounded-xl object-contain" />
+        {/* Mostramos el diseño súper premium que generamos */}
+        <div className="inline-block mx-auto mb-6 shadow-2xl rounded-2xl overflow-hidden border-2 border-white/20">
+          <img src={ticketImage} alt="Pase VIP" className="w-full max-w-[250px] h-auto object-contain" />
         </div>
         
-        <p className="text-sm font-black mb-4 bg-black/20 py-2 rounded-lg border border-white/5">{formData.name} {formData.lastname} <span className="opacity-50">({formData.guests} pax)</span></p>
-
         <button onClick={handleDownload} className="w-full py-3 mb-3 rounded-xl font-black text-xs uppercase flex items-center justify-center gap-2 border border-white/20 hover:bg-white/10 transition-colors">
-          <Download size={16} /> Descargar Imagen QR
+          <Download size={16} /> Descargar Pase (Imagen)
         </button>
 
         <button onClick={() => window.open(`https://wa.me/${cfg.whatsappNumber}?text=${encodeURIComponent(waMsg)}`)} className="w-full py-3 rounded-xl font-black text-xs uppercase flex items-center justify-center gap-2 bg-[#25D366] text-white hover:bg-[#20bd5a] transition-colors shadow-lg shadow-[#25D366]/20">
-          <MessageCircle size={16} /> Avisarle a los novios
+          <MessageCircle size={16} /> Avisar que ya confirmé
         </button>
       </div>
     );
@@ -290,7 +330,7 @@ const RsvpWidget = ({ cfg, primary, textC, cardC }) => {
 };
 
 
-export const InvitePreview = ({ cfg, status }) => {
+export const InvitePreview = ({ cfg, status, onConfirmRSVP }) => {
   if (!cfg) return null;
   const th = THEMES.find(t => t.id === cfg.theme) || THEMES[0];
   const primary = cfg.primary || th.primary;
@@ -309,9 +349,7 @@ export const InvitePreview = ({ cfg, status }) => {
 
   const InfoCard = ({ icon: Icon, label, value, sub, fontSize }) => (
     <div className="flex items-center gap-4 p-4 rounded-2xl border border-white/5" style={{ background: cardC }}>
-      <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: primary }}>
-        <Icon size={20} color="white" />
-      </div>
+      <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: primary }}><Icon size={20} color="white" /></div>
       <div className="text-left">
         <p className="text-[9px] uppercase font-black tracking-widest mb-0.5" style={{ color: mutedC }}>{label}</p>
         <p className="font-bold" style={{ color: textC, fontFamily: cfg.fontBody, fontSize: `${fontSize}px` }}>{value}</p>
@@ -337,23 +375,13 @@ export const InvitePreview = ({ cfg, status }) => {
       </div>
 
       <div className="relative h-[420px] overflow-hidden">
-        {cfg.useGiphyCover ? (
-          <img src={cfg.coverPhoto || DEF_CONFIG.coverPhoto} className="w-full h-full object-cover" alt="Cover" />
-        ) : (
-          <img src={cfg.coverPhoto || DEF_CONFIG.coverPhoto} className="w-full h-full object-cover" alt="Cover" />
-        )}
+        <img src={cfg.coverPhoto || DEF_CONFIG.coverPhoto} className="w-full h-full object-cover" alt="Cover" />
         <div className="absolute inset-0" style={{ background: `linear-gradient(to top, ${cfg.bg1 || th.bg1} 5%, rgba(0,0,0,${gradOpacity}) 60%, transparent 100%)` }} />
         
         <div className="absolute bottom-0 left-0 right-0 p-8 text-center z-30">
-          <p className="font-black uppercase tracking-[0.2em] mb-4 flex items-center justify-center gap-2" style={{ color: cfg.eventTypeColor || primary, fontSize: `${cfg.eventTypeSize ?? 11}px`, fontFamily: cfg.eventTypeFont || cfg.fontBody, textShadow: coverShadow }}>
-            {cfg.eventTypeEmoji} {cfg.eventType}
-          </p>
-          <h1 style={{ fontFamily: cfg.honoreeFont || cfg.fontTitle, color: cfg.honoreeColor || textC, fontSize: `${cfg.honoreeSize ?? 48}px`, textShadow: coverShadow }} className="leading-tight mb-4">
-            {cfg.honoreeName}
-          </h1>
-          <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-white/10 backdrop-blur-md bg-black/30 font-black" style={{ color: textC, fontSize: `${cfg.badgeSize ?? 14}px` }}>
-            {cfg.badgeEmoji} {cfg.badgeText}
-          </span>
+          <p className="font-black uppercase tracking-[0.2em] mb-4 flex items-center justify-center gap-2" style={{ color: cfg.eventTypeColor || primary, fontSize: `${cfg.eventTypeSize ?? 11}px`, fontFamily: cfg.eventTypeFont || cfg.fontBody, textShadow: coverShadow }}>{cfg.eventTypeEmoji} {cfg.eventType}</p>
+          <h1 style={{ fontFamily: cfg.honoreeFont || cfg.fontTitle, color: cfg.honoreeColor || textC, fontSize: `${cfg.honoreeSize ?? 48}px`, textShadow: coverShadow }} className="leading-tight mb-4">{cfg.honoreeName}</h1>
+          <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-white/10 backdrop-blur-md bg-black/30 font-black" style={{ color: textC, fontSize: `${cfg.badgeSize ?? 14}px` }}>{cfg.badgeEmoji} {cfg.badgeText}</span>
         </div>
       </div>
 
@@ -375,34 +403,29 @@ export const InvitePreview = ({ cfg, status }) => {
         )}
 
         {cfg.showDate && <InfoCard icon={Calendar} label="¿Cuándo?" value={formatToDDMMYYYY(cfg.dateText)} fontSize={cfg.dateSize ?? 18} />}
-        
         {cfg.showTime && <InfoCard icon={Clock} label="Horario" value={cfg.timeText} fontSize={cfg.dateSize ?? 18} />}
         
         {cfg.showLocation && (
           <div className="rounded-3xl overflow-hidden border border-white/5" style={{ background: cardC }}>
             <div className="p-4 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: primary }}>
-                <MapPin size={20} color="white" />
-              </div>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: primary }}><MapPin size={20} color="white" /></div>
               <div className="text-left">
                 <p className="text-[9px] uppercase font-black tracking-widest mb-0.5" style={{ color: mutedC }}>¿Dónde?</p>
                 <p className="font-bold" style={{ color: textC, fontFamily: cfg.fontBody, fontSize: `${cfg.locationSize ?? 18}px` }}>{cfg.locationName}</p>
                 <p className="text-[11px] opacity-70" style={{ color: mutedC, fontFamily: cfg.fontBody }}>{cfg.locationAddress}</p>
               </div>
             </div>
-            <div className="px-4 pb-2">
-              <MapEmbed name={cfg.locationName} address={cfg.locationAddress} primary={primary} />
-            </div>
+            <div className="px-4 pb-2"><MapEmbed name={cfg.locationName} address={cfg.locationAddress} primary={primary} /></div>
             {cfg.showParking && (
               <div className="p-4 text-center border-t border-white/5">
-                <span className="text-xs font-bold py-2 px-4 rounded-full inline-block" style={{ background: `${primary}22`, color: primary, fontFamily: cfg.fontBody }}>
-                  🚗 {cfg.parkingType === 'otro' ? cfg.customParking : cfg.parkingType}
-                </span>
+                <span className="text-xs font-bold py-2 px-4 rounded-full inline-block" style={{ background: `${primary}22`, color: primary, fontFamily: cfg.fontBody }}>🚗 {cfg.parkingType === 'otro' ? cfg.customParking : cfg.parkingType}</span>
               </div>
             )}
           </div>
         )}
 
+        {/* ... Resto de los módulos (Itinerario, Menu, etc.) ... */}
+        
         {cfg.showMusic && cfg.spotifyUrl && (
           <div className="pt-4">
             <SectionTitle>Música para entrar en clima</SectionTitle>
@@ -465,8 +488,7 @@ export const InvitePreview = ({ cfg, status }) => {
 
         {cfg.showGifts && cfg.showGiftNote && cfg.giftNoteText && (
           <div className="text-center pt-2">
-            <span className="inline-block py-3 px-6 rounded-3xl font-bold border whitespace-pre-wrap leading-relaxed shadow-sm" 
-                  style={{ background: `${cfg.card}ee`, borderColor: `${primary}33`, color: cfg.giftNoteColor || primary, fontSize: `${cfg.giftNoteSize || 11}px`, fontFamily: cfg.fontBody }}>
+            <span className="inline-block py-3 px-6 rounded-3xl font-bold border whitespace-pre-wrap leading-relaxed shadow-sm" style={{ background: `${cfg.card}ee`, borderColor: `${primary}33`, color: cfg.giftNoteColor || primary, fontSize: `${cfg.giftNoteSize || 11}px`, fontFamily: cfg.fontBody }}>
               {cfg.giftNoteText}
             </span>
           </div>
@@ -485,8 +507,8 @@ export const InvitePreview = ({ cfg, status }) => {
           </div>
         )}
 
-        {/* WIDGET MÁGICO DE GENERACIÓN DE PASE VIP */}
-        <RsvpWidget cfg={cfg} primary={primary} textC={textC} cardC={cardC} />
+        {/* WIDGET MÁGICO CONECTADO A BASE DE DATOS */}
+        <RsvpWidget cfg={cfg} primary={primary} textC={textC} cardC={cardC} onConfirmRSVP={onConfirmRSVP} />
         
         <p className="text-center text-[10px] font-bold opacity-50 mt-8 pb-4" style={{ color: mutedC }}>
           Invitación creada con <strong className="tracking-wide">defiesta.lat</strong>
