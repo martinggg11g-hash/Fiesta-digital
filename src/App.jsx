@@ -36,7 +36,7 @@ export const Toast = ({ msg }) => (
   </div>
 );
 
-// INP MEJORADO: Agregamos el "Ojito" para mostrar/ocultar contraseñas
+// INPUT CON OJITO DE CONTRASEÑA
 const Inp = ({ label, value, onChange, placeholder, type="text", multiline = false, className="", icon: Icon = null, prefix=null, isDark=false }) => {
   const [localVal, setLocalVal] = useState(value || "");
   const [showPwd, setShowPwd] = useState(false);
@@ -72,7 +72,7 @@ const Inp = ({ label, value, onChange, placeholder, type="text", multiline = fal
           <input type={actualType} value={localVal} onChange={e => setLocalVal(e.target.value)} onFocus={() => isFocused.current = true} onBlur={handleBlur} placeholder={placeholder} className={`w-full py-3 rounded-xl text-sm focus:border-violet-400 outline-none transition-all ${bgClass} ${(Icon || prefix) ? 'pl-11' : 'px-4'} ${type === 'password' ? 'pr-12' : 'pr-4'}`} />
         )}
         {type === 'password' && (
-          <button type="button" onClick={() => setShowPwd(!showPwd)} className="absolute right-4 text-slate-400 hover:text-violet-500 transition-colors">
+          <button type="button" onClick={() => setShowPwd(!showPwd)} className="absolute right-4 text-slate-400 hover:text-violet-500 transition-colors cursor-pointer">
             {showPwd ? <EyeOff size={18}/> : <Eye size={18}/>}
           </button>
         )}
@@ -651,8 +651,8 @@ const GlobalStyles = () => {
       const s = document.createElement("style");
       s.id = "fd-global";
       s.textContent = `
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Pacifico&family=Caveat:wght@600;700&family=Playfair+Display:ital,wght@0,700;1,600&display=swap');
-        body { margin: 0; padding: 0; background: #f8f7ff; font-family: 'DM Sans', sans-serif; -webkit-font-smoothing: antialiased; }
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Playfair+Display:wght@400;700;900&family=Pacifico&family=Caveat:wght@400;700&family=Syne:wght@400;700;800&family=Bebas+Neue&display=swap');
+        body { margin: 0; padding: 0; background: #f8f7ff; font-family: 'Montserrat', sans-serif; -webkit-font-smoothing: antialiased; }
         .fd-sb::-webkit-scrollbar { width: 8px !important; height: 8px !important; }
         .fd-sb::-webkit-scrollbar-thumb { background: #b4aee8 !important; border-radius: 10px !important; }
         .fd-sb::-webkit-scrollbar-thumb:hover { background: #8b5cf6 !important; }
