@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { BrowserRouter as Router, Routes, Route, useParams, Navigate, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
-import { EditorScreen, InvitePreview, DEF_CONFIG } from "./Editor";
+import { EditorScreen } from "./Editor";
+import { InvitePreview } from "./Preview";
+import { DEF_CONFIG } from "./config";
 import { OpeningAnimation } from "./Lotties";
 import { supabase } from "./supabase"; 
 import {
