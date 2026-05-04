@@ -16,16 +16,11 @@ import {
 } from "./config";
 import { InvitePreview } from "./Preview";
 
-// ESTO SOLUCIONA EL ERROR DE VERCEL (Re-exportamos para que App.jsx los encuentre acá)
 export { DEF_CONFIG } from "./config";
 export { InvitePreview } from "./Preview";
 
 const gf = new GiphyFetch('32PbboqCveiWSlj9vROPmyjv8l8cuaj1');
 const IMGBB_API_KEY = "904f81caf05efe58a799abdb1fedc2ce";
-
-/* ============================================================================
-   MINI-COMPONENTES DE INTERFAZ INTELIGENTES (Anti-Lag)
-============================================================================ */
 
 const GiphySearch = ({ onSelect, placeholder = "Buscar GIF..." }) => {
   const [term, setTerm] = useState("fiesta");
@@ -44,16 +39,11 @@ const GiphySearch = ({ onSelect, placeholder = "Buscar GIF..." }) => {
 
 const Inp = ({ label, value, onChange, placeholder, type="text", multiline = false, className="" }) => {
   const [localVal, setLocalVal] = useState(value || "");
-
   useEffect(() => { setLocalVal(value || ""); }, [value]);
-
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (localVal !== (value || "")) onChange(localVal);
-    }, 300);
+    const timeout = setTimeout(() => { if (localVal !== (value || "")) onChange(localVal); }, 300);
     return () => clearTimeout(timeout);
   }, [localVal, onChange, value]);
-
   return (
     <div className={`mb-2 text-left ${className}`}>
       {label && <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{label}</label>}
@@ -66,14 +56,14 @@ const Inp = ({ label, value, onChange, placeholder, type="text", multiline = fal
   );
 };
 
-const MiniInp = ({ value, onChange, placeholder, className }) => {
+const MiniInp = ({ value, onChange, placeholder, className, type="text" }) => {
   const [localVal, setLocalVal] = useState(value || "");
   useEffect(() => { setLocalVal(value || ""); }, [value]);
   useEffect(() => {
     const timeout = setTimeout(() => { if (localVal !== (value || "")) onChange(localVal); }, 300);
     return () => clearTimeout(timeout);
   }, [localVal, onChange, value]);
-  return <input className={className} value={localVal} onChange={e => setLocalVal(e.target.value)} placeholder={placeholder} />;
+  return <input type={type} className={className} value={localVal} onChange={e => setLocalVal(e.target.value)} placeholder={placeholder} />;
 };
 
 const SelectInp = ({ label, value, onChange, options, className="" }) => (
@@ -187,9 +177,6 @@ const Acc = ({ title, icon: Icon, children, defaultOpen = false, iconColor = "#7
   );
 };
 
-/* ============================================================================
-   PANTALLA DEL EDITOR PRINCIPAL
-============================================================================ */
 export const EditorScreen = ({ invitations, onSave }) => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -220,11 +207,9 @@ export const EditorScreen = ({ invitations, onSave }) => {
         .no-scrollbar::-webkit-scrollbar { display: none; }
       `}</style>
 
-      {/* HEADER SUPERIOR */}
       <header className="h-16 border-b border-white/10 px-6 flex items-center justify-between shrink-0 bg-slate-950/80 backdrop-blur z-20">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate("/dashboard")} className="w-10 h-10 bg-white/5 rounded-xl text-white flex items-center justify-center hover:bg-white/10 cursor-pointer"><ArrowLeft size={20}/></button>
-          
           <MiniInp className="bg-transparent border-none text-white font-black text-sm outline-none w-48 px-2 py-1 rounded hover:bg-white/5 focus:bg-white/10 transition-colors" value={inv.title} onChange={v => setInv({...inv, title: v})} />
         </div>
         <button onClick={handleSave} className="px-8 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-black text-xs flex items-center gap-3 shadow-xl shadow-violet-900/40 cursor-pointer transition-colors">
@@ -232,21 +217,17 @@ export const EditorScreen = ({ invitations, onSave }) => {
         </button>
       </header>
 
-      {/* CONTENEDOR PRINCIPAL */}
       <div className="flex-1 flex relative overflow-hidden bg-slate-950">
         
-        {/* BOTTOM TABS FLOTANTES (Solo Mobile) */}
         <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] flex bg-slate-900/95 backdrop-blur-xl rounded-full shadow-[0_10px_40px_rgba(0,0,0,0.5)] border border-white/10 p-1.5 anim-pop">
           <button onClick={() => setMobileView("editor")} className={`px-6 py-2.5 rounded-full text-[11px] font-black tracking-widest uppercase transition-all duration-300 flex items-center gap-2 ${mobileView === "editor" ? 'bg-violet-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>✏️ Editar</button>
           <button onClick={() => setMobileView("preview")} className={`px-6 py-2.5 rounded-full text-[11px] font-black tracking-widest uppercase transition-all duration-300 flex items-center gap-2 ${mobileView === "preview" ? 'bg-violet-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>👀 Previa</button>
         </div>
 
-        {/* PANEL LATERAL DE CONTROLES */}
         <aside className={`w-[100vw] md:w-[420px] h-full shrink-0 bg-[#f8f7ff] overflow-y-auto p-6 pb-24 md:pb-6 border-r border-gray-100 z-10 fd-sb ${mobileView === 'editor' ? 'block' : 'hidden md:block'}`}>
             
           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 text-left">Flujo de Edición</h3>
 
-          {/* 0. DISEÑO GLOBAL Y ANIMACIÓN */}
           <Acc title="🎨 Diseño Base y Animación" icon={Palette} iconColor="#6366f1">
              <div className="flex items-center justify-between mb-4 bg-gray-50 p-2 rounded-xl border border-gray-200">
                <span className="text-xs font-bold text-slate-600 ml-2">¿Animación de Entrada?</span>
@@ -307,7 +288,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
             </div>
           </Acc>
 
-          {/* 1. PORTADA */}
           <Acc title="1️⃣ Portada Principal" icon={ImageIcon} defaultOpen iconColor="#ec4899">
             <div className="mb-6 bg-gray-50 p-3 rounded-xl border border-gray-200">
               <div className="flex items-center justify-between mb-2">
@@ -329,7 +309,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
               )}
             </div>
 
-            {/* CONTROLES DE SOMBRA EN TEXTO */}
             <div className="bg-gray-50/70 p-3 rounded-xl border border-gray-100 shadow-sm mb-5 relative overflow-hidden">
               <div className="absolute left-0 top-0 bottom-0 w-1 bg-slate-400" />
               <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3 pl-2">Sombreado para Legibilidad de Textos</label>
@@ -363,7 +342,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
             <TypoControl label="Tamaño Medalla" sizeVal={cfg.badgeSize ?? 14} onSize={v => update("badgeSize", v)} minSize={10} max={30} />
           </Acc>
 
-          {/* 2. CUENTA REGRESIVA */}
           <Acc title="2️⃣ Cuenta Regresiva" icon={Clock} iconColor="#f59e0b">
             <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Reloj</span><Toggle checked={cfg.showCountdown || false} onChange={v => update("showCountdown", v)} /></div>
             {cfg.showCountdown && (
@@ -371,7 +349,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
             )}
           </Acc>
 
-          {/* 3. BANNER PROMOCIONAL */}
           <Acc title="3️⃣ Banner Central" icon={Star} iconColor="#d97706">
             <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Banner</span><Toggle checked={cfg.showBanner} onChange={v => update("showBanner", v)} /></div>
             {cfg.showBanner && (
@@ -390,7 +367,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
             )}
           </Acc>
 
-          {/* 4. FECHA Y HORA */}
           <Acc title="4️⃣ Cuándo y Dónde" icon={Calendar} iconColor="#e11d48">
             <TypoControl label="Tamaño Textos Fecha y Lugar" sizeVal={cfg.dateSize ?? 18} onSize={v => update("dateSize", v)} minSize={12} maxSize={30} />
             
@@ -415,7 +391,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
             )}
           </Acc>
 
-          {/* 5. SALON */}
           <Acc title="5️⃣ Tarjeta del Salón" icon={LinkIcon} iconColor="#6366f1">
             <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Mostrar Tarjeta</span><Toggle checked={cfg.showVenueLogo || false} onChange={v => update("showVenueLogo", v)} /></div>
             {cfg.showVenueLogo && (
@@ -428,7 +403,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
             )}
           </Acc>
 
-          {/* 6. MULTIMEDIA */}
           <Acc title="6️⃣ Multimedia (Video y Música)" icon={Video} iconColor="#8b5cf6">
             <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Video de Invitación</span><Toggle checked={cfg.showVideo || false} onChange={v => update("showVideo", v)} /></div>
             {cfg.showVideo && (
@@ -445,7 +419,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
             )}
           </Acc>
 
-          {/* 7. CRONOGRAMA */}
           <Acc title="7️⃣ Programa (Itinerario)" icon={List} iconColor="#0ea5e9">
              <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Cronograma</span><Toggle checked={cfg.showItinerary} onChange={v => update("showItinerary", v)} /></div>
              {cfg.showItinerary && (
@@ -467,7 +440,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
              )}
           </Acc>
 
-          {/* 8. MENU DE COMIDA */}
           <Acc title="8️⃣ Menú de Comida" icon={LayoutGrid} iconColor="#10b981">
              <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Menú</span><Toggle checked={cfg.showMenu} onChange={v => update("showMenu", v)} /></div>
              {cfg.showMenu && (
@@ -486,7 +458,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
              )}
           </Acc>
 
-          {/* 9. VESTIMENTA Y REGALOS */}
           <Acc title="9️⃣ Vestimenta y Regalos" icon={Layout} iconColor="#f43f5e">
              <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Vestimenta</span><Toggle checked={cfg.showDressCode} onChange={v => update("showDressCode", v)} /></div>
              {cfg.showDressCode && (
@@ -516,7 +487,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
              )}
           </Acc>
 
-          {/* 10. GALERÍA DE FOTOS */}
           <Acc title="🔟 Galería de Fotos" icon={ImageIcon} iconColor="#ec4899">
              <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Galería</span><Toggle checked={cfg.showGallery} onChange={v => update("showGallery", v)} /></div>
              {cfg.showGallery && (
@@ -539,18 +509,22 @@ export const EditorScreen = ({ invitations, onSave }) => {
              )}
           </Acc>
 
-          {/* 11. CONFIRMACIÓN WHATSAPP */}
-          <Acc title="1️⃣1️⃣ Confirmación (WhatsApp)" icon={CheckCircle2} iconColor="#22c55e">
+          <Acc title="1️⃣1️⃣ Confirmación y Accesos (QR)" icon={CheckCircle2} iconColor="#22c55e">
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6">
+               <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-3">Control de Accesos QR</h4>
+               <MiniInp type="number" label="Límite Máximo de Acompañantes por Pase" value={cfg.maxGuestsPerFamily || 5} onChange={v => update("maxGuestsPerFamily", Number(v))} placeholder="Ej: 5" className="w-full px-4 py-3 rounded-xl text-slate-800 bg-white border border-gray-200 text-sm focus:border-violet-400 outline-none transition-all" />
+               <p className="text-[9px] text-slate-500 mt-2 font-bold">El invitado no podrá generar un QR para más de esta cantidad de personas.</p>
+            </div>
+
             <Inp label="Número Celular (con código país, sin +)" value={cfg.whatsappNumber} onChange={v => update("whatsappNumber", v)} placeholder="5491123456789" icon={MessageCircle} />
-            <div className="bg-green-50 p-3 rounded-xl border border-green-100 mb-2 mt-2">
+            <div className="bg-green-50 p-3 rounded-xl border border-green-100 mt-2">
               <p className="text-[9px] text-green-700 font-bold mb-2">💡 Tip: Escribí {"{nombre}"} en el mensaje para que se reemplace por el nombre del cumpleañero automáticamente.</p>
-              <Inp label="Mensaje a enviar por el invitado" value={cfg.whatsappMessage} onChange={v => update("whatsappMessage", v)} multiline className="!mb-0" />
+              <Inp label="Mensaje opcional de WhatsApp" value={cfg.whatsappMessage} onChange={v => update("whatsappMessage", v)} multiline className="!mb-0" />
             </div>
           </Acc>
 
         </aside>
 
-        {/* VISTA PREVIA CENTRAL */}
         <main className={`w-[100vw] md:flex-1 h-full shrink-0 snap-center bg-slate-900 flex items-center justify-center p-6 md:p-10 relative overflow-hidden pb-24 md:pb-6 ${mobileView === 'preview' ? 'block' : 'hidden md:flex'}`}>
           <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:20px_20px]" />
           <div className="invite-phone anim-pop border-[8px] border-slate-800 shadow-2xl relative z-10 max-h-full">
