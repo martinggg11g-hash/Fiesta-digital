@@ -14,13 +14,21 @@ import {
 const slugify = (text) => text?.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') || 'salon';
 const IMGBB_API_KEY = "904f81caf05efe58a799abdb1fedc2ce";
 
-const formatDate = (dateStr) => {
+// NUEVO: FECHAS ELEGANTES EN ESPAÑOL
+const formatDateSpanish = (dateStr) => {
   if (!dateStr) return 'Sin fecha';
   if (dateStr.includes('-')) {
     const [y, m, d] = dateStr.split('-');
-    return `${d}/${m}/${y}`;
+    const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    return `${parseInt(d, 10)} de ${months[parseInt(m, 10) - 1]} de ${y}`;
   }
   return dateStr;
+};
+
+const getTodaySpanish = () => {
+  const today = new Date();
+  const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  return `${today.getDate()} de ${months[today.getMonth()]} de ${today.getFullYear()}`;
 };
 
 export const Toast = ({ msg }) => (
@@ -124,7 +132,7 @@ export const LoginScreen = ({ isMaster = false, onLogin, users }) => {
     e.preventDefault();
     setLoading(true);
     setTimeout(() => {
-      if (isMaster && email === "owner@fiestadigital.com" && pass === "owner123") {
+      if (isMaster && email === "owner@eventia.com" && pass === "owner123") {
         onLogin({ name: "Master", role: "owner", email }, rememberMe);
         navigate("/dashboard");
         return;
@@ -146,7 +154,7 @@ export const LoginScreen = ({ isMaster = false, onLogin, users }) => {
           <div className={`w-20 h-20 mx-auto mb-6 rounded-[2rem] flex items-center justify-center shadow-2xl ${isMaster ? 'bg-violet-600' : 'bg-gradient-to-br from-violet-600 to-fuchsia-600'}`}>
             {isMaster ? <ShieldCheck size={40} color="white"/> : <PartyPopper size={40} color="white"/>}
           </div>
-          <h1 className="text-white text-3xl font-black">Fiesta<span className="text-violet-400">Digital</span></h1>
+          <h1 className="text-white text-3xl font-black">Eventia<span className="text-violet-400">Pro</span></h1>
         </div>
         <div className="p-10 rounded-[2.5rem] bg-white/5 border border-white/10 backdrop-blur-xl">
           <form onSubmit={handleAuth} className="space-y-2">
@@ -302,7 +310,7 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                       </div>
                       <div className="absolute bottom-4 left-5 right-5 flex justify-between items-end">
                          <div>
-                            <p className="text-white/70 text-[10px] font-black uppercase tracking-widest mb-1">{data.internalDate ? formatDate(data.internalDate) : 'Sin fecha'} {data.internalTime ? `• ${data.internalTime} hs` : ''}</p>
+                            <p className="text-white/70 text-[10px] font-black uppercase tracking-widest mb-1">{data.internalDate ? formatDateSpanish(data.internalDate) : 'Sin fecha'} {data.internalTime ? `• ${data.internalTime} hs` : ''}</p>
                             <h3 className="font-black text-xl text-white truncate max-w-[200px]">{data.internalHonoree || inv.config?.honoreeName || inv.title}</h3>
                          </div>
                          <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border border-white/20 backdrop-blur-md shadow-sm ${statusColors[pStatus] || statusColors['Pendiente']}`}>{pStatus}</span>
@@ -406,7 +414,7 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
             </div>
           )}
 
-          {/* MODAL AJUSTES */}
+          {/* MODAL AJUSTES DE SEGURIDAD Y PERFIL */}
           {showSettings && (
             <div className="fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
                <div className={`w-full max-w-sm rounded-[2rem] p-8 shadow-2xl relative anim-pop text-center ${isDark ? 'bg-slate-800 text-white' : 'bg-white text-slate-800'}`}>
@@ -415,6 +423,7 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                   <h2 className="text-xl font-black mb-6">Ajustes del Salón</h2>
                   
                   <FileUpload label="Logo de tu Salón (Aparecerá en el PDF)" value={newLogo} onChange={setNewLogo} isDark={isDark} />
+                  <Inp label="Teléfono de Contacto" placeholder="Ej: +54 9 11 1234-5678" icon={Phone} value={newPhone} onChange={setNewPhone} isDark={isDark} />
                   
                   <div className="mt-6 pt-6 border-t border-slate-200/20">
                     <Inp label="Cambiar Contraseña" type="password" placeholder="Nueva clave..." value={newPassword} onChange={setNewPassword} isDark={isDark} />
@@ -430,7 +439,7 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
         {activeCrmId && activeInv && (
           <div className="hidden only-print w-full bg-white text-black p-8 font-sans max-w-4xl mx-auto">
              
-             {/* CABECERA */}
+             {/* CABECERA (Logo y Datos del Salón) */}
              <div className="flex justify-between items-center border-b-2 border-slate-800 pb-6 mb-8">
                 <div className="flex items-center gap-6">
                   {salonInfo?.logo ? (
@@ -452,13 +461,14 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                 </div>
              </div>
 
+             {/* BLOQUE 1: EVENTO Y CLIENTE */}
              <div className="grid grid-cols-2 gap-8 mb-8">
                 <div>
                   <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b border-slate-200 pb-1">1. Detalles del Evento</h3>
                   <div className="space-y-2 text-sm">
                     <p><span className="font-bold text-slate-700 w-24 inline-block">Agasajado:</span> <span className="font-black text-lg">{activeInv.internal_data.internalHonoree || '---'}</span></p>
                     <p><span className="font-bold text-slate-700 w-24 inline-block">Tipo:</span> {activeInv.internal_data.eventType || '---'}</p>
-                    <p><span className="font-bold text-slate-700 w-24 inline-block">Fecha:</span> {formatDate(activeInv.internal_data.internalDate)}</p>
+                    <p><span className="font-bold text-slate-700 w-24 inline-block">Fecha:</span> {formatDateSpanish(activeInv.internal_data.internalDate)}</p>
                     <p><span className="font-bold text-slate-700 w-24 inline-block">Horario:</span> {activeInv.internal_data.internalTime || '---'} hs</p>
                     {printMode === 'ficha' && (
                       <p><span className="font-bold text-slate-700 w-24 inline-block">Estado (Int):</span> <span className="uppercase font-bold border border-slate-300 px-2 py-0.5 rounded text-[10px] bg-slate-100">{activeInv.internal_data.eventStatus || 'Nuevo'}</span></p>
@@ -475,6 +485,7 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                 </div>
              </div>
 
+             {/* BLOQUE 2: LOGÍSTICA */}
              <div className="mb-8">
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b border-slate-200 pb-1">3. Servicios Incluidos</h3>
                 <div className="grid grid-cols-2 gap-8 text-sm">
@@ -488,6 +499,7 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                   </div>
                 </div>
                 
+                {/* Las notas internas SOLO se imprimen si es la Ficha de Logística */}
                 {printMode === 'ficha' && (
                   <div className="mt-4 p-4 border border-slate-300 rounded-xl bg-yellow-50">
                     <p className="font-black text-slate-700 mb-1 flex items-center gap-2"><AlertTriangle size={14}/> Notas Internas del Salón:</p>
@@ -496,6 +508,7 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                 )}
              </div>
 
+             {/* BLOQUE 3: VALORES */}
              <div>
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 border-b border-slate-200 pb-1">
                   {printMode === 'presupuesto' ? '4. Detalle de Valores' : '4. Estado Financiero Interno'}
@@ -516,20 +529,23 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                 </div>
              </div>
              
+             {/* FOOTER DEL PDF MARCA BLANCA */}
              <div className="mt-16 text-center text-xs text-slate-400 font-bold border-t border-slate-200 pt-4">
                 {printMode === 'presupuesto' ? (
-                  <p>Documento emitido el {new Date().toLocaleDateString('es-AR')} • Los valores expresados pueden estar sujetos a modificaciones.</p>
+                  <p>Documento emitido el {getTodaySpanish()} • Los valores expresados pueden estar sujetos a modificaciones.</p>
                 ) : (
-                  <p>Hoja de ruta interna generada el {new Date().toLocaleDateString('es-AR')}</p>
+                  <p>Hoja de ruta interna generada el {getTodaySpanish()}</p>
                 )}
              </div>
           </div>
         )}
-        {toast && <Toast msg={toast} />}
       </div>
     );
   }
 
+  // ==========================================
+  // VISTA MASTER (ADMIN - SOLO DUEÑO ORIGINAL)
+  // ==========================================
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState("create"); 
   const [editingEmail, setEditingEmail] = useState("");
@@ -581,7 +597,7 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                     <tr key={salon.email} className="border-b hover:bg-slate-50 transition-colors">
                       <td className="p-5 font-bold">{salon.name}<br/><span className="text-xs text-slate-400 font-normal">{salon.email}</span></td>
                       <td className="p-5"><div className="flex gap-2 max-w-[180px]"><MapPin size={16} className="text-slate-300"/><span className="text-xs truncate">{salon.address || 'N/A'}</span></div></td>
-                      <td className="p-5 font-bold">{salon.payment_date || '--/--/----'}</td>
+                      <td className="p-5 font-bold">{salon.payment_date ? formatDateSpanish(salon.payment_date) : '--/--/----'}</td>
                       <td className="p-5">{status}</td>
                       <td className="p-5 text-right flex justify-end gap-2">
                         <button onClick={() => openEditModal(salon)} className="w-10 h-10 rounded-xl bg-slate-50 text-slate-600 flex items-center justify-center hover:bg-violet-50 cursor-pointer transition-all"><Edit2 size={16}/></button>
