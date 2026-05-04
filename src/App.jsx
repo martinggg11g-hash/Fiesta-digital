@@ -10,6 +10,7 @@ import { OpeningAnimation } from "./Lotties";
 import { supabase } from "./supabase"; 
 import LoginScreen from "./Login";
 import DashboardScreen from "./Dashboard";
+import PuertaScreen from "./Puerta";
 
 const slugify = (text) => text?.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') || 'salon';
 
@@ -153,11 +154,14 @@ export default function App() {
       <GlobalStyles />
       <Router>
         <Routes>
-          <Route path="/" element={user ? <Navigate to="/dashboard" /> : <LoginScreen onLogin={handleLogin} users={users} />} />
-          <Route path="/master" element={user ? <Navigate to="/dashboard" /> : <LoginScreen isMaster={true} onLogin={handleLogin} users={users} />} />
-          <Route path="/dashboard" element={user ? <DashboardScreen user={user} users={users} invitations={invitations} onCreateSalon={handleCreateSalon} onDeleteSalon={handleDeleteSalon} onCreateInv={handleCreateInv} onDeleteInv={handleDeleteInv} onUpdateUser={handleUpdateUser} onUpdateInternal={handleUpdateInternal} onLogout={handleLogout} /> : <Navigate to="/" />} />
-          <Route path="/editor/:id" element={<EditorScreen invitations={invitations} onSave={handleSaveInv} />} />
-          <Route path="/i/:salon/:invId" element={<PublicInviteScreen invitations={invitations} onConfirmRSVP={handleConfirmRSVP} />} />
+          <Route path="/" element="{user" ? <Navigate to="/dashboard"/> : <LoginScreen onLogin="{handleLogin}" users="{users}"/>} />
+          <Route path="/master" element="{user" ? <Navigate to="/dashboard"/> : <LoginScreen isMaster="{true}" onLogin="{handleLogin}" users="{users}"/>} />
+          <Route path="/dashboard" element="{user" ? <DashboardScreen user="{user}" users="{users}" invitations="{invitations}" onCreateSalon="{handleCreateSalon}" onDeleteSalon="{handleDeleteSalon}" onCreateInv="{handleCreateInv}" onDeleteInv="{handleDeleteInv}" onUpdateUser="{handleUpdateUser}" onUpdateInternal="{handleUpdateInternal}" onLogout="{handleLogout}"/> : <Navigate to="/"/>} />
+          <Route path="/editor/:id" element="{<EditorScreen" invitations="{invitations}" onSave="{handleSaveInv}"/>} />
+          <Route path="/i/:salon/:invId" element="{<PublicInviteScreen" invitations="{invitations}" onConfirmRSVP="{handleConfirmRSVP}"/>} />
+          
+          
+          <Route path="/puerta/:id" element="{<PuertaScreen" invitations="{invitations}" onUpdateInternal="{handleUpdateInternal}"/>} />
         </Routes>
       </Router>
     </>
