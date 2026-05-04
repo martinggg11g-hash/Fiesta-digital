@@ -10,7 +10,7 @@ import {
   PartyPopper, ShieldCheck, AlertCircle, LogOut, Plus, Trash2, Copy, CheckCircle2, Lock, 
   MapPin, CalendarClock, AlertTriangle, KeyRound, Building, Edit2, X, MessageCircle, ExternalLink, Eye, EyeOff, Search,
   ChevronDown, Phone, Users, Utensils, Music, CreditCard, Clock, Settings, UserCheck, Calculator, Receipt,
-  Moon, Sun, Printer, ClipboardList, ImageIcon, FileText
+  Moon, Sun, Printer, ClipboardList, ImageIcon, FileText, ScanBarcode
 } from "lucide-react";
 
 const slugify = (text) => text?.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') || 'salon';
@@ -38,7 +38,6 @@ export const Toast = ({ msg }) => (
   </div>
 );
 
-// INPUT CON OJITO DE CONTRASEÑA
 const Inp = ({ label, value, onChange, placeholder, type="text", multiline = false, className="", icon: Icon = null, prefix=null, isDark=false }) => {
   const [localVal, setLocalVal] = useState(value || "");
   const [showPwd, setShowPwd] = useState(false);
@@ -193,6 +192,8 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
   const [activeCrmId, setActiveCrmId] = useState(null);
   
   const [showSettings, setShowSettings] = useState(false);
+  const [showScanner, setShowScanner] = useState(false); // Modal del Lector QR
+
   const [newPassword, setNewPassword] = useState("");
   const [newLogo, setNewLogo] = useState("");
   const [newPhone, setNewPhone] = useState(""); 
@@ -222,7 +223,6 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
   const themeText = isDark ? "text-white" : "text-slate-800";
   const themeCard = isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200/60";
 
-  // VISTA CRM DEL SALÓN
   if (!isOwner) {
     const salonInfo = users.find(u => u.email === user.email);
     const isManualBlocked = salonInfo?.payment_alert;
@@ -296,6 +296,11 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-violet-500 transition-colors" size={18}/>
                     <input className={`w-full md:w-64 pl-11 pr-4 py-3.5 border rounded-2xl text-sm font-medium outline-none transition-all focus:ring-2 focus:ring-violet-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500' : 'bg-white border-slate-200 text-slate-800'}`} placeholder="Buscar evento..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                  </div>
+                 
+                 <button onClick={() => setShowScanner(true)} className="px-6 py-3.5 bg-slate-800 hover:bg-slate-900 text-white rounded-2xl font-black text-sm shadow-xl flex items-center gap-2 transition-all active:scale-95 cursor-pointer">
+                   <ScanBarcode size={20}/> ESCANEAR QR
+                 </button>
+
                  <button onClick={async () => { const id = await onCreateInv(user.email, user.name); navigate(`/editor/${id}`); }} className="px-8 py-3.5 bg-violet-600 hover:bg-violet-700 text-white rounded-2xl font-black text-sm shadow-xl flex items-center gap-3 transition-all active:scale-95 cursor-pointer">
                    <Plus size={20}/> Nuevo Evento
                  </button>
@@ -340,6 +345,32 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
               })}
             </div>
           </main>
+
+          {/* MODAL SCANNER QR */}
+          {showScanner && (
+            <div className="fixed inset-0 z-[120] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+               <div className="w-full max-w-md bg-white rounded-[2rem] p-8 shadow-2xl relative text-center anim-pop">
+                  <button onClick={() => setShowScanner(false)} className="absolute top-4 right-4 w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 cursor-pointer"><X size={20}/></button>
+                  
+                  <div className="w-20 h-20 bg-slate-900 text-white rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl">
+                     <ScanBarcode size={40}/>
+                  </div>
+                  
+                  <h2 className="text-2xl font-black text-slate-900 mb-2">Control de Acceso</h2>
+                  <p className="text-slate-500 text-sm mb-8">Escaneá el Pase VIP del invitado para validar su ingreso.</p>
+                  
+                  {/* Acá iría el componente real de cámara (Ej: html5-qrcode) */}
+                  <div className="w-full aspect-square bg-slate-100 rounded-3xl border-4 border-dashed border-slate-300 flex flex-col items-center justify-center mb-6 relative overflow-hidden">
+                     <p className="text-slate-400 font-bold px-8">Para usar la cámara del celular e integrarlo a Supabase, instalá <code className="text-violet-500">npm i html5-qrcode</code>.</p>
+                     
+                     {/* Línea animada simulando scanner */}
+                     <div className="absolute top-0 left-0 w-full h-1 bg-green-400 shadow-[0_0_20px_#4ade80] animate-[scan_2s_ease-in-out_infinite]"/>
+                     <style>{`@keyframes scan { 0% { top: 0; } 50% { top: 100%; } 100% { top: 0; } }`}</style>
+                  </div>
+                  
+               </div>
+            </div>
+          )}
 
           {/* MODAL CRM EN PANTALLA */}
           {activeCrmId && activeInv && (
