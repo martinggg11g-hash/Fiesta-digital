@@ -5,6 +5,7 @@ import { EditorScreen } from "./Editor";
 import { InvitePreview } from "./Preview";
 import { DEF_CONFIG } from "./config";
 import { OpeningAnimation } from "./Lotties";
+import { Html5QrcodeScanner } from "html5-qrcode";
 import { supabase } from "./supabase"; 
 import {
   PartyPopper, ShieldCheck, AlertCircle, LogOut, Plus, Trash2, Copy, CheckCircle2, Lock, 
@@ -185,7 +186,30 @@ export const LoginScreen = ({ isMaster = false, onLogin, users }) => {
     </div>
   );
 };
+const QRScannerModal = ({ onClose, onScan }) => {
+  useEffect(() => {
+    const scanner = new Html5QrcodeScanner("reader", { 
+      fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1
+    }, false);
+    scanner.render(
+      (decodedText) => { scanner.clear(); onScan(decodedText); },
+      (error) => { }
+    );
+    return () => { scanner.clear().catch(e => console.log(e)); };
+  }, [onScan]);
 
+  return (
+    <div className="fixed inset-0 z-[120] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+       <div className="w-full max-w-md bg-white rounded-[2rem] p-6 shadow-2xl relative text-center anim-pop">
+          <button onClick={onClose} className="absolute top-4 right-4 w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 cursor-pointer"><X size={20}/></button>
+          <div className="w-16 h-16 bg-slate-900 text-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl"><ScanBarcode size={30}/></div>
+          <h2 className="text-xl font-black text-slate-900 mb-2">Control de Acceso</h2>
+          <p className="text-slate-500 text-xs mb-6">Enfocá el QR del invitado en el recuadro.</p>
+          <div id="reader" className="w-full overflow-hidden rounded-2xl border-4 border-slate-100"></div>
+       </div>
+    </div>
+  );
+};
 export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateSalon, onDeleteSalon, invitations, onCreateInv, onDeleteInv, onUpdateInternal }) => {
   const [toast, setToast] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -347,30 +371,16 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
           </main>
 
           {/* MODAL SCANNER QR */}
-          {showScanner && (
-            <div className="fixed inset-0 z-[120] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
-               <div className="w-full max-w-md bg-white rounded-[2rem] p-8 shadow-2xl relative text-center anim-pop">
-                  <button onClick={() => setShowScanner(false)} className="absolute top-4 right-4 w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 cursor-pointer"><X size={20}/></button>
-                  
-                  <div className="w-20 h-20 bg-slate-900 text-white rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl">
-                     <ScanBarcode size={40}/>
-                  </div>
-                  
-                  <h2 className="text-2xl font-black text-slate-900 mb-2">Control de Acceso</h2>
-                  <p className="text-slate-500 text-sm mb-8">Escaneá el Pase VIP del invitado para validar su ingreso.</p>
-                  
-                  {/* Acá iría el componente real de cámara (Ej: html5-qrcode) */}
-                  <div className="w-full aspect-square bg-slate-100 rounded-3xl border-4 border-dashed border-slate-300 flex flex-col items-center justify-center mb-6 relative overflow-hidden">
-                     <p className="text-slate-400 font-bold px-8">Para usar la cámara del celular e integrarlo a Supabase, instalá <code className="text-violet-500">npm i html5-qrcode</code>.</p>
-                     
-                     {/* Línea animada simulando scanner */}
-                     <div className="absolute top-0 left-0 w-full h-1 bg-green-400 shadow-[0_0_20px_#4ade80] animate-[scan_2s_ease-in-out_infinite]"/>
-                     <style>{`@keyframes scan { 0% { top: 0; } 50% { top: 100%; } 100% { top: 0; } }`}</style>
-                  </div>
-                  
-               </div>
-            </div>
-          )}
+          {/* MODAL SCANNER QR REAL */}
+       {showScanner && (
+         <QRScannerModal 
+           onClose={() => setShowScanner(false)} 
+           onScan={(datosDelQR) => {
+             setShowScanner(false);
+             alert(`✅ PASE ESCANEADO CON ÉXITO:\n\n${datosDelQR}`);
+           }} 
+         />
+       )}
 
           {/* MODAL CRM EN PANTALLA */}
           {activeCrmId && activeInv && (
