@@ -5,8 +5,6 @@ import { EditorScreen } from "./Editor";
 import { InvitePreview } from "./Preview";
 import { DEF_CONFIG } from "./config";
 import { OpeningAnimation } from "./Lotties";
-import { supabase } from "./supabase";
-import { OpeningAnimation } from "./Lotties";
 import { supabase } from "./supabase"; 
 import {
   PartyPopper, ShieldCheck, AlertCircle, LogOut, Plus, Trash2, Copy, CheckCircle2, Lock, 
