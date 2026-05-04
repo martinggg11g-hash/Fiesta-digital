@@ -51,22 +51,31 @@ const Countdown = ({ targetDate, primary, text }) => {
   );
 };
 
-// CARRUSEL INTERACTIVO DE FOTOS
+// CARRUSEL INTERACTIVO Y AUTOMÁTICO
 const GalleryCarousel = ({ photos }) => {
   const [idx, setIdx] = useState(0);
   const valid = photos.filter(p => p);
   
+  // EFECTO DE AUTO-PLAY (Cambia cada 3 segundos)
+  useEffect(() => {
+    if (valid.length <= 1) return;
+    const timer = setInterval(() => {
+      setIdx((prev) => (prev === valid.length - 1 ? 0 : prev + 1));
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [valid.length]);
+
   if(valid.length === 0) return null;
   if(valid.length === 1) return <img src={valid[0]} className="w-full h-64 rounded-2xl object-cover shadow-lg border border-white/5" alt="Galeria" />;
 
   return (
     <div className="relative w-full h-64 rounded-2xl overflow-hidden shadow-lg border border-white/5 group">
-       <img src={valid[idx]} className="w-full h-full object-cover transition-opacity duration-300" alt={`Foto ${idx+1}`} />
+       <img src={valid[idx]} className="w-full h-full object-cover transition-opacity duration-500" alt={`Foto ${idx+1}`} />
        
-       <button onClick={() => setIdx(idx === 0 ? valid.length - 1 : idx - 1)} className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white p-1.5 rounded-full backdrop-blur-md transition-colors">
+       <button onClick={() => setIdx(idx === 0 ? valid.length - 1 : idx - 1)} className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white p-1.5 rounded-full backdrop-blur-md transition-colors opacity-0 group-hover:opacity-100">
          <ChevronLeft size={24} />
        </button>
-       <button onClick={() => setIdx(idx === valid.length - 1 ? 0 : idx + 1)} className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white p-1.5 rounded-full backdrop-blur-md transition-colors">
+       <button onClick={() => setIdx(idx === valid.length - 1 ? 0 : idx + 1)} className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white p-1.5 rounded-full backdrop-blur-md transition-colors opacity-0 group-hover:opacity-100">
          <ChevronRight size={24} />
        </button>
        
@@ -79,7 +88,7 @@ const GalleryCarousel = ({ photos }) => {
   );
 };
 
-// MOTOR DE EFECTOS (AHORA CON EXPLOSIÓN DE CONFETI Y GLITTER)
+// MOTOR DE EFECTOS REPROGRAMADO (FUEGOS ARTIFICIALES / GLITTER)
 const ParticleCanvas = ({ effect, primary }) => {
   const canvasRef = useRef(null);
   const animRef = useRef(null);
@@ -111,35 +120,38 @@ const ParticleCanvas = ({ effect, primary }) => {
         size: Math.random() * 10 + 8, life: 1, decay: Math.random() * 0.003 + 0.002 
       };
 
-      // 1. CONFETI EXPLOSIVO: Nace desde abajo y explota hacia arriba con gravedad
+      // CONFETI EXPLOSIVO (Física de cañón)
       if (effect === "confetti") {
-        const colors = [primary, "#f59e0b", "#10b981", "#ef4444", "#3b82f6", "#ec4899", "#facc15"];
+        const colors = [primary, "#f59e0b", "#10b981", "#ef4444", "#3b82f6", "#ec4899", "#facc15", "#ffffff"];
         return { 
           ...base, 
-          x: canvas.width / 2 + (Math.random() - 0.5) * 150, // Nace del centro abajo
-          y: canvas.height + 10, 
-          vx: (Math.random() - 0.5) * 14, 
-          vy: -(Math.random() * 14 + 10), // Sale disparado HACIA ARRIBA
+          x: canvas.width / 2 + (Math.random() - 0.5) * 250, // Sale desde el medio abajo
+          y: canvas.height + 20, 
+          vx: (Math.random() - 0.5) * 12, // Se abren como abanico
+          vy: -(Math.random() * 15 + 12), // Salen disparados para arriba
           type: "rect", 
           color: colors[Math.floor(Math.random() * colors.length)], 
-          w: Math.random()*10+5, h: Math.random()*5+3 
+          w: Math.random()*12+6, h: Math.random()*6+3,
+          rotV: (Math.random() - 0.5) * 25, // Rotan a toda velocidad
+          life: 2 // Duran más para que lleguen a caer
         };
       }
-      // 2. GLITTER: Brillitos estáticos que titilan en toda la pantalla
+      // GLITTER (Brillitos mágicos)
       if (effect === "glitter") {
         return { 
           ...base, 
           x: Math.random() * canvas.width, 
           y: Math.random() * canvas.height, 
-          vx: (Math.random() - 0.5) * 0.3, 
-          vy: (Math.random() - 0.5) * 0.3, 
-          alpha: Math.random(), // Transparencia aleatoria inicial
-          alphaDir: Math.random() > 0.5 ? 1 : -1, // Sube o baja el brillo
+          vx: (Math.random() - 0.5) * 0.4, // Se mueven apenas
+          vy: (Math.random() - 0.5) * 0.4, 
+          alpha: Math.random(), 
+          alphaDir: Math.random() > 0.5 ? 1 : -1, // Suben o bajan de brillo
           type: "star", 
           color: ["#ffffff", "#fef08a", primary][Math.floor(Math.random()*3)], 
-          size: Math.random() * 3 + 1 // Muy chiquitos
+          size: Math.random() * 3 + 1.5 
         };
       }
+      
       if (effect === "hearts")  return { ...base, type: "text", emoji: "❤️", size: Math.random()*18+10 };
       if (effect === "stars")   return { ...base, type: "text", emoji: "⭐", size: Math.random()*16+8 };
       if (effect === "bubbles") return { ...base, type: "circle", color: primary, filled: false, r: Math.random()*12+4, vx: (Math.random()-0.5)*1.5, vy: -(Math.random()*2+0.5) };
@@ -155,26 +167,30 @@ const ParticleCanvas = ({ effect, primary }) => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       frame++;
       
-      // Control de cantidad de partículas en pantalla
-      const maxParticles = effect === "glitter" ? 80 : 60;
-      if (frame % 6 === 0 && particlesRef.current.length < maxParticles) {
-        const p = spawnParticle(); if (p) particlesRef.current.push(p);
+      // Control de cantidad
+      const maxParticles = effect === "glitter" ? 100 : (effect === "confetti" ? 80 : 50);
+      const spawnFreq = effect === "confetti" ? 3 : 6; // Confeti sale más rápido
+      const spawnCount = effect === "confetti" ? 2 : 1; // Confeti tira de a dos por frame (Fuente)
+
+      if (frame % spawnFreq === 0 && particlesRef.current.length < maxParticles) {
+        for(let i=0; i<spawnCount; i++){
+          const p = spawnParticle(); if (p) particlesRef.current.push(p);
+        }
       }
       
       particlesRef.current = particlesRef.current.filter(p => {
         p.x += p.vx; p.y += p.vy; p.rot = (p.rot || 0) + (p.rotV || 0); 
         
-        // Físicas según el efecto
+        // Físicas según efecto
         if (effect === "confetti") {
-           p.vy += 0.4; // GRAVEDAD: Tira el confeti para abajo
-           p.life -= p.decay; p.alpha = p.life;
+           p.vy += 0.45; // GRAVEDAD
+           p.life -= 0.008; 
+           p.alpha = Math.min(1, p.life);
         } else if (effect === "glitter") {
-           // TINTINEO (Twinkle): Sube y baja el brillo
+           // TINTINEO
            p.alpha += p.alphaDir * 0.02;
            if (p.alpha >= 1) p.alphaDir = -1;
-           if (p.alpha <= 0) p.alphaDir = 1;
-           // De vez en cuando reseteamos la posición para que no se escapen
-           if (Math.random() < 0.001) { p.x = Math.random() * canvas.width; p.y = Math.random() * canvas.height; }
+           if (p.alpha <= 0.1) p.alphaDir = 1;
         } else {
            p.life -= p.decay; p.alpha = p.life;
         }
@@ -189,9 +205,8 @@ const ParticleCanvas = ({ effect, primary }) => {
           if (p.filled) { ctx.fillStyle = p.color; ctx.fill(); } 
           else { ctx.strokeStyle = p.color; ctx.lineWidth = 1.5; ctx.stroke(); }
         } else if (p.type === "star") {
-          // Dibujamos el glitter como textito ✨ o circulitos brillantes
-          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate((p.rot||0)*Math.PI/180);
-          ctx.fillStyle = p.color; ctx.shadowBlur = 6; ctx.shadowColor = p.color;
+          ctx.save(); ctx.translate(p.x, p.y);
+          ctx.fillStyle = p.color; ctx.shadowBlur = 8; ctx.shadowColor = p.color;
           ctx.beginPath(); ctx.arc(0, 0, p.size, 0, Math.PI*2); ctx.fill();
           ctx.restore();
         } else if (p.type === "text") {
@@ -199,8 +214,8 @@ const ParticleCanvas = ({ effect, primary }) => {
         }
         ctx.globalAlpha = 1;
 
-        if (effect === "glitter") return true; // El glitter nunca muere
-        return p.life > 0 && p.y < canvas.height + 40; // El resto muere al caer
+        if (effect === "glitter") return true; 
+        return p.life > 0 && p.y < canvas.height + 40; 
       });
       animRef.current = requestAnimationFrame(loop);
     };
@@ -271,7 +286,6 @@ const VideoSection = ({ cfg, muted, card }) => {
   );
 };
 
-// ACA RECIBIMOS EL ESTADO PARA SABER SI ESTÁ CANCELADA
 export const InvitePreview = ({ cfg, status }) => {
   if (!cfg) return null;
   const th = THEMES.find(t => t.id === cfg.theme) || THEMES[0];
@@ -281,7 +295,7 @@ export const InvitePreview = ({ cfg, status }) => {
   const mutedC = cfg.muted || th.muted;
   const cardC  = cfg.card  || th.card;
   
-  const isCanceled = status === 'Cancelado'; // VERIFICA SI ESTÁ CANCELADO
+  const isCanceled = status === 'Cancelado'; 
   
   const gradOpacity = cfg.showCoverGradient === false ? 0 : ((cfg.coverGradientIntensity ?? 50) / 100).toFixed(2);
   
@@ -311,7 +325,6 @@ export const InvitePreview = ({ cfg, status }) => {
   return (
     <div style={{ background: bg, fontFamily: cfg.fontBody }} className="min-h-full pb-12 relative overflow-x-hidden">
       
-      {/* CAPA DE BLOQUEO SI EL EVENTO FUE CANCELADO POR EL SALÓN */}
       {isCanceled && (
         <div className="absolute inset-0 z-[999] flex flex-col items-center justify-center bg-slate-900/80 backdrop-blur-md pb-32">
           <div className="border-4 border-red-600 bg-black/70 px-10 py-6 rounded-[2rem] transform -rotate-12 shadow-2xl shadow-red-600/30">
@@ -473,7 +486,6 @@ export const InvitePreview = ({ cfg, status }) => {
                 ))}
               </div>
             ) : (
-              // USAMOS EL NUEVO CARRUSEL
               <GalleryCarousel photos={cfg.galleryPhotos} />
             )}
           </div>
