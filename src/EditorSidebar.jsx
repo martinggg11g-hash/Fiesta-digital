@@ -2,16 +2,14 @@ import React, { useState } from "react";
 import {
   Palette, Star, Image as ImageIcon, Layout, List, Trash2, Video, 
   Link as LinkIcon, LayoutGrid, Smartphone, Calendar, Clock, CheckCircle2,
-  MessageCircle, Plus
+  MessageCircle, Plus, Gift
 } from "lucide-react";
 
-// Importamos las herramientas que creamos en el Paso 1
 import { 
-  GiphySearch, Inp, MiniInp, SelectInp, TypoControl, 
+  GiphySearch, Inp, MiniInp, SelectInp, TypoControl, FontSelector,
   FileUpload, Toggle, EmojiPicker, Acc 
 } from "./EditorUI";
 
-// Importamos la configuración
 import { 
   ANIMATION_CATEGORIES, THEMES, FONTS, TRANSITION_OPTS, 
   FOOD_EMOJIS, CLOTHES_EMOJIS 
@@ -25,7 +23,6 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
         
       <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 text-left">Flujo de Edición</h3>
 
-      {/* 0. DISEÑO GLOBAL Y ANIMACIÓN */}
       <Acc title="🎨 Diseño Base y Animación" icon={Palette} iconColor="#6366f1">
          <div className="flex items-center justify-between mb-4 bg-gray-50 p-2 rounded-xl border border-gray-200">
            <span className="text-xs font-bold text-slate-600 ml-2">¿Animación de Entrada?</span>
@@ -61,24 +58,31 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
           <div className="flex flex-col gap-1"><label className="text-[9px] font-bold text-slate-400 uppercase">Fondo Abajo</label><input type="color" value={cfg.bg2} onChange={e => update('bg2', e.target.value)} className="w-full h-9 rounded-xl cursor-pointer border-none shadow-sm" /></div>
         </div>
 
-        <SelectInp label="Tipografía Global (Párrafos)" value={cfg.fontBody} options={FONTS} onChange={v => update("fontBody", v)} />
-        <div className="flex gap-2 mt-2 mb-6">
+        <div className="mb-2 text-left z-50 relative">
+          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Tipografía Párrafos</label>
+          <FontSelector value={cfg.fontBody || "Montserrat"} options={FONTS} onChange={v => update("fontBody", v)} />
+        </div>
+
+        <div className="flex gap-2 mt-4 mb-6">
            <div className="flex flex-col gap-1 flex-1"><label className="text-[9px] font-bold text-slate-400 uppercase">Color Texto Ppal</label><input type="color" value={cfg.text} onChange={e => update('text', e.target.value)} className="w-full h-9 rounded-xl cursor-pointer border-none shadow-sm" /></div>
            <div className="flex flex-col gap-1 flex-1"><label className="text-[9px] font-bold text-slate-400 uppercase">Color Secundario</label><input type="color" value={cfg.muted} onChange={e => update('muted', e.target.value)} className="w-full h-9 rounded-xl cursor-pointer border-none shadow-sm" /></div>
         </div>
 
         <TypoControl label="Tamaño Títulos (Menú, Regalos...)" sizeVal={cfg.titlesSize ?? 10} onSize={v => update("titlesSize", v)} minSize={8} maxSize={20} />
 
-        <div className="mb-2 border-t border-gray-100 pt-4">
+        <div className="mb-2 border-t border-gray-100 pt-4 z-10 relative">
           <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-left">Partículas Flotantes</label>
           <div className="grid grid-cols-2 gap-2">
             {[
               { id: 'none', icon: '🚫', name: 'Ninguno' },
-              { id: 'confetti', icon: '🎉', name: 'Explosión Confeti' },
-              { id: 'glitter', icon: '✨', name: 'Brillos (Glitter)' },
+              { id: 'confetti', icon: '🎉', name: 'Confeti' },
+              { id: 'glitter', icon: '✨', name: 'Brillos' },
               { id: 'hearts', icon: '❤️', name: 'Corazones' },
+              { id: 'stars', icon: '⭐', name: 'Estrellas' },
               { id: 'bubbles', icon: '🫧', name: 'Burbujas' },
-              { id: 'snow', icon: '❄️', name: 'Nieve' }
+              { id: 'snow', icon: '❄️', name: 'Nieve' },
+              { id: 'petals', icon: '🌸', name: 'Pétalos' },
+              { id: 'emojis', icon: '🥳', name: 'Emojis' }
             ].map(eff => (
               <button key={eff.id} type="button" onClick={() => update("particleEffect", eff.id)} className={`p-2.5 rounded-xl border text-left text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${cfg.particleEffect === eff.id ? 'border-violet-400 bg-violet-50 text-violet-700' : 'border-gray-200 bg-white text-slate-600 hover:border-violet-200'}`}><span className="text-base">{eff.icon}</span> {eff.name}</button>
             ))}
@@ -86,7 +90,6 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
         </div>
       </Acc>
 
-      {/* 1. PORTADA */}
       <Acc title="1️⃣ Portada Principal" icon={ImageIcon} defaultOpen iconColor="#ec4899">
         <div className="mb-6 bg-gray-50 p-3 rounded-xl border border-gray-200">
           <div className="flex items-center justify-between mb-2">
@@ -125,23 +128,22 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 z-40 relative">
           <EmojiPicker value={cfg.eventTypeEmoji || "✨"} onSelect={v => update("eventTypeEmoji", v)} />
           <div className="flex-1"><Inp label="Frase Superior" value={cfg.eventType} onChange={v => update("eventType", v)} placeholder="Estás invitado a..." /></div>
         </div>
         <TypoControl label="Diseño Frase Superior" fontVal={cfg.eventTypeFont || cfg.fontBody} onFont={v => update("eventTypeFont", v)} colorVal={cfg.eventTypeColor || cfg.primary} onColor={v => update('eventTypeColor', v)} sizeVal={cfg.eventTypeSize ?? 11} onSize={v => update("eventTypeSize", v)} minSize={8} maxSize={24} />
 
-        <Inp label="Nombre Principal" value={cfg.honoreeName} onChange={v => update("honoreeName", v)} />
+        <div className="z-30 relative"><Inp label="Nombre Principal" value={cfg.honoreeName} onChange={v => update("honoreeName", v)} /></div>
         <TypoControl label="Diseño del Nombre" fontVal={cfg.honoreeFont || cfg.fontTitle} onFont={v => update("honoreeFont", v)} colorVal={cfg.honoreeColor || cfg.text} onColor={v => update('honoreeColor', v)} sizeVal={cfg.honoreeSize ?? 48} onSize={v => update("honoreeSize", v)} minSize={30} maxSize={80} />
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 z-20 relative">
           <EmojiPicker value={cfg.badgeEmoji} onSelect={v => update("badgeEmoji", v)} />
           <div className="flex-1"><Inp label="Medalla Flotante" value={cfg.badgeText} onChange={v => update("badgeText", v)} placeholder="Ej: 5 añitos" /></div>
         </div>
-        <TypoControl label="Tamaño Medalla" sizeVal={cfg.badgeSize ?? 14} onSize={v => update("badgeSize", v)} minSize={10} max={30} />
+        <TypoControl label="Diseño Medalla" fontVal={cfg.badgeFont || cfg.fontBody} onFont={v => update("badgeFont", v)} sizeVal={cfg.badgeSize ?? 14} onSize={v => update("badgeSize", v)} minSize={10} max={30} />
       </Acc>
 
-      {/* 2. CUENTA REGRESIVA */}
       <Acc title="2️⃣ Cuenta Regresiva" icon={Clock} iconColor="#f59e0b">
         <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Reloj</span><Toggle checked={cfg.showCountdown || false} onChange={v => update("showCountdown", v)} /></div>
         {cfg.showCountdown && (
@@ -149,7 +151,6 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
         )}
       </Acc>
 
-      {/* 3. BANNER PROMOCIONAL */}
       <Acc title="3️⃣ Banner Central" icon={Star} iconColor="#d97706">
         <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Banner</span><Toggle checked={cfg.showBanner} onChange={v => update("showBanner", v)} /></div>
         {cfg.showBanner && (
@@ -168,7 +169,6 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
         )}
       </Acc>
 
-      {/* 4. FECHA Y HORA */}
       <Acc title="4️⃣ Cuándo y Dónde" icon={Calendar} iconColor="#e11d48">
         <TypoControl label="Tamaño Textos Fecha y Lugar" sizeVal={cfg.dateSize ?? 18} onSize={v => update("dateSize", v)} minSize={12} maxSize={30} />
         
@@ -193,7 +193,6 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
         )}
       </Acc>
 
-      {/* 5. SALON */}
       <Acc title="5️⃣ Tarjeta del Salón" icon={LinkIcon} iconColor="#6366f1">
         <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Mostrar Tarjeta</span><Toggle checked={cfg.showVenueLogo || false} onChange={v => update("showVenueLogo", v)} /></div>
         {cfg.showVenueLogo && (
@@ -206,7 +205,6 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
         )}
       </Acc>
 
-      {/* 6. MULTIMEDIA */}
       <Acc title="6️⃣ Multimedia (Video y Música)" icon={Video} iconColor="#8b5cf6">
         <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Video de Invitación</span><Toggle checked={cfg.showVideo || false} onChange={v => update("showVideo", v)} /></div>
         {cfg.showVideo && (
@@ -223,7 +221,6 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
         )}
       </Acc>
 
-      {/* 7. CRONOGRAMA */}
       <Acc title="7️⃣ Programa (Itinerario)" icon={List} iconColor="#0ea5e9">
          <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Cronograma</span><Toggle checked={cfg.showItinerary} onChange={v => update("showItinerary", v)} /></div>
          {cfg.showItinerary && (
@@ -245,14 +242,13 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
          )}
       </Acc>
 
-      {/* 8. MENU DE COMIDA */}
       <Acc title="8️⃣ Menú de Comida" icon={LayoutGrid} iconColor="#10b981">
          <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Menú</span><Toggle checked={cfg.showMenu} onChange={v => update("showMenu", v)} /></div>
          {cfg.showMenu && (
            <>
-             <div className="space-y-3 mb-6">
+             <div className="space-y-3 mb-6 z-40 relative">
                 {cfg.menuItems?.map((m, i) => (
-                  <div key={i} className="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-100 shadow-sm">
+                  <div key={i} className="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-100 shadow-sm z-30 relative">
                     <EmojiPicker list={FOOD_EMOJIS} value={m.emoji} onSelect={e => { const n = [...cfg.menuItems]; n[i].emoji = e; update("menuItems", n); }} />
                     <MiniInp className="flex-1 p-2 text-xs border bg-gray-50 rounded-lg outline-none focus:border-violet-300" value={m.label} onChange={v => { const n = [...cfg.menuItems]; n[i].label = v; update("menuItems", n); }} />
                     <button onClick={() => update("menuItems", cfg.menuItems.filter((_, idx) => idx !== i))} type="button" className="text-red-400 p-2 hover:bg-red-50 rounded-lg cursor-pointer"><Trash2 size={14}/></button>
@@ -264,37 +260,50 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
          )}
       </Acc>
 
-      {/* 9. VESTIMENTA Y REGALOS */}
-      <Acc title="9️⃣ Vestimenta y Regalos" icon={Layout} iconColor="#f43f5e">
+      <Acc title="9️⃣ Vestimenta y Regalos (MX)" icon={Layout} iconColor="#f43f5e">
          <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Vestimenta</span><Toggle checked={cfg.showDressCode} onChange={v => update("showDressCode", v)} /></div>
          {cfg.showDressCode && (
-           <div className="flex gap-2 mb-6 bg-gray-50 p-2 rounded-xl border border-gray-200">
+           <div className="flex gap-2 mb-6 bg-gray-50 p-2 rounded-xl border border-gray-200 z-50 relative">
              <EmojiPicker list={CLOTHES_EMOJIS} value={cfg.dressCodeIcon} onSelect={e => update("dressCodeIcon", e)} />
              <div className="flex-1"><Inp value={cfg.dressCodeText} onChange={v => update("dressCodeText", v)} placeholder="Ej: Elegante Sport" className="!mb-0"/></div>
            </div>
          )}
 
-         <div className="flex items-center justify-between mb-4 pt-4 border-t border-gray-100"><span className="text-xs font-bold text-slate-500">Activar Regalos</span><Toggle checked={cfg.showGifts} onChange={v => update("showGifts", v)} /></div>
+         <div className="flex items-center justify-between mb-4 pt-4 border-t border-gray-100"><span className="text-xs font-bold text-slate-500">Activar Regalos / Transferencias</span><Toggle checked={cfg.showGifts} onChange={v => update("showGifts", v)} /></div>
          {cfg.showGifts && (
            <>
-             <div className="flex gap-2 mb-2 bg-gray-50 p-2 rounded-xl border border-gray-200">
+             <div className="flex gap-2 mb-2 bg-gray-50 p-2 rounded-xl border border-gray-200 z-40 relative">
                <EmojiPicker value={cfg.giftIcon} onSelect={e => update("giftIcon", e)} />
                <div className="w-24"><Inp value={cfg.giftLabel} onChange={v => update("giftLabel", v)} placeholder="Título" className="!mb-0"/></div>
                <div className="flex-1"><Inp value={cfg.giftText} onChange={v => update("giftText", v)} placeholder="Lluvia de sobres..." className="!mb-0"/></div>
              </div>
              
-             <div className="flex items-center justify-between mt-4 mb-2"><span className="text-[10px] font-bold text-slate-500 uppercase">Aclaración Extra de Regalos</span><Toggle checked={cfg.showGiftNote} onChange={v => update("showGiftNote", v)} /></div>
+             <div className="flex items-center justify-between mt-4 mb-2"><span className="text-[10px] font-bold text-slate-500 uppercase">Datos de Transferencia (CLABE)</span><Toggle checked={cfg.showGiftNote} onChange={v => update("showGiftNote", v)} /></div>
              {cfg.showGiftNote && (
-               <div className="mt-2">
-                 <Inp value={cfg.giftNoteText} onChange={v => update("giftNoteText", v)} placeholder="Ej: No traer cajas grandes.\nDejo CBU acá..." multiline className="!mb-2" />
+               <div className="mt-2 z-30 relative">
+                 <Inp value={cfg.giftNoteText} onChange={v => update("giftNoteText", v)} placeholder="Ej: Te dejo mi cuenta CLABE para transferencias...\nBanco: BBVA\nCLABE: 012345678901234567" multiline className="!mb-2" />
                  <TypoControl label="Diseño Aclaración" colorVal={cfg.giftNoteColor || cfg.primary} onColor={v => update('giftNoteColor', v)} sizeVal={cfg.giftNoteSize || 11} onSize={v => update('giftNoteSize', v)} minSize={8} maxSize={24} />
                </div>
              )}
+
+             {/* MESAS DE REGALOS (LISTAS EXTERNAS) */}
+             <div className="flex items-center justify-between mt-6 mb-2 border-t border-gray-100 pt-4"><span className="text-[10px] font-bold text-slate-500 uppercase">Mesas de Regalos (Links)</span></div>
+             <div className="space-y-3 mb-4">
+               {cfg.giftLinks?.map((link, i) => (
+                 <div key={i} className="flex flex-col gap-2 bg-white p-3 rounded-xl border border-slate-100 shadow-sm relative">
+                   <button onClick={() => update("giftLinks", cfg.giftLinks.filter((_, idx) => idx !== i))} type="button" className="absolute top-2 right-2 text-red-400 hover:text-red-600 cursor-pointer"><Trash2 size={14}/></button>
+                   <div className="pr-6">
+                     <MiniInp className="w-full p-2 mb-2 text-xs font-bold border bg-gray-50 rounded-lg outline-none focus:border-violet-300" value={link.label} placeholder="Ej: Mesa en Liverpool" onChange={v => { const n = [...cfg.giftLinks]; n[i].label = v; update("giftLinks", n); }} />
+                     <MiniInp className="w-full p-2 text-xs border bg-gray-50 rounded-lg outline-none focus:border-violet-300" value={link.url} placeholder="https://..." onChange={v => { const n = [...cfg.giftLinks]; n[i].url = v; update("giftLinks", n); }} />
+                   </div>
+                 </div>
+               ))}
+             </div>
+             <button onClick={() => update("giftLinks", [...(cfg.giftLinks || []), { label: "Mesa en Amazon/Liverpool", url: "" }])} type="button" className="w-full py-3 bg-white border-2 border-dashed border-gray-200 rounded-xl text-xs font-bold text-slate-400 hover:border-violet-300 hover:text-violet-600 transition-all cursor-pointer"><Plus size={14} className="inline-block mr-2" /> AÑADIR LINK DE REGALOS</button>
            </>
          )}
       </Acc>
 
-      {/* 10. GALERÍA DE FOTOS */}
       <Acc title="🔟 Galería de Fotos" icon={ImageIcon} iconColor="#ec4899">
          <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Galería</span><Toggle checked={cfg.showGallery} onChange={v => update("showGallery", v)} /></div>
          {cfg.showGallery && (
@@ -317,7 +326,6 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
          )}
       </Acc>
 
-      {/* 11. CONFIRMACIÓN WHATSAPP Y QR */}
       <Acc title="1️⃣1️⃣ Confirmación y Accesos (QR)" icon={CheckCircle2} iconColor="#22c55e">
         <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6">
            <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-3">Control de Accesos QR</h4>
@@ -325,10 +333,10 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
            <p className="text-[9px] text-slate-500 mt-2 font-bold">El invitado no podrá generar un QR para más de esta cantidad de personas.</p>
         </div>
 
-        <Inp label="Número Celular (con código país, sin +)" value={cfg.whatsappNumber} onChange={v => update("whatsappNumber", v)} placeholder="5491123456789" icon={MessageCircle} />
+        <Inp label="Número WhatsApp Celular (+52)" value={cfg.whatsappNumber} onChange={v => update("whatsappNumber", v)} placeholder="5215512345678" icon={MessageCircle} />
         <div className="bg-green-50 p-3 rounded-xl border border-green-100 mt-2">
           <p className="text-[9px] text-green-700 font-bold mb-2">💡 Tip: Escribí {"{nombre}"} en el mensaje para que se reemplace por el nombre del cumpleañero automáticamente.</p>
-          <Inp label="Mensaje opcional de WhatsApp" value={cfg.whatsappMessage} onChange={v => update("whatsappMessage", v)} multiline className="!mb-0" />
+          <Inp label="Mensaje opcional de WhatsApp" value={cfg.whatsappMessage} onChange={v => update("whatsappMessage", v)} multiline className="!mb-0" placeholder="¡Hola! Confirmo mi asistencia para el evento de {nombre}." />
         </div>
       </Acc>
 
