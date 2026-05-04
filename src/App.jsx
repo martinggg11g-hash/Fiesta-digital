@@ -14,7 +14,6 @@ import {
 const slugify = (text) => text?.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') || 'salon';
 const IMGBB_API_KEY = "904f81caf05efe58a799abdb1fedc2ce";
 
-// FECHAS ELEGANTES EN ESPAÑOL
 const formatDateSpanish = (dateStr) => {
   if (!dateStr) return 'Sin fecha';
   if (dateStr.includes('-')) {
@@ -132,7 +131,7 @@ export const LoginScreen = ({ isMaster = false, onLogin, users }) => {
     e.preventDefault();
     setLoading(true);
     setTimeout(() => {
-      // MASTER LOGIN ACTUALIZADO
+      // NUEVO MAIL MAESTRO
       if (isMaster && email === "owner@defiesta.lat" && pass === "owner123") {
         onLogin({ name: "Master", role: "owner", email }, rememberMe);
         navigate("/dashboard");
@@ -155,7 +154,7 @@ export const LoginScreen = ({ isMaster = false, onLogin, users }) => {
           <div className={`w-20 h-20 mx-auto mb-6 rounded-[2rem] flex items-center justify-center shadow-2xl ${isMaster ? 'bg-violet-600' : 'bg-gradient-to-br from-violet-600 to-fuchsia-600'}`}>
             {isMaster ? <ShieldCheck size={40} color="white"/> : <PartyPopper size={40} color="white"/>}
           </div>
-          {/* NUEVO LOGO LOGIN */}
+          {/* NUEVO LOGO MARCA */}
           <h1 className="text-white text-3xl font-black">DeFiesta<span className="text-violet-400">.lat</span></h1>
         </div>
         <div className="p-10 rounded-[2.5rem] bg-white/5 border border-white/10 backdrop-blur-xl">
@@ -215,6 +214,7 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
   const themeText = isDark ? "text-white" : "text-slate-800";
   const themeCard = isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200/60";
 
+  // VISTA CRM DEL SALÓN
   if (!isOwner) {
     const salonInfo = users.find(u => u.email === user.email);
     const isManualBlocked = salonInfo?.payment_alert;
@@ -243,11 +243,13 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
     return (
       <div className={`min-h-screen pb-20 text-left transition-colors duration-300 ${themeBg}`}>
         
+        {/* CSS MAGICO QUE MATA LAS CABECERAS DEL NAVEGADOR AL IMPRIMIR */}
         <style>{`
           @media print {
+            @page { margin: 0; } /* Esto elimina la fecha, título y URL del navegador */
             body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .no-print { display: none !important; }
-            .only-print { display: block !important; }
+            .only-print { display: block !important; padding: 1.5cm 2cm !important; } /* Margen interno para la hoja */
           }
         `}</style>
 
@@ -415,7 +417,7 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
             </div>
           )}
 
-          {/* MODAL AJUSTES */}
+          {/* MODAL AJUSTES DE SEGURIDAD Y PERFIL */}
           {showSettings && (
             <div className="fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
                <div className={`w-full max-w-sm rounded-[2rem] p-8 shadow-2xl relative anim-pop text-center ${isDark ? 'bg-slate-800 text-white' : 'bg-white text-slate-800'}`}>
@@ -438,7 +440,7 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
 
         {/* ---------------- LA HOJA A4 PARA IMPRIMIR (DOBLE PLANTILLA) ---------------- */}
         {activeCrmId && activeInv && (
-          <div className="hidden only-print w-full bg-white text-black p-8 font-sans max-w-4xl mx-auto">
+          <div className="hidden only-print w-full bg-white text-black font-sans max-w-4xl mx-auto">
              
              {/* CABECERA (Logo y Datos del Salón) */}
              <div className="flex justify-between items-center border-b-2 border-slate-800 pb-6 mb-8">
@@ -530,7 +532,7 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
                 </div>
              </div>
              
-             {/* FOOTER DEL PDF MARCA BLANCA */}
+             {/* FOOTER DEL PDF TOTALMENTE MARCA BLANCA (SIN RASTROS DEL SOFTWARE) */}
              <div className="mt-16 text-center text-xs text-slate-400 font-bold border-t border-slate-200 pt-4">
                 {printMode === 'presupuesto' ? (
                   <p>Documento emitido el {getTodaySpanish()} • Los valores expresados pueden estar sujetos a modificaciones.</p>
