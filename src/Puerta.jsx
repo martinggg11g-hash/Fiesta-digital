@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Html5Qrcode } from "html5-qrcode";
-import { CheckCircle2, X, AlertTriangle, ScanBarcode, Users, Loader2 } from "lucide-react";
+import { CheckCircle2, X, AlertTriangle, ScanBarcode, Users, Loader2, Check } from "lucide-react";
 
 // ESCÁNER ULTRA RÁPIDO (Cámara trasera por defecto)
 const FastScanner = ({ onClose, onScan }) => {
@@ -68,8 +68,16 @@ export default function PuertaScreen({ invitations, onUpdateInternal }) {
     setValidationResult(null);
   };
 
+  // NUEVA FUNCIÓN: Ingreso Manual
+  const handleManualEntry = (guestId, guestName) => {
+    if (window.confirm(`¿Querés marcar el ingreso manual de ${guestName}?`)) {
+      const updatedGuests = guestsList.map(g => g.id === guestId ? { ...g, status: 'Ingresó' } : g);
+      onUpdateInternal(inv.id, 'guests', updatedGuests);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-slate-950 text-white font-sans">
+    <div className="min-h-screen bg-slate-950 text-white font-sans pb-10">
       <div className="p-6 max-w-md mx-auto">
         
         <div className="text-center mb-8">
@@ -88,7 +96,7 @@ export default function PuertaScreen({ invitations, onUpdateInternal }) {
           </div>
         </div>
 
-        <button onClick={() => setScanning(true)} className="w-full py-5 bg-violet-600 hover:bg-violet-500 text-white rounded-[1.5rem] font-black tracking-widest uppercase flex items-center justify-center gap-3 shadow-xl shadow-violet-900/50 transition-transform active:scale-95 mb-8">
+        <button onClick={() => setScanning(true)} className="w-full py-5 bg-violet-600 hover:bg-violet-500 text-white rounded-[1.5rem] font-black tracking-widest uppercase flex items-center justify-center gap-3 shadow-xl shadow-violet-900/50 transition-transform active:scale-95 mb-8 cursor-pointer">
           <ScanBarcode size={24}/> ABRIR ESCÁNER QR
         </button>
 
@@ -96,14 +104,21 @@ export default function PuertaScreen({ invitations, onUpdateInternal }) {
         
         <div className="space-y-3">
           {guestsList.slice().reverse().map((g, i) => (
-            <div key={i} className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex justify-between items-center">
-              <div>
-                <p className="font-bold text-sm">{g.name} {g.lastname}</p>
-                <p className="text-xs text-slate-500">{g.guests} personas</p>
+            <div key={i} className={`border p-4 rounded-2xl flex justify-between items-center gap-2 transition-colors ${g.status === 'Ingresó' ? 'bg-slate-900/50 border-green-500/20' : 'bg-slate-900 border-slate-700'}`}>
+              <div className="flex-1">
+                <p className={`font-bold text-sm ${g.status === 'Ingresó' ? 'text-slate-400' : 'text-white'}`}>{g.name} {g.lastname}</p>
+                <p className="text-xs text-slate-500 mt-0.5">{g.guests} pax • <span className="font-mono text-[10px]">{g.id}</span></p>
               </div>
-              <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${g.status === 'Ingresó' ? 'bg-green-500/20 text-green-400' : 'bg-amber-500/20 text-amber-400'}`}>
-                {g.status}
-              </span>
+              
+              {g.status === 'Ingresó' ? (
+                <span className="px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-green-500/10 text-green-400 border border-green-500/20 shrink-0 flex items-center gap-1">
+                  <Check size={12}/> ADENTRO
+                </span>
+              ) : (
+                <button onClick={() => handleManualEntry(g.id, g.name)} className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest bg-amber-500 hover:bg-amber-400 text-amber-950 transition-transform active:scale-95 shrink-0 shadow-lg shadow-amber-500/20 cursor-pointer">
+                  MARCAR INGRESO
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -133,9 +148,9 @@ export default function PuertaScreen({ invitations, onUpdateInternal }) {
               )}
 
               {validationResult.status === 'success' && (
-                <button onClick={confirmAccess} className="w-full py-4 bg-green-500 hover:bg-green-400 text-white rounded-xl font-black text-sm transition-transform active:scale-95 shadow-lg mb-3">AUTORIZAR INGRESO</button>
+                <button onClick={confirmAccess} className="w-full py-4 bg-green-500 hover:bg-green-400 text-white rounded-xl font-black text-sm transition-transform active:scale-95 shadow-lg mb-3 cursor-pointer">AUTORIZAR INGRESO</button>
               )}
-              <button onClick={() => setValidationResult(null)} className="w-full py-4 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-black text-sm transition-transform active:scale-95">Cerrar</button>
+              <button onClick={() => setValidationResult(null)} className="w-full py-4 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-black text-sm transition-transform active:scale-95 cursor-pointer">Cerrar</button>
            </div>
         </div>
       )}
