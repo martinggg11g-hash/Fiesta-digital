@@ -150,7 +150,7 @@ const MapEmbed = ({ name, address, primary }) => {
 };
 
 // =========================================================================
-// WIDGET INTELIGENTE DE RSVP PREMIUM (CON GENERADOR DE TICKET VISUAL)
+// WIDGET INTELIGENTE DE RSVP PREMIUM (CON GENERADOR DE TICKET VISUAL SEGURO)
 // =========================================================================
 const RsvpWidget = ({ cfg, primary, textC, cardC, onConfirmRSVP }) => {
   const [step, setStep] = useState('button'); // 'button' | 'form' | 'qr'
@@ -161,7 +161,7 @@ const RsvpWidget = ({ cfg, primary, textC, cardC, onConfirmRSVP }) => {
   const maxLimit = cfg.maxGuestsPerFamily || 5;
   const waMsg = (cfg.whatsappMessage || "").replace('{nombre}', formData.name || cfg.honoreeName || "");
 
-  const handleGenerateTicket = async (e) => {
+  const handleGenerateTicket = (e) => {
     e.preventDefault();
     if (!formData.name || !formData.lastname) return alert("Por favor completá tu nombre y apellido");
     setLoading(true);
@@ -169,15 +169,15 @@ const RsvpWidget = ({ cfg, primary, textC, cardC, onConfirmRSVP }) => {
     // Generamos ID único para el Pase
     const ticketId = `PASS-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
     const qrData = `${ticketId}|${formData.name}|${formData.lastname}|${formData.guests}`;
-    const qrUrlApi = `https://chart.googleapis.com/chart?chs=400x400&cht=qr&chl=${encodeURIComponent(qrData)}&choe=UTF-8`;
+    
+    // Usamos QuickChart que garantiza no bloquear Canvas (CORS seguro)
+    const qrUrlApi = `https://quickchart.io/qr?text=${encodeURIComponent(qrData)}&size=400&margin=2`;
 
-    try {
-      // Dibujamos el Ticket HD en un Canvas oculto
-      const img = new Image();
-      img.crossOrigin = "Anonymous";
-      img.src = qrUrlApi;
-      
-      img.onload = () => {
+    const img = new Image();
+    img.crossOrigin = "Anonymous"; // Esto evita el error de CORS (pantalla en blanco)
+    
+    img.onload = () => {
+      try {
         const canvas = document.createElement('canvas');
         canvas.width = 800;
         canvas.height = 1300;
@@ -185,7 +185,7 @@ const RsvpWidget = ({ cfg, primary, textC, cardC, onConfirmRSVP }) => {
 
         // Fondo Degradado Premium
         const grd = ctx.createLinearGradient(0, 0, 0, 1300);
-        grd.addColorStop(0, primary);
+        grd.addColorStop(0, primary || '#8b5cf6');
         grd.addColorStop(1, '#0f172a');
         ctx.fillStyle = grd;
         ctx.fillRect(0, 0, 800, 1300);
@@ -204,7 +204,7 @@ const RsvpWidget = ({ cfg, primary, textC, cardC, onConfirmRSVP }) => {
         ctx.fillText(cfg.honoreeName || 'Evento Especial', 400, 220);
 
         ctx.font = '35px sans-serif';
-        ctx.fillText(`${formatToDDMMYYYY(cfg.dateText)} | ${cfg.timeText} hs`, 400, 290);
+        ctx.fillText(`${formatToDDMMYYYY(cfg.dateText)} | ${cfg.timeText || '00:00'} hs`, 400, 290);
 
         // Rectángulo blanco con sombra para el QR
         ctx.fillStyle = '#ffffff';
@@ -223,7 +223,7 @@ const RsvpWidget = ({ cfg, primary, textC, cardC, onConfirmRSVP }) => {
         ctx.lineTo(750, 980);
         ctx.stroke();
 
-        // Datos del Invitado (Abajo de la línea punteada)
+        // Datos del Invitado
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 60px sans-serif';
         ctx.fillText(`${formData.name} ${formData.lastname}`.toUpperCase(), 400, 1100);
@@ -237,7 +237,7 @@ const RsvpWidget = ({ cfg, primary, textC, cardC, onConfirmRSVP }) => {
         ctx.fillStyle = "rgba(255,255,255,0.3)";
         ctx.fillText(ticketId, 400, 1250);
 
-        // Exportamos a imagen
+        // Exportamos a imagen final
         const finalTicketUrl = canvas.toDataURL('image/jpeg', 0.9);
         setTicketImage(finalTicketUrl);
 
@@ -255,11 +255,20 @@ const RsvpWidget = ({ cfg, primary, textC, cardC, onConfirmRSVP }) => {
 
         setLoading(false);
         setStep('qr');
-      };
-    } catch (error) {
-      alert("Hubo un error al generar el pase. Intentá de nuevo.");
+      } catch (error) {
+        console.error("Error canvas:", error);
+        alert("Tu navegador bloqueó la imagen final. Intentá desde otro dispositivo o usa el modo incógnito.");
+        setLoading(false);
+      }
+    };
+
+    img.onerror = () => {
+      alert("No nos pudimos conectar al servidor de códigos QR. Reintentá en unos segundos.");
       setLoading(false);
-    }
+    };
+
+    // Esto dispara la descarga real de la imagen QR
+    img.src = qrUrlApi;
   };
 
   const handleDownload = () => {
@@ -313,8 +322,8 @@ const RsvpWidget = ({ cfg, primary, textC, cardC, onConfirmRSVP }) => {
         <p className="text-[10px] opacity-70 mb-4 font-bold uppercase tracking-wide">Presentá este pase en la entrada</p>
         
         {/* Mostramos el diseño súper premium que generamos */}
-        <div className="inline-block mx-auto mb-6 shadow-2xl rounded-2xl overflow-hidden border-2 border-white/20">
-          <img src={ticketImage} alt="Pase VIP" className="w-full max-w-[250px] h-auto object-contain" />
+        <div className="inline-block mx-auto mb-6 shadow-2xl rounded-2xl overflow-hidden border-2 border-white/20 bg-black">
+          <img src={ticketImage} alt="Pase VIP" className="w-full max-w-[250px] h-auto object-contain block" />
         </div>
         
         <button onClick={handleDownload} className="w-full py-3 mb-3 rounded-xl font-black text-xs uppercase flex items-center justify-center gap-2 border border-white/20 hover:bg-white/10 transition-colors">
@@ -424,7 +433,7 @@ export const InvitePreview = ({ cfg, status, onConfirmRSVP }) => {
           </div>
         )}
 
-        {/* ... Resto de los módulos (Itinerario, Menu, etc.) ... */}
+        {/* ... Resto de los módulos ... */}
         
         {cfg.showMusic && cfg.spotifyUrl && (
           <div className="pt-4">
@@ -507,7 +516,7 @@ export const InvitePreview = ({ cfg, status, onConfirmRSVP }) => {
           </div>
         )}
 
-        {/* WIDGET MÁGICO CONECTADO A BASE DE DATOS */}
+        {/* WIDGET MÁGICO CONECTADO A BASE DE DATOS Y GENERADOR CANVA */}
         <RsvpWidget cfg={cfg} primary={primary} textC={textC} cardC={cardC} onConfirmRSVP={onConfirmRSVP} />
         
         <p className="text-center text-[10px] font-bold opacity-50 mt-8 pb-4" style={{ color: mutedC }}>
