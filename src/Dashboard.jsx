@@ -107,37 +107,26 @@ const Toggle = ({ checked, onChange }) => (
 
 const QRScannerModal = ({ onClose, onScan }) => {
   useEffect(() => {
-    // Inicialización de la cámara, pidiendo permisos
-    let scanner;
-    const startScanner = async () => {
-      try {
-        scanner = new Html5QrcodeScanner("reader", { 
-          fps: 10, 
-          qrbox: { width: 250, height: 250 }, 
-          aspectRatio: 1,
-          rememberLastUsedCamera: true
-        }, false);
-        
-        scanner.render(
-          (decodedText) => { scanner.clear(); onScan(decodedText); },
-          (error) => { /* ignora errores por no enfocar */ }
-        );
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    startScanner();
-    return () => { if(scanner) scanner.clear().catch(e => console.log(e)); };
+    const html5QrCode = new Html5Qrcode("reader");
+    html5QrCode.start(
+      { facingMode: "environment" },
+      { fps: 15, qrbox: { width: 250, height: 250 } },
+      (decodedText) => { html5QrCode.stop().then(() => onScan(decodedText)); },
+      (err) => { }
+    ).catch(err => {
+      alert("Por favor, dale permisos a la cámara en tu navegador.");
+    });
+    return () => { if (html5QrCode.isScanning) html5QrCode.stop().catch(e => console.log(e)); };
   }, [onScan]);
 
   return (
     <div className="fixed inset-0 z-[120] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
        <div className="w-full max-w-md bg-white rounded-[2rem] p-6 shadow-2xl relative text-center anim-pop">
-          <button onClick={onClose} className="absolute top-4 right-4 w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 cursor-pointer"><X size={20}/></button>
-          <div className="w-16 h-16 bg-slate-900 text-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl"><ScanBarcode size={30}/></div>
+          <button onClick={onClose} className="absolute top-4 right-4 w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 cursor-pointer"><X size="{20}"/></button>
+          <div className="w-16 h-16 bg-slate-900 text-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl"><ScanBarcode size="{30}"/></div>
           <h2 className="text-xl font-black text-slate-900 mb-2">Control de Acceso</h2>
-          <p className="text-slate-500 text-xs mb-6">Enfocá el QR del invitado en el recuadro.</p>
-          <div id="reader" className="w-full overflow-hidden rounded-2xl border-4 border-slate-100 bg-black"></div>
+          <p className="text-slate-500 text-xs mb-6">Enfocá el QR del invitado.</p>
+          <div id="reader" className="w-full overflow-hidden rounded-2xl border-4 border-slate-100 aspect-square"></div>
        </div>
     </div>
   );
