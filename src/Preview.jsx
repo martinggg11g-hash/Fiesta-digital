@@ -396,7 +396,7 @@ export const InvitePreview = ({ cfg }) => {
           <CheckCircle2 size={20} /> CONFIRMAR ASISTENCIA
         </button>
         
-        {/* EL FOOTER MODIFICADO MARCA BLANCA */}
+        {/* EL FOOTER MODIFICADO MARCA BLANCA DEFIESTA.LAT */}
         <p className="text-center text-[10px] font-bold opacity-50 mt-8 pb-4" style={{ color: mutedC }}>
           Invitación creada con <strong className="tracking-wide">defiesta.lat</strong>
         </p>
