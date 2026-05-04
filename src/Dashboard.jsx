@@ -5,7 +5,7 @@ import {
   ShieldCheck, LogOut, Plus, Trash2, Copy, CheckCircle2, Lock, 
   MapPin, CalendarClock, AlertTriangle, KeyRound, Building, Edit2, X, MessageCircle, Eye, EyeOff, Search,
   Phone, Users, Clock, Settings, UserCheck, Receipt,
-  Moon, Sun, Printer, ClipboardList, ImageIcon, FileText, ScanBarcode, FileDown, PartyPopper, Loader2, CreditCard, Send
+  Moon, Sun, Printer, ClipboardList, ImageIcon, FileText, ScanBarcode, FileDown, PartyPopper, Loader2, CreditCard, Send, Smartphone
 } from "lucide-react";
 
 const slugify = (text) => text?.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') || 'salon';
@@ -122,8 +122,8 @@ const QRScannerModal = ({ onClose, onScan }) => {
   return (
     <div className="fixed inset-0 z-[120] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
        <div className="w-full max-w-md bg-white rounded-[2rem] p-6 shadow-2xl relative text-center anim-pop">
-          <button onClick={onClose} className="absolute top-4 right-4 w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 cursor-pointer"><X size="{20}"/></button>
-          <div className="w-16 h-16 bg-slate-900 text-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl"><ScanBarcode size="{30}"/></div>
+          <button onClick={onClose} className="absolute top-4 right-4 w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 cursor-pointer"><X size={20}/></button>
+          <div className="w-16 h-16 bg-slate-900 text-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl"><ScanBarcode size={30}/></div>
           <h2 className="text-xl font-black text-slate-900 mb-2">Control de Acceso</h2>
           <p className="text-slate-500 text-xs mb-6">Enfocá el QR del invitado.</p>
           <div id="reader" className="w-full overflow-hidden rounded-2xl border-4 border-slate-100 aspect-square"></div>
@@ -139,19 +139,16 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
   const [activeTab, setActiveTab] = useState("info");
   
   const [showSettings, setShowSettings] = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false); // Nuevo Modal de Pagos
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   
-  // Escaner
   const [scanningEvent, setScanningEvent] = useState(null);
   const [validationResult, setValidationResult] = useState(null);
 
-  // Formularios de Salón
   const [newPassword, setNewPassword] = useState("");
   const [newLogo, setNewLogo] = useState("");
   const [newPhone, setNewPhone] = useState(""); 
   const [printMode, setPrintMode] = useState("ficha"); 
 
-  // Modal para CRUD de Invitados (Crear/Editar)
   const [showGuestModal, setShowGuestModal] = useState(false);
   const [editingGuest, setEditingGuest] = useState(null);
   const [gName, setGName] = useState("");
@@ -183,7 +180,6 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
   const themeText = isDark ? "text-white" : "text-slate-800";
   const themeCard = isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200/60";
 
-  // MÓDULO INVITADOS: Exportar
   const handleExportCSV = () => {
     if(guestsList.length === 0) return alert("No hay invitados confirmados aún.");
     let csv = "ID Pase,Nombre Completo,Acompañantes,Estado,Fecha de Confirmación\n";
@@ -201,7 +197,6 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
     document.body.removeChild(link);
   };
 
-  // MÓDULO INVITADOS: CRUD
   const openNewGuest = () => {
     setEditingGuest(null);
     setGName(""); setGLastname(""); setGPax(1); setGStatus("Pendiente");
@@ -217,16 +212,12 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
   const saveGuest = () => {
     if(!gName) return alert("Falta nombre");
     let newList = [...guestsList];
-    
     if (editingGuest) {
-      // Editando
       newList = newList.map(g => g.id === editingGuest.id ? { ...g, name: gName, lastname: gLastname, guests: Number(gPax), status: gStatus } : g);
     } else {
-      // Nuevo manual (Fake QR ID)
       const fakeId = `MANUAL-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
       newList.push({ id: fakeId, name: gName, lastname: gLastname, guests: Number(gPax), status: gStatus, timestamp: new Date().toISOString() });
     }
-    
     onUpdateInternal(activeInv.id, 'guests', newList);
     setShowGuestModal(false);
     notify("Invitado guardado");
@@ -240,7 +231,6 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
     }
   };
 
-  // ESCANER LÓGICA
   const processQRScan = (qrString) => {
     const [tId, tName, tLast, tPax] = qrString.split('|');
     const guestDb = scanningEvent.internal_data?.guests?.find(g => g.id === tId);
@@ -289,11 +279,9 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
                <div className={`font-black text-xl tracking-tight ${themeText}`}>{user.name} <span className="text-violet-500 text-sm opacity-60 ml-2 hidden sm:inline-block">| Panel de Gestión</span></div>
             </div>
             <div className="flex items-center gap-3">
-               {/* BOTÓN DE PAGOS NUEVO */}
                <button onClick={() => setShowPaymentModal(true)} className={`px-4 py-2 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all flex items-center gap-2 border cursor-pointer ${isDark ? 'border-amber-500/30 text-amber-400 bg-amber-500/10 hover:bg-amber-500/20' : 'border-amber-200 text-amber-600 bg-amber-50 hover:bg-amber-100'}`}>
                  <CreditCard size={16}/> Pagos / Facturación
                </button>
-
                <button onClick={() => setIsDark(!isDark)} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${isDark ? 'bg-slate-700 text-yellow-400 hover:bg-slate-600' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>{isDark ? <Sun size={18}/> : <Moon size={18}/>}</button>
                <button onClick={() => { setNewLogo(salonInfo?.logo || ""); setNewPhone(salonInfo?.phone || ""); setNewPassword(""); setShowSettings(true); }} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all cursor-pointer ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}><Settings size={18}/></button>
                <button onClick={() => { onLogout(); navigate("/"); }} className="w-10 h-10 bg-red-500/10 text-red-500 rounded-xl flex items-center justify-center hover:bg-red-500/20 transition-all cursor-pointer"><LogOut size={18}/></button>
@@ -361,12 +349,10 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
             </div>
           </main>
 
-          {/* ESCANER DE CÁMARA */}
           {scanningEvent && !validationResult && (
             <QRScannerModal onClose={() => setScanningEvent(null)} onScan={processQRScan} />
           )}
 
-          {/* RESULTADO DE VALIDACIÓN DEL PASE */}
           {validationResult && (
             <div className="fixed inset-0 z-[130] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
                <div className="w-full max-w-sm bg-white rounded-[2rem] p-8 shadow-2xl relative text-center anim-pop border-4" style={{ borderColor: validationResult.status === 'success' ? '#22c55e' : (validationResult.status === 'error' ? '#ef4444' : '#f59e0b') }}>
@@ -393,7 +379,6 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
             </div>
           )}
 
-          {/* MODAL CRM (FICHA + LISTA DE INVITADOS) */}
           {activeCrmId && activeInv && (
             <div className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
               <div className={`w-full max-w-5xl max-h-[95vh] h-full sm:h-auto rounded-[2rem] overflow-hidden flex flex-col shadow-2xl anim-pop ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
@@ -479,18 +464,30 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
                     </div>
                   )}
 
-                  {/* PESTAÑA LISTA DE INVITADOS CON CRUD */}
+                  {/* PESTAÑA LISTA DE INVITADOS CON CRUD Y APP RECEPCIONISTA */}
                   {activeTab === 'guests' && (
                     <div className="animate-in fade-in duration-300">
-                      <div className="flex items-center justify-between mb-6">
+                      
+                      {/* NUEVO: BLOQUE APP RECEPCIONISTA */}
+                      <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 md:p-5 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                          <h4 className="text-blue-800 font-black text-base mb-1 flex items-center gap-2"><Smartphone size={18}/> App de Recepción (Puerta)</h4>
+                          <p className="text-blue-600 text-xs font-medium max-w-lg">Enviale este acceso a tu empleado. Desde ahí solo podrá usar el escáner de QR y ver la lista de ingreso, sin ver información de pagos ni poder modificar nada.</p>
+                        </div>
+                        <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/puerta/${activeInv.id}`); notify("¡Link de puerta copiado al portapapeles!"); }} className="px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30 transition-transform active:scale-95 cursor-pointer shrink-0">
+                          <Copy size={16}/> COPIAR LINK
+                        </button>
+                      </div>
+
+                      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4 border-t border-slate-200/50 pt-6">
                         <div>
                           <h3 className={`font-black text-xl flex items-center gap-2 ${themeText}`}><Users className="text-violet-500" size={24}/> Control de Accesos</h3>
                           <p className="text-slate-500 text-sm mt-1">Total de asistentes confirmados: <strong className="text-violet-600">{guestsList.reduce((acc, g) => acc + g.guests, 0)}</strong></p>
                         </div>
-                        <div className="flex gap-2">
-                           <button onClick={openNewGuest} className="px-5 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-black text-xs flex items-center gap-2 shadow-lg transition-transform active:scale-95 cursor-pointer"><Plus size={16}/> AGREGAR A MANO</button>
-                           <button onClick={() => handlePrint('invitados')} className="px-5 py-3 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-black text-xs flex items-center gap-2 shadow-lg transition-transform active:scale-95 cursor-pointer"><Printer size={16}/> IMPRIMIR LISTA</button>
-                           <button onClick={handleExportCSV} className="px-5 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-black text-xs flex items-center gap-2 shadow-lg transition-transform active:scale-95 cursor-pointer"><FileDown size={16}/> EXCEL</button>
+                        <div className="flex flex-wrap gap-2">
+                           <button onClick={openNewGuest} className="px-4 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-black text-[11px] flex items-center gap-2 shadow-md transition-transform active:scale-95 cursor-pointer"><Plus size={16}/> AGREGAR A MANO</button>
+                           <button onClick={() => handlePrint('invitados')} className="px-4 py-3 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-black text-[11px] flex items-center gap-2 shadow-md transition-transform active:scale-95 cursor-pointer"><Printer size={16}/> IMPRIMIR</button>
+                           <button onClick={handleExportCSV} className="px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-black text-[11px] flex items-center gap-2 shadow-md transition-transform active:scale-95 cursor-pointer"><FileDown size={16}/> EXCEL</button>
                         </div>
                       </div>
 
@@ -499,8 +496,8 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
                           <p className="text-slate-400 font-bold">Todavía no hay invitados confirmados.</p>
                         </div>
                       ) : (
-                        <div className="border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
-                          <table className="w-full text-left bg-white">
+                        <div className="border border-slate-200 rounded-3xl overflow-x-auto shadow-sm">
+                          <table className="w-full text-left bg-white min-w-[600px]">
                             <thead><tr className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest"><th className="p-4 border-b">Invitado</th><th className="p-4 border-b text-center">Pase VIP ID</th><th className="p-4 border-b text-center">Personas</th><th className="p-4 border-b text-center">Estado</th><th className="p-4 border-b text-right">Acciones</th></tr></thead>
                             <tbody className="text-sm">
                               {guestsList.slice().reverse().map((g, i) => (
@@ -683,7 +680,7 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
                      <tr className="bg-slate-100 text-[10px] font-black text-slate-500 uppercase tracking-widest border-y-2 border-slate-300">
                        <th className="py-3 px-2">ID Pase</th>
                        <th className="py-3 px-2">Nombre del Invitado</th>
-                       <th className="py-3 px-2 text-center">Pax</th>
+                       <th className="py-3 px-2 text-center">Personas</th>
                        <th className="py-3 px-2 text-center">Check-in (Firma)</th>
                      </tr>
                    </thead>
