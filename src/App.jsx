@@ -14,7 +14,7 @@ import {
 const slugify = (text) => text?.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') || 'salon';
 const IMGBB_API_KEY = "904f81caf05efe58a799abdb1fedc2ce";
 
-// NUEVO: FECHAS ELEGANTES EN ESPAÑOL
+// FECHAS ELEGANTES EN ESPAÑOL
 const formatDateSpanish = (dateStr) => {
   if (!dateStr) return 'Sin fecha';
   if (dateStr.includes('-')) {
@@ -132,7 +132,8 @@ export const LoginScreen = ({ isMaster = false, onLogin, users }) => {
     e.preventDefault();
     setLoading(true);
     setTimeout(() => {
-      if (isMaster && email === "owner@eventia.com" && pass === "owner123") {
+      // MASTER LOGIN ACTUALIZADO
+      if (isMaster && email === "owner@defiesta.lat" && pass === "owner123") {
         onLogin({ name: "Master", role: "owner", email }, rememberMe);
         navigate("/dashboard");
         return;
@@ -154,7 +155,8 @@ export const LoginScreen = ({ isMaster = false, onLogin, users }) => {
           <div className={`w-20 h-20 mx-auto mb-6 rounded-[2rem] flex items-center justify-center shadow-2xl ${isMaster ? 'bg-violet-600' : 'bg-gradient-to-br from-violet-600 to-fuchsia-600'}`}>
             {isMaster ? <ShieldCheck size={40} color="white"/> : <PartyPopper size={40} color="white"/>}
           </div>
-          <h1 className="text-white text-3xl font-black">Eventia<span className="text-violet-400">Pro</span></h1>
+          {/* NUEVO LOGO LOGIN */}
+          <h1 className="text-white text-3xl font-black">DeFiesta<span className="text-violet-400">.lat</span></h1>
         </div>
         <div className="p-10 rounded-[2.5rem] bg-white/5 border border-white/10 backdrop-blur-xl">
           <form onSubmit={handleAuth} className="space-y-2">
@@ -213,7 +215,6 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
   const themeText = isDark ? "text-white" : "text-slate-800";
   const themeCard = isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200/60";
 
-  // VISTA CRM DEL SALÓN
   if (!isOwner) {
     const salonInfo = users.find(u => u.email === user.email);
     const isManualBlocked = salonInfo?.payment_alert;
@@ -414,7 +415,7 @@ export const DashboardScreen = ({ user, onLogout, users, onUpdateUser, onCreateS
             </div>
           )}
 
-          {/* MODAL AJUSTES DE SEGURIDAD Y PERFIL */}
+          {/* MODAL AJUSTES */}
           {showSettings && (
             <div className="fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
                <div className={`w-full max-w-sm rounded-[2rem] p-8 shadow-2xl relative anim-pop text-center ${isDark ? 'bg-slate-800 text-white' : 'bg-white text-slate-800'}`}>
