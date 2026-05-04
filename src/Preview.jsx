@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { OpeningAnimation } from "./Lotties"; 
-import { MapPin, Calendar, Clock, Star, CheckCircle2, ChevronLeft, ChevronRight } from "lucide-react";
+import { MapPin, Calendar, Clock, Star, CheckCircle2, ChevronLeft, ChevronRight, Download, MessageCircle, Users } from "lucide-react";
 
 import { DEF_CONFIG, THEMES, getSpotifyEmbed, getYouTubeId, formatToDDMMYYYY } from "./config";
 
@@ -51,12 +51,10 @@ const Countdown = ({ targetDate, primary, text }) => {
   );
 };
 
-// CARRUSEL INTERACTIVO Y AUTOMÁTICO
 const GalleryCarousel = ({ photos }) => {
   const [idx, setIdx] = useState(0);
   const valid = photos.filter(p => p);
   
-  // EFECTO DE AUTO-PLAY (Cambia cada 3 segundos)
   useEffect(() => {
     if (valid.length <= 1) return;
     const timer = setInterval(() => {
@@ -71,14 +69,8 @@ const GalleryCarousel = ({ photos }) => {
   return (
     <div className="relative w-full h-64 rounded-2xl overflow-hidden shadow-lg border border-white/5 group">
        <img src={valid[idx]} className="w-full h-full object-cover transition-opacity duration-500" alt={`Foto ${idx+1}`} />
-       
-       <button onClick={() => setIdx(idx === 0 ? valid.length - 1 : idx - 1)} className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white p-1.5 rounded-full backdrop-blur-md transition-colors opacity-0 group-hover:opacity-100">
-         <ChevronLeft size={24} />
-       </button>
-       <button onClick={() => setIdx(idx === valid.length - 1 ? 0 : idx + 1)} className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white p-1.5 rounded-full backdrop-blur-md transition-colors opacity-0 group-hover:opacity-100">
-         <ChevronRight size={24} />
-       </button>
-       
+       <button onClick={() => setIdx(idx === 0 ? valid.length - 1 : idx - 1)} className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white p-1.5 rounded-full backdrop-blur-md transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"><ChevronLeft size={24} /></button>
+       <button onClick={() => setIdx(idx === valid.length - 1 ? 0 : idx + 1)} className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white p-1.5 rounded-full backdrop-blur-md transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"><ChevronRight size={24} /></button>
        <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
          {valid.map((_, i) => (
            <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === idx ? 'w-4 bg-white' : 'w-1.5 bg-white/40'}`} />
@@ -88,7 +80,6 @@ const GalleryCarousel = ({ photos }) => {
   );
 };
 
-// MOTOR DE EFECTOS REPROGRAMADO (FUEGOS ARTIFICIALES / GLITTER)
 const ParticleCanvas = ({ effect, primary }) => {
   const canvasRef = useRef(null);
   const animRef = useRef(null);
@@ -110,48 +101,20 @@ const ParticleCanvas = ({ effect, primary }) => {
 
     const spawnParticle = () => {
       const isBubble = effect === "bubbles";
-      
       const base = { 
-        x: Math.random() * canvas.width, 
-        y: isBubble ? canvas.height + 20 : -20, 
-        vx: (Math.random() - 0.5) * 2, 
-        vy: Math.random() * 2 + 1, 
+        x: Math.random() * canvas.width, y: isBubble ? canvas.height + 20 : -20, 
+        vx: (Math.random() - 0.5) * 2, vy: Math.random() * 2 + 1, 
         alpha: 1, rot: Math.random() * 360, rotV: (Math.random() - 0.5) * 4, 
         size: Math.random() * 10 + 8, life: 1, decay: Math.random() * 0.003 + 0.002 
       };
 
-      // CONFETI EXPLOSIVO (Física de cañón)
       if (effect === "confetti") {
         const colors = [primary, "#f59e0b", "#10b981", "#ef4444", "#3b82f6", "#ec4899", "#facc15", "#ffffff"];
-        return { 
-          ...base, 
-          x: canvas.width / 2 + (Math.random() - 0.5) * 250, // Sale desde el medio abajo
-          y: canvas.height + 20, 
-          vx: (Math.random() - 0.5) * 12, // Se abren como abanico
-          vy: -(Math.random() * 15 + 12), // Salen disparados para arriba
-          type: "rect", 
-          color: colors[Math.floor(Math.random() * colors.length)], 
-          w: Math.random()*12+6, h: Math.random()*6+3,
-          rotV: (Math.random() - 0.5) * 25, // Rotan a toda velocidad
-          life: 2 // Duran más para que lleguen a caer
-        };
+        return { ...base, x: canvas.width / 2 + (Math.random() - 0.5) * 250, y: canvas.height + 20, vx: (Math.random() - 0.5) * 12, vy: -(Math.random() * 15 + 12), type: "rect", color: colors[Math.floor(Math.random() * colors.length)], w: Math.random()*12+6, h: Math.random()*6+3, rotV: (Math.random() - 0.5) * 25, life: 2 };
       }
-      // GLITTER (Brillitos mágicos)
       if (effect === "glitter") {
-        return { 
-          ...base, 
-          x: Math.random() * canvas.width, 
-          y: Math.random() * canvas.height, 
-          vx: (Math.random() - 0.5) * 0.4, // Se mueven apenas
-          vy: (Math.random() - 0.5) * 0.4, 
-          alpha: Math.random(), 
-          alphaDir: Math.random() > 0.5 ? 1 : -1, // Suben o bajan de brillo
-          type: "star", 
-          color: ["#ffffff", "#fef08a", primary][Math.floor(Math.random()*3)], 
-          size: Math.random() * 3 + 1.5 
-        };
+        return { ...base, x: Math.random() * canvas.width, y: Math.random() * canvas.height, vx: (Math.random() - 0.5) * 0.4, vy: (Math.random() - 0.5) * 0.4, alpha: Math.random(), alphaDir: Math.random() > 0.5 ? 1 : -1, type: "star", color: ["#ffffff", "#fef08a", primary][Math.floor(Math.random()*3)], size: Math.random() * 3 + 1.5 };
       }
-      
       if (effect === "hearts")  return { ...base, type: "text", emoji: "❤️", size: Math.random()*18+10 };
       if (effect === "stars")   return { ...base, type: "text", emoji: "⭐", size: Math.random()*16+8 };
       if (effect === "bubbles") return { ...base, type: "circle", color: primary, filled: false, r: Math.random()*12+4, vx: (Math.random()-0.5)*1.5, vy: -(Math.random()*2+0.5) };
@@ -167,64 +130,33 @@ const ParticleCanvas = ({ effect, primary }) => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       frame++;
       
-      // Control de cantidad
       const maxParticles = effect === "glitter" ? 100 : (effect === "confetti" ? 80 : 50);
-      const spawnFreq = effect === "confetti" ? 3 : 6; // Confeti sale más rápido
-      const spawnCount = effect === "confetti" ? 2 : 1; // Confeti tira de a dos por frame (Fuente)
+      const spawnFreq = effect === "confetti" ? 3 : 6;
+      const spawnCount = effect === "confetti" ? 2 : 1;
 
       if (frame % spawnFreq === 0 && particlesRef.current.length < maxParticles) {
-        for(let i=0; i<spawnCount; i++){
-          const p = spawnParticle(); if (p) particlesRef.current.push(p);
-        }
+        for(let i=0; i<spawnCount; i++){ const p = spawnParticle(); if (p) particlesRef.current.push(p); }
       }
       
       particlesRef.current = particlesRef.current.filter(p => {
         p.x += p.vx; p.y += p.vy; p.rot = (p.rot || 0) + (p.rotV || 0); 
-        
-        // Físicas según efecto
-        if (effect === "confetti") {
-           p.vy += 0.45; // GRAVEDAD
-           p.life -= 0.008; 
-           p.alpha = Math.min(1, p.life);
-        } else if (effect === "glitter") {
-           // TINTINEO
-           p.alpha += p.alphaDir * 0.02;
-           if (p.alpha >= 1) p.alphaDir = -1;
-           if (p.alpha <= 0.1) p.alphaDir = 1;
-        } else {
-           p.life -= p.decay; p.alpha = p.life;
-        }
+        if (effect === "confetti") { p.vy += 0.45; p.life -= 0.008; p.alpha = Math.min(1, p.life); } 
+        else if (effect === "glitter") { p.alpha += p.alphaDir * 0.02; if (p.alpha >= 1) p.alphaDir = -1; if (p.alpha <= 0.1) p.alphaDir = 1; } 
+        else { p.life -= p.decay; p.alpha = p.life; }
 
         ctx.globalAlpha = Math.max(0, Math.min(1, p.alpha));
-        
-        if (p.type === "rect") {
-          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate((p.rot || 0) * Math.PI/180);
-          ctx.fillStyle = p.color; ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h); ctx.restore();
-        } else if (p.type === "circle") {
-          ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); 
-          if (p.filled) { ctx.fillStyle = p.color; ctx.fill(); } 
-          else { ctx.strokeStyle = p.color; ctx.lineWidth = 1.5; ctx.stroke(); }
-        } else if (p.type === "star") {
-          ctx.save(); ctx.translate(p.x, p.y);
-          ctx.fillStyle = p.color; ctx.shadowBlur = 8; ctx.shadowColor = p.color;
-          ctx.beginPath(); ctx.arc(0, 0, p.size, 0, Math.PI*2); ctx.fill();
-          ctx.restore();
-        } else if (p.type === "text") {
-          ctx.font = `${p.size}px serif`; ctx.textAlign = "center"; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate((p.rot||0)*Math.PI/180); ctx.fillText(p.emoji, 0, 0); ctx.restore();
-        }
+        if (p.type === "rect") { ctx.save(); ctx.translate(p.x, p.y); ctx.rotate((p.rot || 0) * Math.PI/180); ctx.fillStyle = p.color; ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h); ctx.restore(); } 
+        else if (p.type === "circle") { ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); if (p.filled) { ctx.fillStyle = p.color; ctx.fill(); } else { ctx.strokeStyle = p.color; ctx.lineWidth = 1.5; ctx.stroke(); } } 
+        else if (p.type === "star") { ctx.save(); ctx.translate(p.x, p.y); ctx.fillStyle = p.color; ctx.shadowBlur = 8; ctx.shadowColor = p.color; ctx.beginPath(); ctx.arc(0, 0, p.size, 0, Math.PI*2); ctx.fill(); ctx.restore(); } 
+        else if (p.type === "text") { ctx.font = `${p.size}px serif`; ctx.textAlign = "center"; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate((p.rot||0)*Math.PI/180); ctx.fillText(p.emoji, 0, 0); ctx.restore(); }
         ctx.globalAlpha = 1;
-
         if (effect === "glitter") return true; 
         return p.life > 0 && p.y < canvas.height + 40; 
       });
       animRef.current = requestAnimationFrame(loop);
     };
     loop();
-    return () => { 
-      if(animRef.current) cancelAnimationFrame(animRef.current); 
-      if(observer && canvasRef.current) observer.unobserve(canvasRef.current); 
-      particlesRef.current = []; 
-    };
+    return () => { if(animRef.current) cancelAnimationFrame(animRef.current); if(observer && canvasRef.current) observer.unobserve(canvasRef.current); particlesRef.current = []; };
   }, [effect, primary]);
 
   if (effect === "none") return null;
@@ -246,45 +178,117 @@ const MapEmbed = ({ name, address, primary }) => {
   );
 };
 
-const VenueCard = ({ cfg, primary, text, muted, card }) => {
-  if (!cfg.showVenueLogo) return null;
-  const href = cfg.venueLinkType === "whatsapp" ? `https://wa.me/${cfg.venueLink}` : cfg.venueLink;
-  
-  return (
-    <a href={href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-4 rounded-2xl border border-white/5 no-underline transition-opacity hover:opacity-80" style={{ background: card }}>
-      {cfg.venueLogoUrl ? (
-        <img src={cfg.venueLogoUrl} alt="logo" className="w-14 h-14 rounded-xl object-contain border border-white/10 bg-white/5" />
-      ) : (
-        <div className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl" style={{ background: `${primary}22` }}>🏠</div>
-      )}
-      <div className="text-left flex-1">
-        <p className="text-[9px] uppercase font-black tracking-widest mb-0.5" style={{ color: muted }}>Lugar del evento</p>
-        <p className="font-bold text-sm" style={{ color: text }}>{cfg.venueName || "Ver lugar"}</p>
-        <p className="text-[10px] mt-0.5 font-bold" style={{ color: primary }}>
-          {cfg.venueLinkType === "whatsapp" ? "📱 Consultar por WhatsApp" : "🌐 Ver sitio web"}
-        </p>
+// =========================================================================
+// WIDGET INTELIGENTE DE RSVP (Botón -> Formulario -> QR + WhatsApp)
+// =========================================================================
+const RsvpWidget = ({ cfg, primary, textC, cardC }) => {
+  const [step, setStep] = useState('button'); // 'button' | 'form' | 'qr'
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({ name: '', lastname: '', guests: 1 });
+  const [qrUrl, setQrUrl] = useState('');
+
+  const maxLimit = cfg.maxGuestsPerFamily || 5;
+  const waMsg = (cfg.whatsappMessage || "").replace('{nombre}', formData.name || cfg.honoreeName || "");
+
+  const handleGenerateQR = (e) => {
+    e.preventDefault();
+    if (!formData.name || !formData.lastname) return alert("Por favor completá tu nombre y apellido");
+    setLoading(true);
+    
+    // Simulamos un delay de guardado en base de datos (Supabase)
+    setTimeout(() => {
+      // Generamos un ID único y seguro para este pase
+      const ticketId = `PASS-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+      
+      // Usamos una API gratuita y confiable para generar la imagen del QR al vuelo
+      const qrData = `${ticketId} | ${formData.name} ${formData.lastname} | ${formData.guests} personas`;
+      const generatedQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}&color=0f172a&bgcolor=ffffff&margin=10`;
+      
+      setQrUrl(generatedQrUrl);
+      setLoading(false);
+      setStep('qr');
+    }, 1200);
+  };
+
+  const handleDownload = async () => {
+    try {
+      const response = await fetch(qrUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Pase_VIP_${formData.name}_${formData.lastname}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (e) {
+      window.open(qrUrl, '_blank'); // Fallback por si el navegador bloquea la descarga directa
+    }
+  };
+
+  if (step === 'button') {
+    return (
+      <button 
+        onClick={() => setStep('form')}
+        className="w-full py-5 mt-4 rounded-[1.5rem] font-black text-sm tracking-wider flex items-center justify-center gap-3 shadow-2xl transition-transform active:scale-95 cursor-pointer"
+        style={{ background: `linear-gradient(135deg, ${primary}, ${primary}dd)`, color: 'white', boxShadow: `0 15px 35px ${primary}44` }}
+      >
+        <Star size={20} /> GENERAR PASE VIP
+      </button>
+    );
+  }
+
+  if (step === 'form') {
+    return (
+      <form onSubmit={handleGenerateQR} className="mt-4 p-5 rounded-[1.5rem] border border-white/10 anim-pop" style={{ background: cardC, color: textC }}>
+        <h4 className="text-center font-black uppercase tracking-widest text-sm mb-4" style={{ color: primary }}>Completa tus datos</h4>
+        
+        <div className="space-y-3 mb-5">
+          <input type="text" placeholder="Tu Nombre" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-4 py-3 rounded-xl bg-black/20 border border-white/10 text-white outline-none focus:border-violet-500" required />
+          <input type="text" placeholder="Tu Apellido" value={formData.lastname} onChange={e => setFormData({...formData, lastname: e.target.value})} className="w-full px-4 py-3 rounded-xl bg-black/20 border border-white/10 text-white outline-none focus:border-violet-500" required />
+          
+          <div className="flex items-center justify-between bg-black/20 px-4 py-2 rounded-xl border border-white/10">
+            <span className="text-xs font-bold opacity-80 flex items-center gap-2"><Users size={16}/> Acompañantes</span>
+            <div className="flex items-center gap-3">
+              <button type="button" onClick={() => setFormData({...formData, guests: Math.max(1, formData.guests - 1)})} className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center font-bold hover:bg-white/20">-</button>
+              <span className="font-black w-4 text-center">{formData.guests}</span>
+              <button type="button" onClick={() => setFormData({...formData, guests: Math.min(maxLimit, formData.guests + 1)})} className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center font-bold hover:bg-white/20">+</button>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" disabled={loading} className="w-full py-4 rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-transform active:scale-95 disabled:opacity-50" style={{ background: primary, color: 'white' }}>
+          {loading ? <><Loader2 size={16} className="animate-spin" /> Creando pase mágico...</> : "OBTENER CÓDIGO QR"}
+        </button>
+        <button type="button" onClick={() => setStep('button')} className="w-full py-3 mt-2 text-[10px] font-bold uppercase tracking-widest opacity-60 hover:opacity-100 transition-opacity">Cancelar</button>
+      </form>
+    );
+  }
+
+  if (step === 'qr') {
+    return (
+      <div className="mt-4 p-6 rounded-[1.5rem] border border-white/10 text-center anim-pop" style={{ background: cardC, color: textC }}>
+        <h4 className="font-black uppercase tracking-widest text-lg mb-1" style={{ color: primary }}>¡Estás en la lista!</h4>
+        <p className="text-[10px] opacity-70 mb-4 font-bold uppercase tracking-wide">Presentá este código en la entrada</p>
+        
+        <div className="bg-white p-3 rounded-2xl inline-block mx-auto mb-4 shadow-xl">
+          <img src={qrUrl} alt="Pase QR" className="w-48 h-48 rounded-xl object-contain" />
+        </div>
+        
+        <p className="text-sm font-black mb-4 bg-black/20 py-2 rounded-lg border border-white/5">{formData.name} {formData.lastname} <span className="opacity-50">({formData.guests} pax)</span></p>
+
+        <button onClick={handleDownload} className="w-full py-3 mb-3 rounded-xl font-black text-xs uppercase flex items-center justify-center gap-2 border border-white/20 hover:bg-white/10 transition-colors">
+          <Download size={16} /> Descargar Imagen QR
+        </button>
+
+        <button onClick={() => window.open(`https://wa.me/${cfg.whatsappNumber}?text=${encodeURIComponent(waMsg)}`)} className="w-full py-3 rounded-xl font-black text-xs uppercase flex items-center justify-center gap-2 bg-[#25D366] text-white hover:bg-[#20bd5a] transition-colors shadow-lg shadow-[#25D366]/20">
+          <MessageCircle size={16} /> Avisarle a los novios
+        </button>
       </div>
-    </a>
-  );
+    );
+  }
 };
 
-const VideoSection = ({ cfg, muted, card }) => {
-  if (!cfg.showVideo || !cfg.videoUrl) return null;
-  const ytId = getYouTubeId(cfg.videoUrl);
-  
-  return (
-    <div className="rounded-3xl overflow-hidden border border-white/5" style={{ background: card }}>
-      {cfg.videoTitle && (
-        <p className="text-center text-[10px] font-black uppercase tracking-widest pt-4 pb-2" style={{ color: muted }}>{cfg.videoTitle}</p>
-      )}
-      {ytId ? (
-        <iframe width="100%" height="250" src={`https://www.youtube.com/embed/${ytId}?rel=0`} title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="block w-full"></iframe>
-      ) : (
-        <video src={cfg.videoUrl} controls playsInline className="w-full block" style={{ maxHeight: 300 }} />
-      )}
-    </div>
-  );
-};
 
 export const InvitePreview = ({ cfg, status }) => {
   if (!cfg) return null;
@@ -296,12 +300,8 @@ export const InvitePreview = ({ cfg, status }) => {
   const cardC  = cfg.card  || th.card;
   
   const isCanceled = status === 'Cancelado'; 
-  
   const gradOpacity = cfg.showCoverGradient === false ? 0 : ((cfg.coverGradientIntensity ?? 50) / 100).toFixed(2);
-  
-  const coverShadow = (cfg.coverTextShadowSize > 0) 
-    ? `0px 4px ${cfg.coverTextShadowSize}px ${cfg.coverTextShadowColor || '#000000'}` 
-    : 'none';
+  const coverShadow = (cfg.coverTextShadowSize > 0) ? `0px 4px ${cfg.coverTextShadowSize}px ${cfg.coverTextShadowColor || '#000000'}` : 'none';
 
   const SectionTitle = ({ children }) => (
     <h4 className="font-black uppercase tracking-[0.3em] text-center mb-6" style={{ color: mutedC, fontSize: `${cfg.titlesSize ?? 10}px` }}>{children}</h4>
@@ -320,8 +320,6 @@ export const InvitePreview = ({ cfg, status }) => {
     </div>
   );
 
-  const waMsg = (cfg.whatsappMessage || "").replace('{nombre}', cfg.honoreeName || "");
-
   return (
     <div style={{ background: bg, fontFamily: cfg.fontBody }} className="min-h-full pb-12 relative overflow-x-hidden">
       
@@ -339,7 +337,11 @@ export const InvitePreview = ({ cfg, status }) => {
       </div>
 
       <div className="relative h-[420px] overflow-hidden">
-        <img src={cfg.coverPhoto || DEF_CONFIG.coverPhoto} className="w-full h-full object-cover" alt="Cover" />
+        {cfg.useGiphyCover ? (
+          <img src={cfg.coverPhoto || DEF_CONFIG.coverPhoto} className="w-full h-full object-cover" alt="Cover" />
+        ) : (
+          <img src={cfg.coverPhoto || DEF_CONFIG.coverPhoto} className="w-full h-full object-cover" alt="Cover" />
+        )}
         <div className="absolute inset-0" style={{ background: `linear-gradient(to top, ${cfg.bg1 || th.bg1} 5%, rgba(0,0,0,${gradOpacity}) 60%, transparent 100%)` }} />
         
         <div className="absolute bottom-0 left-0 right-0 p-8 text-center z-30">
@@ -375,8 +377,7 @@ export const InvitePreview = ({ cfg, status }) => {
         {cfg.showDate && <InfoCard icon={Calendar} label="¿Cuándo?" value={formatToDDMMYYYY(cfg.dateText)} fontSize={cfg.dateSize ?? 18} />}
         
         {cfg.showTime && <InfoCard icon={Clock} label="Horario" value={cfg.timeText} fontSize={cfg.dateSize ?? 18} />}
-        {cfg.showTheme && <InfoCard icon={Star} label={cfg.themeLabel} value={`${cfg.themeIcon} ${cfg.themeText}`} fontSize={cfg.dateSize ?? 18} />}
-
+        
         {cfg.showLocation && (
           <div className="rounded-3xl overflow-hidden border border-white/5" style={{ background: cardC }}>
             <div className="p-4 flex items-center gap-4">
@@ -401,10 +402,6 @@ export const InvitePreview = ({ cfg, status }) => {
             )}
           </div>
         )}
-
-        <VenueCard cfg={cfg} primary={primary} text={textC} muted={mutedC} card={cardC} />
-        
-        <VideoSection cfg={cfg} muted={mutedC} card={cardC} />
 
         {cfg.showMusic && cfg.spotifyUrl && (
           <div className="pt-4">
@@ -478,12 +475,9 @@ export const InvitePreview = ({ cfg, status }) => {
         {cfg.showGallery && cfg.galleryPhotos?.length > 0 && (
           <div className="pt-4">
             <SectionTitle>{cfg.galleryTitle}</SectionTitle>
-            
             {cfg.galleryLayout === 'grid' ? (
               <div className="grid grid-cols-2 gap-2">
-                {cfg.galleryPhotos.map((p, i) => p && (
-                  <img key={i} src={p} className="w-full h-48 rounded-xl object-cover shadow-md border border-white/5" alt={`Galeria ${i}`} />
-                ))}
+                {cfg.galleryPhotos.map((p, i) => p && <img key={i} src={p} className="w-full h-48 rounded-xl object-cover shadow-md border border-white/5" alt={`Galeria ${i}`} />)}
               </div>
             ) : (
               <GalleryCarousel photos={cfg.galleryPhotos} />
@@ -491,13 +485,8 @@ export const InvitePreview = ({ cfg, status }) => {
           </div>
         )}
 
-        <button 
-          onClick={() => window.open(`https://wa.me/${cfg.whatsappNumber}?text=${encodeURIComponent(waMsg)}`)}
-          className="w-full py-5 mt-4 rounded-[1.5rem] font-black text-sm tracking-wider flex items-center justify-center gap-3 shadow-2xl transition-transform active:scale-95 cursor-pointer"
-          style={{ background: `linear-gradient(135deg, ${primary}, ${primary}dd)`, color: 'white', boxShadow: `0 15px 35px ${primary}44` }}
-        >
-          <CheckCircle2 size={20} /> CONFIRMAR ASISTENCIA
-        </button>
+        {/* WIDGET MÁGICO DE GENERACIÓN DE PASE VIP */}
+        <RsvpWidget cfg={cfg} primary={primary} textC={textC} cardC={cardC} />
         
         <p className="text-center text-[10px] font-bold opacity-50 mt-8 pb-4" style={{ color: mutedC }}>
           Invitación creada con <strong className="tracking-wide">defiesta.lat</strong>
