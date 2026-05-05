@@ -15,16 +15,68 @@ const TiktokIcon = ({ size = 20, color = "currentColor", className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path></svg>
 );
 
-// BORDES ORNAMENTALES PREMIUM (SVG PURO)
+// BORDES ORNAMENTALES PREMIUM SVG (FILIGRANAS VINTAGE TRIBALES)
 const CornerOrnament = ({ type = 1, color = "#ffffff", className = "" }) => {
-  const p = { viewBox: "0 0 100 100", className: `w-20 h-20 absolute pointer-events-none ${className}` };
+  const p = { viewBox: "0 0 100 100", className: `absolute pointer-events-none w-28 h-28 sm:w-36 sm:h-36 ${className}` };
   switch (Number(type)) {
-    case 1: return <svg {...p}><path d="M 0 100 C 40 100 100 40 100 0 L 0 0 Z" fill={color}/><path d="M 0 70 C 20 70 70 20 70 0 L 0 0 Z" fill="rgba(255,255,255,0.3)"/></svg>;
-    case 2: return <svg {...p}><polyline points="0,100 0,0 100,0" fill="none" stroke={color} strokeWidth="8"/><polyline points="0,75 0,25 75,25 75,0" fill="none" stroke={color} strokeWidth="4"/><polyline points="0,50 0,50 50,50 50,0" fill="none" stroke={color} strokeWidth="2"/></svg>;
-    case 3: return <svg {...p}><path d="M 0 100 Q 30 50 100 0 L 0 0 Z" fill={color}/><path d="M 0 100 Q 50 80 100 0" fill="none" stroke={color} strokeWidth="4"/><circle cx="20" cy="20" r="6" fill="rgba(255,255,255,0.5)"/></svg>;
-    case 4: return <svg {...p}><line x1="0" y1="20" x2="80" y2="20" stroke={color} strokeWidth="3"/><line x1="20" y1="0" x2="20" y2="80" stroke={color} strokeWidth="3"/><line x1="0" y1="40" x2="60" y2="40" stroke={color} strokeWidth="1.5"/><line x1="40" y1="0" x2="40" y2="60" stroke={color} strokeWidth="1.5"/></svg>;
-    case 5: return <svg {...p}><polygon points="0,0 100,0 0,100" fill="none" stroke={color} strokeWidth="5"/><polygon points="0,0 70,0 0,70" fill={color}/><polygon points="0,0 40,0 0,40" fill="rgba(255,255,255,0.5)"/></svg>;
-    case 6: return <svg {...p}><path d="M 0 100 L 0 0 L 100 0" fill="none" stroke={color} strokeWidth="6"/><path d="M 15 100 L 15 15 L 100 15" fill="none" stroke={color} strokeWidth="2"/><path d="M 30 100 L 30 30 L 100 30" fill="none" stroke={color} strokeWidth="1"/><circle cx="15" cy="15" r="4" fill={color}/></svg>;
+    case 1: // Elegante
+      return <svg {...p}>
+        <path d="M10,100 V10 H100" fill="none" stroke={color} strokeWidth="2"/>
+        <path d="M18,100 V18 H100" fill="none" stroke={color} strokeWidth="1"/>
+        <path d="M18,45 C35,45 45,35 45,18 C45,30 35,40 18,40 Z" fill={color}/>
+        <path d="M45,18 C45,35 35,45 18,45 C30,45 40,35 40,18 Z" fill={color}/>
+        <path d="M18,75 C45,75 60,60 60,18 C60,40 45,65 18,65 Z" fill={color}/>
+        <path d="M75,18 C75,45 60,60 18,60 C40,60 65,45 65,18 Z" fill={color}/>
+        <circle cx="45" cy="45" r="4" fill={color}/>
+      </svg>;
+    case 2: // Filigrana
+      return <svg {...p}>
+        <path d="M5,100 V5 H100" fill="none" stroke={color} strokeWidth="1.5"/>
+        <path d="M5,40 C20,40 30,30 30,15 C30,5 20,5 15,15 C10,25 20,30 30,25" fill="none" stroke={color} strokeWidth="1.5"/>
+        <path d="M40,5 C40,20 30,30 15,30 C5,30 5,20 15,15 C25,10 30,20 25,30" fill="none" stroke={color} strokeWidth="1.5"/>
+        <path d="M5,70 C40,70 60,50 60,15 C60,5 50,5 45,15 C40,25 50,35 60,30" fill="none" stroke={color} strokeWidth="1.5"/>
+        <path d="M70,5 C70,40 50,60 15,60 C5,60 5,50 15,45 C25,40 35,50 30,60" fill="none" stroke={color} strokeWidth="1.5"/>
+        <circle cx="20" cy="20" r="2.5" fill={color}/>
+        <circle cx="45" cy="45" r="2" fill={color}/>
+      </svg>;
+    case 3: // Floral
+      return <svg {...p}>
+        <path d="M0,100 C0,40 40,0 100,0" fill="none" stroke={color} strokeWidth="1.5"/>
+        <path d="M0,80 C30,80 50,50 50,20 C50,10 40,0 30,0" fill="none" stroke={color} strokeWidth="1.5"/>
+        <path d="M80,0 C80,30 50,50 20,50 C10,50 0,40 0,30" fill="none" stroke={color} strokeWidth="1.5"/>
+        <path d="M30,30 C45,10 65,20 70,40 C50,30 35,40 30,30 Z" fill={color}/>
+        <path d="M30,30 C10,45 20,65 40,70 C30,50 40,35 30,30 Z" fill={color}/>
+        <circle cx="50" cy="50" r="4" fill={color}/>
+        <circle cx="20" cy="20" r="3" fill={color}/>
+      </svg>;
+    case 4: // Vintage
+      return <svg {...p}>
+        <path d="M10,100 V10 H100" fill="none" stroke={color} strokeWidth="3"/>
+        <path d="M10,40 C30,40 40,30 40,10 C40,25 30,35 10,35 Z" fill={color}/>
+        <path d="M40,10 C40,30 30,40 10,40 C25,40 35,30 35,10 Z" fill={color}/>
+        <path d="M10,75 C45,75 60,60 60,10 C60,35 45,55 10,55 Z" fill={color}/>
+        <path d="M75,10 C75,45 60,60 10,60 C35,60 55,45 55,10 Z" fill={color}/>
+      </svg>;
+    case 5: // Damasco
+      return <svg {...p}>
+        <path d="M5,100 V5 H100" fill="none" stroke={color} strokeWidth="1"/>
+        <path d="M5,30 C20,30 30,20 30,5 C30,15 20,25 5,25" fill="none" stroke={color} strokeWidth="2"/>
+        <path d="M30,5 C30,20 20,30 5,30 C15,30 25,20 25,5" fill="none" stroke={color} strokeWidth="2"/>
+        <path d="M18,18 C30,35 50,35 50,50 C35,50 35,30 18,18 Z" fill={color}/>
+        <path d="M18,18 C35,30 35,50 50,50 C50,35 30,35 18,18 Z" fill={color}/>
+        <circle cx="18" cy="18" r="4" fill="none" stroke={color} strokeWidth="2"/>
+        <circle cx="50" cy="50" r="3" fill={color}/>
+      </svg>;
+    case 6: // Scroll Real
+      return <svg {...p}>
+        <path d="M20,100 V20 H100" fill="none" stroke={color} strokeWidth="4"/>
+        <path d="M20,50 C40,50 45,40 45,25 C45,15 35,10 25,15 C15,20 25,35 35,25" fill="none" stroke={color} strokeWidth="2"/>
+        <path d="M50,20 C50,40 40,45 25,45 C15,45 10,35 15,25 C20,15 35,25 25,35" fill="none" stroke={color} strokeWidth="2"/>
+        <path d="M20,80 C50,80 65,65 65,30 C65,15 50,5 40,20 C30,35 50,50 60,40" fill="none" stroke={color} strokeWidth="2"/>
+        <circle cx="20" cy="20" r="6" fill={color}/>
+        <circle cx="20" cy="8" r="3" fill={color}/>
+        <circle cx="8" cy="20" r="3" fill={color}/>
+      </svg>;
     default: return null;
   }
 };
