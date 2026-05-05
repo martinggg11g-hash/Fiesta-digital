@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import {
   Palette, Star, Image as ImageIcon, Layout, List, Trash2, Video, 
   Link as LinkIcon, LayoutGrid, Smartphone, Calendar, Clock, CheckCircle2,
-  MessageCircle, Plus, Gift
+  MessageCircle, Plus, Facebook, Instagram, Music2
 } from "lucide-react";
 
 import { 
@@ -137,11 +137,20 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
         <div className="z-30 relative"><Inp label="Nombre Principal" value={cfg.honoreeName} onChange={v => update("honoreeName", v)} /></div>
         <TypoControl label="Diseño del Nombre" fontVal={cfg.honoreeFont || cfg.fontTitle} onFont={v => update("honoreeFont", v)} colorVal={cfg.honoreeColor || cfg.text} onColor={v => update('honoreeColor', v)} sizeVal={cfg.honoreeSize ?? 48} onSize={v => update("honoreeSize", v)} minSize={30} maxSize={80} />
 
-        <div className="flex gap-2 z-20 relative">
-          <EmojiPicker value={cfg.badgeEmoji} onSelect={v => update("badgeEmoji", v)} />
-          <div className="flex-1"><Inp label="Medalla Flotante" value={cfg.badgeText} onChange={v => update("badgeText", v)} placeholder="Ej: 5 añitos" /></div>
+        <div className="flex items-center justify-between mb-4 border-t border-gray-100 pt-4">
+          <span className="text-xs font-bold text-slate-500">Mostrar Medalla Flotante</span>
+          <Toggle checked={cfg.showBadge ?? true} onChange={v => update("showBadge", v)} />
         </div>
-        <TypoControl label="Diseño Medalla" fontVal={cfg.badgeFont || cfg.fontBody} onFont={v => update("badgeFont", v)} sizeVal={cfg.badgeSize ?? 14} onSize={v => update("badgeSize", v)} minSize={10} max={30} />
+        
+        {(cfg.showBadge ?? true) && (
+          <>
+            <div className="flex gap-2 z-20 relative">
+              <EmojiPicker value={cfg.badgeEmoji} onSelect={v => update("badgeEmoji", v)} />
+              <div className="flex-1"><Inp label="Medalla Flotante" value={cfg.badgeText} onChange={v => update("badgeText", v)} placeholder="Ej: 5 añitos" /></div>
+            </div>
+            <TypoControl label="Diseño Medalla" fontVal={cfg.badgeFont || cfg.fontBody} onFont={v => update("badgeFont", v)} sizeVal={cfg.badgeSize ?? 14} onSize={v => update("badgeSize", v)} minSize={10} max={30} />
+          </>
+        )}
       </Acc>
 
       <Acc title="2️⃣ Cuenta Regresiva" icon={Clock} iconColor="#f59e0b">
@@ -210,7 +219,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
         {cfg.showVideo && (
           <div className="mb-6 bg-gray-50 p-3 rounded-xl border border-gray-200">
             <Inp label="Título del video" value={cfg.videoTitle || ""} onChange={v => update("videoTitle", v)} />
-            <Inp label="Enlace de YouTube" value={cfg.videoUrl || ""} onChange={v => update("videoUrl", v)} />
+            <Inp label="Enlace de YouTube" value={cfg.videoUrl || ""} onChange={v => update("videoUrl", v)} placeholder="https://www.youtube.com/watch?v=..." />
           </div>
         )}
         <div className="flex items-center justify-between mb-4 pt-4 border-t border-gray-100"><span className="text-xs font-bold text-slate-500">Música de Spotify</span><Toggle checked={cfg.showMusic || false} onChange={v => update("showMusic", v)} /></div>
@@ -260,7 +269,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
          )}
       </Acc>
 
-      <Acc title="9️⃣ Vestimenta y Regalos (MX)" icon={Layout} iconColor="#f43f5e">
+      <Acc title="9️⃣ Vestimenta y Regalos" icon={Layout} iconColor="#f43f5e">
          <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Vestimenta</span><Toggle checked={cfg.showDressCode} onChange={v => update("showDressCode", v)} /></div>
          {cfg.showDressCode && (
            <div className="flex gap-2 mb-6 bg-gray-50 p-2 rounded-xl border border-gray-200 z-50 relative">
@@ -286,7 +295,6 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
                </div>
              )}
 
-             {/* MESAS DE REGALOS (LISTAS EXTERNAS) */}
              <div className="flex items-center justify-between mt-6 mb-2 border-t border-gray-100 pt-4"><span className="text-[10px] font-bold text-slate-500 uppercase">Mesas de Regalos (Links)</span></div>
              <div className="space-y-3 mb-4">
                {cfg.giftLinks?.map((link, i) => (
@@ -326,7 +334,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
          )}
       </Acc>
 
-      <Acc title="1️⃣1️⃣ Confirmación y Accesos (QR)" icon={CheckCircle2} iconColor="#22c55e">
+      <Acc title="1️⃣1️⃣ Confirmación y Redes" icon={CheckCircle2} iconColor="#22c55e">
         <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6">
            <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest mb-3">Control de Accesos QR</h4>
            <MiniInp type="number" label="Límite Máximo de Acompañantes por Pase" value={cfg.maxGuestsPerFamily || 5} onChange={v => update("maxGuestsPerFamily", Number(v))} placeholder="Ej: 5" className="w-full px-4 py-3 rounded-xl text-slate-800 bg-white border border-gray-200 text-sm focus:border-violet-400 outline-none transition-all" />
@@ -334,10 +342,39 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
         </div>
 
         <Inp label="Número WhatsApp Celular (+52)" value={cfg.whatsappNumber} onChange={v => update("whatsappNumber", v)} placeholder="5215512345678" icon={MessageCircle} />
-        <div className="bg-green-50 p-3 rounded-xl border border-green-100 mt-2">
+        <div className="bg-green-50 p-3 rounded-xl border border-green-100 mt-2 mb-6">
           <p className="text-[9px] text-green-700 font-bold mb-2">💡 Tip: Escribí {"{nombre}"} en el mensaje para que se reemplace por el nombre del cumpleañero automáticamente.</p>
           <Inp label="Mensaje opcional de WhatsApp" value={cfg.whatsappMessage} onChange={v => update("whatsappMessage", v)} multiline className="!mb-0" placeholder="¡Hola! Confirmo mi asistencia para el evento de {nombre}." />
         </div>
+
+        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 border-t border-slate-200 pt-4">Redes del Salón</h4>
+        
+        <div className="space-y-4">
+          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+             <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-slate-700 flex items-center gap-2"><Instagram size={14} className="text-pink-600"/> Instagram</span>
+                <Toggle checked={cfg.showInstagram || false} onChange={v => update("showInstagram", v)} />
+             </div>
+             {cfg.showInstagram && <Inp placeholder="Link a tu perfil..." value={cfg.instagramUrl || ""} onChange={v => update("instagramUrl", v)} className="!mb-0" />}
+          </div>
+          
+          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+             <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-slate-700 flex items-center gap-2"><Facebook size={14} className="text-blue-600"/> Facebook</span>
+                <Toggle checked={cfg.showFacebook || false} onChange={v => update("showFacebook", v)} />
+             </div>
+             {cfg.showFacebook && <Inp placeholder="Link a tu página..." value={cfg.facebookUrl || ""} onChange={v => update("facebookUrl", v)} className="!mb-0" />}
+          </div>
+
+          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+             <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-slate-700 flex items-center gap-2"><Music2 size={14} className="text-black"/> TikTok</span>
+                <Toggle checked={cfg.showTiktok || false} onChange={v => update("showTiktok", v)} />
+             </div>
+             {cfg.showTiktok && <Inp placeholder="Link a tu cuenta..." value={cfg.tiktokUrl || ""} onChange={v => update("tiktokUrl", v)} className="!mb-0" />}
+          </div>
+        </div>
+
       </Acc>
 
     </aside>
