@@ -4,7 +4,7 @@ import { MapPin, Calendar, Clock, Star, CheckCircle2, ChevronLeft, ChevronRight,
 import { DEF_CONFIG, THEMES, getSpotifyEmbed, getYouTubeId, formatToDDMMYYYY } from "./config";
 import { IconRenderer } from "./EditorUI";
 
-// ÍCONOS SOCIALES A PRUEBA DE FALLOS (SVG PURO)
+// ÍCONOS SOCIALES A PRUEBA DE FALLOS
 const InstagramIcon = ({ size = 20, color = "currentColor", className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
 );
@@ -14,6 +14,20 @@ const FacebookIcon = ({ size = 20, color = "currentColor", className = "" }) => 
 const TiktokIcon = ({ size = 20, color = "currentColor", className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path></svg>
 );
+
+// BORDES ORNAMENTALES PREMIUM (SVG PURO)
+const CornerOrnament = ({ type = 1, color = "#ffffff", className = "" }) => {
+  const p = { viewBox: "0 0 100 100", className: `w-20 h-20 absolute pointer-events-none ${className}` };
+  switch (Number(type)) {
+    case 1: return <svg {...p}><path d="M 0 100 C 40 100 100 40 100 0 L 0 0 Z" fill={color}/><path d="M 0 70 C 20 70 70 20 70 0 L 0 0 Z" fill="rgba(255,255,255,0.3)"/></svg>;
+    case 2: return <svg {...p}><polyline points="0,100 0,0 100,0" fill="none" stroke={color} strokeWidth="8"/><polyline points="0,75 0,25 75,25 75,0" fill="none" stroke={color} strokeWidth="4"/><polyline points="0,50 0,50 50,50 50,0" fill="none" stroke={color} strokeWidth="2"/></svg>;
+    case 3: return <svg {...p}><path d="M 0 100 Q 30 50 100 0 L 0 0 Z" fill={color}/><path d="M 0 100 Q 50 80 100 0" fill="none" stroke={color} strokeWidth="4"/><circle cx="20" cy="20" r="6" fill="rgba(255,255,255,0.5)"/></svg>;
+    case 4: return <svg {...p}><line x1="0" y1="20" x2="80" y2="20" stroke={color} strokeWidth="3"/><line x1="20" y1="0" x2="20" y2="80" stroke={color} strokeWidth="3"/><line x1="0" y1="40" x2="60" y2="40" stroke={color} strokeWidth="1.5"/><line x1="40" y1="0" x2="40" y2="60" stroke={color} strokeWidth="1.5"/></svg>;
+    case 5: return <svg {...p}><polygon points="0,0 100,0 0,100" fill="none" stroke={color} strokeWidth="5"/><polygon points="0,0 70,0 0,70" fill={color}/><polygon points="0,0 40,0 0,40" fill="rgba(255,255,255,0.5)"/></svg>;
+    case 6: return <svg {...p}><path d="M 0 100 L 0 0 L 100 0" fill="none" stroke={color} strokeWidth="6"/><path d="M 15 100 L 15 15 L 100 15" fill="none" stroke={color} strokeWidth="2"/><path d="M 30 100 L 30 30 L 100 30" fill="none" stroke={color} strokeWidth="1"/><circle cx="15" cy="15" r="4" fill={color}/></svg>;
+    default: return null;
+  }
+};
 
 const RenderSymbol = ({ value, size = 32, color = "currentColor", className = "" }) => {
   if (typeof value === 'string' && value.startsWith('icon-')) return <IconRenderer name={value} size={size} color={color} className={className} />;
@@ -362,6 +376,26 @@ export const InvitePreview = ({ cfg, status, onConfirmRSVP }) => {
         <img src={cfg.coverPhoto || DEF_CONFIG.coverPhoto} className="w-full h-full object-cover" alt="Cover" />
         <div className="absolute inset-0" style={{ background: `linear-gradient(to top, ${cfg.bg1 || th.bg1} 5%, rgba(0,0,0,${gradOpacity}) 60%, transparent 100%)` }} />
         
+        {/* ========================================== */}
+        {/* INYECCIÓN DE BORDES ORNAMENTALES (CORNERS) */}
+        {/* ========================================== */}
+        {cfg.showCoverBorders && (
+          <>
+            {(cfg.borderPosition === 'both' || cfg.borderPosition === 'top') && (
+              <>
+                <CornerOrnament type={cfg.borderStyle} color={cfg.borderColor || primary} className="top-4 left-4" />
+                <CornerOrnament type={cfg.borderStyle} color={cfg.borderColor || primary} className="top-4 right-4 rotate-90" />
+              </>
+            )}
+            {(cfg.borderPosition === 'both' || cfg.borderPosition === 'bottom') && (
+              <>
+                 <CornerOrnament type={cfg.borderStyle} color={cfg.borderColor || primary} className="bottom-4 right-4 rotate-180 z-40" />
+                 <CornerOrnament type={cfg.borderStyle} color={cfg.borderColor || primary} className="bottom-4 left-4 -rotate-90 z-40" />
+              </>
+            )}
+          </>
+        )}
+
         <div className="absolute bottom-0 left-0 right-0 p-8 text-center z-30">
           <p className="font-black uppercase tracking-[0.2em] mb-4 flex items-center justify-center gap-2" style={{ color: cfg.eventTypeColor || primary, fontSize: `${cfg.eventTypeSize ?? 11}px`, fontFamily: cfg.eventTypeFont || cfg.fontBody, textShadow: coverShadow }}>
             <RenderSymbol value={cfg.eventTypeEmoji || "✨"} size={cfg.eventTypeSize ?? 11} color={cfg.eventTypeColor || primary} />
