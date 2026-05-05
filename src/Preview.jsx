@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { OpeningAnimation } from "./Lotties"; 
-import { MapPin, Calendar, Clock, Star, CheckCircle2, ChevronLeft, ChevronRight, Download, MessageCircle, Users, ExternalLink } from "lucide-react";
+import { MapPin, Calendar, Clock, Star, CheckCircle2, ChevronLeft, ChevronRight, Download, MessageCircle, Users, ExternalLink, Utensils, Gift, Shirt } from "lucide-react";
 import { DEF_CONFIG, THEMES, getSpotifyEmbed, getYouTubeId, formatToDDMMYYYY } from "./config";
 
 // ÍCONOS SOCIALES A PRUEBA DE FALLOS (SVG PURO)
@@ -437,7 +437,7 @@ export const InvitePreview = ({ cfg, status, onConfirmRSVP }) => {
 
         {cfg.showItinerary && cfg.itinerary?.length > 0 && (
           <div className="pt-4">
-            <SectionTitle>Programa del evento</SectionTitle>
+            <SectionTitle>{cfg.itinerarySectionTitle || "Programa del evento"}</SectionTitle>
             <div className="relative pl-6 space-y-8 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5" style={{ '--tw-before-bg': `${primary}33` }}>
               <div className="absolute left-[7px] top-2 bottom-2 w-[2px]" style={{ background: primary, opacity: 0.2 }} />
               {cfg.itinerary.map((item, i) => (
@@ -454,11 +454,13 @@ export const InvitePreview = ({ cfg, status, onConfirmRSVP }) => {
 
         {cfg.showMenu && cfg.menuItems?.length > 0 && (
           <div className="pt-4">
-            <SectionTitle>¿Qué vamos a comer?</SectionTitle>
+            <SectionTitle>{cfg.menuSectionTitle || "¿Qué vamos a comer?"}</SectionTitle>
             <div className="grid grid-cols-2 gap-3">
               {cfg.menuItems.map((m, i) => (
                 <div key={i} className="p-4 rounded-2xl text-center border border-white/5" style={{ background: cardC }}>
-                  <span className="text-3xl block mb-2">{m.emoji}</span>
+                  <span className="text-3xl block mb-2 flex justify-center items-center h-10">
+                    {cfg.usePremiumIcons ? <Utensils size={32} style={{ color: primary }} /> : m.emoji}
+                  </span>
                   <span className="text-xs font-bold" style={{ color: textC, fontFamily: cfg.fontBody }}>{m.label}</span>
                 </div>
               ))}
@@ -468,18 +470,22 @@ export const InvitePreview = ({ cfg, status, onConfirmRSVP }) => {
 
         {(cfg.showDressCode || cfg.showGifts) && (
           <div className="pt-6">
-            <SectionTitle>A tener en cuenta</SectionTitle>
+            <SectionTitle>{cfg.notesSectionTitle || "A tener en cuenta"}</SectionTitle>
             <div className="grid grid-cols-2 gap-3">
               {cfg.showDressCode && (
                 <div className="p-5 rounded-2xl text-center border border-white/5 shadow-sm" style={{ background: cardC }}>
-                  <span className="text-3xl block mb-2">{cfg.dressCodeIcon}</span>
+                  <span className="text-3xl block mb-2 flex justify-center items-center h-10">
+                    {cfg.usePremiumIcons ? <Shirt size={32} style={{ color: primary }} /> : cfg.dressCodeIcon}
+                  </span>
                   <p className="text-[9px] font-black uppercase tracking-widest mb-1" style={{ color: mutedC }}>Vestimenta</p>
                   <p className="font-bold text-xs" style={{ color: textC, fontFamily: cfg.fontBody }}>{cfg.dressCodeText}</p>
                 </div>
               )}
               {cfg.showGifts && (
                 <div className="p-5 rounded-2xl text-center border border-white/5 shadow-sm" style={{ background: cardC }}>
-                  <span className="text-3xl block mb-2">{cfg.giftIcon}</span>
+                  <span className="text-3xl block mb-2 flex justify-center items-center h-10">
+                    {cfg.usePremiumIcons ? <Gift size={32} style={{ color: primary }} /> : cfg.giftIcon}
+                  </span>
                   <p className="text-[9px] font-black uppercase tracking-widest mb-1" style={{ color: mutedC }}>{cfg.giftLabel}</p>
                   <p className="font-bold text-xs" style={{ color: textC, fontFamily: cfg.fontBody }}>{cfg.giftText}</p>
                 </div>
