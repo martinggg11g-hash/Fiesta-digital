@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, useParams, Navigate } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { Loader2, PartyPopper } from "lucide-react";
 
 import { EditorScreen } from "./Editor";
 import { InvitePreview } from "./Preview";
@@ -49,7 +49,12 @@ const PublicInviteScreen = ({ invitations, onConfirmRSVP }) => {
     if (inv) { document.title = inv.config?.honoreeName ? `${inv.config.honoreeName} | Invitación` : "Invitación"; }
   }, [inv]);
 
-  if (!inv) return <div className="h-screen bg-black flex items-center justify-center"><Loader2 size={30} className="animate-spin text-white"/></div>;
+  // Pantalla de carga (Splash) para la invitación pública
+  if (!inv) return (
+    <div className="h-screen bg-slate-950 flex flex-col items-center justify-center text-white relative overflow-hidden">
+       <Loader2 size={30} className="animate-spin text-white opacity-50"/>
+    </div>
+  );
   
   return (
     <div className="bg-black min-h-screen flex justify-center w-full relative overflow-hidden">
@@ -144,7 +149,16 @@ export default function App() {
     if(target) await supabase.from('invitaciones').update({ internal_data: { ...target.internal_data, [f]: v } }).eq('id', id);
   };
 
-  if (loading) return <div className="h-screen bg-slate-950 flex flex-col items-center justify-center text-white gap-4"><Loader2 className="animate-spin" size={40}/><p className="font-bold animate-pulse">Conectando...</p></div>;
+  // Splash Screen de Carga (Oculta el flashazo de la base de datos)
+  if (loading) return (
+    <div className="h-screen bg-slate-950 flex flex-col items-center justify-center text-white relative overflow-hidden transition-opacity duration-1000">
+       <div className="absolute inset-0 bg-[radial-gradient(#8b5cf6_1px,transparent_1px)] [background-size:20px_20px] opacity-10 animate-pulse"></div>
+       <div className="w-20 h-20 bg-violet-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-violet-600/50 mb-6 anim-pop">
+          <PartyPopper size={40} className="text-white animate-bounce" />
+       </div>
+       <h1 className="font-black text-2xl tracking-widest uppercase text-white/90">DeFiesta<span className="text-violet-400">.lat</span></h1>
+    </div>
+  );
 
   return (
     <>
