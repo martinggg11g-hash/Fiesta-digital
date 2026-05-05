@@ -1,17 +1,28 @@
 import React, { useState, useEffect, useRef } from "react";
 import { OpeningAnimation } from "./Lotties"; 
-import { MapPin, Calendar, Clock, Star, CheckCircle2, ChevronLeft, ChevronRight, Download, MessageCircle, Users, ExternalLink, Utensils, Gift, Shirt } from "lucide-react";
+import { MapPin, Calendar, Clock, Star, CheckCircle2, ChevronLeft, ChevronRight, Download, MessageCircle, Users, ExternalLink } from "lucide-react";
 import { DEF_CONFIG, THEMES, getSpotifyEmbed, getYouTubeId, formatToDDMMYYYY } from "./config";
 
 // ÍCONOS SOCIALES A PRUEBA DE FALLOS (SVG PURO)
-const InstagramIcon = ({ size = 20, className = "" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+const InstagramIcon = ({ size = 20, color = "currentColor", className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
 );
-const FacebookIcon = ({ size = 20, className = "" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
+const FacebookIcon = ({ size = 20, color = "currentColor", className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
 );
-const TiktokIcon = ({ size = 20, className = "" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path></svg>
+const TiktokIcon = ({ size = 20, color = "currentColor", className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path></svg>
+);
+
+// ÍCONOS PREMIUM (SVG PURO PARA QUE NO FALLEN)
+const FoodIcon = ({ size = 32, color = "currentColor" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>
+);
+const ClothesIcon = ({ size = 32, color = "currentColor" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/></svg>
+);
+const GiftBoxIcon = ({ size = 32, color = "currentColor" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/></svg>
 );
 
 const Countdown = ({ targetDate, primary, text }) => {
@@ -459,7 +470,7 @@ export const InvitePreview = ({ cfg, status, onConfirmRSVP }) => {
               {cfg.menuItems.map((m, i) => (
                 <div key={i} className="p-4 rounded-2xl text-center border border-white/5" style={{ background: cardC }}>
                   <span className="text-3xl block mb-2 flex justify-center items-center h-10">
-                    {cfg.usePremiumIcons ? <Utensils size={32} style={{ color: primary }} /> : m.emoji}
+                    {cfg.usePremiumIcons ? <FoodIcon size={32} color={primary} /> : m.emoji}
                   </span>
                   <span className="text-xs font-bold" style={{ color: textC, fontFamily: cfg.fontBody }}>{m.label}</span>
                 </div>
@@ -475,7 +486,7 @@ export const InvitePreview = ({ cfg, status, onConfirmRSVP }) => {
               {cfg.showDressCode && (
                 <div className="p-5 rounded-2xl text-center border border-white/5 shadow-sm" style={{ background: cardC }}>
                   <span className="text-3xl block mb-2 flex justify-center items-center h-10">
-                    {cfg.usePremiumIcons ? <Shirt size={32} style={{ color: primary }} /> : cfg.dressCodeIcon}
+                    {cfg.usePremiumIcons ? <ClothesIcon size={32} color={primary} /> : cfg.dressCodeIcon}
                   </span>
                   <p className="text-[9px] font-black uppercase tracking-widest mb-1" style={{ color: mutedC }}>Vestimenta</p>
                   <p className="font-bold text-xs" style={{ color: textC, fontFamily: cfg.fontBody }}>{cfg.dressCodeText}</p>
@@ -484,7 +495,7 @@ export const InvitePreview = ({ cfg, status, onConfirmRSVP }) => {
               {cfg.showGifts && (
                 <div className="p-5 rounded-2xl text-center border border-white/5 shadow-sm" style={{ background: cardC }}>
                   <span className="text-3xl block mb-2 flex justify-center items-center h-10">
-                    {cfg.usePremiumIcons ? <Gift size={32} style={{ color: primary }} /> : cfg.giftIcon}
+                    {cfg.usePremiumIcons ? <GiftBoxIcon size={32} color={primary} /> : cfg.giftIcon}
                   </span>
                   <p className="text-[9px] font-black uppercase tracking-widest mb-1" style={{ color: mutedC }}>{cfg.giftLabel}</p>
                   <p className="font-bold text-xs" style={{ color: textC, fontFamily: cfg.fontBody }}>{cfg.giftText}</p>
@@ -535,18 +546,18 @@ export const InvitePreview = ({ cfg, status, onConfirmRSVP }) => {
            {(cfg.showInstagram || cfg.showFacebook || cfg.showTiktok) && (
              <div className="flex justify-center gap-4 mt-8">
                {cfg.showInstagram && cfg.instagramUrl && (
-                 <a href={cfg.instagramUrl} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg border border-white/10" style={{ background: cardC, color: textC }}>
-                   <InstagramIcon size={20} />
+                 <a href={cfg.instagramUrl} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg border border-white/10" style={{ background: cardC }}>
+                   <InstagramIcon size={20} color={primary} />
                  </a>
                )}
                {cfg.showFacebook && cfg.facebookUrl && (
-                 <a href={cfg.facebookUrl} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg border border-white/10" style={{ background: cardC, color: textC }}>
-                   <FacebookIcon size={20} />
+                 <a href={cfg.facebookUrl} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg border border-white/10" style={{ background: cardC }}>
+                   <FacebookIcon size={20} color={primary} />
                  </a>
                )}
                {cfg.showTiktok && cfg.tiktokUrl && (
-                 <a href={cfg.tiktokUrl} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg border border-white/10" style={{ background: cardC, color: textC }}>
-                   <TiktokIcon size={20} />
+                 <a href={cfg.tiktokUrl} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg border border-white/10" style={{ background: cardC }}>
+                   <TiktokIcon size={20} color={primary} />
                  </a>
                )}
              </div>
