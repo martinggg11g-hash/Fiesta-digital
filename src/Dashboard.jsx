@@ -135,7 +135,7 @@ const QRScannerModal = ({ onClose, onScan }) => {
 export default function DashboardScreen({ user, onLogout, users, onUpdateUser, onCreateSalon, onDeleteSalon, invitations, onCreateInv, onDeleteInv, onUpdateInternal }) {
   const [toast, setToast] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState("all"); // all | upcoming | past
+  const [filterType, setFilterType] = useState("all"); 
   const [activeCrmId, setActiveCrmId] = useState(null);
   const [activeTab, setActiveTab] = useState("info");
   
@@ -157,6 +157,9 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
   const [gPax, setGPax] = useState(1);
   const [gStatus, setGStatus] = useState("Pendiente");
 
+  // ESTADO PARA FEEDBACK VISUAL DE LOS BOTONES DE COPIAR
+  const [copiedStates, setCopiedStates] = useState({});
+
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem("fiesta_darkmode");
     return saved ? JSON.parse(saved) : false;
@@ -173,22 +176,31 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
   
   const notify = (m) => { setToast(m); setTimeout(() => setToast(""), 3000); };
 
-  // LÓGICA DE FILTRADO Y BÚSQUEDA AVANZADA
+  // FUNCIÓN PARA COPIAR CON FEEDBACK
+  const handleCopyLink = (id, url) => {
+    navigator.clipboard.writeText(url);
+    setCopiedStates(prev => ({ ...prev, [id]: true }));
+    setTimeout(() => {
+      setCopiedStates(prev => ({ ...prev, [id]: false }));
+    }, 2000);
+  };
+
+  // BUSCADOR MEJORADO (Ahora busca por nombre del agasajado también)
   let filteredInvs = myInvs.filter(inv => {
     const term = searchTerm.trim().toLowerCase();
     const data = inv.internal_data || {};
+    const honoreeName = inv.config?.honoreeName || "";
     
-    // Coincidencia exacta o parcial en título, cliente o fecha
     const matchText = !term || 
       (inv.title || "").toLowerCase().includes(term) || 
       (data.clientName || "").toLowerCase().includes(term) || 
-      (data.internalDate || "").includes(term); // Sirve para buscar "2026-05"
+      (data.internalDate || "").includes(term) ||
+      honoreeName.toLowerCase().includes(term); 
       
     if (!matchText) return false;
 
-    // Filtro por estado temporal
     if (filterType === 'upcoming') {
-       if (!data.internalDate) return true; // Si no tiene fecha, lo mostramos
+       if (!data.internalDate) return true; 
        return new Date(data.internalDate) >= new Date(new Date().setHours(0,0,0,0));
     }
     if (filterType === 'past') {
@@ -199,7 +211,6 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
     return true;
   });
 
-  // ORDENAMIENTO (Los próximos más cercanos arriba)
   if (filterType === 'upcoming') {
     filteredInvs.sort((a, b) => {
       const dateA = a.internal_data?.internalDate ? new Date(a.internal_data.internalDate).getTime() : 9999999999999;
@@ -210,7 +221,7 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
     filteredInvs.sort((a, b) => {
       const dateA = a.internal_data?.internalDate ? new Date(a.internal_data.internalDate).getTime() : 0;
       const dateB = b.internal_data?.internalDate ? new Date(b.internal_data.internalDate).getTime() : 0;
-      return dateB - dateA; // Los más recientes pasados arriba
+      return dateB - dateA; 
     });
   }
 
@@ -339,7 +350,6 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
                 <p className="text-slate-500 mt-1 font-medium italic">Gestioná tus invitaciones y la logística en tiempo real.</p>
               </div>
               
-              {/* FILTROS Y BUSCADOR */}
               <div className="flex flex-wrap items-center gap-3">
                  <div className="relative flex items-center gap-2">
                     <Filter className="text-slate-400" size={16}/>
@@ -379,7 +389,7 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
                       <div className="absolute bottom-4 left-5 right-5 flex justify-between items-end">
                          <div>
                             <p className="text-white/70 text-[10px] font-black uppercase tracking-widest mb-1">{data.internalDate ? formatDateSpanish(data.internalDate) : 'Sin fecha'} {data.internalTime ? `• ${data.internalTime} hs` : ''}</p>
-                            <h3 className="font-black text-xl text-white truncate max-w-[200px]">{data.internalHonoree || inv.config?.honoreeName || inv.title}</h3>
+                            <h3 className="font-black text-xl text-white truncate max-w-[200px]">{inv.config?.honoreeName || data.internalHonoree || inv.title}</h3>
                          </div>
                          <div className="text-right">
                            <span className="block text-[10px] font-black uppercase text-violet-300 mb-1">Confirmados</span>
@@ -392,7 +402,9 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
                       <div className="flex gap-2 mb-3">
                         <button onClick={() => navigate(`/editor/${inv.id}`)} className="flex-1 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-2xl font-black text-[11px] tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer shadow-md"><Edit2 size={14}/> DISEÑAR</button>
                         <button onClick={() => window.open(`${window.location.origin}/i/${slugify(user.name)}/${inv.id}`)} className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all cursor-pointer ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}><Eye size={18}/></button>
-                        <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/i/${slugify(user.name)}/${inv.id}`).then(()=>notify("¡Link Copiado!")); }} className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all cursor-pointer ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}><Copy size={18}/></button>
+                        <button onClick={() => handleCopyLink(`card-${inv.id}`, `${window.location.origin}/i/${slugify(user.name)}/${inv.id}`)} className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all cursor-pointer ${copiedStates[`card-${inv.id}`] ? 'bg-green-100 text-green-600' : isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>
+                          {copiedStates[`card-${inv.id}`] ? <CheckCircle2 size={18}/> : <Copy size={18}/>}
+                        </button>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <button onClick={() => { setActiveTab("info"); setActiveCrmId(inv.id); }} className={`py-3 rounded-2xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-2 border shadow-sm cursor-pointer transition-colors ${isDark ? 'bg-slate-800 border-slate-600 text-slate-300 hover:bg-slate-700' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}><Lock size={14}/> FICHA CRM</button>
@@ -469,7 +481,7 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
                          </div>
                          <div>
                             <h3 className="text-xs font-black text-violet-500 uppercase tracking-widest mb-4 border-b border-slate-200/20 pb-2 flex items-center gap-2"><PartyPopper size={14}/> Detalles del Evento</h3>
-                            <Inp label="Nombre del Agasajado/s" value={activeInv.internal_data.internalHonoree || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalHonoree', v)} isDark={isDark} />
+                            <Inp label="Nombre del Agasajado/s (Interno)" value={activeInv.internal_data.internalHonoree || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalHonoree', v)} isDark={isDark} />
                             <div className="grid grid-cols-2 gap-4 mb-4">
                               <Inp label="Tipo de Evento" placeholder="Ej: Boda" value={activeInv.internal_data.eventType || ''} onChange={v => onUpdateInternal(activeInv.id, 'eventType', v)} isDark={isDark} />
                               <div>
@@ -532,8 +544,8 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
                           <h4 className="text-blue-800 font-black text-base mb-1 flex items-center gap-2"><Smartphone size={18}/> App de Recepción (Puerta)</h4>
                           <p className="text-blue-600 text-xs font-medium max-w-lg">Enviale este acceso a tu empleado. Desde ahí solo podrá usar el escáner de QR y ver la lista de ingreso, sin ver información de pagos ni poder modificar nada.</p>
                         </div>
-                        <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/puerta/${activeInv.id}`).then(()=>notify("¡Link de puerta copiado!")); }} className="px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30 transition-transform active:scale-95 cursor-pointer shrink-0">
-                          <Copy size={16}/> COPIAR LINK
+                        <button onClick={() => handleCopyLink(`puerta-${activeInv.id}`, `${window.location.origin}/puerta/${activeInv.id}`)} className={`px-6 py-3.5 rounded-xl font-black text-xs flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95 cursor-pointer shrink-0 ${copiedStates[`puerta-${activeInv.id}`] ? 'bg-green-500 text-white shadow-green-500/30' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/30'}`}>
+                          {copiedStates[`puerta-${activeInv.id}`] ? "¡COPIADO! ✅" : <><Copy size={16}/> COPIAR LINK</>}
                         </button>
                       </div>
 
@@ -769,7 +781,7 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
   const [fAddress, setFAddress] = useState("");
   const [fPayDate, setFPayDate] = useState("");
   const [fAlert, setFAlert] = useState(false);
-  const [fClabe, setFClabe] = useState(""); // NUEVO CAMPO DE CLABE
+  const [fClabe, setFClabe] = useState(""); 
 
   const openCreateModal = () => { setModalMode("create"); setFName(""); setFEmail(""); setFPhone(""); setFPass(""); setFAddress(""); setFPayDate(""); setFAlert(false); setFClabe(""); setShowModal(true); };
   const openEditModal = (salon) => { setModalMode("edit"); setEditingEmail(salon.email); setFName(salon.name); setFEmail(salon.email); setFPhone(salon.phone || ""); setFAddress(salon.address || ""); setFPayDate(salon.payment_date || ""); setFAlert(salon.payment_alert || false); setFClabe(salon.payment_clabe || ""); setShowModal(true); };
