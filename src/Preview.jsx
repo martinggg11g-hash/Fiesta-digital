@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { OpeningAnimation } from "./Lotties"; 
-import { MapPin, Calendar, Clock, Star, CheckCircle2, ChevronLeft, ChevronRight, Download, MessageCircle, Users, Loader2, ExternalLink } from "lucide-react";
+import { MapPin, Calendar, Clock, Star, CheckCircle2, ChevronLeft, ChevronRight, Download, MessageCircle, Users, ExternalLink, Instagram, Facebook, Music2 } from "lucide-react";
 import { DEF_CONFIG, THEMES, getSpotifyEmbed, getYouTubeId, formatToDDMMYYYY } from "./config";
 
 const Countdown = ({ targetDate, primary, text }) => {
@@ -86,12 +86,9 @@ const ParticleCanvas = ({ effect, primary }) => {
     const PETALS = ["🌸","🌺","🌹","🌷"];
 
     const spawnParticle = () => {
-      // Configuraciones base (mayormente para las que suben como burbujas)
       const base = { x: Math.random() * canvas.width, y: effect === "bubbles" ? canvas.height + 20 : -20, vx: (Math.random() - 0.5) * 2, vy: Math.random() * 2 + 1, alpha: 1, rot: Math.random() * 360, rotV: (Math.random() - 0.5) * 4, size: Math.random() * 10 + 8, life: 1, decay: Math.random() * 0.003 + 0.002 };
       
-      // CONFETI: Corregido para que caiga desde arriba suavemente a lo largo de toda la pantalla
       if (effect === "confetti") return { ...base, x: Math.random() * canvas.width, y: -50 - Math.random() * 100, vx: (Math.random() - 0.5) * 3, vy: Math.random() * 3 + 2, type: "rect", color: [primary, "#f59e0b", "#10b981", "#ef4444", "#3b82f6", "#ec4899", "#ffffff"][Math.floor(Math.random() * 7)], w: Math.random()*12+6, h: Math.random()*6+3, rotV: (Math.random() - 0.5) * 15, life: 2 };
-      
       if (effect === "glitter") return { ...base, x: Math.random() * canvas.width, y: Math.random() * canvas.height, vx: (Math.random() - 0.5) * 0.4, vy: (Math.random() - 0.5) * 0.4, alpha: Math.random(), alphaDir: Math.random() > 0.5 ? 1 : -1, type: "star", color: ["#ffffff", "#fef08a", primary][Math.floor(Math.random()*3)], size: Math.random() * 3 + 1.5 };
       if (effect === "hearts") return { ...base, type: "text", emoji: "❤️", size: Math.random()*18+10 };
       if (effect === "stars") return { ...base, type: "text", emoji: "⭐", size: Math.random()*16+8 };
@@ -115,7 +112,7 @@ const ParticleCanvas = ({ effect, primary }) => {
       
       particlesRef.current = particlesRef.current.filter(p => {
         p.x += p.vx; p.y += p.vy; p.rot = (p.rot || 0) + (p.rotV || 0); 
-        if (effect === "confetti") { p.life -= 0.005; p.alpha = Math.min(1, p.life); } // Gravedad natural hacia abajo
+        if (effect === "confetti") { p.life -= 0.005; p.alpha = Math.min(1, p.life); } 
         else if (effect === "glitter") { p.alpha += p.alphaDir * 0.02; if (p.alpha >= 1) p.alphaDir = -1; if (p.alpha <= 0.1) p.alphaDir = 1; } 
         else { p.life -= p.decay; p.alpha = p.life; }
 
@@ -153,11 +150,8 @@ const MapEmbed = ({ name, address, primary }) => {
   );
 };
 
-// =========================================================================
-// WIDGET INTELIGENTE DE RSVP PREMIUM (CON GENERADOR DE TICKET VISUAL SEGURO)
-// =========================================================================
 const RsvpWidget = ({ cfg, primary, textC, cardC, onConfirmRSVP }) => {
-  const [step, setStep] = useState('button'); // 'button' | 'form' | 'qr'
+  const [step, setStep] = useState('button'); 
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ name: '', lastname: '', guests: 1 });
   const [ticketImage, setTicketImage] = useState('');
@@ -356,7 +350,9 @@ export const InvitePreview = ({ cfg, status, onConfirmRSVP }) => {
         <div className="absolute bottom-0 left-0 right-0 p-8 text-center z-30">
           <p className="font-black uppercase tracking-[0.2em] mb-4 flex items-center justify-center gap-2" style={{ color: cfg.eventTypeColor || primary, fontSize: `${cfg.eventTypeSize ?? 11}px`, fontFamily: cfg.eventTypeFont || cfg.fontBody, textShadow: coverShadow }}>{cfg.eventTypeEmoji} {cfg.eventType}</p>
           <h1 style={{ fontFamily: cfg.honoreeFont || cfg.fontTitle, color: cfg.honoreeColor || textC, fontSize: `${cfg.honoreeSize ?? 48}px`, textShadow: coverShadow }} className="leading-tight mb-4">{cfg.honoreeName}</h1>
-          <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-white/10 backdrop-blur-md bg-black/30 font-black" style={{ color: textC, fontSize: `${cfg.badgeSize ?? 14}px`, fontFamily: cfg.badgeFont || cfg.fontBody }}>{cfg.badgeEmoji} {cfg.badgeText}</span>
+          {(cfg.showBadge ?? true) && (
+            <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-white/10 backdrop-blur-md bg-black/30 font-black" style={{ color: textC, fontSize: `${cfg.badgeSize ?? 14}px`, fontFamily: cfg.badgeFont || cfg.fontBody }}>{cfg.badgeEmoji} {cfg.badgeText}</span>
+          )}
         </div>
       </div>
 
@@ -398,7 +394,31 @@ export const InvitePreview = ({ cfg, status, onConfirmRSVP }) => {
             )}
           </div>
         )}
+
+        {cfg.showVenueLogo && (
+          <div className="pt-4">
+            <div className="p-5 rounded-3xl text-center border border-white/5 shadow-sm" style={{ background: cardC }}>
+              {cfg.venueLogoUrl && <img src={cfg.venueLogoUrl} className="w-16 h-16 rounded-xl object-contain mx-auto mb-3" alt="Lugar" />}
+              <p className="text-[10px] uppercase font-black tracking-widest mb-1" style={{ color: mutedC }}>Celebrado en</p>
+              <h3 className="font-black text-lg mb-4" style={{ color: textC, fontFamily: cfg.fontBody }}>{cfg.venueName}</h3>
+              {cfg.venueLink && (
+                <a href={cfg.venueLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-5 py-2 rounded-xl font-bold text-xs shadow-sm transition-transform active:scale-95" style={{ background: `${primary}22`, color: primary }}>
+                  {cfg.venueLinkType === 'whatsapp' ? 'Hablar por WhatsApp' : 'Visitar Sitio Web'}
+                </a>
+              )}
+            </div>
+          </div>
+        )}
         
+        {cfg.showVideo && cfg.videoUrl && (
+          <div className="pt-4">
+            {cfg.videoTitle && <SectionTitle>{cfg.videoTitle}</SectionTitle>}
+            <div className="rounded-2xl overflow-hidden border border-white/5 shadow-lg relative" style={{ paddingTop: '56.25%' }}>
+              <iframe className="absolute inset-0 w-full h-full" src={`https://www.youtube.com/embed/${getYouTubeId(cfg.videoUrl)}`} title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen></iframe>
+            </div>
+          </div>
+        )}
+
         {cfg.showMusic && cfg.spotifyUrl && (
           <div className="pt-4">
             <SectionTitle>Música para entrar en clima</SectionTitle>
@@ -459,7 +479,6 @@ export const InvitePreview = ({ cfg, status, onConfirmRSVP }) => {
           </div>
         )}
 
-        {/* NOTA DE REGALOS Y MESA DE REGALOS (ESTILO MX) */}
         {cfg.showGifts && (
           <div className="pt-2">
             {cfg.showGiftNote && cfg.giftNoteText && (
@@ -469,8 +488,6 @@ export const InvitePreview = ({ cfg, status, onConfirmRSVP }) => {
                 </span>
               </div>
             )}
-            
-            {/* RENDER DE LINKS A MESAS DE REGALOS */}
             {cfg.giftLinks && cfg.giftLinks.length > 0 && (
               <div className="flex flex-col gap-3">
                 {cfg.giftLinks.map((link, i) => (
@@ -497,8 +514,31 @@ export const InvitePreview = ({ cfg, status, onConfirmRSVP }) => {
           </div>
         )}
 
-        {/* WIDGET MÁGICO CONECTADO A BASE DE DATOS Y GENERADOR CANVA */}
-        <RsvpWidget cfg={cfg} primary={primary} textC={textC} cardC={cardC} onConfirmRSVP={onConfirmRSVP} />
+        {/* WIDGET MÁGICO Y REDES SOCIALES */}
+        <div className="pt-8">
+           <RsvpWidget cfg={cfg} primary={primary} textC={textC} cardC={cardC} onConfirmRSVP={onConfirmRSVP} />
+           
+           {/* REDES SOCIALES DEL SALÓN */}
+           {(cfg.showInstagram || cfg.showFacebook || cfg.showTiktok) && (
+             <div className="flex justify-center gap-4 mt-8">
+               {cfg.showInstagram && cfg.instagramUrl && (
+                 <a href={cfg.instagramUrl} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg border border-white/10" style={{ background: cardC }}>
+                   <Instagram size={20} className="text-pink-600" />
+                 </a>
+               )}
+               {cfg.showFacebook && cfg.facebookUrl && (
+                 <a href={cfg.facebookUrl} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg border border-white/10" style={{ background: cardC }}>
+                   <Facebook size={20} className="text-blue-600" />
+                 </a>
+               )}
+               {cfg.showTiktok && cfg.tiktokUrl && (
+                 <a href={cfg.tiktokUrl} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg border border-white/10" style={{ background: cardC }}>
+                   <Music2 size={20} className="text-black dark:text-white" />
+                 </a>
+               )}
+             </div>
+           )}
+        </div>
         
         <p className="text-center text-[10px] font-bold opacity-50 mt-8 pb-4" style={{ color: mutedC }}>
           Invitación creada con <strong className="tracking-wide">defiesta.lat</strong>
