@@ -8,6 +8,31 @@ import { FONTS, GENERAL_EMOJIS } from "./config";
 const gf = new GiphyFetch('32PbboqCveiWSlj9vROPmyjv8l8cuaj1');
 const IMGBB_API_KEY = "904f81caf05efe58a799abdb1fedc2ce";
 
+// ==========================================
+// ÍCONOS PREMIUM (SVG PURO)
+// ==========================================
+export const IconRenderer = ({ name, size = 24, color = "currentColor", className = "" }) => {
+  const p = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", className };
+  switch (name) {
+    case 'icon-utensils': return <svg {...p}><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>;
+    case 'icon-wine': return <svg {...p}><path d="M8 22h8"/><path d="M7 10h10"/><path d="M12 15v7"/><path d="M12 15a5 5 0 0 0 5-5c0-2-.5-4-2-8H9c-1.5 4-2 6-2 8a5 5 0 0 0 5 5Z"/></svg>;
+    case 'icon-glass': return <svg {...p}><path d="M17 10c-2.5-3-2.5-6-2.5-6s-1.5 2-3.5 2-3.5-2-3.5-2-0 3-2.5 6"/><path d="M5 10c.5 1.5 1.5 3 3 4s3.5 2 3.5 2 2-1 3.5-2 2.5-2.5 3-4"/><path d="M11 16v5"/><path d="M8 21h6"/></svg>;
+    case 'icon-cake': return <svg {...p}><path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8"/><path d="M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1"/><path d="M2 21h20"/><path d="M7 8v2"/><path d="M12 8v2"/><path d="M17 8v2"/><path d="M7 4h.01"/><path d="M12 4h.01"/><path d="M17 4h.01"/></svg>;
+    case 'icon-gift': return <svg {...p}><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/></svg>;
+    case 'icon-shirt': return <svg {...p}><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/></svg>;
+    case 'icon-heart': return <svg {...p}><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>;
+    case 'icon-music': return <svg {...p}><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>;
+    case 'icon-star': return <svg {...p}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
+    case 'icon-camera': return <svg {...p}><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>;
+    case 'icon-car': return <svg {...p}><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-4-3-4H8c-1.7 0-3 4-3 4s-2.7.6-4.5 1.1c-.8.2-1.5 1-1.5 1.9v3c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>;
+    case 'icon-sparkles': return <svg {...p}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M3 5h4"/></svg>;
+    case 'icon-crown': return <svg {...p}><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>;
+    case 'icon-ticket': return <svg {...p}><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>;
+    default: return <svg {...p}><circle cx="12" cy="12" r="10"/></svg>;
+  }
+};
+const ICONS_LIST = ['icon-utensils', 'icon-wine', 'icon-glass', 'icon-cake', 'icon-gift', 'icon-shirt', 'icon-heart', 'icon-music', 'icon-star', 'icon-camera', 'icon-car', 'icon-sparkles', 'icon-crown', 'icon-ticket'];
+
 export const GiphySearch = ({ onSelect, placeholder = "Buscar GIF..." }) => {
   const [term, setTerm] = useState("fiesta");
   const [debouncedTerm, setDebouncedTerm] = useState("fiesta");
@@ -148,9 +173,10 @@ export const Toggle = ({ checked, onChange }) => (
   </label>
 );
 
-// NUEVO: EmojiPicker Libre (Permite escribir emojis a mano con el teclado y vuela por encima de todo)
+// NUEVO: SymbolPicker (Tabs Emojis/Iconos + Input de Texto Libre + Super Z-Index)
 export const EmojiPicker = ({ value, onSelect, list = GENERAL_EMOJIS }) => {
   const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState('emoji'); 
   const ref = useRef(null);
   
   useEffect(() => { 
@@ -161,20 +187,46 @@ export const EmojiPicker = ({ value, onSelect, list = GENERAL_EMOJIS }) => {
   
   return (
     <div ref={ref} className="relative z-[999]">
-      <input 
-        type="text" 
-        value={value || ""} 
-        onChange={e => onSelect(e.target.value)} 
-        onClick={() => setOpen(true)}
-        className="w-12 h-12 rounded-xl bg-white border border-gray-200 text-2xl flex items-center justify-center text-center hover:border-violet-300 focus:border-violet-500 focus:bg-violet-50 focus:ring-2 focus:ring-violet-200 outline-none transition-all cursor-text shadow-sm"
-      />
+      <button 
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-12 h-12 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-2xl hover:border-violet-300 focus:ring-2 focus:ring-violet-200 outline-none transition-all shadow-sm cursor-pointer"
+      >
+        {value?.startsWith('icon-') ? <IconRenderer name={value} size={24} color="#64748b" /> : value}
+      </button>
+      
       {open && (
         <div className="absolute top-14 left-0 z-[1000] bg-white border border-gray-200 rounded-2xl p-3 w-64 shadow-2xl">
-          <div className="grid grid-cols-6 gap-1 max-h-48 overflow-y-auto fd-sb">
-            {list.map((e, i) => (
-              <button key={i} type="button" onClick={() => { onSelect(e); setOpen(false); }} className="p-2 text-xl hover:bg-gray-100 rounded-lg cursor-pointer">{e}</button>
-            ))}
+          <div className="flex bg-slate-100 p-1 rounded-lg mb-3">
+            <button type="button" onClick={() => setTab('emoji')} className={`flex-1 py-1.5 text-[10px] font-bold rounded-md transition-colors ${tab === 'emoji' ? 'bg-white shadow text-violet-600' : 'text-slate-500'}`}>😀 Emojis</button>
+            <button type="button" onClick={() => setTab('icon')} className={`flex-1 py-1.5 text-[10px] font-bold rounded-md transition-colors ${tab === 'icon' ? 'bg-white shadow text-violet-600' : 'text-slate-500'}`}>✨ Íconos</button>
           </div>
+          
+          {tab === 'emoji' && (
+            <>
+              <input 
+                type="text" 
+                placeholder="Pegá tu emoji a mano..." 
+                onChange={e => { onSelect(e.target.value); if(e.target.value) setOpen(false); }} 
+                className="w-full mb-2 p-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-violet-400 text-center"
+              />
+              <div className="grid grid-cols-6 gap-1 max-h-40 overflow-y-auto fd-sb">
+                {list.map((e, i) => (
+                  <button key={i} type="button" onClick={() => { onSelect(e); setOpen(false); }} className="p-2 text-xl hover:bg-violet-50 rounded-lg cursor-pointer flex justify-center items-center">{e}</button>
+                ))}
+              </div>
+            </>
+          )}
+          
+          {tab === 'icon' && (
+            <div className="grid grid-cols-5 gap-2 max-h-48 overflow-y-auto fd-sb">
+              {ICONS_LIST.map((ic, i) => (
+                <button key={i} type="button" onClick={() => { onSelect(ic); setOpen(false); }} className="p-2 hover:bg-violet-50 text-slate-500 hover:text-violet-600 rounded-lg cursor-pointer flex justify-center items-center transition-colors">
+                  <IconRenderer name={ic} size={22} />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
