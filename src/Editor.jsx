@@ -74,7 +74,8 @@ export const EditorScreen = ({ invitations, onSave }) => {
             {previewAnim && <OpeningAnimation cfg={cfg} onOpen={() => setPreviewAnim(false)} isPreview={true} />}
             
             <div className="h-full w-full overflow-y-auto bg-black pb-10 fd-sb" style={{ scrollBehavior: 'smooth' }}>
-              <InvitePreview cfg={cfg} status={inv.internal_data?.eventStatus || "Nuevo"} />
+              {/* ACÁ ESTABA EL ERROR: AHORA LE PASAMOS EL UPDATE */}
+              <InvitePreview cfg={cfg} status={inv.internal_data?.eventStatus || "Nuevo"} update={update} />
             </div>
           </div>
         </main>
