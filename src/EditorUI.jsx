@@ -9,7 +9,7 @@ const gf = new GiphyFetch('32PbboqCveiWSlj9vROPmyjv8l8cuaj1');
 const IMGBB_API_KEY = "904f81caf05efe58a799abdb1fedc2ce";
 
 // ==========================================
-// ÍCONOS PREMIUM (SVG PURO)
+// ÍCONOS PREMIUM (SVG PURO SUPER VITAMINADO)
 // ==========================================
 export const IconRenderer = ({ name, size = 24, color = "currentColor", className = "" }) => {
   if (!name) return null;
@@ -29,10 +29,28 @@ export const IconRenderer = ({ name, size = 24, color = "currentColor", classNam
     case 'icon-sparkles': return <svg {...p}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M3 5h4"/></svg>;
     case 'icon-crown': return <svg {...p}><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>;
     case 'icon-ticket': return <svg {...p}><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>;
+    // NUEVOS ÍCONOS AÑADIDOS ABAJO
+    case 'icon-rings': return <svg {...p}><circle cx="9" cy="12" r="5"/><circle cx="15" cy="12" r="5"/></svg>;
+    case 'icon-church': return <svg {...p}><path d="M12 2v5"/><path d="M10 5h4"/><path d="M12 7l-6 5v10h12V12l-6-5Z"/><path d="M10 22v-4a2 2 0 0 1 4 0v4"/></svg>;
+    case 'icon-baby': return <svg {...p}><circle cx="12" cy="10" r="4"/><path d="M12 14v6"/><path d="M9 17h6"/><path d="M12 2v4"/></svg>;
+    case 'icon-graduation': return <svg {...p}><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>;
+    case 'icon-diamond': return <svg {...p}><path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M11 3 8 9l4 13"/><path d="M13 3l3 6-4 13"/></svg>;
+    case 'icon-flower': return <svg {...p}><path d="M12 7.5a4.5 4.5 0 1 1 4.5 4.5M12 7.5A4.5 4.5 0 1 0 7.5 12M12 7.5V12m0 0a4.5 4.5 0 1 0 4.5 4.5M12 12a4.5 4.5 0 1 1-4.5 4.5M12 12v9"/></svg>;
+    case 'icon-bell': return <svg {...p}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>;
+    case 'icon-key': return <svg {...p}><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/></svg>;
+    case 'icon-anchor': return <svg {...p}><circle cx="12" cy="5" r="3"/><line x1="12" y1="22" x2="12" y2="8"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/></svg>;
+    case 'icon-plane': return <svg {...p}><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-.5-.5-2.5 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.2-1.1.7l-1 2.6c-.2.5.1 1 .6 1.1L9 13l-4 4-2.5-.8c-.5-.2-1 0-1.2.4l-.8 1.8c-.2.5 0 1 .4 1.2L5 20l.8 4.1c.1.5.7.7 1.2.4l1.8-.8c.4-.2.6-.7.4-1.2L8.4 20l4-4 2.4 5.7c.1.5.6.8 1.1.6l2.6-1c.5-.2.8-.6.7-1.1Z"/></svg>;
+    case 'icon-map': return <svg {...p}><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>;
     default: return <svg {...p}><circle cx="12" cy="12" r="10"/></svg>;
   }
 };
-const ICONS_LIST = ['icon-utensils', 'icon-wine', 'icon-glass', 'icon-cake', 'icon-gift', 'icon-shirt', 'icon-heart', 'icon-music', 'icon-star', 'icon-camera', 'icon-car', 'icon-sparkles', 'icon-crown', 'icon-ticket'];
+// Agregados a la lista general para que aparezcan en la pestaña
+const ICONS_LIST = [
+  'icon-utensils', 'icon-wine', 'icon-glass', 'icon-cake', 'icon-gift', 'icon-shirt', 
+  'icon-heart', 'icon-music', 'icon-star', 'icon-camera', 'icon-car', 'icon-sparkles', 
+  'icon-crown', 'icon-ticket', 'icon-rings', 'icon-church', 'icon-baby', 'icon-graduation',
+  'icon-diamond', 'icon-flower', 'icon-bell', 'icon-key', 'icon-anchor', 'icon-plane', 'icon-map'
+];
 
 export const GiphySearch = ({ onSelect, placeholder = "Buscar GIF..." }) => {
   const [term, setTerm] = useState("fiesta");
@@ -174,7 +192,6 @@ export const Toggle = ({ checked, onChange }) => (
   </label>
 );
 
-// NUEVO: SymbolPicker (Tabs Emojis/Iconos + Input de Texto Libre) A PRUEBA DE FALLOS
 export const EmojiPicker = ({ value, onSelect, list = GENERAL_EMOJIS }) => {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState('emoji'); 
