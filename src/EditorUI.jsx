@@ -23,7 +23,7 @@ export const GiphySearch = ({ onSelect, placeholder = "Buscar GIF..." }) => {
   );
 };
 
-export const Inp = ({ label, value, onChange, placeholder, type="text", multiline = false, className="" }) => {
+export const Inp = ({ label, value, onChange, placeholder, type="text", multiline = false, className="", icon: Icon = null }) => {
   const [localVal, setLocalVal] = useState(value || "");
   useEffect(() => { setLocalVal(value || ""); }, [value]);
   useEffect(() => {
@@ -33,11 +33,14 @@ export const Inp = ({ label, value, onChange, placeholder, type="text", multilin
   return (
     <div className={`mb-2 text-left ${className}`}>
       {label && <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{label}</label>}
-      {multiline ? (
-        <textarea value={localVal} onChange={e => setLocalVal(e.target.value)} placeholder={placeholder} rows={3} className="w-full px-4 py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm resize-none focus:bg-white focus:border-violet-400 outline-none transition-all" />
-      ) : (
-        <input type={type} value={localVal} onChange={e => setLocalVal(e.target.value)} placeholder={placeholder} className="w-full px-4 py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all" />
-      )}
+      <div className="relative flex items-center">
+        {Icon && <div className="absolute left-4 text-slate-400"><Icon size={16}/></div>}
+        {multiline ? (
+          <textarea value={localVal} onChange={e => setLocalVal(e.target.value)} placeholder={placeholder} rows={3} className={`w-full py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm resize-none focus:bg-white focus:border-violet-400 outline-none transition-all ${Icon ? 'pl-11 pr-4' : 'px-4'}`} />
+        ) : (
+          <input type={type} value={localVal} onChange={e => setLocalVal(e.target.value)} placeholder={placeholder} className={`w-full py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all ${Icon ? 'pl-11 pr-4' : 'px-4'}`} />
+        )}
+      </div>
     </div>
   );
 };
@@ -61,7 +64,6 @@ export const SelectInp = ({ label, value, onChange, options, className="" }) => 
   </div>
 );
 
-// NUEVO: Selector de Fuentes Visual
 export const FontSelector = ({ value, onChange, options }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -146,17 +148,32 @@ export const Toggle = ({ checked, onChange }) => (
   </label>
 );
 
+// NUEVO: EmojiPicker Libre (Permite escribir emojis a mano con el teclado y vuela por encima de todo)
 export const EmojiPicker = ({ value, onSelect, list = GENERAL_EMOJIS }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
-  useEffect(() => { const fn = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }; document.addEventListener("mousedown", fn); return () => document.removeEventListener("mousedown", fn); }, []);
+  
+  useEffect(() => { 
+    const fn = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }; 
+    document.addEventListener("mousedown", fn); 
+    return () => document.removeEventListener("mousedown", fn); 
+  }, []);
+  
   return (
-    <div ref={ref} className="relative z-50">
-      <button onClick={() => setOpen(!open)} type="button" className="w-12 h-12 rounded-xl bg-gray-50 border border-gray-200 text-2xl flex items-center justify-center hover:bg-gray-100 transition-colors cursor-pointer">{value}</button>
+    <div ref={ref} className="relative z-[999]">
+      <input 
+        type="text" 
+        value={value || ""} 
+        onChange={e => onSelect(e.target.value)} 
+        onClick={() => setOpen(true)}
+        className="w-12 h-12 rounded-xl bg-white border border-gray-200 text-2xl flex items-center justify-center text-center hover:border-violet-300 focus:border-violet-500 focus:bg-violet-50 focus:ring-2 focus:ring-violet-200 outline-none transition-all cursor-text shadow-sm"
+      />
       {open && (
-        <div className="absolute top-14 left-0 z-[100] bg-white border border-gray-200 rounded-2xl p-3 w-64 shadow-2xl">
+        <div className="absolute top-14 left-0 z-[1000] bg-white border border-gray-200 rounded-2xl p-3 w-64 shadow-2xl">
           <div className="grid grid-cols-6 gap-1 max-h-48 overflow-y-auto fd-sb">
-            {list.map(e => <button key={e} type="button" onClick={() => { onSelect(e); setOpen(false); }} className="p-2 text-xl hover:bg-gray-100 rounded-lg cursor-pointer">{e}</button>)}
+            {list.map((e, i) => (
+              <button key={i} type="button" onClick={() => { onSelect(e); setOpen(false); }} className="p-2 text-xl hover:bg-gray-100 rounded-lg cursor-pointer">{e}</button>
+            ))}
           </div>
         </div>
       )}
