@@ -7,7 +7,7 @@ import {
 
 import { 
   GiphySearch, Inp, MiniInp, SelectInp, TypoControl, FontSelector,
-  FileUpload, Toggle, EmojiPicker, Acc 
+  FileUpload, Toggle, EmojiPicker, Acc, BordersGallery 
 } from "./EditorUI";
 
 import { 
@@ -55,22 +55,59 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
            </div>
          )}
 
-        {/* NUEVO: ORNAMENTOS Y BORDES PNG */}
+        {/* SELECTOR DE ESTILO PREMIUM */}
+        <div className="mb-6 p-4 rounded-xl border-2 border-violet-100 bg-violet-50/50">
+          <label className="block text-[10px] font-black text-violet-600 uppercase tracking-widest mb-3 text-center">Estilo de los Símbolos</label>
+          <div className="flex bg-white p-1 rounded-xl shadow-sm border border-violet-100">
+             <button 
+               onClick={() => update("usePremiumIcons", false)} 
+               type="button" 
+               className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${!cfg.usePremiumIcons ? 'bg-violet-100 text-violet-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+             >
+               🎉 Emojis
+             </button>
+             <button 
+               onClick={() => update("usePremiumIcons", true)} 
+               type="button" 
+               className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${cfg.usePremiumIcons ? 'bg-slate-800 text-amber-400 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+             >
+               ✨ Íconos
+             </button>
+          </div>
+        </div>
+
+        {/* ========================================== */}
+        {/* NUEVA GALERÍA DE BORDES TRANSPARENTES */}
+        {/* ========================================== */}
         <div className="mb-6 p-4 rounded-xl border border-pink-100 bg-pink-50/50">
-          <label className="block text-[10px] font-black text-pink-600 uppercase tracking-widest mb-2">Marcos y Ornamentos VIP</label>
-          <p className="text-[9px] text-pink-500 mb-4 leading-relaxed">Podés subir bordes decorativos en formato PNG sin fondo para que decoren las esquinas superior e inferior de la invitación.</p>
-          
-          <FileUpload label="Ornamento Superior (Top)" value={cfg.topOrnamentUrl} onChange={v => update("topOrnamentUrl", v)} />
-          <FileUpload label="Ornamento Inferior (Bottom)" value={cfg.bottomOrnamentUrl} onChange={v => update("bottomOrnamentUrl", v)} />
-          
-          {(cfg.topOrnamentUrl || cfg.bottomOrnamentUrl) && (
-            <div className="mt-4">
-              <label className="flex justify-between items-center text-[9px] font-black text-pink-600 uppercase tracking-widest mb-2">
-                <span>Tamaño del Ornamento</span>
-                <span className="bg-pink-200 px-2 py-0.5 rounded-full">{cfg.ornamentSize || 150}px</span>
-              </label>
-              <input type="range" min={50} max={400} value={cfg.ornamentSize || 150} onChange={e => update("ornamentSize", Number(e.target.value))} className="w-full accent-pink-600 cursor-pointer" />
-            </div>
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-[10px] font-black text-pink-600 uppercase tracking-widest">Bordes Ornamentales</span>
+            <Toggle checked={cfg.showCoverBorders || false} onChange={v => update("showCoverBorders", v)} />
+          </div>
+          {cfg.showCoverBorders && (
+            <>
+              <p className="text-[9px] text-pink-500 mb-4 leading-relaxed font-medium">Elegí un diseño de nuestra galería, o pegá el link de tu propio PNG transparente. La app lo pintará automáticamente y lo ajustará a la pantalla.</p>
+              
+              <BordersGallery value={cfg.selectedBorder} onChange={v => update("selectedBorder", v)} />
+              
+              <div className="mt-4 pt-4 border-t border-pink-100">
+                 <Inp label="Link de tu propio PNG (Opcional)" value={cfg.selectedBorder} onChange={v => update("selectedBorder", v)} placeholder="https://..." />
+                 <SelectInp label="Posición en la invitación" value={cfg.borderPosition || 'both'} options={[{label:'Arriba y Abajo', value:'both'}, {label:'Solo Arriba', value:'top'}, {label:'Solo Abajo', value:'bottom'}]} onChange={v => update('borderPosition', v)} />
+                 
+                 <div className="flex flex-col gap-1 mt-3">
+                  <label className="text-[9px] font-bold text-slate-400 uppercase">Color del Borde</label>
+                  <input type="color" value={cfg.borderColor || cfg.primary} onChange={e => update('borderColor', e.target.value)} className="w-full h-9 rounded-xl cursor-pointer border-none shadow-sm" />
+                 </div>
+
+                 <div className="mt-4">
+                  <label className="flex justify-between items-center text-[9px] font-black text-pink-600 uppercase tracking-widest mb-2">
+                    <span>Tamaño del Borde</span>
+                    <span className="bg-pink-200 px-2 py-0.5 rounded-full">{cfg.ornamentSize || 150}px</span>
+                  </label>
+                  <input type="range" min={50} max={400} value={cfg.ornamentSize || 150} onChange={e => update("ornamentSize", Number(e.target.value))} className="w-full accent-pink-600 cursor-pointer" />
+                </div>
+              </div>
+            </>
           )}
         </div>
 
