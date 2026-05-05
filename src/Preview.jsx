@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { OpeningAnimation } from "./Lotties"; 
 import { MapPin, Calendar, Clock, Star, CheckCircle2, ChevronLeft, ChevronRight, Download, MessageCircle, Users, ExternalLink } from "lucide-react";
 import { DEF_CONFIG, THEMES, getSpotifyEmbed, getYouTubeId, formatToDDMMYYYY } from "./config";
+import { IconRenderer } from "./EditorUI";
 
 // ÍCONOS SOCIALES A PRUEBA DE FALLOS (SVG PURO)
 const InstagramIcon = ({ size = 20, color = "currentColor", className = "" }) => (
@@ -14,16 +15,10 @@ const TiktokIcon = ({ size = 20, color = "currentColor", className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path></svg>
 );
 
-// ÍCONOS PREMIUM (SVG PURO PARA QUE NO FALLEN)
-const FoodIcon = ({ size = 32, color = "currentColor" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>
-);
-const ClothesIcon = ({ size = 32, color = "currentColor" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/></svg>
-);
-const GiftBoxIcon = ({ size = 32, color = "currentColor" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/></svg>
-);
+const RenderSymbol = ({ value, size = 32, color = "currentColor", className = "" }) => {
+  if (value?.startsWith('icon-')) return <IconRenderer name={value} size={size} color={color} className={className} />;
+  return <span style={{ fontSize: `${size}px`, lineHeight: 1 }} className={`flex items-center justify-center ${className}`}>{value}</span>;
+}
 
 const Countdown = ({ targetDate, primary, text }) => {
   const [timeLeft, setTimeLeft] = useState({ d:0, h:0, m:0, s:0 });
@@ -368,10 +363,16 @@ export const InvitePreview = ({ cfg, status, onConfirmRSVP }) => {
         <div className="absolute inset-0" style={{ background: `linear-gradient(to top, ${cfg.bg1 || th.bg1} 5%, rgba(0,0,0,${gradOpacity}) 60%, transparent 100%)` }} />
         
         <div className="absolute bottom-0 left-0 right-0 p-8 text-center z-30">
-          <p className="font-black uppercase tracking-[0.2em] mb-4 flex items-center justify-center gap-2" style={{ color: cfg.eventTypeColor || primary, fontSize: `${cfg.eventTypeSize ?? 11}px`, fontFamily: cfg.eventTypeFont || cfg.fontBody, textShadow: coverShadow }}>{cfg.eventTypeEmoji} {cfg.eventType}</p>
+          <p className="font-black uppercase tracking-[0.2em] mb-4 flex items-center justify-center gap-2" style={{ color: cfg.eventTypeColor || primary, fontSize: `${cfg.eventTypeSize ?? 11}px`, fontFamily: cfg.eventTypeFont || cfg.fontBody, textShadow: coverShadow }}>
+            <RenderSymbol value={cfg.eventTypeEmoji || "✨"} size={cfg.eventTypeSize ?? 11} color={cfg.eventTypeColor || primary} />
+            {cfg.eventType}
+          </p>
           <h1 style={{ fontFamily: cfg.honoreeFont || cfg.fontTitle, color: cfg.honoreeColor || textC, fontSize: `${cfg.honoreeSize ?? 48}px`, textShadow: coverShadow }} className="leading-tight mb-4">{cfg.honoreeName}</h1>
           {(cfg.showBadge ?? true) && (
-            <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-white/10 backdrop-blur-md bg-black/30 font-black" style={{ color: textC, fontSize: `${cfg.badgeSize ?? 14}px`, fontFamily: cfg.badgeFont || cfg.fontBody }}>{cfg.badgeEmoji} {cfg.badgeText}</span>
+            <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-white/10 backdrop-blur-md bg-black/30 font-black" style={{ color: textC, fontSize: `${cfg.badgeSize ?? 14}px`, fontFamily: cfg.badgeFont || cfg.fontBody }}>
+              <RenderSymbol value={cfg.badgeEmoji || "👑"} size={cfg.badgeSize ?? 14} color={textC} />
+              {cfg.badgeText}
+            </span>
           )}
         </div>
       </div>
@@ -469,8 +470,8 @@ export const InvitePreview = ({ cfg, status, onConfirmRSVP }) => {
             <div className="grid grid-cols-2 gap-3">
               {cfg.menuItems.map((m, i) => (
                 <div key={i} className="p-4 rounded-2xl text-center border border-white/5" style={{ background: cardC }}>
-                  <span className="text-3xl block mb-2 flex justify-center items-center h-10">
-                    {cfg.usePremiumIcons ? <FoodIcon size={32} color={primary} /> : m.emoji}
+                  <span className="mb-2 flex justify-center items-center h-10">
+                    <RenderSymbol value={m.emoji} size={32} color={primary} />
                   </span>
                   <span className="text-xs font-bold" style={{ color: textC, fontFamily: cfg.fontBody }}>{m.label}</span>
                 </div>
@@ -485,8 +486,8 @@ export const InvitePreview = ({ cfg, status, onConfirmRSVP }) => {
             <div className="grid grid-cols-2 gap-3">
               {cfg.showDressCode && (
                 <div className="p-5 rounded-2xl text-center border border-white/5 shadow-sm" style={{ background: cardC }}>
-                  <span className="text-3xl block mb-2 flex justify-center items-center h-10">
-                    {cfg.usePremiumIcons ? <ClothesIcon size={32} color={primary} /> : cfg.dressCodeIcon}
+                  <span className="mb-2 flex justify-center items-center h-10">
+                    <RenderSymbol value={cfg.dressCodeIcon || "👔"} size={32} color={primary} />
                   </span>
                   <p className="text-[9px] font-black uppercase tracking-widest mb-1" style={{ color: mutedC }}>Vestimenta</p>
                   <p className="font-bold text-xs" style={{ color: textC, fontFamily: cfg.fontBody }}>{cfg.dressCodeText}</p>
@@ -494,8 +495,8 @@ export const InvitePreview = ({ cfg, status, onConfirmRSVP }) => {
               )}
               {cfg.showGifts && (
                 <div className="p-5 rounded-2xl text-center border border-white/5 shadow-sm" style={{ background: cardC }}>
-                  <span className="text-3xl block mb-2 flex justify-center items-center h-10">
-                    {cfg.usePremiumIcons ? <GiftBoxIcon size={32} color={primary} /> : cfg.giftIcon}
+                  <span className="mb-2 flex justify-center items-center h-10">
+                    <RenderSymbol value={cfg.giftIcon || "🎁"} size={32} color={primary} />
                   </span>
                   <p className="text-[9px] font-black uppercase tracking-widest mb-1" style={{ color: mutedC }}>{cfg.giftLabel}</p>
                   <p className="font-bold text-xs" style={{ color: textC, fontFamily: cfg.fontBody }}>{cfg.giftText}</p>
@@ -546,18 +547,18 @@ export const InvitePreview = ({ cfg, status, onConfirmRSVP }) => {
            {(cfg.showInstagram || cfg.showFacebook || cfg.showTiktok) && (
              <div className="flex justify-center gap-4 mt-8">
                {cfg.showInstagram && cfg.instagramUrl && (
-                 <a href={cfg.instagramUrl} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg border border-white/10" style={{ background: cardC }}>
-                   <InstagramIcon size={20} color={primary} />
+                 <a href={cfg.instagramUrl} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg border border-white/10" style={{ background: cardC, color: primary }}>
+                   <InstagramIcon size={20} />
                  </a>
                )}
                {cfg.showFacebook && cfg.facebookUrl && (
-                 <a href={cfg.facebookUrl} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg border border-white/10" style={{ background: cardC }}>
-                   <FacebookIcon size={20} color={primary} />
+                 <a href={cfg.facebookUrl} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg border border-white/10" style={{ background: cardC, color: primary }}>
+                   <FacebookIcon size={20} />
                  </a>
                )}
                {cfg.showTiktok && cfg.tiktokUrl && (
-                 <a href={cfg.tiktokUrl} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg border border-white/10" style={{ background: cardC }}>
-                   <TiktokIcon size={20} color={primary} />
+                 <a href={cfg.tiktokUrl} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg border border-white/10" style={{ background: cardC, color: primary }}>
+                   <TiktokIcon size={20} />
                  </a>
                )}
              </div>
