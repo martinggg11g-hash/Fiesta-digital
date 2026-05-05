@@ -12,7 +12,8 @@ const IMGBB_API_KEY = "904f81caf05efe58a799abdb1fedc2ce";
 // ÍCONOS PREMIUM (SVG PURO)
 // ==========================================
 export const IconRenderer = ({ name, size = 24, color = "currentColor", className = "" }) => {
-  const p = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", className };
+  if (!name) return null;
+  const p = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", className };
   switch (name) {
     case 'icon-utensils': return <svg {...p}><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>;
     case 'icon-wine': return <svg {...p}><path d="M8 22h8"/><path d="M7 10h10"/><path d="M12 15v7"/><path d="M12 15a5 5 0 0 0 5-5c0-2-.5-4-2-8H9c-1.5 4-2 6-2 8a5 5 0 0 0 5 5Z"/></svg>;
@@ -173,7 +174,7 @@ export const Toggle = ({ checked, onChange }) => (
   </label>
 );
 
-// NUEVO: SymbolPicker (Tabs Emojis/Iconos + Input de Texto Libre + Super Z-Index)
+// NUEVO: SymbolPicker (Tabs Emojis/Iconos + Input de Texto Libre) A PRUEBA DE FALLOS
 export const EmojiPicker = ({ value, onSelect, list = GENERAL_EMOJIS }) => {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState('emoji'); 
@@ -192,7 +193,7 @@ export const EmojiPicker = ({ value, onSelect, list = GENERAL_EMOJIS }) => {
         onClick={() => setOpen(!open)}
         className="w-12 h-12 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-2xl hover:border-violet-300 focus:ring-2 focus:ring-violet-200 outline-none transition-all shadow-sm cursor-pointer"
       >
-        {value?.startsWith('icon-') ? <IconRenderer name={value} size={24} color="#64748b" /> : value}
+        {typeof value === 'string' && value.startsWith('icon-') ? <IconRenderer name={value} size={24} color="#64748b" /> : (value || "✨")}
       </button>
       
       {open && (
