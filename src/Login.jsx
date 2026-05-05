@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2, PartyPopper, ShieldCheck, AlertCircle, Eye, EyeOff } from "lucide-react";
 
-// Mini-componente de Input (Aislado para el Login)
 const Inp = ({ label, value, onChange, placeholder, type="text", className="", icon: Icon = null }) => {
   const [localVal, setLocalVal] = useState(value || "");
   const [showPwd, setShowPwd] = useState(false);
@@ -38,7 +37,6 @@ const Inp = ({ label, value, onChange, placeholder, type="text", className="", i
   );
 };
 
-// Pantalla Principal de Login
 export default function LoginScreen({ isMaster = false, onLogin, users }) {
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
@@ -47,24 +45,26 @@ export default function LoginScreen({ isMaster = false, onLogin, users }) {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleAuth = (e) => {
+  const handleAuth = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
-      if (isMaster && email === "owner@defiesta.lat" && pass === "owner123") {
-        onLogin({ name: "Master", role: "owner", email }, rememberMe);
-        navigate("/dashboard");
-        return;
-      }
-      const found = users.find(u => u.email === email && u.pass === pass);
-      if (found) { 
-        onLogin(found, rememberMe); 
-        navigate("/dashboard"); 
-      } else {
-        setError("Credenciales no válidas.");
-      }
+    setError("");
+
+    // Validación instantánea sin retrasos artificiales
+    if (isMaster && email === "owner@defiesta.lat" && pass === "owner123") {
+      onLogin({ name: "Master", role: "owner", email }, rememberMe);
+      navigate("/dashboard");
+      return;
+    }
+    
+    const found = users.find(u => u.email === email && u.pass === pass);
+    if (found) { 
+      onLogin(found, rememberMe); 
+      navigate("/dashboard"); 
+    } else {
+      setError("Credenciales no válidas.");
       setLoading(false);
-    }, 500);
+    }
   };
 
   return (
