@@ -55,28 +55,14 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
            </div>
          )}
 
-        {/* SELECTOR DE ESTILO PREMIUM */}
         <div className="mb-6 p-4 rounded-xl border-2 border-violet-100 bg-violet-50/50">
           <label className="block text-[10px] font-black text-violet-600 uppercase tracking-widest mb-3 text-center">Estilo de los Símbolos</label>
           <div className="flex bg-white p-1 rounded-xl shadow-sm border border-violet-100">
-             <button 
-               onClick={() => update("usePremiumIcons", false)} 
-               type="button" 
-               className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${!cfg.usePremiumIcons ? 'bg-violet-100 text-violet-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-             >
-               🎉 Emojis
-             </button>
-             <button 
-               onClick={() => update("usePremiumIcons", true)} 
-               type="button" 
-               className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${cfg.usePremiumIcons ? 'bg-slate-800 text-amber-400 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-             >
-               ✨ Íconos
-             </button>
+             <button onClick={() => update("usePremiumIcons", false)} type="button" className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${!cfg.usePremiumIcons ? 'bg-violet-100 text-violet-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>🎉 Emojis</button>
+             <button onClick={() => update("usePremiumIcons", true)} type="button" className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${cfg.usePremiumIcons ? 'bg-slate-800 text-amber-400 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>✨ Íconos</button>
           </div>
         </div>
 
-        {/* BORDES ORNAMENTALES GLOBALES */}
         <div className="mb-6 p-4 rounded-xl border border-pink-100 bg-pink-50/50">
           <div className="flex items-center justify-between mb-4">
             <span className="text-[10px] font-black text-pink-600 uppercase tracking-widest">Bordes Ornamentales</span>
@@ -84,7 +70,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
           </div>
           {cfg.showCoverBorders && (
             <>
-              <p className="text-[9px] text-pink-500 mb-4 leading-relaxed font-medium">Elegí un diseño de nuestra galería, o pegá el link de tu propio PNG transparente. La app lo pintará automáticamente.</p>
+              <p className="text-[9px] text-pink-500 mb-4 leading-relaxed font-medium">Elegí un diseño de nuestra galería, o pegá el link de tu propio PNG transparente.</p>
               
               <BordersGallery value={cfg.selectedBorder} onChange={v => update("selectedBorder", v)} />
               
@@ -155,6 +141,19 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
       </Acc>
 
       <Acc title="1️⃣ Portada Principal" icon={ImageIcon} defaultOpen iconColor="#ec4899">
+        
+        {/* BOTÓN SALVAVIDAS: CENTRAR TODO */}
+        <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-4">
+          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Posiciones (Arrastrables)</span>
+          <button onClick={() => {
+            update('topLeftBorderPos', {x:0, y:0}); update('topRightBorderPos', {x:0, y:0});
+            update('bottomLeftBorderPos', {x:0, y:0}); update('bottomRightBorderPos', {x:0, y:0});
+            update('eventTypePos', {x:0, y:0}); update('honoreePos', {x:0, y:0}); update('badgePos', {x:0, y:0});
+          }} type="button" className="text-[9px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg font-bold transition-colors cursor-pointer">
+            Centrar todo
+          </button>
+        </div>
+
         <div className="mb-6 bg-gray-50 p-3 rounded-xl border border-gray-200">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">¿Fondo GIF Animado?</span>
