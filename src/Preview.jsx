@@ -15,6 +15,80 @@ const TiktokIcon = ({ size = 20, color = "currentColor", className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path></svg>
 );
 
+// MOTOR DE ARRASTRE MAGICO
+const DraggableItem = ({ id, cfg, update, children, className }) => {
+  const pos = cfg[`${id}Pos`] || { x: 0, y: 0 };
+  const [isDragging, setIsDragging] = useState(false);
+  const [localPos, setLocalPos] = useState(pos);
+  const dragRef = useRef(null);
+
+  useEffect(() => { setLocalPos(cfg[`${id}Pos`] || { x: 0, y: 0 }); }, [cfg[`${id}Pos`]]);
+
+  const onPointerDown = (e) => {
+    if (!update) return; 
+    e.preventDefault(); 
+    e.stopPropagation();
+    setIsDragging(true);
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    dragRef.current = { startX: clientX, startY: clientY, origX: localPos.x, origY: localPos.y };
+  };
+
+  const onPointerMove = (e) => {
+    if (!isDragging) return;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const x = dragRef.current.origX + (clientX - dragRef.current.startX);
+    const y = dragRef.current.origY + (clientY - dragRef.current.startY);
+    setLocalPos({ x, y });
+  };
+
+  const onPointerUp = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    if (update) update(`${id}Pos`, localPos);
+  };
+
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener("mousemove", onPointerMove);
+      document.addEventListener("mouseup", onPointerUp);
+      document.addEventListener("touchmove", onPointerMove, { passive: false });
+      document.addEventListener("touchend", onPointerUp);
+    } else {
+      document.removeEventListener("mousemove", onPointerMove);
+      document.removeEventListener("mouseup", onPointerUp);
+      document.removeEventListener("touchmove", onPointerMove);
+      document.removeEventListener("touchend", onPointerUp);
+    }
+    return () => {
+      document.removeEventListener("mousemove", onPointerMove);
+      document.removeEventListener("mouseup", onPointerUp);
+      document.removeEventListener("touchmove", onPointerMove);
+      document.removeEventListener("touchend", onPointerUp);
+    };
+  }, [isDragging, localPos]);
+
+  return (
+    <div 
+      className={`group ${className || ''}`} 
+      style={{ 
+        transform: `translate(${localPos.x}px, ${localPos.y}px)`, 
+        cursor: update ? (isDragging ? "grabbing" : "grab") : "default", 
+        zIndex: isDragging ? 999 : 'auto', 
+        touchAction: update ? 'none' : 'auto' 
+      }}
+      onMouseDown={onPointerDown}
+      onTouchStart={onPointerDown}
+    >
+      {children}
+      {update && (
+        <div className={`absolute -inset-2 border-2 border-dashed border-violet-500 rounded-lg pointer-events-none transition-opacity ${isDragging ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'}`} />
+      )}
+    </div>
+  );
+};
+
 const CornerOrnament = ({ url, color, size, className, style }) => (
   <div className={className} style={{ width: `${size}px`, height: `${size}px`, backgroundColor: color, WebkitMaskImage: `url("${url}")`, WebkitMaskSize: 'contain', WebkitMaskRepeat: 'no-repeat', maskImage: `url("${url}")`, maskSize: 'contain', maskRepeat: 'no-repeat', ...style }} />
 );
@@ -319,7 +393,8 @@ const RsvpWidget = ({ cfg, primary, textC, cardC, onConfirmRSVP }) => {
 };
 
 
-export const InvitePreview = ({ cfg, status, onConfirmRSVP }) => {
+// IMPORTANTE: Asegurate que tu componente padre le pase "update={update}" a <InvitePreview>
+export const InvitePreview = ({ cfg, status, onConfirmRSVP, update }) => {
   if (!cfg) return null;
   const th = THEMES.find(t => t.id === cfg.theme) || THEMES[0];
   const primary = cfg.primary || th.primary;
@@ -359,20 +434,28 @@ export const InvitePreview = ({ cfg, status, onConfirmRSVP }) => {
       )}
 
       {/* ========================================== */}
-      {/* ORNAMENTOS GLOBALES DE TODA LA INVITACION  */}
+      {/* ORNAMENTOS ARRASTRABLES GLOBALES           */}
       {/* ========================================== */}
       {cfg.showCoverBorders && cfg.selectedBorder && (
         <>
           {(cfg.borderPosition === 'both' || cfg.borderPosition === 'top') && (
             <>
-              <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} className="absolute top-0 left-0 z-40" />
-              <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} className="absolute top-0 right-0 z-40" style={{ transform: 'scaleX(-1)' }} />
+              <DraggableItem id="topLeftBorder" cfg={cfg} update={update} className="absolute top-0 left-0 z-40 w-fit">
+                <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} />
+              </DraggableItem>
+              <DraggableItem id="topRightBorder" cfg={cfg} update={update} className="absolute top-0 right-0 z-40 w-fit">
+                <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} style={{ transform: 'scaleX(-1)' }} />
+              </DraggableItem>
             </>
           )}
           {(cfg.borderPosition === 'both' || cfg.borderPosition === 'bottom') && (
             <>
-               <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} className="absolute bottom-0 left-0 z-40" style={{ transform: 'scaleY(-1)' }} />
-               <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} className="absolute bottom-0 right-0 z-40" style={{ transform: 'scaleX(-1) scaleY(-1)' }} />
+               <DraggableItem id="bottomLeftBorder" cfg={cfg} update={update} className="absolute bottom-0 left-0 z-40 w-fit">
+                 <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} style={{ transform: 'scaleY(-1)' }} />
+               </DraggableItem>
+               <DraggableItem id="bottomRightBorder" cfg={cfg} update={update} className="absolute bottom-0 right-0 z-40 w-fit">
+                 <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} style={{ transform: 'scaleX(-1) scaleY(-1)' }} />
+               </DraggableItem>
             </>
           )}
         </>
@@ -386,18 +469,31 @@ export const InvitePreview = ({ cfg, status, onConfirmRSVP }) => {
         <img src={cfg.coverPhoto || DEF_CONFIG.coverPhoto} className="w-full h-full object-cover" alt="Cover" />
         <div className="absolute inset-0" style={{ background: `linear-gradient(to top, ${cfg.bg1 || th.bg1} 5%, rgba(0,0,0,${gradOpacity}) 60%, transparent 100%)` }} />
         
-        <div className="absolute bottom-0 left-0 right-0 p-8 text-center z-30">
-          <p className="font-black uppercase tracking-[0.2em] mb-4 flex items-center justify-center gap-2" style={{ color: cfg.eventTypeColor || primary, fontSize: `${cfg.eventTypeSize ?? 11}px`, fontFamily: cfg.eventTypeFont || cfg.fontBody, textShadow: coverShadow }}>
-            <RenderSymbol value={cfg.eventTypeEmoji || "✨"} size={cfg.eventTypeSize ?? 11} color={cfg.eventTypeColor || primary} />
-            {cfg.eventType}
-          </p>
-          <h1 style={{ fontFamily: cfg.honoreeFont || cfg.fontTitle, color: cfg.honoreeColor || textC, fontSize: `${cfg.honoreeSize ?? 48}px`, textShadow: coverShadow }} className="leading-tight mb-4">{cfg.honoreeName}</h1>
+        {/* ========================================== */}
+        {/* TEXTOS ARRASTRABLES                        */}
+        {/* ========================================== */}
+        <div className="absolute bottom-0 left-0 right-0 p-8 text-center z-30 flex flex-col items-center">
+          
+          <DraggableItem id="eventType" cfg={cfg} update={update} className="w-fit relative">
+            <p className="font-black uppercase tracking-[0.2em] mb-4 flex items-center justify-center gap-2" style={{ color: cfg.eventTypeColor || primary, fontSize: `${cfg.eventTypeSize ?? 11}px`, fontFamily: cfg.eventTypeFont || cfg.fontBody, textShadow: coverShadow }}>
+              <RenderSymbol value={cfg.eventTypeEmoji || "✨"} size={cfg.eventTypeSize ?? 11} color={cfg.eventTypeColor || primary} />
+              {cfg.eventType}
+            </p>
+          </DraggableItem>
+          
+          <DraggableItem id="honoree" cfg={cfg} update={update} className="w-fit relative">
+            <h1 style={{ fontFamily: cfg.honoreeFont || cfg.fontTitle, color: cfg.honoreeColor || textC, fontSize: `${cfg.honoreeSize ?? 48}px`, textShadow: coverShadow }} className="leading-tight mb-4 whitespace-nowrap">{cfg.honoreeName}</h1>
+          </DraggableItem>
+
           {(cfg.showBadge ?? true) && (
-            <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-white/10 backdrop-blur-md bg-black/30 font-black" style={{ color: textC, fontSize: `${cfg.badgeSize ?? 14}px`, fontFamily: cfg.badgeFont || cfg.fontBody }}>
-              <RenderSymbol value={cfg.badgeEmoji || "👑"} size={cfg.badgeSize ?? 14} color={textC} />
-              {cfg.badgeText}
-            </span>
+            <DraggableItem id="badge" cfg={cfg} update={update} className="w-fit relative">
+              <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-white/10 backdrop-blur-md bg-black/30 font-black" style={{ color: textC, fontSize: `${cfg.badgeSize ?? 14}px`, fontFamily: cfg.badgeFont || cfg.fontBody }}>
+                <RenderSymbol value={cfg.badgeEmoji || "👑"} size={cfg.badgeSize ?? 14} color={textC} />
+                {cfg.badgeText}
+              </span>
+            </DraggableItem>
           )}
+
         </div>
       </div>
 
