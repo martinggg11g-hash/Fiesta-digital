@@ -1,7 +1,18 @@
 import React, { useState, useEffect, useRef } from "react";
 import { OpeningAnimation } from "./Lotties"; 
-import { MapPin, Calendar, Clock, Star, CheckCircle2, ChevronLeft, ChevronRight, Download, MessageCircle, Users, ExternalLink, Instagram, Facebook, Music2 } from "lucide-react";
+import { MapPin, Calendar, Clock, Star, CheckCircle2, ChevronLeft, ChevronRight, Download, MessageCircle, Users, ExternalLink } from "lucide-react";
 import { DEF_CONFIG, THEMES, getSpotifyEmbed, getYouTubeId, formatToDDMMYYYY } from "./config";
+
+// ÍCONOS SOCIALES A PRUEBA DE FALLOS (SVG PURO)
+const InstagramIcon = ({ size = 20, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+);
+const FacebookIcon = ({ size = 20, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
+);
+const TiktokIcon = ({ size = 20, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path></svg>
+);
 
 const Countdown = ({ targetDate, primary, text }) => {
   const [timeLeft, setTimeLeft] = useState({ d:0, h:0, m:0, s:0 });
@@ -329,7 +340,6 @@ export const InvitePreview = ({ cfg, status, onConfirmRSVP }) => {
   return (
     <div style={{ background: bg, fontFamily: cfg.fontBody }} className="min-h-full pb-12 relative overflow-x-hidden">
       
-      {/* SELLO DE CANCELADO PREMIUM */}
       {isCanceled && (
         <div className="absolute inset-0 z-[999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
            <div className="border-[8px] border-red-600 px-8 py-3 rounded-2xl transform -rotate-12 shadow-2xl bg-black/80 pointer-events-none">
@@ -338,7 +348,6 @@ export const InvitePreview = ({ cfg, status, onConfirmRSVP }) => {
         </div>
       )}
 
-      {/* Partículas por encima del fondo, pero el contenido z-30 pasará por arriba si es necesario */}
       <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden" style={{ height: "100%" }}>
         <ParticleCanvas effect={cfg.particleEffect || "none"} primary={primary} />
       </div>
@@ -514,26 +523,24 @@ export const InvitePreview = ({ cfg, status, onConfirmRSVP }) => {
           </div>
         )}
 
-        {/* WIDGET MÁGICO Y REDES SOCIALES */}
         <div className="pt-8">
            <RsvpWidget cfg={cfg} primary={primary} textC={textC} cardC={cardC} onConfirmRSVP={onConfirmRSVP} />
            
-           {/* REDES SOCIALES DEL SALÓN */}
            {(cfg.showInstagram || cfg.showFacebook || cfg.showTiktok) && (
              <div className="flex justify-center gap-4 mt-8">
                {cfg.showInstagram && cfg.instagramUrl && (
-                 <a href={cfg.instagramUrl} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg border border-white/10" style={{ background: cardC }}>
-                   <Instagram size={20} className="text-pink-600" />
+                 <a href={cfg.instagramUrl} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg border border-white/10" style={{ background: cardC, color: textC }}>
+                   <InstagramIcon size={20} />
                  </a>
                )}
                {cfg.showFacebook && cfg.facebookUrl && (
-                 <a href={cfg.facebookUrl} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg border border-white/10" style={{ background: cardC }}>
-                   <Facebook size={20} className="text-blue-600" />
+                 <a href={cfg.facebookUrl} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg border border-white/10" style={{ background: cardC, color: textC }}>
+                   <FacebookIcon size={20} />
                  </a>
                )}
                {cfg.showTiktok && cfg.tiktokUrl && (
-                 <a href={cfg.tiktokUrl} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg border border-white/10" style={{ background: cardC }}>
-                   <Music2 size={20} className="text-black dark:text-white" />
+                 <a href={cfg.tiktokUrl} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg border border-white/10" style={{ background: cardC, color: textC }}>
+                   <TiktokIcon size={20} />
                  </a>
                )}
              </div>
