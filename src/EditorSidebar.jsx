@@ -139,7 +139,28 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
           </div>
         </div>
 
-        <div className="flex gap-2 z-[90] relative">
+        {/* NUEVO: ESQUINEROS ORNAMENTALES */}
+        <div className="flex items-center justify-between mb-4 border-t border-gray-100 pt-4">
+          <span className="text-xs font-bold text-slate-500">Bordes Ornamentales (Esquinas)</span>
+          <Toggle checked={cfg.showCoverBorders || false} onChange={v => update("showCoverBorders", v)} />
+        </div>
+        {cfg.showCoverBorders && (
+          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 mb-6 relative">
+            <SelectInp label="Posición" value={cfg.borderPosition || 'both'} options={[{label:'Arriba y Abajo', value:'both'}, {label:'Solo Arriba', value:'top'}, {label:'Solo Abajo', value:'bottom'}]} onChange={v => update('borderPosition', v)} />
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 mt-3">Diseño del Borde</label>
+            <div className="grid grid-cols-3 gap-2 mb-3">
+              {[{id:1, n:"Damasco"}, {id:2, n:"Art Deco"}, {id:3, n:"Boho"}, {id:4, n:"Mínimo"}, {id:5, n:"Tribal"}, {id:6, n:"Clásico"}].map(b => (
+                <button key={b.id} onClick={() => update("borderStyle", b.id)} type="button" className={`py-2 rounded-lg font-bold text-[10px] uppercase border transition-all cursor-pointer ${cfg.borderStyle === b.id || (!cfg.borderStyle && b.id === 1) ? 'bg-violet-100 border-violet-400 text-violet-700' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-100'}`}>{b.n}</button>
+              ))}
+            </div>
+            <div className="flex flex-col gap-1 mt-2">
+              <label className="text-[9px] font-bold text-slate-400 uppercase">Color del Borde</label>
+              <input type="color" value={cfg.borderColor || cfg.primary} onChange={e => update('borderColor', e.target.value)} className="w-full h-9 rounded-xl cursor-pointer border-none shadow-sm" />
+            </div>
+          </div>
+        )}
+
+        <div className="flex gap-2 z-[90] relative mt-2 border-t border-gray-100 pt-4">
           <EmojiPicker value={cfg.eventTypeEmoji || "✨"} onSelect={v => update("eventTypeEmoji", v)} />
           <div className="flex-1"><Inp label="Frase Superior" value={cfg.eventType} onChange={v => update("eventType", v)} placeholder="Estás invitado a..." /></div>
         </div>
