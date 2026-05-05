@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import {
   Palette, Star, Image as ImageIcon, Layout, List, Trash2, Video, 
   Link as LinkIcon, LayoutGrid, Smartphone, Calendar, Clock, CheckCircle2,
-  MessageCircle, Plus, Type
+  MessageCircle, Plus, Edit2
 } from "lucide-react";
 
 import { 
@@ -14,6 +14,17 @@ import {
   ANIMATION_CATEGORIES, THEMES, FONTS, TRANSITION_OPTS, 
   FOOD_EMOJIS, CLOTHES_EMOJIS 
 } from "./config";
+
+// Íconos SVG para que no tire error en Vercel
+const InstagramIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+);
+const FacebookIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
+);
+const TiktokIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path></svg>
+);
 
 export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim, mobileView }) {
   const [animCat, setAnimCategory] = useState("infantil");
@@ -235,7 +246,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
          {cfg.showItinerary && (
            <>
              <div className="mb-4">
-               <Inp label="Título de la Sección" value={cfg.itinerarySectionTitle || "¿Qué vamos a hacer?"} onChange={v => update("itinerarySectionTitle", v)} icon={Type} />
+               <Inp label="Título de la Sección" value={cfg.itinerarySectionTitle || "¿Qué vamos a hacer?"} onChange={v => update("itinerarySectionTitle", v)} icon={Edit2} />
              </div>
 
              <div className="space-y-4 mb-6">
@@ -260,7 +271,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
          {cfg.showMenu && (
            <>
              <div className="mb-4">
-               <Inp label="Título de la Sección" value={cfg.menuSectionTitle || "¿Qué vamos a comer?"} onChange={v => update("menuSectionTitle", v)} icon={Type} />
+               <Inp label="Título de la Sección" value={cfg.menuSectionTitle || "¿Qué vamos a comer?"} onChange={v => update("menuSectionTitle", v)} icon={Edit2} />
              </div>
 
              <div className="space-y-3 mb-6 relative">
@@ -279,7 +290,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
 
       <Acc title="9️⃣ Vestimenta y Regalos" icon={Layout} iconColor="#f43f5e">
          <div className="mb-6 pb-6 border-b border-gray-100">
-           <Inp label="Título General de la Sección" value={cfg.notesSectionTitle || "A tener en cuenta"} onChange={v => update("notesSectionTitle", v)} icon={Type} />
+           <Inp label="Título General de la Sección" value={cfg.notesSectionTitle || "A tener en cuenta"} onChange={v => update("notesSectionTitle", v)} icon={Edit2} />
          </div>
 
          <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Vestimenta</span><Toggle checked={cfg.showDressCode} onChange={v => update("showDressCode", v)} /></div>
