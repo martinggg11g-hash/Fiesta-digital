@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import {
   Palette, Star, Image as ImageIcon, Layout, List, Trash2, Video, 
   Link as LinkIcon, LayoutGrid, Smartphone, Calendar, Clock, CheckCircle2,
-  MessageCircle, Plus, Gift, Type // Añadido Type para los títulos editables
+  MessageCircle, Plus, Type
 } from "lucide-react";
 
 import { 
@@ -56,7 +56,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
            </div>
          )}
 
-        {/* NUEVO: SELECTOR DE ESTILO (EMOJIS VS ÍCONOS PREMIUM) */}
+        {/* SELECTOR DE ESTILO PREMIUM */}
         <div className="mb-6 p-4 rounded-xl border-2 border-violet-100 bg-violet-50/50">
           <label className="block text-[10px] font-black text-violet-600 uppercase tracking-widest mb-3 text-center">Estilo de los Símbolos</label>
           <div className="flex bg-white p-1 rounded-xl shadow-sm border border-violet-100">
@@ -65,17 +65,16 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
                type="button" 
                className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${!cfg.usePremiumIcons ? 'bg-violet-100 text-violet-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
              >
-               🎉 Emojis (Casual)
+               🎉 Emojis
              </button>
              <button 
                onClick={() => update("usePremiumIcons", true)} 
                type="button" 
                className={`flex-1 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${cfg.usePremiumIcons ? 'bg-slate-800 text-amber-400 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
              >
-               ✨ Íconos (Premium)
+               ✨ Íconos
              </button>
           </div>
-          <p className="text-[9px] text-center mt-2 text-slate-500 font-medium">Esto cambiará el estilo de las tarjetas de menú, vestimenta y regalos.</p>
         </div>
 
         <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Temas Sugeridos</label>
@@ -161,7 +160,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
           </div>
         </div>
 
-        <div className="flex gap-2 z-[60] relative">
+        <div className="flex gap-2 z-[90] relative">
           <EmojiPicker value={cfg.eventTypeEmoji || "✨"} onSelect={v => update("eventTypeEmoji", v)} />
           <div className="flex-1"><Inp label="Frase Superior" value={cfg.eventType} onChange={v => update("eventType", v)} placeholder="Estás invitado a..." /></div>
         </div>
@@ -177,7 +176,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
         
         {(cfg.showBadge ?? true) && (
           <>
-            <div className="flex gap-2 z-[60] relative">
+            <div className="flex gap-2 z-[80] relative">
               <EmojiPicker value={cfg.badgeEmoji} onSelect={v => update("badgeEmoji", v)} />
               <div className="flex-1"><Inp label="Medalla Flotante" value={cfg.badgeText} onChange={v => update("badgeText", v)} placeholder="Ej: 5 añitos" /></div>
             </div>
@@ -267,7 +266,6 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
          <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Cronograma</span><Toggle checked={cfg.showItinerary} onChange={v => update("showItinerary", v)} /></div>
          {cfg.showItinerary && (
            <>
-             {/* NUEVO: Título Editable */}
              <div className="mb-4">
                <Inp label="Título de la Sección" value={cfg.itinerarySectionTitle || "¿Qué vamos a hacer?"} onChange={v => update("itinerarySectionTitle", v)} icon={Type} />
              </div>
@@ -293,15 +291,13 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
          <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Menú</span><Toggle checked={cfg.showMenu} onChange={v => update("showMenu", v)} /></div>
          {cfg.showMenu && (
            <>
-             {/* NUEVO: Título Editable */}
              <div className="mb-4">
                <Inp label="Título de la Sección" value={cfg.menuSectionTitle || "¿Qué vamos a comer?"} onChange={v => update("menuSectionTitle", v)} icon={Type} />
              </div>
 
-             <div className="space-y-3 mb-6 z-[60] relative">
+             <div className="space-y-3 mb-6 relative">
                 {cfg.menuItems?.map((m, i) => (
-                  <div key={i} className="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-100 shadow-sm z-[60] relative">
-                    {/* El EmojiPicker ahora tiene Z-INDEX ultra alto */}
+                  <div key={i} className="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-100 shadow-sm relative" style={{ zIndex: 50 - i }}>
                     <EmojiPicker list={FOOD_EMOJIS} value={m.emoji} onSelect={e => { const n = [...cfg.menuItems]; n[i].emoji = e; update("menuItems", n); }} />
                     <MiniInp className="flex-1 p-2 text-xs border bg-gray-50 rounded-lg outline-none focus:border-violet-300" value={m.label} onChange={v => { const n = [...cfg.menuItems]; n[i].label = v; update("menuItems", n); }} />
                     <button onClick={() => update("menuItems", cfg.menuItems.filter((_, idx) => idx !== i))} type="button" className="text-red-400 p-2 hover:bg-red-50 rounded-lg cursor-pointer"><Trash2 size={14}/></button>
@@ -314,14 +310,13 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
       </Acc>
 
       <Acc title="9️⃣ Vestimenta y Regalos" icon={Layout} iconColor="#f43f5e">
-         {/* NUEVO: Título Editable para toda la sección "A tener en cuenta" */}
          <div className="mb-6 pb-6 border-b border-gray-100">
            <Inp label="Título General de la Sección" value={cfg.notesSectionTitle || "A tener en cuenta"} onChange={v => update("notesSectionTitle", v)} icon={Type} />
          </div>
 
          <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Vestimenta</span><Toggle checked={cfg.showDressCode} onChange={v => update("showDressCode", v)} /></div>
          {cfg.showDressCode && (
-           <div className="flex gap-2 mb-6 bg-gray-50 p-2 rounded-xl border border-gray-200 z-[60] relative">
+           <div className="flex gap-2 mb-6 bg-gray-50 p-2 rounded-xl border border-gray-200 relative z-[40]">
              <EmojiPicker list={CLOTHES_EMOJIS} value={cfg.dressCodeIcon} onSelect={e => update("dressCodeIcon", e)} />
              <div className="flex-1"><Inp value={cfg.dressCodeText} onChange={v => update("dressCodeText", v)} placeholder="Ej: Elegante Sport" className="!mb-0"/></div>
            </div>
@@ -330,7 +325,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
          <div className="flex items-center justify-between mb-4 pt-4 border-t border-gray-100"><span className="text-xs font-bold text-slate-500">Activar Regalos / Transferencias</span><Toggle checked={cfg.showGifts} onChange={v => update("showGifts", v)} /></div>
          {cfg.showGifts && (
            <>
-             <div className="flex gap-2 mb-2 bg-gray-50 p-2 rounded-xl border border-gray-200 z-[60] relative">
+             <div className="flex gap-2 mb-2 bg-gray-50 p-2 rounded-xl border border-gray-200 relative z-[30]">
                <EmojiPicker value={cfg.giftIcon} onSelect={e => update("giftIcon", e)} />
                <div className="w-24"><Inp value={cfg.giftLabel} onChange={v => update("giftLabel", v)} placeholder="Título" className="!mb-0"/></div>
                <div className="flex-1"><Inp value={cfg.giftText} onChange={v => update("giftText", v)} placeholder="Lluvia de sobres..." className="!mb-0"/></div>
@@ -338,7 +333,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
              
              <div className="flex items-center justify-between mt-4 mb-2"><span className="text-[10px] font-bold text-slate-500 uppercase">Datos de Transferencia (CLABE)</span><Toggle checked={cfg.showGiftNote} onChange={v => update("showGiftNote", v)} /></div>
              {cfg.showGiftNote && (
-               <div className="mt-2 z-30 relative">
+               <div className="mt-2 relative z-20">
                  <Inp value={cfg.giftNoteText} onChange={v => update("giftNoteText", v)} placeholder="Ej: Te dejo mi cuenta CLABE para transferencias...\nBanco: BBVA\nCLABE: 012345678901234567" multiline className="!mb-2" />
                  <TypoControl label="Diseño Aclaración" colorVal={cfg.giftNoteColor || cfg.primary} onColor={v => update('giftNoteColor', v)} sizeVal={cfg.giftNoteSize || 11} onSize={v => update('giftNoteSize', v)} minSize={8} maxSize={24} />
                </div>
