@@ -5,7 +5,7 @@ import {
   ShieldCheck, LogOut, Plus, Trash2, Copy, CheckCircle2, Lock, 
   MapPin, CalendarClock, AlertTriangle, KeyRound, Building, Edit2, X, MessageCircle, Eye, EyeOff, Search,
   Phone, Users, Clock, Settings, UserCheck, Receipt,
-  Moon, Sun, Printer, ClipboardList, ImageIcon, FileText, ScanBarcode, FileDown, PartyPopper, Loader2, CreditCard, Send, Smartphone
+  Moon, Sun, Printer, ClipboardList, ImageIcon, FileText, ScanBarcode, FileDown, PartyPopper, Loader2, CreditCard, Send, Smartphone, Filter
 } from "lucide-react";
 
 const slugify = (text) => text?.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') || 'salon';
@@ -135,6 +135,7 @@ const QRScannerModal = ({ onClose, onScan }) => {
 export default function DashboardScreen({ user, onLogout, users, onUpdateUser, onCreateSalon, onDeleteSalon, invitations, onCreateInv, onDeleteInv, onUpdateInternal }) {
   const [toast, setToast] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState("all"); // all | upcoming | past
   const [activeCrmId, setActiveCrmId] = useState(null);
   const [activeTab, setActiveTab] = useState("info");
   
@@ -169,9 +170,50 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
   const isOwner = user.role === "owner";
   const myInvs = isOwner ? invitations : invitations.filter(i => i.salonId === user.email);
   const mySalons = users.filter(u => u.role === "salon");
-  const notify = (m) => { setToast(m); setTimeout(() => setToast(""), 2500); };
+  
+  const notify = (m) => { setToast(m); setTimeout(() => setToast(""), 3000); };
 
-  const filteredInvs = myInvs.filter(inv => (inv.title || "").toLowerCase().includes(searchTerm.toLowerCase()));
+  // LÓGICA DE FILTRADO Y BÚSQUEDA AVANZADA
+  let filteredInvs = myInvs.filter(inv => {
+    const term = searchTerm.trim().toLowerCase();
+    const data = inv.internal_data || {};
+    
+    // Coincidencia exacta o parcial en título, cliente o fecha
+    const matchText = !term || 
+      (inv.title || "").toLowerCase().includes(term) || 
+      (data.clientName || "").toLowerCase().includes(term) || 
+      (data.internalDate || "").includes(term); // Sirve para buscar "2026-05"
+      
+    if (!matchText) return false;
+
+    // Filtro por estado temporal
+    if (filterType === 'upcoming') {
+       if (!data.internalDate) return true; // Si no tiene fecha, lo mostramos
+       return new Date(data.internalDate) >= new Date(new Date().setHours(0,0,0,0));
+    }
+    if (filterType === 'past') {
+       if (!data.internalDate) return false;
+       return new Date(data.internalDate) < new Date(new Date().setHours(0,0,0,0));
+    }
+    
+    return true;
+  });
+
+  // ORDENAMIENTO (Los próximos más cercanos arriba)
+  if (filterType === 'upcoming') {
+    filteredInvs.sort((a, b) => {
+      const dateA = a.internal_data?.internalDate ? new Date(a.internal_data.internalDate).getTime() : 9999999999999;
+      const dateB = b.internal_data?.internalDate ? new Date(b.internal_data.internalDate).getTime() : 9999999999999;
+      return dateA - dateB;
+    });
+  } else if (filterType === 'past') {
+    filteredInvs.sort((a, b) => {
+      const dateA = a.internal_data?.internalDate ? new Date(a.internal_data.internalDate).getTime() : 0;
+      const dateB = b.internal_data?.internalDate ? new Date(b.internal_data.internalDate).getTime() : 0;
+      return dateB - dateA; // Los más recientes pasados arriba
+    });
+  }
+
   const activeInv = myInvs.find(i => i.id === activeCrmId);
   const guestsList = activeInv?.internal_data?.guests || [];
 
@@ -296,19 +338,33 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
                 <h1 className={`text-4xl font-black tracking-tight ${themeText}`}>Mis Eventos</h1>
                 <p className="text-slate-500 mt-1 font-medium italic">Gestioná tus invitaciones y la logística en tiempo real.</p>
               </div>
+              
+              {/* FILTROS Y BUSCADOR */}
               <div className="flex flex-wrap items-center gap-3">
+                 <div className="relative flex items-center gap-2">
+                    <Filter className="text-slate-400" size={16}/>
+                    <select 
+                      className={`py-3.5 px-4 pr-8 border rounded-2xl text-sm font-bold outline-none cursor-pointer transition-all focus:ring-2 focus:ring-violet-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-700'}`}
+                      value={filterType} onChange={(e) => setFilterType(e.target.value)}
+                    >
+                      <option value="all">Todos los eventos</option>
+                      <option value="upcoming">Solo Próximos</option>
+                      <option value="past">Ya Pasados</option>
+                    </select>
+                 </div>
                  <div className="relative group flex-1 md:flex-none">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-violet-500 transition-colors" size={18}/>
-                    <input className={`w-full md:w-64 pl-11 pr-4 py-3.5 border rounded-2xl text-sm font-medium outline-none transition-all focus:ring-2 focus:ring-violet-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500' : 'bg-white border-slate-200 text-slate-800'}`} placeholder="Buscar evento..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                    <input className={`w-full md:w-64 pl-11 pr-4 py-3.5 border rounded-2xl text-sm font-medium outline-none transition-all focus:ring-2 focus:ring-violet-500 ${isDark ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-500' : 'bg-white border-slate-200 text-slate-800'}`} placeholder="Buscar nombre o fecha..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                  </div>
                  <button onClick={async () => { const id = await onCreateInv(user.email, user.name); navigate(`/editor/${id}`); }} className="px-8 py-3.5 bg-violet-600 hover:bg-violet-700 text-white rounded-2xl font-black text-sm shadow-xl flex items-center gap-3 transition-all active:scale-95 cursor-pointer"><Plus size={20}/> Nuevo Evento</button>
               </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
-              {filteredInvs.map(inv => {
+              {filteredInvs.length === 0 ? (
+                <div className="col-span-full py-12 text-center text-slate-500 font-bold border-2 border-dashed border-slate-300 rounded-3xl">No se encontraron eventos con esos filtros.</div>
+              ) : filteredInvs.map(inv => {
                 const data = inv.internal_data || {};
-                const pStatus = data.paymentStatus || 'Pendiente';
                 const eStatus = data.eventStatus || 'Nuevo';
                 const confGuests = data.guests?.reduce((acc, g) => acc + g.guests, 0) || 0;
                 
@@ -336,7 +392,7 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
                       <div className="flex gap-2 mb-3">
                         <button onClick={() => navigate(`/editor/${inv.id}`)} className="flex-1 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-2xl font-black text-[11px] tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer shadow-md"><Edit2 size={14}/> DISEÑAR</button>
                         <button onClick={() => window.open(`${window.location.origin}/i/${slugify(user.name)}/${inv.id}`)} className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all cursor-pointer ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}><Eye size={18}/></button>
-                        <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/i/${slugify(user.name)}/${inv.id}`); notify("¡Link Copiado!"); }} className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all cursor-pointer ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}><Copy size={18}/></button>
+                        <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/i/${slugify(user.name)}/${inv.id}`).then(()=>notify("¡Link Copiado!")); }} className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all cursor-pointer ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}><Copy size={18}/></button>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <button onClick={() => { setActiveTab("info"); setActiveCrmId(inv.id); }} className={`py-3 rounded-2xl font-black text-[10px] uppercase tracking-wider flex justify-center items-center gap-2 border shadow-sm cursor-pointer transition-colors ${isDark ? 'bg-slate-800 border-slate-600 text-slate-300 hover:bg-slate-700' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}><Lock size={14}/> FICHA CRM</button>
@@ -349,6 +405,7 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
             </div>
           </main>
 
+          {/* ... MODALES DEL SALÓN (Escaner y Validación) ... */}
           {scanningEvent && !validationResult && (
             <QRScannerModal onClose={() => setScanningEvent(null)} onScan={processQRScan} />
           )}
@@ -379,6 +436,7 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
             </div>
           )}
 
+          {/* MODAL CRM (FICHA + LISTA DE INVITADOS) */}
           {activeCrmId && activeInv && (
             <div className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
               <div className={`w-full max-w-5xl max-h-[95vh] h-full sm:h-auto rounded-[2rem] overflow-hidden flex flex-col shadow-2xl anim-pop ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
@@ -468,13 +526,13 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
                   {activeTab === 'guests' && (
                     <div className="animate-in fade-in duration-300">
                       
-                      {/* NUEVO: BLOQUE APP RECEPCIONISTA */}
+                      {/* BLOQUE APP RECEPCIONISTA CON COPIAR CON NOTIFICACIÓN */}
                       <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 md:p-5 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
                           <h4 className="text-blue-800 font-black text-base mb-1 flex items-center gap-2"><Smartphone size={18}/> App de Recepción (Puerta)</h4>
                           <p className="text-blue-600 text-xs font-medium max-w-lg">Enviale este acceso a tu empleado. Desde ahí solo podrá usar el escáner de QR y ver la lista de ingreso, sin ver información de pagos ni poder modificar nada.</p>
                         </div>
-                        <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/puerta/${activeInv.id}`); notify("¡Link de puerta copiado al portapapeles!"); }} className="px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30 transition-transform active:scale-95 cursor-pointer shrink-0">
+                        <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/puerta/${activeInv.id}`).then(()=>notify("¡Link de puerta copiado!")); }} className="px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30 transition-transform active:scale-95 cursor-pointer shrink-0">
                           <Copy size={16}/> COPIAR LINK
                         </button>
                       </div>
@@ -566,27 +624,22 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
             </div>
           )}
 
-          {/* MODAL DE PAGOS (Suscripción del Salón) */}
+          {/* MODAL DE PAGOS (SOLO INFO MÉXICO - CLABE ASIGNADA POR EL MASTER) */}
           {showPaymentModal && (
             <div className="fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
                <div className={`w-full max-w-md rounded-[2rem] p-8 shadow-2xl relative anim-pop ${isDark ? 'bg-slate-800 text-white' : 'bg-white text-slate-800'}`}>
                   <button onClick={() => setShowPaymentModal(false)} className={`absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-colors ${isDark ? 'bg-slate-700 hover:bg-slate-600' : 'bg-slate-100 hover:bg-slate-200'}`}><X size={16}/></button>
                   <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-amber-100 text-amber-600"><CreditCard size={28}/></div>
                   <h2 className="text-xl font-black mb-2 text-center">Abonar Suscripción</h2>
-                  <p className="text-sm text-center mb-6 opacity-70">Para mantener tu panel activo, podés transferir tu cuota mensual a las siguientes cuentas.</p>
+                  <p className="text-sm text-center mb-6 opacity-70">Para mantener tu panel activo, transferí tu cuota a esta cuenta.</p>
                   
-                  <div className="space-y-3 mb-6 text-sm">
-                    <div className={`p-4 rounded-xl border ${isDark ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'}`}>
-                       <p className="text-[10px] font-black uppercase text-slate-400 mb-1">Para México 🇲🇽 (CLABE)</p>
-                       <p className="font-bold">Banco: BBVA</p>
-                       <p className="font-bold">Titular: Jonatán Rivas</p>
-                       <p className="font-mono text-base mt-1 text-violet-500 font-bold tracking-wider">012345678901234567</p>
-                    </div>
-                    <div className={`p-4 rounded-xl border ${isDark ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'}`}>
-                       <p className="text-[10px] font-black uppercase text-slate-400 mb-1">Para Argentina 🇦🇷 (CBU/Alias)</p>
-                       <p className="font-bold">Titular: Jonatán Rivas</p>
-                       <p className="font-mono text-base mt-1 text-violet-500 font-bold tracking-wider">defiesta.lat.mp</p>
-                    </div>
+                  <div className={`p-4 rounded-xl border mb-6 text-sm ${isDark ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'}`}>
+                     <p className="text-[10px] font-black uppercase text-slate-400 mb-1">Transferencia (CLABE)</p>
+                     <p className="font-bold text-slate-500">Banco: <span className="text-slate-800 dark:text-white">BBVA</span></p>
+                     <p className="font-bold text-slate-500">Titular: <span className="text-slate-800 dark:text-white">Jonatán Rivas</span></p>
+                     <p className="font-mono text-xl mt-3 text-violet-500 font-bold tracking-wider text-center bg-white dark:bg-slate-800 py-2 rounded-lg border border-violet-200 dark:border-slate-600">
+                       {salonInfo?.payment_clabe || "012345678901234567"}
+                     </p>
                   </div>
 
                   <button onClick={() => window.open(`https://t.me/jonatanrivas?text=Hola,%20soy%20el%20salón%20${user.name}.%20Te%20envío%20el%20comprobante%20de%20pago.`)} className="w-full py-4 bg-[#0088cc] hover:bg-[#0077b5] text-white rounded-xl font-black text-sm flex items-center justify-center gap-2 transition-transform active:scale-95 cursor-pointer shadow-lg">
@@ -600,10 +653,8 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
         {/* ---------------- LA HOJA A4 PARA IMPRIMIR (DOBLE PLANTILLA) ---------------- */}
         {activeCrmId && activeInv && (
           <div className="hidden only-print w-full bg-white text-black font-sans max-w-4xl mx-auto">
-             
              {printMode !== 'invitados' ? (
                <>
-                 {/* PDF: PRESUPUESTO / FICHA */}
                  <div className="flex justify-between items-center border-b-2 border-slate-800 pb-6 mb-8">
                     <div className="flex items-center gap-6">
                       {salonInfo?.logo ? <img src={salonInfo.logo} className="max-h-24 max-w-[200px] object-contain" alt="Logo" /> : <div className="text-3xl font-black tracking-tighter text-slate-900">{user.name}</div>}
@@ -662,7 +713,6 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
                </>
              ) : (
                <>
-                 {/* PDF: LISTA DE INVITADOS PARA CONTROL EN PUERTA */}
                  <div className="flex justify-between items-center border-b-2 border-slate-800 pb-6 mb-8">
                     <div>
                       <h2 className="text-2xl font-black text-slate-800 tracking-widest uppercase mb-1">LISTA DE ACCESOS</h2>
@@ -719,17 +769,18 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
   const [fAddress, setFAddress] = useState("");
   const [fPayDate, setFPayDate] = useState("");
   const [fAlert, setFAlert] = useState(false);
+  const [fClabe, setFClabe] = useState(""); // NUEVO CAMPO DE CLABE
 
-  const openCreateModal = () => { setModalMode("create"); setFName(""); setFEmail(""); setFPhone(""); setFPass(""); setFAddress(""); setFPayDate(""); setFAlert(false); setShowModal(true); };
-  const openEditModal = (salon) => { setModalMode("edit"); setEditingEmail(salon.email); setFName(salon.name); setFEmail(salon.email); setFPhone(salon.phone || ""); setFAddress(salon.address || ""); setFPayDate(salon.payment_date || ""); setFAlert(salon.payment_alert || false); setShowModal(true); };
+  const openCreateModal = () => { setModalMode("create"); setFName(""); setFEmail(""); setFPhone(""); setFPass(""); setFAddress(""); setFPayDate(""); setFAlert(false); setFClabe(""); setShowModal(true); };
+  const openEditModal = (salon) => { setModalMode("edit"); setEditingEmail(salon.email); setFName(salon.name); setFEmail(salon.email); setFPhone(salon.phone || ""); setFAddress(salon.address || ""); setFPayDate(salon.payment_date || ""); setFAlert(salon.payment_alert || false); setFClabe(salon.payment_clabe || ""); setShowModal(true); };
   const openPassModal = (salon) => { setModalMode("password"); setEditingEmail(salon.email); setFPass(""); setShowModal(true); };
 
   const handleSaveModal = () => {
     if (modalMode === "create") {
       if(!fName || !fEmail || !fPass) return alert("Faltan datos");
-      onCreateSalon({ name: fName, email: fEmail, pass: fPass, role: "salon", address: fAddress, phone: fPhone, payment_date: fPayDate, payment_alert: fAlert });
+      onCreateSalon({ name: fName, email: fEmail, pass: fPass, role: "salon", address: fAddress, phone: fPhone, payment_date: fPayDate, payment_alert: fAlert, payment_clabe: fClabe });
     } else if (modalMode === "edit") {
-      onUpdateUser(editingEmail, { name: fName, phone: fPhone, address: fAddress, payment_date: fPayDate, payment_alert: fAlert });
+      onUpdateUser(editingEmail, { name: fName, phone: fPhone, address: fAddress, payment_date: fPayDate, payment_alert: fAlert, payment_clabe: fClabe });
     } else if (modalMode === "password") {
       onUpdateUser(editingEmail, { pass: fPass });
     }
@@ -787,6 +838,7 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
                   <Inp label="Email" value={fEmail} onChange={setFEmail} className={modalMode === 'edit' ? 'opacity-50 pointer-events-none' : ''} />
                   {modalMode === 'create' && <Inp label="Contraseña" value={fPass} onChange={setFPass} type="password" />}
                   <Inp label="Ubicación Google Maps" value={fAddress} onChange={setFAddress} />
+                  <Inp label="CLABE de Pago Asignada" placeholder="Ej: 012345678901234567" value={fClabe} onChange={setFClabe} />
                   <div className="flex gap-4"><Inp label="Próximo Vencimiento" type="date" icon={CalendarClock} value={fPayDate} onChange={setFPayDate} className="flex-1" /><div className="flex flex-col items-center"><span className="text-[10px] font-black uppercase mb-2 text-red-500">Bloqueo</span><Toggle checked={fAlert} onChange={setFAlert} /></div></div>
                 </>
               )}
