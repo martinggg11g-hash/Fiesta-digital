@@ -16,7 +16,7 @@ const TiktokIcon = ({ size = 20, color = "currentColor", className = "" }) => (
 );
 
 const RenderSymbol = ({ value, size = 32, color = "currentColor", className = "" }) => {
-  if (value?.startsWith('icon-')) return <IconRenderer name={value} size={size} color={color} className={className} />;
+  if (typeof value === 'string' && value.startsWith('icon-')) return <IconRenderer name={value} size={size} color={color} className={className} />;
   return <span style={{ fontSize: `${size}px`, lineHeight: 1 }} className={`flex items-center justify-center ${className}`}>{value}</span>;
 }
 
