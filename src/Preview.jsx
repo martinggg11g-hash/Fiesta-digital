@@ -15,6 +15,27 @@ const TiktokIcon = ({ size = 20, color = "currentColor", className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path></svg>
 );
 
+// RENDERIZADOR DE BORDES CON MASK-IMAGE (Para que un PNG se pinte del color elegido)
+const CornerOrnament = ({ url, color, size, className, style }) => (
+  <div
+    className={`pointer-events-none ${className}`}
+    style={{
+      width: `${size}px`,
+      height: `${size}px`,
+      backgroundColor: color,
+      WebkitMaskImage: `url(${url})`,
+      WebkitMaskSize: 'contain',
+      WebkitMaskRepeat: 'no-repeat',
+      WebkitMaskPosition: 'center',
+      maskImage: `url(${url})`,
+      maskSize: 'contain',
+      maskRepeat: 'no-repeat',
+      maskPosition: 'center',
+      ...style
+    }}
+  />
+);
+
 const RenderSymbol = ({ value, size = 32, color = "currentColor", className = "" }) => {
   if (typeof value === 'string' && value.startsWith('icon-')) return <IconRenderer name={value} size={size} color={color} className={className} />;
   return <span style={{ fontSize: `${size}px`, lineHeight: 1 }} className={`flex items-center justify-center ${className}`}>{value}</span>;
@@ -355,13 +376,23 @@ export const InvitePreview = ({ cfg, status, onConfirmRSVP }) => {
       )}
 
       {/* ========================================== */}
-      {/* ORNAMENTOS Y BORDES PNG QUE ENGLOBAN TODA LA INVITACIÓN */}
+      {/* BORDES ORNAMENTALES CON MASK-IMAGE MAGIA PURA */}
       {/* ========================================== */}
-      {cfg.topOrnamentUrl && (
-         <img src={cfg.topOrnamentUrl} className="absolute top-0 left-0 w-full object-cover z-40 pointer-events-none" style={{ height: `${cfg.ornamentSize || 150}px` }} alt="" />
-      )}
-      {cfg.bottomOrnamentUrl && (
-         <img src={cfg.bottomOrnamentUrl} className="absolute bottom-0 left-0 w-full object-cover z-40 pointer-events-none" style={{ height: `${cfg.ornamentSize || 150}px` }} alt="" />
+      {cfg.showCoverBorders && cfg.selectedBorder && (
+        <>
+          {(cfg.borderPosition === 'both' || cfg.borderPosition === 'top') && (
+            <>
+              <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} className="absolute top-0 left-0 z-40" />
+              <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} className="absolute top-0 right-0 z-40" style={{ transform: 'scaleX(-1)' }} />
+            </>
+          )}
+          {(cfg.borderPosition === 'both' || cfg.borderPosition === 'bottom') && (
+            <>
+               <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} className="absolute bottom-0 left-0 z-40" style={{ transform: 'scaleY(-1)' }} />
+               <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} className="absolute bottom-0 right-0 z-40" style={{ transform: 'scaleX(-1) scaleY(-1)' }} />
+            </>
+          )}
+        </>
       )}
 
       <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden" style={{ height: "100%" }}>
@@ -481,7 +512,7 @@ export const InvitePreview = ({ cfg, status, onConfirmRSVP }) => {
               {cfg.menuItems.map((m, i) => (
                 <div key={i} className="p-4 rounded-2xl text-center border border-white/5" style={{ background: cardC }}>
                   <span className="mb-2 flex justify-center items-center h-10">
-                    <RenderSymbol value={m.emoji} size={32} color={primary} />
+                    {cfg.usePremiumIcons ? <IconRenderer name="icon-utensils" size={32} color={primary} /> : <RenderSymbol value={m.emoji} size={32} color={primary} />}
                   </span>
                   <span className="text-xs font-bold" style={{ color: textC, fontFamily: cfg.fontBody }}>{m.label}</span>
                 </div>
