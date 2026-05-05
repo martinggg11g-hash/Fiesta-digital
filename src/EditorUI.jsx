@@ -9,11 +9,10 @@ const gf = new GiphyFetch('32PbboqCveiWSlj9vROPmyjv8l8cuaj1');
 const IMGBB_API_KEY = "904f81caf05efe58a799abdb1fedc2ce";
 
 // ==========================================
-// ÍCONOS PREMIUM (LÍNEAS FINAS, SOLO FIESTAS, CERO ANCLAS)
+// ÍCONOS PREMIUM (LÍNEAS FINAS, SOLO FIESTAS)
 // ==========================================
 export const IconRenderer = ({ name, size = 24, color = "currentColor", className = "" }) => {
   if (!name) return null;
-  // strokeWidth 1.5 hace que se vean mucho más elegantes y menos toscos
   const p = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: 1.5, strokeLinecap: "round", strokeLinejoin: "round", className };
   switch (name) {
     case 'icon-utensils': return <svg {...p}><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>;
@@ -48,6 +47,43 @@ const ICONS_LIST = [
   'icon-sparkles', 'icon-crown', 'icon-ticket', 'icon-rings', 'icon-church', 'icon-baby', 
   'icon-graduation', 'icon-diamond', 'icon-flower', 'icon-bell'
 ];
+
+// ==========================================
+// GALERÍA PRECARGADA DE BORDES TRANSPARENTES
+// ==========================================
+export const PRELOADED_BORDERS = [
+  { id: 'b1', name: 'Floral Real', url: 'https://www.svgrepo.com/show/33642/floral-corner.svg' },
+  { id: 'b2', name: 'Vintage Fino', url: 'https://www.svgrepo.com/show/117973/floral-corner-design.svg' },
+  { id: 'b3', name: 'Damasco', url: 'https://www.svgrepo.com/show/111818/floral-outline-corner.svg' },
+  { id: 'b4', name: 'Tribal', url: 'https://www.svgrepo.com/show/115598/floral-corner-shape-outline.svg' },
+  { id: 'b5', name: 'Romántico', url: 'https://www.svgrepo.com/show/285038/floral-design-flower.svg' },
+  { id: 'b6', name: 'Clásico', url: 'https://www.svgrepo.com/show/285042/floral-design-flower.svg' }
+];
+
+export const BordersGallery = ({ value, onChange }) => {
+  return (
+    <div className="grid grid-cols-3 gap-2">
+      {PRELOADED_BORDERS.map(b => (
+        <button
+          key={b.id}
+          type="button"
+          onClick={() => onChange(b.url)}
+          className={`p-2 border rounded-xl flex flex-col items-center gap-2 transition-all cursor-pointer ${value === b.url ? 'border-violet-500 bg-violet-100 shadow-md' : 'border-slate-200 bg-white hover:bg-slate-50'}`}
+        >
+          <div
+            style={{
+              width: '40px', height: '40px', backgroundColor: value === b.url ? '#7c3aed' : '#94a3b8',
+              WebkitMaskImage: `url(${b.url})`, WebkitMaskSize: 'contain', WebkitMaskRepeat: 'no-repeat', WebkitMaskPosition: 'center',
+              maskImage: `url(${b.url})`, maskSize: 'contain', maskRepeat: 'no-repeat', maskPosition: 'center',
+            }}
+          />
+          <span className={`text-[9px] font-bold text-center leading-tight ${value === b.url ? 'text-violet-700' : 'text-slate-500'}`}>{b.name}</span>
+        </button>
+      ))}
+    </div>
+  );
+};
+
 
 export const GiphySearch = ({ onSelect, placeholder = "Buscar GIF..." }) => {
   const [term, setTerm] = useState("fiesta");
@@ -168,7 +204,7 @@ export const FileUpload = ({ label, onChange, value }) => {
       {label && <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{label}</label>}
       <div className="relative">
         <label className={`flex items-center justify-center w-full py-3 px-4 rounded-xl text-xs font-bold border transition-all cursor-pointer ${uploading ? 'bg-violet-100 border-violet-200 text-violet-400 cursor-not-allowed' : 'bg-white border-violet-200 text-violet-600 hover:bg-violet-50 hover:border-violet-300 shadow-sm'}`}>
-          <span className="flex items-center gap-2">{uploading ? <><Loader2 size={14} className="animate-spin" /> Subiendo...</> : <><ImageIcon size={16}/> Subir PNG/JPG</>}</span>
+          <span className="flex items-center gap-2">{uploading ? <><Loader2 size={14} className="animate-spin" /> Subiendo...</> : <><ImageIcon size={16}/> Subir imagen de tu galería</>}</span>
           <input type="file" accept="image/*" onChange={handleFile} disabled={uploading} className="hidden" />
         </label>
       </div>
