@@ -9,7 +9,7 @@ const gf = new GiphyFetch('32PbboqCveiWSlj9vROPmyjv8l8cuaj1');
 const IMGBB_API_KEY = "904f81caf05efe58a799abdb1fedc2ce";
 
 // ==========================================
-// ÍCONOS PREMIUM (SVG PURO SUPER VITAMINADO)
+// ÍCONOS PREMIUM (SVG PURO ULTRA VITAMINADO)
 // ==========================================
 export const IconRenderer = ({ name, size = 24, color = "currentColor", className = "" }) => {
   if (!name) return null;
@@ -29,7 +29,6 @@ export const IconRenderer = ({ name, size = 24, color = "currentColor", classNam
     case 'icon-sparkles': return <svg {...p}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M3 5h4"/></svg>;
     case 'icon-crown': return <svg {...p}><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>;
     case 'icon-ticket': return <svg {...p}><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>;
-    // NUEVOS ÍCONOS AÑADIDOS ABAJO
     case 'icon-rings': return <svg {...p}><circle cx="9" cy="12" r="5"/><circle cx="15" cy="12" r="5"/></svg>;
     case 'icon-church': return <svg {...p}><path d="M12 2v5"/><path d="M10 5h4"/><path d="M12 7l-6 5v10h12V12l-6-5Z"/><path d="M10 22v-4a2 2 0 0 1 4 0v4"/></svg>;
     case 'icon-baby': return <svg {...p}><circle cx="12" cy="10" r="4"/><path d="M12 14v6"/><path d="M9 17h6"/><path d="M12 2v4"/></svg>;
@@ -44,7 +43,7 @@ export const IconRenderer = ({ name, size = 24, color = "currentColor", classNam
     default: return <svg {...p}><circle cx="12" cy="12" r="10"/></svg>;
   }
 };
-// Agregados a la lista general para que aparezcan en la pestaña
+
 const ICONS_LIST = [
   'icon-utensils', 'icon-wine', 'icon-glass', 'icon-cake', 'icon-gift', 'icon-shirt', 
   'icon-heart', 'icon-music', 'icon-star', 'icon-camera', 'icon-car', 'icon-sparkles', 
