@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import {
   Palette, Star, Image as ImageIcon, Layout, List, Trash2, Video, 
   Link as LinkIcon, LayoutGrid, Smartphone, Calendar, Clock, CheckCircle2,
-  MessageCircle, Plus, Facebook, Instagram, Music2
+  MessageCircle, Plus, Gift
 } from "lucide-react";
 
 import { 
@@ -14,6 +14,17 @@ import {
   ANIMATION_CATEGORIES, THEMES, FONTS, TRANSITION_OPTS, 
   FOOD_EMOJIS, CLOTHES_EMOJIS 
 } from "./config";
+
+// Íconos SVG para que no tire error en Vercel
+const InstagramIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+);
+const FacebookIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
+);
+const TiktokIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path></svg>
+);
 
 export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim, mobileView }) {
   const [animCat, setAnimCategory] = useState("infantil");
@@ -269,7 +280,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
          )}
       </Acc>
 
-      <Acc title="9️⃣ Vestimenta y Regalos" icon={Layout} iconColor="#f43f5e">
+      <Acc title="9️⃣ Vestimenta y Regalos (MX)" icon={Layout} iconColor="#f43f5e">
          <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Vestimenta</span><Toggle checked={cfg.showDressCode} onChange={v => update("showDressCode", v)} /></div>
          {cfg.showDressCode && (
            <div className="flex gap-2 mb-6 bg-gray-50 p-2 rounded-xl border border-gray-200 z-50 relative">
@@ -352,7 +363,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
         <div className="space-y-4">
           <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-slate-700 flex items-center gap-2"><Instagram size={14} className="text-pink-600"/> Instagram</span>
+                <span className="text-xs font-bold text-slate-700 flex items-center gap-2"><InstagramIcon size={14}/> Instagram</span>
                 <Toggle checked={cfg.showInstagram || false} onChange={v => update("showInstagram", v)} />
              </div>
              {cfg.showInstagram && <Inp placeholder="Link a tu perfil..." value={cfg.instagramUrl || ""} onChange={v => update("instagramUrl", v)} className="!mb-0" />}
@@ -360,7 +371,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
           
           <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-slate-700 flex items-center gap-2"><Facebook size={14} className="text-blue-600"/> Facebook</span>
+                <span className="text-xs font-bold text-slate-700 flex items-center gap-2"><FacebookIcon size={14}/> Facebook</span>
                 <Toggle checked={cfg.showFacebook || false} onChange={v => update("showFacebook", v)} />
              </div>
              {cfg.showFacebook && <Inp placeholder="Link a tu página..." value={cfg.facebookUrl || ""} onChange={v => update("facebookUrl", v)} className="!mb-0" />}
@@ -368,7 +379,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
 
           <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-slate-700 flex items-center gap-2"><Music2 size={14} className="text-black"/> TikTok</span>
+                <span className="text-xs font-bold text-slate-700 flex items-center gap-2"><TiktokIcon size={14}/> TikTok</span>
                 <Toggle checked={cfg.showTiktok || false} onChange={v => update("showTiktok", v)} />
              </div>
              {cfg.showTiktok && <Inp placeholder="Link a tu cuenta..." value={cfg.tiktokUrl || ""} onChange={v => update("tiktokUrl", v)} className="!mb-0" />}
