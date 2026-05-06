@@ -16,7 +16,7 @@ export const DEF_CONFIG = {
   eventTypeEmoji: "✨",
   eventType: "Mis Dulces 15",
   honoreeName: "Valentina",
-  showBadge: true, // NUEVO
+  showBadge: true,
   badgeEmoji: "👑",
   badgeText: "La gran noche",
   
@@ -54,168 +54,153 @@ export const DEF_CONFIG = {
 };
 
 export const THEMES = [
-  // 🎈 Infantiles (más modernos, menos “guardería”)
+  // 🎈 Infantiles — vibrantes pero con carácter
   {
     id: "t1",
-    name: "Bubble Pink Pro",
-    primary: "#ec4899",
-    gradient: "linear-gradient(135deg, #ec4899, #f472b6)",
-    bg1: "#fff1f7",
-    bg2: "#ffe4f0",
-    text: "#3b0a2a",
+    name: "Rosa Chicle",
+    primary: "#e91e8c",
+    bg1: "#fff0f7",
+    bg2: "linear-gradient(135deg, #fce4f3 0%, #f8d0ea 100%)",
+    text: "#6b0f4a",
     card: "#ffffff",
-    muted: "#f9a8d4"
+    muted: "#c4178a",
   },
   {
     id: "t2",
-    name: "Sky Soft",
+    name: "Celeste Nube",
     primary: "#0ea5e9",
-    gradient: "linear-gradient(135deg, #0ea5e9, #38bdf8)",
     bg1: "#f0f9ff",
-    bg2: "#e0f2fe",
-    text: "#082f49",
+    bg2: "linear-gradient(135deg, #dbeafe 0%, #bae6fd 100%)",
+    text: "#0c4a6e",
     card: "#ffffff",
-    muted: "#7dd3fc"
+    muted: "#0284c7",
   },
   {
     id: "t3",
-    name: "Hero Red Modern",
+    name: "Rojo Héroe",
     primary: "#dc2626",
-    gradient: "linear-gradient(135deg, #dc2626, #f87171)",
     bg1: "#fff5f5",
-    bg2: "#fee2e2",
-    text: "#3f0a0a",
+    bg2: "linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)",
+    text: "#7f1d1d",
     card: "#ffffff",
-    muted: "#fca5a5"
+    muted: "#b91c1c",
   },
   {
     id: "t4",
-    name: "Magic Purple",
+    name: "Lila Mágico",
     primary: "#9333ea",
-    gradient: "linear-gradient(135deg, #9333ea, #c084fc)",
     bg1: "#faf5ff",
-    bg2: "#f3e8ff",
-    text: "#2e1065",
+    bg2: "linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%)",
+    text: "#4c1d95",
     card: "#ffffff",
-    muted: "#d8b4fe"
+    muted: "#7c3aed",
   },
   {
     id: "t5",
-    name: "Jungle Fresh",
+    name: "Verde Selva",
     primary: "#16a34a",
-    gradient: "linear-gradient(135deg, #16a34a, #4ade80)",
     bg1: "#f0fdf4",
-    bg2: "#dcfce7",
-    text: "#052e16",
+    bg2: "linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)",
+    text: "#14532d",
     card: "#ffffff",
-    muted: "#86efac"
+    muted: "#15803d",
   },
 
-  // 👑 15 Años (más premium / instagram-ready)
+  // 👑 15 Años — elegantes y con drama
   {
     id: "t6",
-    name: "Rose Gold Luxe",
+    name: "Rose Gold",
     primary: "#be185d",
-    gradient: "linear-gradient(135deg, #be185d, #f472b6)",
-    bg1: "#fff1f7",
-    bg2: "#ffe4f0",
-    text: "#4a044e",
-    card: "#ffffff",
-    muted: "#f9a8d4"
+    bg1: "#fdf4ff",
+    bg2: "linear-gradient(135deg, #fce7f3 0%, #f5d0e8 100%)",
+    text: "#500724",
+    card: "#fff8fc",
+    muted: "#9d174d",
   },
   {
     id: "t7",
-    name: "Neon Night",
+    name: "Neón Noche",
     primary: "#c026d3",
-    gradient: "linear-gradient(135deg, #c026d3, #6366f1)",
-    bg1: "#0f172a",
-    bg2: "#020617",
-    text: "#f8fafc",
-    card: "#1e293b",
-    muted: "#a78bfa"
+    bg1: "#0f0a1e",
+    bg2: "linear-gradient(135deg, #1a0a2e 0%, #0d0d1f 100%)",
+    text: "#f0e6ff",
+    card: "#1e1030",
+    muted: "#a855f7",
   },
   {
     id: "t8",
-    name: "Emerald Deep",
-    primary: "#047857",
-    gradient: "linear-gradient(135deg, #047857, #10b981)",
-    bg1: "#ecfdf5",
-    bg2: "#d1fae5",
-    text: "#022c22",
+    name: "Esmeralda",
+    primary: "#059669",
+    bg1: "#f0fdf8",
+    bg2: "linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)",
+    text: "#064e3b",
     card: "#ffffff",
-    muted: "#6ee7b7"
+    muted: "#047857",
   },
   {
     id: "t9",
-    name: "Royal Blue Pro",
+    name: "Azul Rey",
     primary: "#1d4ed8",
-    gradient: "linear-gradient(135deg, #1d4ed8, #60a5fa)",
-    bg1: "#eff6ff",
-    bg2: "#dbeafe",
-    text: "#172554",
+    bg1: "#f8faff",
+    bg2: "linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)",
+    text: "#1e3a8a",
     card: "#ffffff",
-    muted: "#93c5fd"
+    muted: "#1e40af",
   },
   {
     id: "t10",
-    name: "Black Silver Elite",
-    primary: "#94a3b8",
-    gradient: "linear-gradient(135deg, #0f172a, #334155)",
-    bg1: "#020617",
-    bg2: "#0f172a",
-    text: "#e2e8f0",
-    card: "#1e293b",
-    muted: "#64748b"
+    name: "Black & Gold Elite",
+    primary: "#d4af37", // Dorado clásico
+    bg1: "#0a0a0a", // Negro profundo
+    bg2: "linear-gradient(135deg, #171717 0%, #000000 100%)",
+    text: "#fef3c7", // Blanco cálido/crema
+    card: "#171717", // Gris casi negro
+    muted: "#a3a3a3", // Gris neutro para contraste
   },
 
-  // 💍 Bodas (elegancia real, no genérico)
+  // 💍 Bodas — sofisticados y atemporales
   {
     id: "t11",
-    name: "Classic Ivory Gold",
-    primary: "#c9a227",
-    gradient: "linear-gradient(135deg, #c9a227, #f5e6a8)",
-    bg1: "#fffdf7",
-    bg2: "#f8f6f0",
-    text: "#3f3f46",
+    name: "Blanco Clásico",
+    primary: "#b8953f",
+    bg1: "#fefefe",
+    bg2: "linear-gradient(135deg, #fafaf9 0%, #f5f0e8 100%)",
+    text: "#292524",
     card: "#ffffff",
-    muted: "#e4d7a3"
+    muted: "#a8a29e",
   },
   {
     id: "t12",
-    name: "Olive Rustic",
-    primary: "#4d7c0f",
-    gradient: "linear-gradient(135deg, #4d7c0f, #a3e635)",
-    bg1: "#fefce8",
-    bg2: "#f7fee7",
-    text: "#1a2e05",
-    card: "#ffffff",
-    muted: "#bef264"
+    name: "Rústica",
+    primary: "#65a30d",
+    bg1: "#fefdf0",
+    bg2: "linear-gradient(135deg, #fef9c3 0%, #fef08a 40%, #ecfccb 100%)",
+    text: "#3f6212",
+    card: "#fefce8",
+    muted: "#4d7c0f",
   },
   {
     id: "t13",
-    name: "Burgundy Velvet",
-    primary: "#7f1d1d",
-    gradient: "linear-gradient(135deg, #7f1d1d, #b91c1c)",
-    bg1: "#fff1f2",
-    bg2: "#ffe4e6",
-    text: "#2c0a0a",
+    name: "Borgoña",
+    primary: "#9f1239",
+    bg1: "#fff4f5",
+    bg2: "linear-gradient(135deg, #ffe4e6 0%, #fecdd3 100%)",
+    text: "#4c0519",
     card: "#ffffff",
-    muted: "#fca5a5"
+    muted: "#881337",
   },
   {
     id: "t14",
-    name: "Terracotta Warm",
+    name: "Terracota",
     primary: "#c2410c",
-    gradient: "linear-gradient(135deg, #c2410c, #fb923c)",
-    bg1: "#fff7ed",
-    bg2: "#ffedd5",
-    text: "#431407",
+    bg1: "#fffaf5",
+    bg2: "linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%)",
+    text: "#7c2d12",
     card: "#ffffff",
-    muted: "#fdba74"
-  }
+    muted: "#9a3412",
+  },
 ]; 
 
-// ESTO ERA LO QUE FALTABA PARA QUE VERCEL NO FALLE
 export const FONTS = [
   { label: "Playfair Display", value: "Playfair Display" },
   { label: "Bodoni Moda", value: "Bodoni Moda" },
@@ -269,7 +254,7 @@ export const getYouTubeId = (url) => {
 
 export const getSpotifyEmbed = (url) => {
   if (!url) return null;
-  if (url.includes('spotify.link')) return null; // No soporta links acortados aún
+  if (url.includes('spotify.link')) return null;
   return url.replace('open.spotify.com/', 'open.spotify.com/embed/');
 };
 
