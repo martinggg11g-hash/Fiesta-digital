@@ -54,12 +54,25 @@ export const DEF_CONFIG = {
 };
 
 export const THEMES = [
-  { id: "default", name: "Violeta Premium", primary: "#8b5cf6", bg1: "#f8f7ff", bg2: "#e0dcfc", text: "#1e1b4b", muted: "#6b7280", card: "#ffffff", fontTitle: "Playfair Display" },
-  { id: "rosa", name: "Rosa Pastel", primary: "#ec4899", bg1: "#fff1f2", bg2: "#fbcfe8", text: "#4c0519", muted: "#9f1239", card: "#ffffff", fontTitle: "Pacifico" },
-  { id: "gold", name: "Dorado Noche", primary: "#d4af37", bg1: "#000000", bg2: "#1a1a1a", text: "#ffffff", muted: "#9ca3af", card: "#262626", fontTitle: "Playfair Display" },
-  { id: "blue", name: "Azul Bebé", primary: "#3b82f6", bg1: "#eff6ff", bg2: "#bfdbfe", text: "#172554", muted: "#1e40af", card: "#ffffff", fontTitle: "Montserrat" },
-  { id: "neon", name: "Neón Party", primary: "#22c55e", bg1: "#0f172a", bg2: "#020617", text: "#ffffff", muted: "#94a3b8", card: "#1e293b", fontTitle: "Syne" },
-  { id: "boho", name: "Boho Chic", primary: "#b45309", bg1: "#fffbeb", bg2: "#fef3c7", text: "#451a03", muted: "#78350f", card: "#ffffff", fontTitle: "Caveat" },
+  // 🎈 5 Infantiles
+  { id: "t1", name: "Rosa Chicle", primary: "#f472b6", bg1: "#fdf2f8", bg2: "#fbcfe8", text: "#831843", card: "#ffffff", muted: "#f472b6" },
+  { id: "t2", name: "Celeste Nube", primary: "#38bdf8", bg1: "#f0f9ff", bg2: "#e0f2fe", text: "#0c4a6e", card: "#ffffff", muted: "#38bdf8" },
+  { id: "t3", name: "Rojo Héroe", primary: "#ef4444", bg1: "#fef2f2", bg2: "#fee2e2", text: "#7f1d1d", card: "#ffffff", muted: "#ef4444" },
+  { id: "t4", name: "Lila Mágico", primary: "#a855f7", bg1: "#faf5ff", bg2: "#f3e8ff", text: "#581c87", card: "#ffffff", muted: "#a855f7" },
+  { id: "t5", name: "Verde Selva", primary: "#22c55e", bg1: "#f0fdf4", bg2: "#dcfce7", text: "#14532d", card: "#ffffff", muted: "#22c55e" },
+
+  // 👑 5 de 15 Años
+  { id: "t6", name: "Rose Gold", primary: "#db2777", bg1: "#fdf2f8", bg2: "#fce7f3", text: "#4c1d95", card: "#ffffff", muted: "#db2777" },
+  { id: "t7", name: "Neón Noche", primary: "#d946ef", bg1: "#1e1b4b", bg2: "#0f172a", text: "#ffffff", card: "#1e1b4b", muted: "#a855f7" },
+  { id: "t8", name: "Esmeralda", primary: "#059669", bg1: "#ecfdf5", bg2: "#d1fae5", text: "#064e3b", card: "#ffffff", muted: "#059669" },
+  { id: "t9", name: "Azul Rey", primary: "#2563eb", bg1: "#f0f9ff", bg2: "#dbeafe", text: "#1e3a8a", card: "#ffffff", muted: "#2563eb" },
+  { id: "t10", name: "Black & Silver", primary: "#64748b", bg1: "#0f172a", bg2: "#1e293b", text: "#f8fafc", card: "#334155", muted: "#cbd5e1" },
+
+  // 💍 4 de Bodas
+  { id: "t11", name: "Blanco Clásico", primary: "#d4af37", bg1: "#ffffff", bg2: "#f8fafc", text: "#334155", card: "#ffffff", muted: "#94a3b8" },
+  { id: "t12", name: "Rústica", primary: "#84cc16", bg1: "#fefce8", bg2: "#f7fee7", text: "#3f6212", card: "#ffffff", muted: "#84cc16" },
+  { id: "t13", name: "Borgoña", primary: "#9f1239", bg1: "#fff1f2", bg2: "#ffe4e6", text: "#4c0519", card: "#ffffff", muted: "#9f1239" },
+  { id: "t14", name: "Terracota", primary: "#ea580c", bg1: "#fff7ed", bg2: "#ffedd5", text: "#7c2d12", card: "#ffffff", muted: "#ea580c" }
 ];
 
 export const FONTS = [
