@@ -11,8 +11,7 @@ import {
 } from "./EditorUI";
 
 import { 
-  ANIMATION_CATEGORIES, THEMES, FONTS, TRANSITION_OPTS, 
-  FOOD_EMOJIS, CLOTHES_EMOJIS 
+  ANIMATION_CATEGORIES, THEMES, TRANSITION_OPTS, PARTICLE_CATEGORIES 
 } from "./config";
 
 const InstagramIcon = ({ size = 20 }) => (
@@ -27,6 +26,7 @@ const TiktokIcon = ({ size = 20 }) => (
 
 export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim, mobileView }) {
   const [animCat, setAnimCategory] = useState("infantil");
+  const [partCat, setPartCat] = useState("Estrellas y Magia"); // Pestaña inicial de partículas
 
   // FUNCIÓN PARA RESETEAR POSICIONES
   const resetPositions = () => {
@@ -116,21 +116,26 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
 
         <TypoControl label="Tamaño Títulos (Menú, Regalos...)" sizeVal={cfg.titlesSize ?? 10} onSize={v => update("titlesSize", v)} minSize={8} maxSize={20} />
 
+        {/* =========================================
+            NUEVO SELECTOR DE PARTÍCULAS POR CATEGORÍA
+            ========================================= */}
         <div className="mb-2 border-t border-gray-100 pt-4 z-10 relative">
-          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-left">Partículas Flotantes</label>
+          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-left">Efectos y Partículas</label>
+          
+          <div className="flex gap-1 overflow-x-auto pb-2 mb-2 fd-sb">
+            {Object.keys(PARTICLE_CATEGORIES).map(c => (
+              <button key={c} type="button" onClick={() => setPartCat(c)} className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase shrink-0 transition-colors cursor-pointer ${partCat === c ? 'bg-violet-600 text-white shadow-sm' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+                {c}
+              </button>
+            ))}
+          </div>
+
           <div className="grid grid-cols-2 gap-2">
-            {[
-              { id: 'none', icon: '🚫', name: 'Ninguno' },
-              { id: 'confetti', icon: '🎉', name: 'Confeti' },
-              { id: 'glitter', icon: '✨', name: 'Brillos' },
-              { id: 'hearts', icon: '❤️', name: 'Corazones' },
-              { id: 'stars', icon: '⭐', name: 'Estrellas' },
-              { id: 'bubbles', icon: '🫧', name: 'Burbujas' },
-              { id: 'snow', icon: '❄️', name: 'Nieve' },
-              { id: 'petals', icon: '🌸', name: 'Pétalos' },
-              { id: 'emojis', icon: '🥳', name: 'Emojis' }
-            ].map(eff => (
-              <button key={eff.id} type="button" onClick={() => update("particleEffect", eff.id)} className={`p-2.5 rounded-xl border text-left text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${cfg.particleEffect === eff.id ? 'border-violet-400 bg-violet-50 text-violet-700' : 'border-gray-200 bg-white text-slate-600 hover:border-violet-200'}`}><span className="text-base">{eff.icon}</span> {eff.name}</button>
+            {PARTICLE_CATEGORIES[partCat].map(eff => (
+              <button key={eff.id} type="button" onClick={() => update("particleEffect", eff.id)} className={`p-2 rounded-xl border text-left flex items-center gap-2 transition-all cursor-pointer ${cfg.particleEffect === eff.id ? 'border-violet-500 bg-violet-50 text-violet-700 shadow-sm' : 'border-gray-200 bg-white text-slate-600 hover:border-violet-200'}`}>
+                <span className="text-xl">{eff.icon}</span> 
+                <span className="truncate text-[10px] font-bold">{eff.name}</span>
+              </button>
             ))}
           </div>
         </div>
@@ -306,15 +311,6 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
       </Acc>
 
       <Acc title="8️⃣ Menú de Comida" icon={LayoutGrid} iconColor="#10b981">
-         {/* SELECTOR DE ESTILO PREMIUM PARA EL MENU */}
-         <div className="mb-4 p-3 rounded-xl border border-violet-100 bg-violet-50/50">
-          <label className="block text-[10px] font-black text-violet-600 uppercase mb-2 text-center">Símbolos del Menú</label>
-          <div className="flex bg-white p-1 rounded-lg shadow-sm">
-             <button onClick={() => update("usePremiumIcons", false)} type="button" className={`flex-1 py-1.5 rounded text-xs font-bold transition-all ${!cfg.usePremiumIcons ? 'bg-violet-100 text-violet-700' : 'text-slate-500 hover:text-slate-700'}`}>🎉 Emojis</button>
-             <button onClick={() => update("usePremiumIcons", true)} type="button" className={`flex-1 py-1.5 rounded text-xs font-bold transition-all ${cfg.usePremiumIcons ? 'bg-slate-800 text-amber-400' : 'text-slate-500 hover:text-slate-700'}`}>✨ Íconos</button>
-          </div>
-         </div>
-
          <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Menú</span><Toggle checked={cfg.showMenu} onChange={v => update("showMenu", v)} /></div>
          {cfg.showMenu && (
            <>
@@ -322,10 +318,10 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
                <Inp label="Título de la Sección" value={cfg.menuSectionTitle || "¿Qué vamos a comer?"} onChange={v => update("menuSectionTitle", v)} icon={Edit2} />
              </div>
 
-             <div className="space-y-3 mb-6 relative">
+             <div className="space-y-3 mb-6 relative z-[70]">
                 {cfg.menuItems?.map((m, i) => (
-                  <div key={i} className="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-100 shadow-sm relative" style={{ zIndex: 50 - i }}>
-                    <EmojiPicker list={FOOD_EMOJIS} value={m.emoji} onSelect={e => { const n = [...cfg.menuItems]; n[i].emoji = e; update("menuItems", n); }} />
+                  <div key={i} className="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-100 shadow-sm relative">
+                    <EmojiPicker value={m.emoji} onSelect={e => { const n = [...cfg.menuItems]; n[i].emoji = e; update("menuItems", n); }} />
                     <MiniInp className="flex-1 p-2 text-xs border bg-gray-50 rounded-lg outline-none focus:border-violet-300" value={m.label} onChange={v => { const n = [...cfg.menuItems]; n[i].label = v; update("menuItems", n); }} />
                     <button onClick={() => update("menuItems", cfg.menuItems.filter((_, idx) => idx !== i))} type="button" className="text-red-400 p-2 hover:bg-red-50 rounded-lg cursor-pointer"><Trash2 size={14}/></button>
                   </div>
@@ -344,7 +340,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
          <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Vestimenta</span><Toggle checked={cfg.showDressCode} onChange={v => update("showDressCode", v)} /></div>
          {cfg.showDressCode && (
            <div className="flex gap-2 mb-6 bg-gray-50 p-2 rounded-xl border border-gray-200 relative z-[40]">
-             <EmojiPicker list={CLOTHES_EMOJIS} value={cfg.dressCodeIcon} onSelect={e => update("dressCodeIcon", e)} />
+             <EmojiPicker value={cfg.dressCodeIcon} onSelect={e => update("dressCodeIcon", e)} />
              <div className="flex-1"><Inp value={cfg.dressCodeText} onChange={v => update("dressCodeText", v)} placeholder="Ej: Elegante Sport" className="!mb-0"/></div>
            </div>
          )}
