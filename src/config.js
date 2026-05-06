@@ -1,4 +1,4 @@
-// src/config.jsx
+// src/config.js
 
 export const DEF_CONFIG = {
   theme: "default",
@@ -213,6 +213,34 @@ export const THEMES = [
     card: "#ffffff",
     muted: "#fdba74"
   }
+]; 
+
+// ESTO ERA LO QUE FALTABA PARA QUE VERCEL NO FALLE
+export const FONTS = [
+  { label: "Playfair Display", value: "Playfair Display" },
+  { label: "Bodoni Moda", value: "Bodoni Moda" },
+  { label: "Abril Fatface", value: "Abril Fatface" },
+  { label: "Cinzel", value: "Cinzel" },
+  { label: "Prata", value: "Prata" },
+  { label: "Lora", value: "Lora" },
+  { label: "Poppins", value: "Poppins" },
+  { label: "Montserrat", value: "Montserrat" },
+  { label: "Jost", value: "Jost" },
+  { label: "Figtree", value: "Figtree" },
+  { label: "Outfit", value: "Outfit" },
+  { label: "Roboto", value: "Roboto" },
+  { label: "Monsieur La Doulaise", value: "Monsieur La Doulaise" },
+  { label: "Pinyon Script", value: "Pinyon Script" },
+  { label: "Great Vibes", value: "Great Vibes" },
+  { label: "Alex Brush", value: "Alex Brush" },
+  { label: "Dancing Script", value: "Dancing Script" },
+  { label: "Pacifico", value: "Pacifico" },
+  { label: "Merriweather", value: "Merriweather" },
+  { label: "Cormorant Garamond", value: "Cormorant Garamond" },
+  { label: "Libre Baskerville", value: "Libre Baskerville" },
+  { label: "EB Garamond", value: "EB Garamond" },
+  { label: "Radley", value: "Radley" },
+  { label: "Spectral", value: "Spectral" }
 ];
 
 export const GENERAL_EMOJIS = ["✨","👑","🎈","🎉","🍾","🥂","🍷","🎂","🍰","🥳","💍","💒","💒","👼","🎓","🎓","🚗","👗","👔","🎁","💝"];
