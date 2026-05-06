@@ -297,7 +297,8 @@ const InfoCard = ({ icon: Icon, label, value, sub, fontSize, primary, textC, mut
 export const InvitePreview = ({ cfg, status, update, onConfirmRSVP }) => {
   if (!cfg) return null;
   const primary = cfg.primary || "#8b5cf6";
-  const bg = `linear-gradient(180deg, ${cfg.bg1 || "#f8f7ff"} 0%, ${cfg.bg2 || "#e0dcfc"} 100%)`;
+  const bg1 = cfg.bg1 || "#f8f7ff";
+  const bg2 = cfg.bg2 || "#e0dcfc";
   const textC = cfg.text || "#1e1b4b";
   const mutedC = cfg.muted || "#6b7280";
   const cardC  = cfg.card  || "#ffffff";
@@ -305,7 +306,8 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP }) => {
   const coverShadow = (cfg.coverTextShadowSize > 0) ? `0px 4px ${cfg.coverTextShadowSize}px ${cfg.coverTextShadowColor || '#000000'}` : 'none';
 
   return (
-    <div style={{ background: bg, fontFamily: cfg.fontBody, minHeight: '100%' }} className="pb-12 relative overflow-x-hidden flex flex-col">
+    // Acá está la solución mágica: aplicamos bg1 como color base, y bg2 (que ahora es tu gradiente premium) como background-image si existe.
+    <div style={{ backgroundColor: bg1, backgroundImage: bg2.includes('gradient') ? bg2 : `linear-gradient(180deg, ${bg1} 0%, ${bg2} 100%)`, fontFamily: cfg.fontBody, minHeight: '100%' }} className="pb-12 relative overflow-x-hidden flex flex-col">
       
       {/* BORDES ARRASTRABLES (SIEMPRE VISIBLES) */}
       {cfg.showCoverBorders && cfg.selectedBorder && (
