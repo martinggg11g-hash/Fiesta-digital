@@ -120,6 +120,9 @@ const GalleryCarousel = ({ photos }) => {
   );
 };
 
+// ==========================================
+// MOTOR DE PARTÍCULAS MEJORADO
+// ==========================================
 const ParticleCanvas = ({ effect, primary }) => {
   const canvasRef = useRef(null);
   const animRef = useRef(null);
@@ -135,20 +138,80 @@ const ParticleCanvas = ({ effect, primary }) => {
       resize(); observer = new ResizeObserver(resize); observer.observe(canvas);
     } catch(e) { }
 
-    const EMOJI_MIX = ["🎉","🎊","🎈","✨","🌟","💖","🎂"];
-    const PETALS = ["🌸","🌺","🌹","🌷"];
-
     const spawnParticle = () => {
-      const base = { x: Math.random() * canvas.width, y: effect === "bubbles" ? canvas.height + 20 : -20, vx: (Math.random() - 0.5) * 2, vy: Math.random() * 2 + 1, alpha: 1, rot: Math.random() * 360, rotV: (Math.random() - 0.5) * 4, size: Math.random() * 10 + 8, life: 1, decay: Math.random() * 0.003 + 0.002 };
-      
-      if (effect === "confetti") return { ...base, x: Math.random() * canvas.width, y: -50 - Math.random() * 100, vx: (Math.random() - 0.5) * 3, vy: Math.random() * 3 + 2, type: "rect", color: [primary, "#f59e0b", "#10b981", "#ef4444", "#3b82f6", "#ec4899", "#ffffff"][Math.floor(Math.random() * 7)], w: Math.random()*12+6, h: Math.random()*6+3, rotV: (Math.random() - 0.5) * 15, life: 2 };
-      if (effect === "glitter") return { ...base, x: Math.random() * canvas.width, y: Math.random() * canvas.height, vx: (Math.random() - 0.5) * 0.4, vy: (Math.random() - 0.5) * 0.4, alpha: Math.random(), alphaDir: Math.random() > 0.5 ? 1 : -1, type: "star", color: ["#ffffff", "#fef08a", primary][Math.floor(Math.random()*3)], size: Math.random() * 3 + 1.5 };
-      if (effect === "hearts") return { ...base, type: "text", emoji: "❤️", size: Math.random()*18+10 };
-      if (effect === "stars") return { ...base, type: "text", emoji: "⭐", size: Math.random()*16+8 };
-      if (effect === "bubbles") return { ...base, type: "circle", color: primary, filled: false, r: Math.random()*12+4, vx: (Math.random()-0.5)*1.5, vy: -(Math.random()*2+0.5) };
-      if (effect === "snow") return { ...base, type: "circle", color: "#ffffff", filled: true, r: Math.random()*3+1, vy: Math.random()*1.5+0.5, vx: (Math.random()-0.5)*0.8 };
-      if (effect === "petals") return { ...base, type: "text", emoji: PETALS[Math.floor(Math.random()*PETALS.length)], size: Math.random()*20+12 };
-      if (effect === "emojis") return { ...base, type: "text", emoji: EMOJI_MIX[Math.floor(Math.random()*EMOJI_MIX.length)], size: Math.random()*20+12 };
+      const base = { 
+        x: Math.random() * canvas.width, 
+        y: -20, 
+        vx: (Math.random() - 0.5) * 2, 
+        vy: Math.random() * 2 + 1, 
+        alpha: 1, 
+        rot: Math.random() * 360, 
+        rotV: (Math.random() - 0.5) * 4, 
+        size: Math.random() * 10 + 8, 
+        life: 1, 
+        decay: Math.random() * 0.005 + 0.002 
+      };
+
+      // Confeti
+      if (effect.startsWith("confetti")) {
+        let colors = [primary, "#f59e0b", "#10b981", "#ef4444", "#3b82f6", "#ec4899", "#ffffff"];
+        if (effect === "confetti-gold") colors = ["#fbbf24", "#f59e0b", "#d97706", "#fef3c7"];
+        if (effect === "confetti-silver") colors = ["#e2e8f0", "#cbd5e1", "#94a3b8", "#f8fafc"];
+        return { ...base, y: -50, vy: Math.random() * 3 + 2, type: "rect", color: colors[Math.floor(Math.random() * colors.length)], w: Math.random()*12+6, h: Math.random()*6+3, rotV: (Math.random() - 0.5) * 15, life: 2 };
+      }
+
+      // Globos (Suben)
+      if (effect === "balloons") return { ...base, y: canvas.height + 50, vy: -(Math.random() * 2 + 1), type: "text", emoji: "🎈", size: Math.random()*30+20 };
+
+      // Estrellas y Magia (Titilan)
+      if (effect.startsWith("stars") || effect === "meteor-shower" || effect === "fairy-dust" || effect === "galaxy-dust") {
+        let c = "#ffffff";
+        if (effect === "stars-gold" || effect === "fairy-dust") c = "#fbbf24";
+        if (effect === "galaxy-dust") c = "#a855f7";
+        if (effect === "meteor-shower") return { ...base, x: Math.random() * canvas.width * 1.5, y: -50, vx: -5, vy: 5, type: "star", color: c, size: Math.random() * 3 + 1, alphaDir: 0 }; 
+        return { ...base, x: Math.random() * canvas.width, y: Math.random() * canvas.height, vx: (Math.random()-0.5)*0.2, vy: (Math.random()-0.5)*0.2, type: "star", color: c, size: Math.random() * 3 + 1, alpha: Math.random(), alphaDir: Math.random() > 0.5 ? 1 : -1 };
+      }
+
+      // Orbes y Bokeh (Titilan suave)
+      if (effect === "glowing-orbs" || effect === "bokeh") {
+        return { ...base, x: Math.random() * canvas.width, y: Math.random() * canvas.height, vx: (Math.random()-0.5)*0.5, vy: (Math.random()-0.5)*0.5, type: "circle", color: effect === "bokeh" ? ["#f472b6", "#fbbf24", "#60a5fa"][Math.floor(Math.random()*3)] : primary, filled: true, r: Math.random()*20+5, alpha: Math.random()*0.5, alphaDir: Math.random() > 0.5 ? 1 : -1 };
+      }
+
+      // Romance (Corazones y Besos - Suben)
+      if (effect.startsWith("hearts") || effect === "floating-kisses") {
+        let e = "❤️";
+        if (effect === "hearts-pink") e = "💖";
+        if (effect === "hearts-white") e = "🤍";
+        if (effect === "floating-kisses") e = "💋";
+        return { ...base, type: "text", emoji: e, size: Math.random()*18+10, vy: -(Math.random()*2+1), y: canvas.height+20 };
+      }
+
+      // Naturaleza
+      if (effect.startsWith("snow")) return { ...base, type: "circle", color: "#ffffff", filled: true, r: Math.random()*3+1, vy: effect==="snow-blizzard" ? Math.random()*4+2 : Math.random()*1.5+0.5, vx: effect==="snow-blizzard" ? Math.random()*3+1 : (Math.random()-0.5)*0.8 };
+      if (effect === "sakura" || effect === "rose-petals") return { ...base, type: "text", emoji: effect==="sakura"?"🌸":"🌹", size: Math.random()*15+10, vy: Math.random()*2+1, rotV: Math.random()*5 };
+      if (effect === "autumn-leaves") return { ...base, type: "text", emoji: "🍂", size: Math.random()*15+10, vy: Math.random()*2+1, rotV: Math.random()*5 };
+      if (effect === "fireflies") return { ...base, x: Math.random() * canvas.width, y: Math.random() * canvas.height, type: "circle", color: "#bef264", filled: true, r: Math.random()*2+1, alpha: Math.random(), alphaDir: Math.random() > 0.5 ? 1 : -1, vy: (Math.random()-0.5)*1.5, vx: (Math.random()-0.5)*1.5 };
+      if (effect === "butterflies") return { ...base, type: "text", emoji: "🦋", size: Math.random()*15+10, vy: -(Math.random()*2+1), vx: (Math.random()-0.5)*3, y: canvas.height+20 };
+      if (effect === "rain") return { ...base, type: "rect", color: "#60a5fa", w: 1, h: Math.random()*15+10, vy: Math.random()*8+5, vx: 0 };
+
+      // Glitters (Titilan)
+      if (effect.startsWith("glitter")) {
+        return { ...base, x: Math.random() * canvas.width, y: Math.random() * canvas.height, vx: (Math.random() - 0.5) * 0.4, vy: (Math.random() - 0.5) * 0.4, alpha: Math.random(), alphaDir: Math.random() > 0.5 ? 1 : -1, type: "star", color: effect==="glitter-gold" ? "#fbbf24" : ["#ffffff", "#fef08a", primary][Math.floor(Math.random()*3)], size: Math.random() * 3 + 1.5 };
+      }
+
+      // Burbujas y Diamantes (Suben)
+      if (effect.startsWith("bubbles")) return { ...base, type: "circle", color: effect==="bubbles-color" ? ["#f472b6", "#60a5fa", "#fbbf24"][Math.floor(Math.random()*3)] : primary, filled: false, r: Math.random()*12+4, vx: (Math.random()-0.5)*1.5, vy: -(Math.random()*2+0.5), y: canvas.height+20 };
+      if (effect === "floating-diamonds") return { ...base, type: "text", emoji: "💎", size: Math.random()*15+10, vy: -(Math.random()*2+1), y: canvas.height+20 };
+
+      // Emojis
+      if (effect.startsWith("emojis") || effect === "streamers") {
+        let list = ["🎉","🎊","🎈","✨","🌟","💖","🎂"];
+        if (effect === "emojis-love") list = ["😍","🥰","😘","❤️","💕"];
+        if (effect === "emojis-music") list = ["🎵","🎶","🎤","🎧","🎸"];
+        if (effect === "streamers") list = ["🎊"];
+        return { ...base, type: "text", emoji: list[Math.floor(Math.random()*list.length)], size: Math.random()*20+12 };
+      }
+
       return null;
     };
 
@@ -158,25 +221,38 @@ const ParticleCanvas = ({ effect, primary }) => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       frame++;
       
-      const maxParticles = effect === "glitter" ? 100 : (effect === "confetti" ? 80 : 50);
-      if (frame % (effect === "confetti" ? 3 : 6) === 0 && particlesRef.current.length < maxParticles) {
-        for(let i=0; i<(effect==="confetti"?2:1); i++) { const p = spawnParticle(); if (p) particlesRef.current.push(p); }
+      const maxParticles = effect.includes("blizzard") || effect.includes("rain") ? 150 : (effect.includes("glitter") || effect.includes("stars") || effect.includes("dust") ? 80 : 40);
+      
+      if (frame % (effect.includes("confetti") ? 3 : 6) === 0 && particlesRef.current.length < maxParticles) {
+        const p = spawnParticle(); if (p) particlesRef.current.push(p);
       }
       
       particlesRef.current = particlesRef.current.filter(p => {
         p.x += p.vx; p.y += p.vy; p.rot = (p.rot || 0) + (p.rotV || 0); 
-        if (effect === "confetti") { p.life -= 0.005; p.alpha = Math.min(1, p.life); } 
-        else if (effect === "glitter") { p.alpha += p.alphaDir * 0.02; if (p.alpha >= 1) p.alphaDir = -1; if (p.alpha <= 0.1) p.alphaDir = 1; } 
-        else { p.life -= p.decay; p.alpha = p.life; }
+        
+        // Manejo de titileo (alphaDir)
+        if (p.alphaDir) {
+          p.alpha += p.alphaDir * 0.02;
+          if (p.alpha >= 1) { p.alpha = 1; p.alphaDir = -1; }
+          if (p.alpha <= 0) { p.alpha = 0; p.alphaDir = 1; p.x = Math.random()*canvas.width; p.y = Math.random()*canvas.height; }
+        } else {
+          // Manejo de vida normal
+          if (effect.startsWith("confetti")) p.life -= 0.005; else p.life -= p.decay;
+          p.alpha = Math.max(0, Math.min(1, p.life));
+        }
 
         ctx.globalAlpha = Math.max(0, Math.min(1, p.alpha));
+        
         if (p.type === "rect") { ctx.save(); ctx.translate(p.x, p.y); ctx.rotate((p.rot || 0) * Math.PI/180); ctx.fillStyle = p.color; ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h); ctx.restore(); } 
         else if (p.type === "circle") { ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); if (p.filled) { ctx.fillStyle = p.color; ctx.fill(); } else { ctx.strokeStyle = p.color; ctx.lineWidth = 1.5; ctx.stroke(); } } 
         else if (p.type === "star") { ctx.save(); ctx.translate(p.x, p.y); ctx.fillStyle = p.color; ctx.shadowBlur = 8; ctx.shadowColor = p.color; ctx.beginPath(); ctx.arc(0, 0, p.size, 0, Math.PI*2); ctx.fill(); ctx.restore(); } 
         else if (p.type === "text") { ctx.font = `${p.size}px serif`; ctx.textAlign = "center"; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate((p.rot||0)*Math.PI/180); ctx.fillText(p.emoji, 0, 0); ctx.restore(); }
+        
         ctx.globalAlpha = 1;
-        if (effect === "glitter") return true; 
-        return p.life > 0 && p.y < canvas.height + 40; 
+        
+        if (p.alphaDir) return true; // Si titila, no muere por salir de la pantalla
+        if (p.vy < 0) return p.y > -50; // Si sube, muere arriba
+        return p.y < canvas.height + 50 && p.x > -50 && p.x < canvas.width + 50; // Si baja, muere abajo o a los lados
       });
       animRef.current = requestAnimationFrame(loop);
     };
@@ -306,10 +382,8 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP }) => {
   const coverShadow = (cfg.coverTextShadowSize > 0) ? `0px 4px ${cfg.coverTextShadowSize}px ${cfg.coverTextShadowColor || '#000000'}` : 'none';
 
   return (
-    // Acá está la solución mágica: aplicamos bg1 como color base, y bg2 (que ahora es tu gradiente premium) como background-image si existe.
     <div style={{ backgroundColor: bg1, backgroundImage: bg2.includes('gradient') ? bg2 : `linear-gradient(180deg, ${bg1} 0%, ${bg2} 100%)`, fontFamily: cfg.fontBody, minHeight: '100%' }} className="pb-12 relative overflow-x-hidden flex flex-col">
       
-      {/* BORDES ARRASTRABLES (SIEMPRE VISIBLES) */}
       {cfg.showCoverBorders && cfg.selectedBorder && (
         <div className="absolute inset-0 pointer-events-none z-[100]">
           {(cfg.borderPosition === 'both' || cfg.borderPosition === 'top') && (
@@ -368,7 +442,6 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP }) => {
 
       <div className="px-5 -mt-8 relative z-30 space-y-4 flex-1">
         
-        {/* SECCIONES RESTAURADAS: CUENTA REGRESIVA Y BANNER */}
         {cfg.showCountdown && cfg.countdownDate && (
           <div className="p-5 rounded-3xl border border-white/5" style={{ background: cardC, color: textC }}>
             <h3 className="text-center text-[11px] font-black uppercase tracking-widest opacity-80 mb-1" style={{ color: mutedC }}>Falta para el gran día</h3>
@@ -384,7 +457,6 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP }) => {
           </div>
         )}
 
-        {/* FECHA, HORA Y LUGAR */}
         {cfg.showDate && <InfoCard icon={Calendar} label="¿Cuándo?" value={formatToDDMMYYYY(cfg.dateText)} fontSize={cfg.dateSize ?? 18} primary={primary} textC={textC} mutedC={mutedC} cardC={cardC} cfg={cfg} />}
         {cfg.showTime && <InfoCard icon={Clock} label="Horario" value={cfg.timeText} fontSize={cfg.dateSize ?? 18} primary={primary} textC={textC} mutedC={mutedC} cardC={cardC} cfg={cfg} />}
         
@@ -407,7 +479,6 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP }) => {
           </div>
         )}
 
-        {/* TARJETA DEL SALON */}
         {cfg.showVenueLogo && (
           <div className="pt-4">
             <div className="p-5 rounded-3xl text-center border border-white/5 shadow-sm" style={{ background: cardC }}>
@@ -423,7 +494,6 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP }) => {
           </div>
         )}
         
-        {/* MULTIMEDIA */}
         {cfg.showVideo && cfg.videoUrl && (
           <div className="pt-4">
             {cfg.videoTitle && <SectionTitle mutedC={mutedC} size={cfg.titlesSize}>{cfg.videoTitle}</SectionTitle>}
@@ -440,7 +510,6 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP }) => {
           </div>
         )}
 
-        {/* PROGRAMA */}
         {cfg.showItinerary && cfg.itinerary?.length > 0 && (
           <div className="pt-4">
             <SectionTitle mutedC={mutedC} size={cfg.titlesSize}>{cfg.itinerarySectionTitle || "Programa del evento"}</SectionTitle>
@@ -458,7 +527,6 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP }) => {
           </div>
         )}
 
-        {/* MENU */}
         {cfg.showMenu && cfg.menuItems?.length > 0 && (
           <div className="pt-4">
             <SectionTitle mutedC={mutedC} size={cfg.titlesSize}>{cfg.menuSectionTitle || "¿Qué vamos a comer?"}</SectionTitle>
@@ -466,7 +534,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP }) => {
               {cfg.menuItems.map((m, i) => (
                 <div key={i} className="p-4 rounded-2xl text-center border border-white/5" style={{ background: cardC }}>
                   <span className="mb-2 flex justify-center items-center h-10">
-                     <RenderSymbol value={cfg.usePremiumIcons ? 'icon-utensils' : m.emoji} size={32} color={primary} />
+                     <RenderSymbol value={m.emoji} size={32} color={primary} />
                   </span>
                   <span className="text-xs font-bold" style={{ color: textC, fontFamily: cfg.fontBody }}>{m.label}</span>
                 </div>
@@ -475,7 +543,6 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP }) => {
           </div>
         )}
 
-        {/* VESTIMENTA Y REGALOS */}
         {(cfg.showDressCode || cfg.showGifts) && (
           <div className="pt-6">
             <SectionTitle mutedC={mutedC} size={cfg.titlesSize}>{cfg.notesSectionTitle || "A tener en cuenta"}</SectionTitle>
@@ -524,7 +591,6 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP }) => {
           </div>
         )}
 
-        {/* GALERIA */}
         {cfg.showGallery && cfg.galleryPhotos?.length > 0 && (
           <div className="pt-4">
             <SectionTitle mutedC={mutedC} size={cfg.titlesSize}>{cfg.galleryTitle}</SectionTitle>
@@ -538,7 +604,6 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP }) => {
           </div>
         )}
 
-        {/* RSVP Y REDES SOCIALES */}
         <div className="pt-8">
            <RsvpWidget cfg={cfg} primary={primary} textC={textC} cardC={cardC} onConfirmRSVP={onConfirmRSVP} />
            
