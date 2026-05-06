@@ -1,219 +1,116 @@
-import React, { useState, useEffect, useRef } from "react";
-import { OpeningAnimation } from "./Lotties"; 
-import { MapPin, Calendar, Clock, Star, CheckCircle2, ChevronLeft, ChevronRight, Download, MessageCircle, Users, ExternalLink } from "lucide-react";
-import { DEF_CONFIG, THEMES, getSpotifyEmbed, getYouTubeId, formatToDDMMYYYY } from "./config";
-import { IconRenderer } from "./EditorUI";
+import React, { useState } from "react";
+import {
+  Palette, Star, Image as ImageIcon, Layout, List, Trash2, Video, 
+  Link as LinkIcon, LayoutGrid, Smartphone, Calendar, Clock, CheckCircle2,
+  MessageCircle, Plus, Edit2, RefreshCcw, Users
+} from "lucide-react";
 
-const InstagramIcon = ({ size = 20, color = "currentColor", className = "" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
-);
-const FacebookIcon = ({ size = 20, color = "currentColor", className = "" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
-);
-const TiktokIcon = ({ size = 20, color = "currentColor", className = "" }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path></svg>
-);
+import { 
+  GiphySearch, Inp, MiniInp, SelectInp, TypoControl, FontSelector,
+  FileUpload, Toggle, EmojiPicker, Acc, BordersGallery
+} from "./EditorUI";
 
-// RENDERIZADOR DE BORDES CON MASK-IMAGE
-const CornerOrnament = ({ url, color, size, className, style }) => (
-  <div
-    className={`${className}`}
-    style={{
-      width: `${size}px`,
-      height: `${size}px`,
-      backgroundColor: color,
-      WebkitMaskImage: `url("${url}")`,
-      WebkitMaskSize: 'contain',
-      WebkitMaskRepeat: 'no-repeat',
-      WebkitMaskPosition: 'center',
-      maskImage: `url("${url}")`,
-      maskSize: 'contain',
-      maskRepeat: 'no-repeat',
-      maskPosition: 'center',
-      ...style
-    }}
-  />
-);
+import { 
+  ANIMATION_CATEGORIES, THEMES, FONTS, TRANSITION_OPTS, 
+  FOOD_EMOJIS, CLOTHES_EMOJIS 
+} from "./config";
 
-// MOTOR DE ARRASTRE
-const DraggableItem = ({ id, cfg, update, children, className }) => {
-  const pos = cfg[`${id}Pos`] || { x: 0, y: 0 };
-  const [isDragging, setIsDragging] = useState(false);
-  const [localPos, setLocalPos] = useState(pos);
-  const dragRef = useRef(null);
+export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim, mobileView, onUpdateInternal }) {
+  const [animCat, setAnimCategory] = useState("infantil");
 
-  useEffect(() => { setLocalPos(cfg[`${id}Pos`] || { x: 0, y: 0 }); }, [cfg[`${id}Pos`]]);
-
-  const onPointerDown = (e) => {
-    if (!update) return; 
-    setIsDragging(true);
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    dragRef.current = { startX: clientX, startY: clientY, origX: localPos.x, origY: localPos.y };
+  const resetPositions = () => {
+    const keys = ['topLeftBorderPos', 'topRightBorderPos', 'bottomLeftBorderPos', 'bottomRightBorderPos', 'eventTypePos', 'honoreePos', 'badgePos'];
+    keys.forEach(k => update(k, { x: 0, y: 0 }));
+    alert("Posiciones centradas correctamente.");
   };
 
-  const onPointerMove = (e) => {
-    if (!isDragging) return;
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    const x = dragRef.current.origX + (clientX - dragRef.current.startX);
-    const y = dragRef.current.origY + (clientY - dragRef.current.startY);
-    setLocalPos({ x, y });
-  };
-
-  const onPointerUp = () => {
-    if (!isDragging) return;
-    setIsDragging(false);
-    if (update) update(`${id}Pos`, localPos);
-  };
-
-  useEffect(() => {
-    if (isDragging) {
-      document.addEventListener("mousemove", onPointerMove);
-      document.addEventListener("mouseup", onPointerUp);
-      document.addEventListener("touchmove", onPointerMove, { passive: false });
-      document.addEventListener("touchend", onPointerUp);
-    }
-    return () => {
-      document.removeEventListener("mousemove", onPointerMove);
-      document.removeEventListener("mouseup", onPointerUp);
-      document.removeEventListener("touchmove", onPointerMove);
-      document.removeEventListener("touchend", onPointerUp);
+  const handleImportCSV = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target.result;
+      const lines = text.split('\n').slice(1); 
+      const newGuests = lines.map(line => {
+        const parts = line.split(',');
+        if(!parts[0]) return null;
+        return {
+          id: `CSV-${Math.random().toString(36).substr(2,6).toUpperCase()}`,
+          name: parts[0]?.trim(), lastname: parts[1]?.trim() || '', guests: Number(parts[2]) || 1, 
+          table: parts[3]?.trim() || 'N/A', status: 'Pendiente', timestamp: new Date().toISOString()
+        };
+      }).filter(g => g);
+      const current = inv.internal_data?.guests || [];
+      onUpdateInternal(inv.id, 'guests', [...current, ...newGuests]);
+      alert(`¡Importados ${newGuests.length} invitados!`);
     };
-  }, [isDragging, localPos]);
+    reader.readAsText(file);
+  };
 
   return (
-    <div 
-      className={`group ${className || ''}`} 
-      style={{ 
-        transform: `translate(${localPos.x}px, ${localPos.y}px)`, 
-        cursor: update ? (isDragging ? "grabbing" : "grab") : "default", 
-        zIndex: isDragging ? 999 : 50, 
-        touchAction: update ? 'none' : 'auto',
-        position: 'absolute'
-      }}
-      onMouseDown={onPointerDown}
-      onTouchStart={onPointerDown}
-    >
-      {children}
-      {update && (
-        <div className={`absolute -inset-1 border-2 border-dashed border-violet-500 rounded-lg pointer-events-none transition-opacity ${isDragging ? 'opacity-100' : 'opacity-0 group-hover:opacity-40'}`} />
-      )}
-    </div>
-  );
-};
-
-const RenderSymbol = ({ value, size = 32, color = "currentColor", className = "" }) => {
-  if (typeof value === 'string' && value.startsWith('icon-')) return <IconRenderer name={value} size={size} color={color} className={className} />;
-  return <span style={{ fontSize: `${size}px`, lineHeight: 1 }} className={`flex items-center justify-center ${className}`}>{value}</span>;
-}
-
-const Countdown = ({ targetDate, primary, text }) => {
-  const [timeLeft, setTimeLeft] = useState({ d:0, h:0, m:0, s:0 });
-  const [expired, setExpired] = useState(false);
-  useEffect(() => {
-    if(!targetDate) return;
-    const calc = () => {
-      const target = new Date(targetDate).getTime();
-      if (isNaN(target)) return;
-      const dist = target - Date.now();
-      if(dist <= 0) { setExpired(true); return; }
-      setTimeLeft({ d: Math.floor(dist / 86400000), h: Math.floor((dist % 86400000) / 3600000), m: Math.floor((dist % 3600000) / 60000), s: Math.floor((dist % 60000) / 1000) });
-    };
-    calc(); const id = setInterval(calc, 1000); return () => clearInterval(id);
-  }, [targetDate]);
-  if(!targetDate || isNaN(new Date(targetDate).getTime())) return null;
-  const labels = { d:"días", h:"horas", m:"min", s:"seg" };
-  return (<div className="py-4">{text && <p className="text-center text-xs font-bold mb-3 opacity-70" style={{ color: primary }}>{text}</p>}{expired ? (<p className="text-center font-black text-lg" style={{ color: primary }}>🎉 ¡El día llegó!</p>) : (<div className="flex justify-center gap-3">{Object.entries(timeLeft).map(([unit, val]) => (<div key={unit} className="flex flex-col items-center gap-1"><div className="w-[52px] h-[52px] rounded-2xl flex items-center justify-center text-xl font-black text-white shadow-lg" style={{ background: primary }}>{(val || 0).toString().padStart(2, '0')}</div><span className="text-[10px] font-bold opacity-60" style={{ color: primary }}>{labels[unit]}</span></div>))}</div>)}</div>);
-};
-
-const RsvpWidget = ({ cfg, primary, textC, cardC, onConfirmRSVP }) => {
-  const [step, setStep] = useState('button');
-  const [formData, setFormData] = useState({ name: '', lastname: '', guests: 1 });
-  return (
-    <button onClick={() => setStep('form')} className="w-full py-5 rounded-[1.5rem] font-black text-sm tracking-wider flex items-center justify-center gap-3 shadow-2xl" style={{ background: primary, color: 'white' }}>
-      <Star size={20} /> OBTENER PASE VIP
-    </button>
-  );
-};
-
-export const InvitePreview = ({ cfg, status, update }) => {
-  if (!cfg) return null;
-  const primary = cfg.primary || "#8b5cf6";
-  const bg = `linear-gradient(180deg, ${cfg.bg1 || "#f8f7ff"} 0%, ${cfg.bg2 || "#e0dcfc"} 100%)`;
-  const textC = cfg.text || "#1e1b4b";
-  const mutedC = cfg.muted || "#6b7280";
-  const cardC  = cfg.card  || "#ffffff";
-
-  return (
-    <div style={{ background: bg, fontFamily: cfg.fontBody, minHeight: '100%' }} className="pb-12 relative overflow-x-hidden flex flex-col">
-      
-      {/* BORDES ARRASTRABLES (AHORA SIEMPRE VISIBLES ARRIBA/ABAJO) */}
-      {cfg.showCoverBorders && cfg.selectedBorder && (
-        <div className="absolute inset-0 pointer-events-none z-[100]">
-          {(cfg.borderPosition === 'both' || cfg.borderPosition === 'top') && (
-            <>
-              <DraggableItem id="topLeftBorder" cfg={cfg} update={update} className="top-0 left-0 pointer-events-auto">
-                <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} />
-              </DraggableItem>
-              <DraggableItem id="topRightBorder" cfg={cfg} update={update} className="top-0 right-0 pointer-events-auto">
-                <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} style={{ transform: 'scaleX(-1)' }} />
-              </DraggableItem>
-            </>
-          )}
-          {(cfg.borderPosition === 'both' || cfg.borderPosition === 'bottom') && (
-            <>
-               <DraggableItem id="bottomLeftBorder" cfg={cfg} update={update} className="bottom-0 left-0 pointer-events-auto">
-                 <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} style={{ transform: 'scaleY(-1)' }} />
-               </DraggableItem>
-               <DraggableItem id="bottomRightBorder" cfg={cfg} update={update} className="bottom-0 right-0 pointer-events-auto">
-                 <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} style={{ transform: 'scaleX(-1) scaleY(-1)' }} />
-               </DraggableItem>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* PORTADA */}
-      <div className="relative h-[420px] overflow-hidden shrink-0">
-        <img src={cfg.coverPhoto || DEF_CONFIG.coverPhoto} className="w-full h-full object-cover" alt="" />
-        <div className="absolute inset-0" style={{ background: `linear-gradient(to top, ${cfg.bg1} 5%, rgba(0,0,0,0.4) 60%, transparent 100%)` }} />
+    <aside className={`w-[100vw] md:w-[420px] h-full shrink-0 bg-[#f8f7ff] overflow-y-auto p-6 pb-24 md:pb-6 border-r border-gray-100 z-10 fd-sb ${mobileView === 'editor' ? 'block' : 'hidden md:block'}`}>
         
-        <div className="absolute bottom-0 left-0 right-0 p-8 flex flex-col items-center z-30">
-          <DraggableItem id="eventType" cfg={cfg} update={update} className="relative !static flex justify-center">
-            <p className="font-black uppercase tracking-[0.2em] mb-4 flex items-center gap-2" style={{ color: cfg.eventTypeColor || primary, fontSize: `${cfg.eventTypeSize ?? 11}px` }}>
-              <RenderSymbol value={cfg.eventTypeEmoji} size={cfg.eventTypeSize ?? 11} color={cfg.eventTypeColor || primary} />
-              {cfg.eventType}
-            </p>
-          </DraggableItem>
-          
-          <DraggableItem id="honoree" cfg={cfg} update={update} className="relative !static flex justify-center">
-            <h1 style={{ fontFamily: cfg.honoreeFont, color: cfg.honoreeColor, fontSize: `${cfg.honoreeSize}px`, textAlign: 'center' }}>{cfg.honoreeName}</h1>
-          </DraggableItem>
-        </div>
-      </div>
+      <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 text-left">Flujo de Edición</h3>
 
-      <div className="px-5 -mt-8 relative z-30 space-y-4 flex-1">
-        {cfg.showCountdown && <div className="p-5 rounded-3xl" style={{ background: cardC }}><Countdown targetDate={cfg.countdownDate} primary={primary} /></div>}
-        
-        <div className="p-6 rounded-3xl" style={{ background: cardC }}>
-          <h4 className="text-center font-black uppercase tracking-widest text-[10px] mb-4" style={{ color: mutedC }}>{cfg.menuSectionTitle || "¿Qué vamos a comer?"}</h4>
-          <div className="grid grid-cols-2 gap-3">
-             {cfg.menuItems?.map((m, i) => (
-               <div key={i} className="text-center p-3 border border-slate-100 rounded-2xl">
-                 <RenderSymbol value={cfg.usePremiumIcons ? 'icon-utensils' : m.emoji} size={28} color={primary} />
-                 <p className="text-[10px] font-bold mt-2" style={{ color: textC }}>{m.label}</p>
-               </div>
-             ))}
+      <Acc title="🎨 Diseño Base" icon={Palette} iconColor="#6366f1">
+         <div className="mb-6 p-4 rounded-xl border border-pink-100 bg-pink-50/50">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-[10px] font-black text-pink-600 uppercase tracking-widest">Bordes Ornamentales</span>
+            <button onClick={resetPositions} className="p-2 bg-white border border-pink-200 text-pink-600 rounded-lg hover:bg-pink-100 cursor-pointer"><RefreshCcw size={14} /></button>
           </div>
+          <Toggle checked={cfg.showCoverBorders || false} onChange={v => update("showCoverBorders", v)} />
+          {cfg.showCoverBorders && (
+            <div className="mt-4 pt-4 border-t border-pink-100">
+              <BordersGallery value={cfg.selectedBorder} onChange={v => update("selectedBorder", v)} />
+              <Inp label="Link directo a tu propio PNG" className="mt-4" value={cfg.selectedBorder} onChange={v => update("selectedBorder", v)} placeholder="https://..." />
+              <SelectInp label="Posición" value={cfg.borderPosition || 'both'} options={[{label:'Arriba y Abajo', value:'both'}, {label:'Solo Arriba', value:'top'}, {label:'Solo Abajo', value:'bottom'}]} onChange={v => update('borderPosition', v)} />
+              <div className="flex flex-col gap-1 mt-3">
+                <label className="text-[9px] font-bold text-slate-400 uppercase">Color del Borde</label>
+                <input type="color" value={cfg.borderColor || cfg.primary} onChange={e => update('borderColor', e.target.value)} className="w-full h-9 rounded-xl border-none shadow-sm cursor-pointer" />
+              </div>
+              <div className="mt-4">
+                <label className="flex justify-between items-center text-[9px] font-black text-pink-600 uppercase mb-2"><span>Tamaño</span><span className="bg-pink-200 px-2 py-0.5 rounded-full">{cfg.ornamentSize || 150}px</span></label>
+                <input type="range" min={50} max={400} value={cfg.ornamentSize || 150} onChange={e => update("ornamentSize", Number(e.target.value))} className="w-full accent-pink-600 cursor-pointer" />
+              </div>
+            </div>
+          )}
         </div>
+        <label className="block text-[10px] font-black text-slate-400 uppercase mb-3">Temas Sugeridos</label>
+        <div className="flex flex-wrap gap-2.5 mb-6">
+          {THEMES.map(th => <button key={th.id} title={th.name} onClick={() => setInv({...inv, config: {...cfg, theme: th.id, ...th}})} className={`w-9 h-9 rounded-full border-2 transition-all hover:scale-110 cursor-pointer ${cfg.theme === th.id ? 'border-violet-600 ring-2 ring-violet-200' : 'border-transparent'}`} style={{ background: th.primary }} />)}
+        </div>
+        <TypoControl label="Tamaño Títulos (Secciones)" sizeVal={cfg.titlesSize ?? 10} onSize={v => update("titlesSize", v)} minSize={8} maxSize={20} />
+      </Acc>
 
-        <RsvpWidget cfg={cfg} primary={primary} textC={textC} cardC={cardC} />
-      </div>
+      <Acc title="1️⃣ Portada" icon={ImageIcon} iconColor="#ec4899" defaultOpen>
+        <FileUpload label="Foto de Portada" value={cfg.coverPhoto} onChange={v => update("coverPhoto", v)} />
+        <div className="flex gap-2 z-[90] relative mt-2 border-t border-gray-100 pt-4">
+          <EmojiPicker value={cfg.eventTypeEmoji} onSelect={v => update("eventTypeEmoji", v)} />
+          <div className="flex-1"><Inp label="Frase Superior" value={cfg.eventType} onChange={v => update("eventType", v)} /></div>
+        </div>
+        <TypoControl label="Diseño Frase Superior" fontVal={cfg.eventTypeFont} onFont={v => update("eventTypeFont", v)} colorVal={cfg.eventTypeColor || cfg.primary} onColor={v => update('eventTypeColor', v)} sizeVal={cfg.eventTypeSize ?? 11} onSize={v => update("eventTypeSize", v)} />
+        <Inp label="Nombre Agasajado" value={cfg.honoreeName} onChange={v => update("honoreeName", v)} />
+        <TypoControl label="Diseño del Nombre" fontVal={cfg.honoreeFont} onFont={v => update("honoreeFont", v)} colorVal={cfg.honoreeColor || cfg.text} onColor={v => update('honoreeColor', v)} sizeVal={cfg.honoreeSize ?? 48} onSize={v => update("honoreeSize", v)} minSize={30} maxSize={80} />
+        <div className="mt-4 p-3 bg-violet-50 rounded-xl border border-violet-100">
+          <label className="block text-[10px] font-black text-violet-600 uppercase mb-2">Fondo de la Medalla</label>
+          <input type="color" value={cfg.badgeBgColor || "#000000"} onChange={e => update('badgeBgColor', e.target.value)} className="w-full h-10 rounded-xl border-none cursor-pointer"/>
+        </div>
+      </Acc>
 
-      <p className="text-center text-[9px] font-bold opacity-40 mt-12 mb-6" style={{ color: mutedC }}>
-        defiesta.lat
-      </p>
-    </div>
+      <Acc title="👥 Gestión de Invitados" icon={Users} iconColor="#0ea5e9">
+         <div className="bg-white p-4 rounded-xl border border-slate-200 mb-4 shadow-sm">
+           <label className="block text-[10px] font-black text-slate-500 uppercase mb-2">Importar desde CSV</label>
+           <input type="file" accept=".csv" onChange={handleImportCSV} className="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 cursor-pointer" />
+           <p className="text-[9px] text-slate-400 mt-2">Formato: Nombre,Apellido,Pax,Mesa</p>
+         </div>
+         <button onClick={() => update("guests", [...(inv.internal_data?.guests || []), { id: Date.now(), name: 'Nuevo', lastname: '', guests: 1, table: '1', status: 'Pendiente' }])} className="w-full py-3 bg-violet-600 text-white rounded-xl font-black text-[10px] uppercase shadow-lg shadow-violet-200 cursor-pointer">Agregar Manualmente</button>
+      </Acc>
+
+      <Acc title="8️⃣ Menú" icon={LayoutGrid} iconColor="#10b981">
+        <Inp label="Título Sección" value={cfg.menuSectionTitle || "¿Qué vamos a comer?"} onChange={v => update("menuSectionTitle", v)} icon={Edit2} />
+        <div className="space-y-3 relative">{cfg.menuItems?.map((m, i) => (<div key={i} className="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-100 shadow-sm relative" style={{ zIndex: 50 - i }}><EmojiPicker list={FOOD_EMOJIS} value={m.emoji} onSelect={e => { const n = [...cfg.menuItems]; n[i].emoji = e; update("menuItems", n); }} /><MiniInp className="flex-1 p-2 text-xs border bg-gray-50 rounded-lg outline-none focus:border-violet-300" value={m.label} onChange={v => { const n = [...cfg.menuItems]; n[i].label = v; update("menuItems", n); }} /><button onClick={() => update("menuItems", cfg.menuItems.filter((_, idx) => idx !== i))} type="button" className="text-red-400 p-2 hover:bg-red-50 rounded-lg cursor-pointer"><Trash2 size={14}/></button></div>))}</div>
+        <button onClick={() => update("menuItems", [...(cfg.menuItems || []), { emoji: "🍕", label: "Nueva Opción" }])} type="button" className="w-full py-3 bg-white border-2 border-dashed border-gray-200 rounded-xl text-xs font-bold text-slate-400 hover:border-violet-300 hover:text-violet-600 transition-all cursor-pointer"><Plus size={14} className="inline-block mr-2"/> AÑADIR COMIDA</button>
+      </Acc>
+    </aside>
   );
-};
+}
