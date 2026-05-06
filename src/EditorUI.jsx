@@ -12,9 +12,6 @@ import {
 const gf = new GiphyFetch('32PbboqCveiWSlj9vROPmyjv8l8cuaj1');
 const IMGBB_API_KEY = "904f81caf05efe58a799abdb1fedc2ce";
 
-// ==========================================
-// AYUDANTE BORDES
-// ==========================================
 const getB = (n) => {
   const svg = [
     `<path d="M0,0v100c5,-25 25,-45 55,-45c20,0 45,-15 45,-55v-0z" />`,
@@ -36,9 +33,6 @@ export const PRELOADED_BORDERS = [
   { id: 'b6', name: 'Abstracto', url: getB(6) }
 ];
 
-// ==========================================
-// RENDERIZADOR DE ICONOS
-// ==========================================
 export const IconRenderer = ({ name, size = 24, color = "currentColor", className = "" }) => {
   if (!name) return null;
   const p = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: 1.5, strokeLinecap: "round", strokeLinejoin: "round", className };
@@ -79,9 +73,36 @@ export const IconRenderer = ({ name, size = 24, color = "currentColor", classNam
   }
 };
 
-// ==========================================
-// EMOJI & ICON PICKER
-// ==========================================
+// ACÁ ESTABA EL ERROR. AHORA TIENE z-[10] PARA NO ROMPER TODO
+export const FontSelector = ({ value, onChange }) => {
+  const [open, setOpen] = useState(false);
+  const [cat, setCat] = useState("Modernas");
+  const ref = useRef(null);
+  useEffect(() => { const fn = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }; document.addEventListener("mousedown", fn); return () => document.removeEventListener("mousedown", fn); }, []);
+  return (
+    <div className="relative w-full z-[10]" ref={ref}>
+      <button type="button" onClick={() => setOpen(!open)} className="w-full px-4 py-3 rounded-xl text-slate-800 bg-white border border-gray-200 text-base flex justify-between items-center shadow-sm cursor-pointer" style={{ fontFamily: value }}>
+        <span className="truncate">{value || "Seleccionar fuente..." }</span>
+        <ChevronDown size={16} className={`text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="absolute top-14 left-0 right-0 bg-white border border-gray-200 rounded-2xl shadow-2xl p-2 z-[9999]">
+          <div className="flex gap-1 overflow-x-auto pb-2 mb-2 border-b border-gray-100 fd-sb">
+            {Object.keys(FONT_CATEGORIES).map(c => (
+              <button key={c} type="button" onClick={() => setCat(c)} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shrink-0 transition-colors cursor-pointer ${cat === c ? 'bg-violet-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>{c}</button>
+            ))}
+          </div>
+          <div className="max-h-60 overflow-y-auto fd-sb">
+            {FONT_CATEGORIES[cat].map(f => (
+              <button key={f} type="button" onClick={() => { onChange(f); setOpen(false); }} className={`w-full text-left px-4 py-3 hover:bg-violet-50 text-lg rounded-xl border-b border-gray-50 last:border-0 cursor-pointer ${value === f ? 'bg-violet-100 text-violet-700 font-bold' : 'text-slate-700'}`} style={{ fontFamily: f }}>{f}</button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const EmojiPicker = ({ value, onSelect }) => {
   const [open, setOpen] = useState(false);
   const [mainTab, setMainTab] = useState('emoji'); 
@@ -102,16 +123,13 @@ export const EmojiPicker = ({ value, onSelect }) => {
   const isIcon = (val) => typeof val === 'string' && val.startsWith('icon-');
 
   return (
-    // EL TRUCO: relative para el botón, y posicionamos el panel fuera de su z-index
-    <div ref={ref} className="relative z-50">
+    <div ref={ref} className="relative z-[20]">
       <button type="button" onClick={() => setOpen(!open)} className="w-12 h-12 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-2xl hover:border-violet-300 focus:ring-2 focus:ring-violet-200 outline-none transition-all shadow-sm cursor-pointer">
         {isIcon(value) ? <IconRenderer name={value} size={24} color="#64748b" /> : (value || "✨")}
       </button>
 
       {open && (
-        // EL PANEL: Fija la posición pero con z-[99999] y fixed (o absolute bien pisado) para saltarse las tarjetas escondidas
         <div className="absolute top-14 left-0 bg-white border border-gray-200 rounded-2xl p-3 w-72 shadow-[0_20px_50px_rgba(0,0,0,0.3)] z-[99999]" style={{ isolation: 'isolate' }}>
-          
           <div className="flex bg-slate-100 p-1 rounded-xl mb-3">
             <button type="button" onClick={() => setMainTab('emoji')} className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all ${mainTab === 'emoji' ? 'bg-white shadow text-violet-600' : 'text-slate-500'}`}>😀 Emojis</button>
             <button type="button" onClick={() => setMainTab('icon')} className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all ${mainTab === 'icon' ? 'bg-white shadow text-violet-600' : 'text-slate-500'}`}>✨ Íconos</button>
@@ -142,40 +160,6 @@ export const EmojiPicker = ({ value, onSelect }) => {
                <input type="text" placeholder="O pega un emoji aquí..." maxLength={2} className="w-full p-2 text-center bg-slate-50 rounded-lg text-sm border border-slate-100 outline-none focus:border-violet-300" onChange={e => { if(e.target.value) { onSelect(e.target.value); setOpen(false); } }} />
             </div>
           )}
-        </div>
-      )}
-    </div>
-  );
-};
-
-
-// ==========================================
-// COMPONENTES COMUNES
-// ==========================================
-
-export const FontSelector = ({ value, onChange }) => {
-  const [open, setOpen] = useState(false);
-  const [cat, setCat] = useState("Modernas");
-  const ref = useRef(null);
-  useEffect(() => { const fn = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }; document.addEventListener("mousedown", fn); return () => document.removeEventListener("mousedown", fn); }, []);
-  return (
-    <div className="relative w-full" ref={ref} style={{ zIndex: 1001 }}>
-      <button type="button" onClick={() => setOpen(!open)} className="w-full px-4 py-3 rounded-xl text-slate-800 bg-white border border-gray-200 text-base flex justify-between items-center shadow-sm cursor-pointer" style={{ fontFamily: value }}>
-        <span className="truncate">{value || "Seleccionar fuente..." }</span>
-        <ChevronDown size={16} className={`text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
-      </button>
-      {open && (
-        <div className="absolute top-14 left-0 right-0 bg-white border border-gray-200 rounded-2xl shadow-2xl p-2 z-[9999]">
-          <div className="flex gap-1 overflow-x-auto pb-2 mb-2 border-b border-gray-100 fd-sb">
-            {Object.keys(FONT_CATEGORIES).map(c => (
-              <button key={c} type="button" onClick={() => setCat(c)} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shrink-0 transition-colors cursor-pointer ${cat === c ? 'bg-violet-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>{c}</button>
-            ))}
-          </div>
-          <div className="max-h-60 overflow-y-auto fd-sb">
-            {FONT_CATEGORIES[cat].map(f => (
-              <button key={f} type="button" onClick={() => { onChange(f); setOpen(false); }} className={`w-full text-left px-4 py-3 hover:bg-violet-50 text-lg rounded-xl border-b border-gray-50 last:border-0 cursor-pointer ${value === f ? 'bg-violet-100 text-violet-700 font-bold' : 'text-slate-700'}`} style={{ fontFamily: f }}>{f}</button>
-            ))}
-          </div>
         </div>
       )}
     </div>
@@ -234,8 +218,9 @@ export const SelectInp = ({ label, value, onChange, options, className="" }) => 
   </div>
 );
 
+// ACA TAMBIEN AJUSTAMOS EL Z-INDEX BASE
 export const TypoControl = ({ label, fontVal, onFont, colorVal, onColor, sizeVal, onSize, minSize=10, maxSize=80 }) => (
-  <div className="bg-gray-50/70 p-3 rounded-xl border border-gray-100 shadow-sm mb-5 relative overflow-visible">
+  <div className="bg-gray-50/70 p-3 rounded-xl border border-gray-100 shadow-sm mb-5 relative overflow-visible z-[10]">
     <div className="absolute left-0 top-0 bottom-0 w-1 bg-violet-200 rounded-l-xl" /><label className="flex justify-between items-center text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 pl-2"><span>{label}</span>{sizeVal && <span className="text-violet-500 bg-violet-100 px-2 py-0.5 rounded-full">{sizeVal}px</span>}</label>
     <div className="flex gap-2 pl-2 items-start">{onFont && <div className="flex-1"><FontSelector value={fontVal} onChange={onFont} /></div>}{onColor && <div className="shrink-0"><input type="color" value={colorVal} onChange={e => onColor(e.target.value)} className="w-10 h-11 rounded-lg cursor-pointer border border-gray-200 p-0 shadow-sm bg-white" /></div>}</div>
     {onSize && (<div className="mt-4 pl-2"><input type="range" min={minSize} max={maxSize} value={sizeVal} onChange={e => onSize(Number(e.target.value))} className="w-full accent-violet-600 cursor-pointer" /></div>)}
@@ -262,7 +247,6 @@ export const Toggle = ({ checked, onChange }) => (
   <label className="relative w-11 h-6 flex-shrink-0 cursor-pointer inline-block"><input type="checkbox" className="sr-only peer" checked={checked || false} onChange={e => onChange(e.target.checked)} /><div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div></label>
 );
 
-// EL ACORDEON AHORA TIENE OVERFLOW VISIBLE SI ESTÁ ABIERTO PARA NO CORTAR LOS PANELES ABSOLUTOS
 export const Acc = ({ title, icon: Icon, children, defaultOpen = false, iconColor = "#7c3aed" }) => {
   const [open, setOpen] = useState(defaultOpen); const [fullyOpen, setFullyOpen] = useState(defaultOpen);
   useEffect(() => { let t; if (open) t = setTimeout(() => setFullyOpen(true), 300); else setFullyOpen(false); return () => clearTimeout(t); }, [open]);
