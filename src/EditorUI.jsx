@@ -12,7 +12,9 @@ import {
 const gf = new GiphyFetch('32PbboqCveiWSlj9vROPmyjv8l8cuaj1');
 const IMGBB_API_KEY = "904f81caf05efe58a799abdb1fedc2ce";
 
+// ==========================================
 // AYUDANTE BORDES
+// ==========================================
 const getB = (n) => {
   const svg = [
     `<path d="M0,0v100c5,-25 25,-45 55,-45c20,0 45,-15 45,-55v-0z" />`,
@@ -34,6 +36,9 @@ export const PRELOADED_BORDERS = [
   { id: 'b6', name: 'Abstracto', url: getB(6) }
 ];
 
+// ==========================================
+// RENDERIZADOR DE ICONOS
+// ==========================================
 export const IconRenderer = ({ name, size = 24, color = "currentColor", className = "" }) => {
   if (!name) return null;
   const p = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: 1.5, strokeLinecap: "round", strokeLinejoin: "round", className };
@@ -74,6 +79,80 @@ export const IconRenderer = ({ name, size = 24, color = "currentColor", classNam
   }
 };
 
+// ==========================================
+// EMOJI & ICON PICKER
+// ==========================================
+export const EmojiPicker = ({ value, onSelect }) => {
+  const [open, setOpen] = useState(false);
+  const [mainTab, setMainTab] = useState('emoji'); 
+  const [activeCat, setActiveCat] = useState("Magia");
+  const ref = useRef(null);
+
+  useEffect(() => { 
+    if (mainTab === 'emoji') setActiveCat(Object.keys(EMOJI_CATEGORIES)[0]); 
+    else setActiveCat(Object.keys(ICON_CATEGORIES)[0]); 
+  }, [mainTab]);
+
+  useEffect(() => { 
+    const fn = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }; 
+    document.addEventListener("mousedown", fn); 
+    return () => document.removeEventListener("mousedown", fn); 
+  }, []);
+
+  const isIcon = (val) => typeof val === 'string' && val.startsWith('icon-');
+
+  return (
+    // EL TRUCO: relative para el botón, y posicionamos el panel fuera de su z-index
+    <div ref={ref} className="relative z-50">
+      <button type="button" onClick={() => setOpen(!open)} className="w-12 h-12 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-2xl hover:border-violet-300 focus:ring-2 focus:ring-violet-200 outline-none transition-all shadow-sm cursor-pointer">
+        {isIcon(value) ? <IconRenderer name={value} size={24} color="#64748b" /> : (value || "✨")}
+      </button>
+
+      {open && (
+        // EL PANEL: Fija la posición pero con z-[99999] y fixed (o absolute bien pisado) para saltarse las tarjetas escondidas
+        <div className="absolute top-14 left-0 bg-white border border-gray-200 rounded-2xl p-3 w-72 shadow-[0_20px_50px_rgba(0,0,0,0.3)] z-[99999]" style={{ isolation: 'isolate' }}>
+          
+          <div className="flex bg-slate-100 p-1 rounded-xl mb-3">
+            <button type="button" onClick={() => setMainTab('emoji')} className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all ${mainTab === 'emoji' ? 'bg-white shadow text-violet-600' : 'text-slate-500'}`}>😀 Emojis</button>
+            <button type="button" onClick={() => setMainTab('icon')} className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all ${mainTab === 'icon' ? 'bg-white shadow text-violet-600' : 'text-slate-500'}`}>✨ Íconos</button>
+          </div>
+
+          <div className="flex gap-1 overflow-x-auto pb-2 mb-2 border-b border-slate-100 fd-sb">
+            {Object.keys(mainTab === 'emoji' ? EMOJI_CATEGORIES : ICON_CATEGORIES).map(c => (
+              <button key={c} onClick={() => setActiveCat(c)} type="button" className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-tight shrink-0 transition-all ${activeCat === c ? 'bg-violet-100 text-violet-700' : 'bg-slate-50 text-slate-400'}`}>{c}</button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-5 gap-1.5 max-h-56 overflow-y-auto fd-sb p-1 relative z-[99999]">
+            {mainTab === 'emoji' ? (
+              EMOJI_CATEGORIES[activeCat]?.map((e, i) => (
+                <button key={i} type="button" onClick={() => { onSelect(e); setOpen(false); }} className="p-2 text-xl hover:bg-violet-50 rounded-xl transition-colors cursor-pointer flex items-center justify-center">{e}</button>
+              ))
+            ) : (
+              ICON_CATEGORIES[activeCat]?.map((ic, i) => (
+                <button key={i} type="button" onClick={() => { onSelect(ic); setOpen(false); }} className="p-2 hover:bg-violet-50 text-slate-500 hover:text-violet-700 rounded-xl transition-colors cursor-pointer flex items-center justify-center">
+                  <IconRenderer name={ic} size={22} />
+                </button>
+              ))
+            )}
+          </div>
+          
+          {mainTab === 'emoji' && (
+            <div className="mt-2 pt-2 border-t border-slate-50">
+               <input type="text" placeholder="O pega un emoji aquí..." maxLength={2} className="w-full p-2 text-center bg-slate-50 rounded-lg text-sm border border-slate-100 outline-none focus:border-violet-300" onChange={e => { if(e.target.value) { onSelect(e.target.value); setOpen(false); } }} />
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+
+// ==========================================
+// COMPONENTES COMUNES
+// ==========================================
+
 export const FontSelector = ({ value, onChange }) => {
   const [open, setOpen] = useState(false);
   const [cat, setCat] = useState("Modernas");
@@ -96,39 +175,6 @@ export const FontSelector = ({ value, onChange }) => {
             {FONT_CATEGORIES[cat].map(f => (
               <button key={f} type="button" onClick={() => { onChange(f); setOpen(false); }} className={`w-full text-left px-4 py-3 hover:bg-violet-50 text-lg rounded-xl border-b border-gray-50 last:border-0 cursor-pointer ${value === f ? 'bg-violet-100 text-violet-700 font-bold' : 'text-slate-700'}`} style={{ fontFamily: f }}>{f}</button>
             ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export const EmojiPicker = ({ value, onSelect }) => {
-  const [open, setOpen] = useState(false);
-  const [mainTab, setMainTab] = useState('emoji'); 
-  const [activeCat, setActiveCat] = useState("Magia");
-  const ref = useRef(null);
-  useEffect(() => { if (mainTab === 'emoji') setActiveCat(Object.keys(EMOJI_CATEGORIES)[0]); else setActiveCat(Object.keys(ICON_CATEGORIES)[0]); }, [mainTab]);
-  useEffect(() => { const fn = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }; document.addEventListener("mousedown", fn); return () => document.removeEventListener("mousedown", fn); }, []);
-  const isIcon = (val) => typeof val === 'string' && val.startsWith('icon-');
-  return (
-    <div ref={ref} className="relative z-[999]">
-      <button type="button" onClick={() => setOpen(!open)} className="w-12 h-12 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-2xl hover:border-violet-300 focus:ring-2 focus:ring-violet-200 outline-none transition-all shadow-sm cursor-pointer">
-        {isIcon(value) ? <IconRenderer name={value} size={24} color="#64748b" /> : (value || "✨")}
-      </button>
-      {open && (
-        <div className="absolute top-14 left-0 bg-white border border-gray-200 rounded-2xl p-3 w-72 shadow-2xl z-[1000]">
-          <div className="flex bg-slate-100 p-1 rounded-xl mb-3">
-            <button type="button" onClick={() => setMainTab('emoji')} className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all ${mainTab === 'emoji' ? 'bg-white shadow text-violet-600' : 'text-slate-500'}`}>😀 Emojis</button>
-            <button type="button" onClick={() => setMainTab('icon')} className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all ${mainTab === 'icon' ? 'bg-white shadow text-violet-600' : 'text-slate-500'}`}>✨ Íconos</button>
-          </div>
-          <div className="flex gap-1 overflow-x-auto pb-2 mb-2 border-b border-slate-100 fd-sb">
-            {Object.keys(mainTab === 'emoji' ? EMOJI_CATEGORIES : ICON_CATEGORIES).map(c => (
-              <button key={c} onClick={() => setActiveCat(c)} className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-tight shrink-0 transition-all ${activeCat === c ? 'bg-violet-100 text-violet-700' : 'bg-slate-50 text-slate-400'}`}>{c}</button>
-            ))}
-          </div>
-          <div className="grid grid-cols-5 gap-1.5 max-h-56 overflow-y-auto fd-sb p-1">
-            {mainTab === 'emoji' ? EMOJI_CATEGORIES[activeCat]?.map((e, i) => (<button key={i} onClick={() => { onSelect(e); setOpen(false); }} className="p-2 text-xl hover:bg-violet-50 rounded-xl transition-colors cursor-pointer flex items-center justify-center">{e}</button>)) : ICON_CATEGORIES[activeCat]?.map((ic, i) => (<button key={i} onClick={() => { onSelect(ic); setOpen(false); }} className="p-2 hover:bg-violet-50 text-slate-500 hover:text-violet-700 rounded-xl transition-colors cursor-pointer flex items-center justify-center"><IconRenderer name={ic} size={22} /></button>))}
           </div>
         </div>
       )}
@@ -216,10 +262,11 @@ export const Toggle = ({ checked, onChange }) => (
   <label className="relative w-11 h-6 flex-shrink-0 cursor-pointer inline-block"><input type="checkbox" className="sr-only peer" checked={checked || false} onChange={e => onChange(e.target.checked)} /><div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div></label>
 );
 
+// EL ACORDEON AHORA TIENE OVERFLOW VISIBLE SI ESTÁ ABIERTO PARA NO CORTAR LOS PANELES ABSOLUTOS
 export const Acc = ({ title, icon: Icon, children, defaultOpen = false, iconColor = "#7c3aed" }) => {
   const [open, setOpen] = useState(defaultOpen); const [fullyOpen, setFullyOpen] = useState(defaultOpen);
   useEffect(() => { let t; if (open) t = setTimeout(() => setFullyOpen(true), 300); else setFullyOpen(false); return () => clearTimeout(t); }, [open]);
   return (
-    <div className={`mb-3 rounded-2xl border border-gray-100 bg-white shadow-sm relative transition-all ${open ? 'z-40' : 'z-10'}`}><button onClick={() => setOpen(!open)} type="button" className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors text-left cursor-pointer"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${iconColor}15` }}><Icon size={18} style={{ color: iconColor }} /></div><span className="font-bold text-slate-800 text-sm">{title}</span></div><ChevronDown size={18} className={`text-slate-300 transition-transform ${open ? 'rotate-180' : ''}`} /></button><div className={`transition-all duration-300 ease-in-out ${fullyOpen ? 'overflow-visible' : 'overflow-hidden'}`} style={{ maxHeight: open ? '5000px' : '0', opacity: open ? 1 : 0 }}><div className="p-4 pt-0 border-t border-gray-50">{children}</div></div></div>
+    <div className={`mb-3 rounded-2xl border border-gray-100 bg-white shadow-sm relative transition-all ${open ? 'z-40' : 'z-10'}`}><button onClick={() => setOpen(!open)} type="button" className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors text-left cursor-pointer"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${iconColor}15` }}><Icon size={18} style={{ color: iconColor }} /></div><span className="font-bold text-slate-800 text-sm">{title}</span></div><ChevronDown size={18} className={`text-slate-300 transition-transform ${open ? 'rotate-180' : ''}`} /></button><div className={`transition-all duration-300 ease-in-out overflow-visible`} style={{ maxHeight: open ? '5000px' : '0', opacity: open ? 1 : 0 }}><div className="p-4 pt-0 border-t border-gray-50">{children}</div></div></div>
   );
 };
