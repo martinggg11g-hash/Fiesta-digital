@@ -72,10 +72,19 @@ const DraggableItem = ({ id, cfg, update, children, className }) => {
   );
 };
 
+// ACA ESTÁ LA MAGIA QUE ARREGLA EL TAMAÑO DE LOS ÍCONOS EN TODA LA APP
 const RenderSymbol = ({ value, size = 32, color = "currentColor", className = "" }) => {
-  if (typeof value === 'string' && value.startsWith('icon-')) return <IconRenderer name={value} size={size} color={color} className={className} />;
-  return <span style={{ fontSize: `${size}px`, lineHeight: 1 }} className={`flex items-center justify-center ${className}`}>{value}</span>;
-}
+  const isIcon = typeof value === 'string' && value.startsWith('icon-');
+  
+  return (
+    <span 
+      style={{ fontSize: `${size}px`, color: color, lineHeight: 1 }} 
+      className={`shrink-0 inline-flex items-center justify-center ${className}`}
+    >
+      {isIcon ? <IconRenderer name={value} size="1em" color={color} /> : value}
+    </span>
+  );
+};
 
 const Countdown = ({ targetDate, primary, text }) => {
   const [timeLeft, setTimeLeft] = useState({ d:0, h:0, m:0, s:0 });
@@ -120,9 +129,6 @@ const GalleryCarousel = ({ photos }) => {
   );
 };
 
-// ==========================================
-// MOTOR DE PARTÍCULAS MEJORADO
-// ==========================================
 const ParticleCanvas = ({ effect, primary }) => {
   const canvasRef = useRef(null);
   const animRef = useRef(null);
@@ -152,7 +158,6 @@ const ParticleCanvas = ({ effect, primary }) => {
         decay: Math.random() * 0.005 + 0.002 
       };
 
-      // Confeti
       if (effect.startsWith("confetti")) {
         let colors = [primary, "#f59e0b", "#10b981", "#ef4444", "#3b82f6", "#ec4899", "#ffffff"];
         if (effect === "confetti-gold") colors = ["#fbbf24", "#f59e0b", "#d97706", "#fef3c7"];
@@ -160,10 +165,8 @@ const ParticleCanvas = ({ effect, primary }) => {
         return { ...base, y: -50, vy: Math.random() * 3 + 2, type: "rect", color: colors[Math.floor(Math.random() * colors.length)], w: Math.random()*12+6, h: Math.random()*6+3, rotV: (Math.random() - 0.5) * 15, life: 2 };
       }
 
-      // Globos (Suben)
       if (effect === "balloons") return { ...base, y: canvas.height + 50, vy: -(Math.random() * 2 + 1), type: "text", emoji: "🎈", size: Math.random()*30+20 };
 
-      // Estrellas y Magia (Titilan)
       if (effect.startsWith("stars") || effect === "meteor-shower" || effect === "fairy-dust" || effect === "galaxy-dust") {
         let c = "#ffffff";
         if (effect === "stars-gold" || effect === "fairy-dust") c = "#fbbf24";
@@ -172,12 +175,10 @@ const ParticleCanvas = ({ effect, primary }) => {
         return { ...base, x: Math.random() * canvas.width, y: Math.random() * canvas.height, vx: (Math.random()-0.5)*0.2, vy: (Math.random()-0.5)*0.2, type: "star", color: c, size: Math.random() * 3 + 1, alpha: Math.random(), alphaDir: Math.random() > 0.5 ? 1 : -1 };
       }
 
-      // Orbes y Bokeh (Titilan suave)
       if (effect === "glowing-orbs" || effect === "bokeh") {
         return { ...base, x: Math.random() * canvas.width, y: Math.random() * canvas.height, vx: (Math.random()-0.5)*0.5, vy: (Math.random()-0.5)*0.5, type: "circle", color: effect === "bokeh" ? ["#f472b6", "#fbbf24", "#60a5fa"][Math.floor(Math.random()*3)] : primary, filled: true, r: Math.random()*20+5, alpha: Math.random()*0.5, alphaDir: Math.random() > 0.5 ? 1 : -1 };
       }
 
-      // Romance (Corazones y Besos - Suben)
       if (effect.startsWith("hearts") || effect === "floating-kisses") {
         let e = "❤️";
         if (effect === "hearts-pink") e = "💖";
@@ -186,7 +187,6 @@ const ParticleCanvas = ({ effect, primary }) => {
         return { ...base, type: "text", emoji: e, size: Math.random()*18+10, vy: -(Math.random()*2+1), y: canvas.height+20 };
       }
 
-      // Naturaleza
       if (effect.startsWith("snow")) return { ...base, type: "circle", color: "#ffffff", filled: true, r: Math.random()*3+1, vy: effect==="snow-blizzard" ? Math.random()*4+2 : Math.random()*1.5+0.5, vx: effect==="snow-blizzard" ? Math.random()*3+1 : (Math.random()-0.5)*0.8 };
       if (effect === "sakura" || effect === "rose-petals") return { ...base, type: "text", emoji: effect==="sakura"?"🌸":"🌹", size: Math.random()*15+10, vy: Math.random()*2+1, rotV: Math.random()*5 };
       if (effect === "autumn-leaves") return { ...base, type: "text", emoji: "🍂", size: Math.random()*15+10, vy: Math.random()*2+1, rotV: Math.random()*5 };
@@ -194,16 +194,13 @@ const ParticleCanvas = ({ effect, primary }) => {
       if (effect === "butterflies") return { ...base, type: "text", emoji: "🦋", size: Math.random()*15+10, vy: -(Math.random()*2+1), vx: (Math.random()-0.5)*3, y: canvas.height+20 };
       if (effect === "rain") return { ...base, type: "rect", color: "#60a5fa", w: 1, h: Math.random()*15+10, vy: Math.random()*8+5, vx: 0 };
 
-      // Glitters (Titilan)
       if (effect.startsWith("glitter")) {
         return { ...base, x: Math.random() * canvas.width, y: Math.random() * canvas.height, vx: (Math.random() - 0.5) * 0.4, vy: (Math.random() - 0.5) * 0.4, alpha: Math.random(), alphaDir: Math.random() > 0.5 ? 1 : -1, type: "star", color: effect==="glitter-gold" ? "#fbbf24" : ["#ffffff", "#fef08a", primary][Math.floor(Math.random()*3)], size: Math.random() * 3 + 1.5 };
       }
 
-      // Burbujas y Diamantes (Suben)
       if (effect.startsWith("bubbles")) return { ...base, type: "circle", color: effect==="bubbles-color" ? ["#f472b6", "#60a5fa", "#fbbf24"][Math.floor(Math.random()*3)] : primary, filled: false, r: Math.random()*12+4, vx: (Math.random()-0.5)*1.5, vy: -(Math.random()*2+0.5), y: canvas.height+20 };
       if (effect === "floating-diamonds") return { ...base, type: "text", emoji: "💎", size: Math.random()*15+10, vy: -(Math.random()*2+1), y: canvas.height+20 };
 
-      // Emojis
       if (effect.startsWith("emojis") || effect === "streamers") {
         let list = ["🎉","🎊","🎈","✨","🌟","💖","🎂"];
         if (effect === "emojis-love") list = ["😍","🥰","😘","❤️","💕"];
@@ -230,13 +227,11 @@ const ParticleCanvas = ({ effect, primary }) => {
       particlesRef.current = particlesRef.current.filter(p => {
         p.x += p.vx; p.y += p.vy; p.rot = (p.rot || 0) + (p.rotV || 0); 
         
-        // Manejo de titileo (alphaDir)
         if (p.alphaDir) {
           p.alpha += p.alphaDir * 0.02;
           if (p.alpha >= 1) { p.alpha = 1; p.alphaDir = -1; }
           if (p.alpha <= 0) { p.alpha = 0; p.alphaDir = 1; p.x = Math.random()*canvas.width; p.y = Math.random()*canvas.height; }
         } else {
-          // Manejo de vida normal
           if (effect.startsWith("confetti")) p.life -= 0.005; else p.life -= p.decay;
           p.alpha = Math.max(0, Math.min(1, p.life));
         }
@@ -250,9 +245,9 @@ const ParticleCanvas = ({ effect, primary }) => {
         
         ctx.globalAlpha = 1;
         
-        if (p.alphaDir) return true; // Si titila, no muere por salir de la pantalla
-        if (p.vy < 0) return p.y > -50; // Si sube, muere arriba
-        return p.y < canvas.height + 50 && p.x > -50 && p.x < canvas.width + 50; // Si baja, muere abajo o a los lados
+        if (p.alphaDir) return true; 
+        if (p.vy < 0) return p.y > -50; 
+        return p.y < canvas.height + 50 && p.x > -50 && p.x < canvas.width + 50; 
       });
       animRef.current = requestAnimationFrame(loop);
     };
