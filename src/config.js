@@ -19,6 +19,7 @@ export const DEF_CONFIG = {
   showBadge: true,
   badgeEmoji: "👑",
   badgeText: "La gran noche",
+  badgeBgColor: "rgba(0,0,0,0.5)",
   
   // SECTIONS TOGGLES
   showCountdown: true,
@@ -42,7 +43,7 @@ export const DEF_CONFIG = {
   parkingType: "Estacionamiento privado cubierto",
   venueLinkType: "web",
   venueLink: "https://defiesta.lat",
-  spotifyUrl: "https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT",
+  spotifyUrl: "https://open.spotify.com/playlist/37i9dQZF1DX5Ejj0EkURtP",
   
   // REDES SOCIALES
   showInstagram: false,
@@ -54,7 +55,7 @@ export const DEF_CONFIG = {
 };
 
 export const THEMES = [
-  // 🎈 Infantiles — vibrantes pero con carácter
+  // 🎈 Infantiles
   {
     id: "t1",
     name: "Rosa Chicle",
@@ -106,7 +107,7 @@ export const THEMES = [
     muted: "#15803d",
   },
 
-  // 👑 15 Años — elegantes y con drama
+  // 👑 15 Años
   {
     id: "t6",
     name: "Rose Gold",
@@ -149,19 +150,19 @@ export const THEMES = [
   },
   {
     id: "t10",
-    name: "Black & Gold Elite",
-    primary: "#d4af37", // Dorado clásico
-    bg1: "#0a0a0a", // Negro profundo
-    bg2: "linear-gradient(135deg, #171717 0%, #000000 100%)",
-    text: "#fef3c7", // Blanco cálido/crema
-    card: "#171717", // Gris casi negro
-    muted: "#a3a3a3", // Gris neutro para contraste
+    name: "Black & Gold Luxury",
+    primary: "#d4af37",      // Oro
+    bg1: "#000000",          // Negro Fondo 1
+    bg2: "linear-gradient(135deg, #000000 0%, #1a1a1a 100%)", // Negro Fondo 2
+    text: "#000000",         // Letras Negras (sobre tarjetas oro)
+    card: "#d4af37",         // Tarjetas Oro
+    muted: "#d4af37",        // Títulos en Oro (sobre fondo negro)
   },
 
-  // 💍 Bodas — sofisticados y atemporales
+  // 💍 Bodas
   {
     id: "t11",
-    name: "Blanco Clásico",
+    name: "Ivory Gold",
     primary: "#b8953f",
     bg1: "#fefefe",
     bg2: "linear-gradient(135deg, #fafaf9 0%, #f5f0e8 100%)",
@@ -171,7 +172,7 @@ export const THEMES = [
   },
   {
     id: "t12",
-    name: "Rústica",
+    name: "Olive Rustic",
     primary: "#65a30d",
     bg1: "#fefdf0",
     bg2: "linear-gradient(135deg, #fef9c3 0%, #fef08a 40%, #ecfccb 100%)",
@@ -181,7 +182,7 @@ export const THEMES = [
   },
   {
     id: "t13",
-    name: "Borgoña",
+    name: "Burgundy Velvet",
     primary: "#9f1239",
     bg1: "#fff4f5",
     bg2: "linear-gradient(135deg, #ffe4e6 0%, #fecdd3 100%)",
@@ -191,7 +192,7 @@ export const THEMES = [
   },
   {
     id: "t14",
-    name: "Terracota",
+    name: "Terracotta Warm",
     primary: "#c2410c",
     bg1: "#fffaf5",
     bg2: "linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%)",
@@ -228,9 +229,9 @@ export const FONTS = [
   { label: "Spectral", value: "Spectral" }
 ];
 
-export const GENERAL_EMOJIS = ["✨","👑","🎈","🎉","🍾","🥂","🍷","🎂","🍰","🥳","💍","💒","💒","👼","🎓","🎓","🚗","👗","👔","🎁","💝"];
-export const FOOD_EMOJIS = ["🍕","🍔","🍟","🌭","🍿","🌮","🌯","🥙","🥗","🥪","🥘","🧆","🍲","🥣","🥗","🍿","🍗","🍖","🥩","🍤","🍣","🥓","🧀","🌮","🍔"];
-export const CLOTHES_EMOJIS = ["👗","👔","👘","🥻","🩱","👖","🧥","🦺","👕","👕","🩳","🩲","👠","👡","👢","👞","👟","🥾","🧦","🧤","🧣","🎩","🧢","👒"];
+export const GENERAL_EMOJIS = ["✨","👑","🎈","🎉","🍾","🥂","🍷","🎂","🍰","🥳","💍","💒","👼","🎓","🚗","👗","👔","🎁","💝"];
+export const FOOD_EMOJIS = ["🍕","🍔","🍟","🌭","🍿","🌮","🌯","🥙","🥗","🥪","🥘","🧆","🍲","🥣","🍗","🍖","🥩","🍤","🍣","🥓","🧀"];
+export const CLOTHES_EMOJIS = ["👗","👔","👘","🥻","🩱","👖","🧥","🦺","👕","🩳","🩲","👠","👡","👢","👞","👟","🥾","🧦","🧤","🧣","🎩","🧢","👒"];
 
 export const ANIMATION_CATEGORIES = {
   infantil: [ { id: 'mickey', emoji: '🕷️', name: 'Superhéroe' }, { id: 'minnie', emoji: '🎀', name: 'Princesa' }, { id: 'cars', emoji: '🚗', name: 'Autos' } ],
@@ -254,8 +255,8 @@ export const getYouTubeId = (url) => {
 
 export const getSpotifyEmbed = (url) => {
   if (!url) return null;
-  if (url.includes('spotify.link')) return null;
-  return url.replace('open.spotify.com/', 'open.spotify.com/embed/');
+  // Soporta links de track y playlist
+  return url.replace('https://open.spotify.com/', 'https://open.spotify.com/embed/');
 };
 
 export const formatToDDMMYYYY = (dateString) => {
