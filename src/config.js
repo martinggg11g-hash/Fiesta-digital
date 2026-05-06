@@ -54,34 +54,165 @@ export const DEF_CONFIG = {
 };
 
 export const THEMES = [
-  // 🎈 5 Infantiles
-  { id: "t1", name: "Rosa Chicle", primary: "#f472b6", bg1: "#fdf2f8", bg2: "#fbcfe8", text: "#831843", card: "#ffffff", muted: "#f472b6" },
-  { id: "t2", name: "Celeste Nube", primary: "#38bdf8", bg1: "#f0f9ff", bg2: "#e0f2fe", text: "#0c4a6e", card: "#ffffff", muted: "#38bdf8" },
-  { id: "t3", name: "Rojo Héroe", primary: "#ef4444", bg1: "#fef2f2", bg2: "#fee2e2", text: "#7f1d1d", card: "#ffffff", muted: "#ef4444" },
-  { id: "t4", name: "Lila Mágico", primary: "#a855f7", bg1: "#faf5ff", bg2: "#f3e8ff", text: "#581c87", card: "#ffffff", muted: "#a855f7" },
-  { id: "t5", name: "Verde Selva", primary: "#22c55e", bg1: "#f0fdf4", bg2: "#dcfce7", text: "#14532d", card: "#ffffff", muted: "#22c55e" },
+  // 🎈 Infantiles (más modernos, menos “guardería”)
+  {
+    id: "t1",
+    name: "Bubble Pink Pro",
+    primary: "#ec4899",
+    gradient: "linear-gradient(135deg, #ec4899, #f472b6)",
+    bg1: "#fff1f7",
+    bg2: "#ffe4f0",
+    text: "#3b0a2a",
+    card: "#ffffff",
+    muted: "#f9a8d4"
+  },
+  {
+    id: "t2",
+    name: "Sky Soft",
+    primary: "#0ea5e9",
+    gradient: "linear-gradient(135deg, #0ea5e9, #38bdf8)",
+    bg1: "#f0f9ff",
+    bg2: "#e0f2fe",
+    text: "#082f49",
+    card: "#ffffff",
+    muted: "#7dd3fc"
+  },
+  {
+    id: "t3",
+    name: "Hero Red Modern",
+    primary: "#dc2626",
+    gradient: "linear-gradient(135deg, #dc2626, #f87171)",
+    bg1: "#fff5f5",
+    bg2: "#fee2e2",
+    text: "#3f0a0a",
+    card: "#ffffff",
+    muted: "#fca5a5"
+  },
+  {
+    id: "t4",
+    name: "Magic Purple",
+    primary: "#9333ea",
+    gradient: "linear-gradient(135deg, #9333ea, #c084fc)",
+    bg1: "#faf5ff",
+    bg2: "#f3e8ff",
+    text: "#2e1065",
+    card: "#ffffff",
+    muted: "#d8b4fe"
+  },
+  {
+    id: "t5",
+    name: "Jungle Fresh",
+    primary: "#16a34a",
+    gradient: "linear-gradient(135deg, #16a34a, #4ade80)",
+    bg1: "#f0fdf4",
+    bg2: "#dcfce7",
+    text: "#052e16",
+    card: "#ffffff",
+    muted: "#86efac"
+  },
 
-  // 👑 5 de 15 Años
-  { id: "t6", name: "Rose Gold", primary: "#db2777", bg1: "#fdf2f8", bg2: "#fce7f3", text: "#4c1d95", card: "#ffffff", muted: "#db2777" },
-  { id: "t7", name: "Neón Noche", primary: "#d946ef", bg1: "#1e1b4b", bg2: "#0f172a", text: "#ffffff", card: "#1e1b4b", muted: "#a855f7" },
-  { id: "t8", name: "Esmeralda", primary: "#059669", bg1: "#ecfdf5", bg2: "#d1fae5", text: "#064e3b", card: "#ffffff", muted: "#059669" },
-  { id: "t9", name: "Azul Rey", primary: "#2563eb", bg1: "#f0f9ff", bg2: "#dbeafe", text: "#1e3a8a", card: "#ffffff", muted: "#2563eb" },
-  { id: "t10", name: "Black & Silver", primary: "#64748b", bg1: "#0f172a", bg2: "#1e293b", text: "#f8fafc", card: "#334155", muted: "#cbd5e1" },
+  // 👑 15 Años (más premium / instagram-ready)
+  {
+    id: "t6",
+    name: "Rose Gold Luxe",
+    primary: "#be185d",
+    gradient: "linear-gradient(135deg, #be185d, #f472b6)",
+    bg1: "#fff1f7",
+    bg2: "#ffe4f0",
+    text: "#4a044e",
+    card: "#ffffff",
+    muted: "#f9a8d4"
+  },
+  {
+    id: "t7",
+    name: "Neon Night",
+    primary: "#c026d3",
+    gradient: "linear-gradient(135deg, #c026d3, #6366f1)",
+    bg1: "#0f172a",
+    bg2: "#020617",
+    text: "#f8fafc",
+    card: "#1e293b",
+    muted: "#a78bfa"
+  },
+  {
+    id: "t8",
+    name: "Emerald Deep",
+    primary: "#047857",
+    gradient: "linear-gradient(135deg, #047857, #10b981)",
+    bg1: "#ecfdf5",
+    bg2: "#d1fae5",
+    text: "#022c22",
+    card: "#ffffff",
+    muted: "#6ee7b7"
+  },
+  {
+    id: "t9",
+    name: "Royal Blue Pro",
+    primary: "#1d4ed8",
+    gradient: "linear-gradient(135deg, #1d4ed8, #60a5fa)",
+    bg1: "#eff6ff",
+    bg2: "#dbeafe",
+    text: "#172554",
+    card: "#ffffff",
+    muted: "#93c5fd"
+  },
+  {
+    id: "t10",
+    name: "Black Silver Elite",
+    primary: "#94a3b8",
+    gradient: "linear-gradient(135deg, #0f172a, #334155)",
+    bg1: "#020617",
+    bg2: "#0f172a",
+    text: "#e2e8f0",
+    card: "#1e293b",
+    muted: "#64748b"
+  },
 
-  // 💍 4 de Bodas
-  { id: "t11", name: "Blanco Clásico", primary: "#d4af37", bg1: "#ffffff", bg2: "#f8fafc", text: "#334155", card: "#ffffff", muted: "#94a3b8" },
-  { id: "t12", name: "Rústica", primary: "#84cc16", bg1: "#fefce8", bg2: "#f7fee7", text: "#3f6212", card: "#ffffff", muted: "#84cc16" },
-  { id: "t13", name: "Borgoña", primary: "#9f1239", bg1: "#fff1f2", bg2: "#ffe4e6", text: "#4c0519", card: "#ffffff", muted: "#9f1239" },
-  { id: "t14", name: "Terracota", primary: "#ea580c", bg1: "#fff7ed", bg2: "#ffedd5", text: "#7c2d12", card: "#ffffff", muted: "#ea580c" }
-];
-
-export const FONTS = [
-  { label: "Montserrat (Moderna)", value: "Montserrat" },
-  { label: "Playfair (Elegante)", value: "Playfair Display" },
-  { label: "Pacifico (Cursiva)", value: "Pacifico" },
-  { label: "Caveat (A mano)", value: "Caveat" },
-  { label: "Syne (Urbana)", value: "Syne" },
-  { label: "Bebas Neue (Impacto)", value: "Bebas Neue" },
+  // 💍 Bodas (elegancia real, no genérico)
+  {
+    id: "t11",
+    name: "Classic Ivory Gold",
+    primary: "#c9a227",
+    gradient: "linear-gradient(135deg, #c9a227, #f5e6a8)",
+    bg1: "#fffdf7",
+    bg2: "#f8f6f0",
+    text: "#3f3f46",
+    card: "#ffffff",
+    muted: "#e4d7a3"
+  },
+  {
+    id: "t12",
+    name: "Olive Rustic",
+    primary: "#4d7c0f",
+    gradient: "linear-gradient(135deg, #4d7c0f, #a3e635)",
+    bg1: "#fefce8",
+    bg2: "#f7fee7",
+    text: "#1a2e05",
+    card: "#ffffff",
+    muted: "#bef264"
+  },
+  {
+    id: "t13",
+    name: "Burgundy Velvet",
+    primary: "#7f1d1d",
+    gradient: "linear-gradient(135deg, #7f1d1d, #b91c1c)",
+    bg1: "#fff1f2",
+    bg2: "#ffe4e6",
+    text: "#2c0a0a",
+    card: "#ffffff",
+    muted: "#fca5a5"
+  },
+  {
+    id: "t14",
+    name: "Terracotta Warm",
+    primary: "#c2410c",
+    gradient: "linear-gradient(135deg, #c2410c, #fb923c)",
+    bg1: "#fff7ed",
+    bg2: "#ffedd5",
+    text: "#431407",
+    card: "#ffffff",
+    muted: "#fdba74"
+  }
 ];
 
 export const GENERAL_EMOJIS = ["✨","👑","🎈","🎉","🍾","🥂","🍷","🎂","🍰","🥳","💍","💒","💒","👼","🎓","🎓","🚗","👗","👔","🎁","💝"];
