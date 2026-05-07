@@ -270,7 +270,7 @@ const MapEmbed = ({ name, address, primary }) => {
 };
 
 // ==========================================
-// RSVP WIDGET MEJORADO (MODO VIP Y FECHA LÍMITE)
+// RSVP WIDGET CORREGIDO (LISTA NOMINAL Y BOTÓN WHATSAPP)
 // ==========================================
 const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP }) => {
   const [step, setStep] = useState('button');
@@ -281,6 +281,38 @@ const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP }) => {
   const maxLimit = cfg.maxGuestsPerFamily || 5;
   const isPrivate = cfg.isPrivateList || false;
 
+  // Lógica para Lista Nominal (Botón WhatsApp)
+  if (isPrivate) {
+    const cleanPhone = cfg.whatsappNumber ? cfg.whatsappNumber.replace(/\D/g, '') : '';
+    const waText = (cfg.whatsappMessage || "¡Hola! Confirmo mi asistencia.").replace('{nombre}', cfg.honoreeName || '');
+    const waLink = cleanPhone ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(waText)}` : '#';
+
+    return (
+      <div className="pt-8 text-center">
+        {cfg.showRsvpDeadline && cfg.rsvpDeadline && (
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-3 px-4" style={{ color: mutedC }}>
+            Confirmar asistencia antes del {formatToDDMMYYYY(cfg.rsvpDeadline)}
+          </p>
+        )}
+        
+        <div className="p-6 rounded-3xl border shadow-sm mb-4 relative overflow-hidden" style={{ background: cardC, borderColor: `${primary}33` }}>
+           <div className="absolute top-0 left-0 right-0 py-1.5" style={{ background: primary }}>
+             <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white">Tu Pase Nominal</p>
+           </div>
+           {/* Simulamos un QR único para la vista previa */}
+           <img src={`https://quickchart.io/qr?text=VIP-MOCK-1234&size=300`} className="w-full max-w-[180px] mx-auto rounded-xl shadow-md mt-6 mb-3" alt="QR VIP" />
+           <p className="text-xs font-bold uppercase tracking-widest" style={{ color: textC }}>Nombre del Invitado</p>
+           <p className="text-[10px] font-bold opacity-50" style={{ color: textC }}>Pase Intransferible</p>
+        </div>
+
+        <a href={waLink} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-5 rounded-2xl font-black shadow-xl text-white transition-all active:scale-95 cursor-pointer uppercase tracking-widest" style={{ background: primary }}>
+          <MessageCircle size={20} /> CONFIRMAR ASISTENCIA
+        </a>
+      </div>
+    );
+  }
+
+  // Lógica para Lista Abierta (Link General)
   const generateTicket = (e) => {
     e.preventDefault();
     setLoading(true);
@@ -304,7 +336,7 @@ const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP }) => {
       ctx.fillStyle = '#fff'; ctx.fillRect(150, 250, 300, 300);
       ctx.drawImage(img, 160, 260, 280, 280);
       
-      const guestName = isPrivate ? "INVITADO VIP" : `${formData.name} ${formData.lastname}`.toUpperCase();
+      const guestName = `${formData.name} ${formData.lastname}`.toUpperCase();
       ctx.font = 'bold 40px sans-serif'; ctx.fillText(guestName, 300, 650);
       
       ctx.font = '30px sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.7)';
@@ -326,7 +358,7 @@ const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP }) => {
           </p>
         )}
         <button onClick={() => setStep('form')} className="w-full py-5 rounded-2xl font-black shadow-xl text-white transition-all active:scale-95 cursor-pointer uppercase tracking-widest" style={{ background: primary }}>
-          {isPrivate ? "CONFIRMAR ASISTENCIA" : "OBTENER PASE VIP"}
+          OBTENER PASE VIP
         </button>
       </div>
     );
@@ -337,17 +369,8 @@ const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP }) => {
       <div className="pt-8">
         <form onSubmit={generateTicket} className="p-6 rounded-3xl border space-y-4 shadow-sm text-left" style={{ background: cardC, borderColor: `${primary}33` }}>
           
-          {isPrivate ? (
-            <div className="p-4 rounded-xl mb-2 text-center" style={{ background: `${primary}15` }}>
-              <p className="text-xs font-black uppercase tracking-widest" style={{ color: primary }}>Invitación Nominal</p>
-              <p className="text-[11px] font-medium mt-1 opacity-80" style={{ color: textC }}>Tu lugar ya está reservado. Solo confirmanos con cuántas personas asistes.</p>
-            </div>
-          ) : (
-            <>
-              <input type="text" placeholder="Tu Nombre" className="w-full p-4 rounded-xl outline-none" style={{ background: `${textC}0d`, color: textC }} onChange={e=>setFormData({...formData, name: e.target.value})} required />
-              <input type="text" placeholder="Tu Apellido" className="w-full p-4 rounded-xl outline-none" style={{ background: `${textC}0d`, color: textC }} onChange={e=>setFormData({...formData, lastname: e.target.value})} required />
-            </>
-          )}
+          <input type="text" placeholder="Tu Nombre" className="w-full p-4 rounded-xl outline-none" style={{ background: `${textC}0d`, color: textC }} onChange={e=>setFormData({...formData, name: e.target.value})} required />
+          <input type="text" placeholder="Tu Apellido" className="w-full p-4 rounded-xl outline-none" style={{ background: `${textC}0d`, color: textC }} onChange={e=>setFormData({...formData, lastname: e.target.value})} required />
           
           <div className="flex items-center justify-between px-4 py-3 rounded-xl" style={{ background: `${textC}0d` }}>
             <span className="text-xs font-bold flex items-center gap-2" style={{ color: textC }}><Users size={16}/> Acompañantes extras</span>
@@ -359,7 +382,7 @@ const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP }) => {
           </div>
 
           <button type="submit" disabled={loading} className="w-full py-4 font-black rounded-xl cursor-pointer uppercase tracking-widest mt-2" style={{ background: primary, color: '#fff' }}>
-            {loading ? 'Procesando...' : (isPrivate ? 'CONFIRMAR AHORA' : 'GENERAR PASE')}
+            {loading ? 'Procesando...' : 'GENERAR PASE'}
           </button>
           
           <button type="button" onClick={() => setStep('button')} className="w-full mt-2 text-xs font-bold uppercase tracking-widest cursor-pointer opacity-60 hover:opacity-100 transition-opacity" style={{ color: textC }}>Cancelar</button>
@@ -368,7 +391,7 @@ const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP }) => {
     );
   }
 
-  // Si está en el paso 'qr'
+  // Si está en el paso 'qr' (Solo ocurre en Lista Abierta)
   return (
     <div className="pt-8">
       <div className="text-center p-6 rounded-3xl border shadow-sm" style={{ background: cardC, borderColor: `${primary}33` }}>
@@ -629,7 +652,6 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP }) => {
           </div>
         )}
 
-        {/* COMPONENTE WIDGET RSVP ACTUALIZADO CON CONDICIONAL VIP */}
         <RsvpWidget cfg={cfg} primary={primary} textC={textC} cardC={cardC} mutedC={mutedC} onConfirmRSVP={onConfirmRSVP} />
            
         {(cfg.showInstagram || cfg.showFacebook || cfg.showTiktok) && (
