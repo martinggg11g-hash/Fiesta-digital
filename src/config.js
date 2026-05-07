@@ -49,10 +49,11 @@ export const DEF_CONFIG = {
   showTiktok: false,
   tiktokUrl: "",
 
-  // NUEVAS VARIABLES RSVP VIP
+  // NUEVAS VARIABLES RSVP VIP Y ACCESOS
   showRsvpDeadline: false,
   rsvpDeadline: "",
-  isPrivateList: false, // Si es true, asume que se usa link personalizado y no pide formulario
+  isPrivateList: false,
+  clientPin: "", // PIN de 4 dígitos para que el agasajado acceda a su panel
 };
 
 export const THEMES = [
