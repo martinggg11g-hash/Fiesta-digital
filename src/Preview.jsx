@@ -72,15 +72,10 @@ const DraggableItem = ({ id, cfg, update, children, className }) => {
   );
 };
 
-// ACA ESTÁ LA MAGIA QUE ARREGLA EL TAMAÑO DE LOS ÍCONOS EN TODA LA APP
 const RenderSymbol = ({ value, size = 32, color = "currentColor", className = "" }) => {
   const isIcon = typeof value === 'string' && value.startsWith('icon-');
-  
   return (
-    <span 
-      style={{ fontSize: `${size}px`, color: color, lineHeight: 1 }} 
-      className={`shrink-0 inline-flex items-center justify-center ${className}`}
-    >
+    <span style={{ fontSize: `${size}px`, color: color, lineHeight: 1 }} className={`shrink-0 inline-flex items-center justify-center ${className}`}>
       {isIcon ? <IconRenderer name={value} size="1em" color={color} /> : value}
     </span>
   );
@@ -274,13 +269,17 @@ const MapEmbed = ({ name, address, primary }) => {
   );
 };
 
-const RsvpWidget = ({ cfg, primary, textC, cardC, onConfirmRSVP }) => {
+// ==========================================
+// RSVP WIDGET MEJORADO (CON FECHA LÍMITE Y MODO VIP)
+// ==========================================
+const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP }) => {
   const [step, setStep] = useState('button');
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ name: '', lastname: '', guests: 1 });
   const [ticketImage, setTicketImage] = useState('');
 
   const maxLimit = cfg.maxGuestsPerFamily || 5;
+  const isPrivate = cfg.isPrivateList || false;
 
   const generateTicket = (e) => {
     e.preventDefault();
@@ -305,47 +304,70 @@ const RsvpWidget = ({ cfg, primary, textC, cardC, onConfirmRSVP }) => {
       ctx.fillStyle = '#fff'; ctx.fillRect(150, 250, 300, 300);
       ctx.drawImage(img, 160, 260, 280, 280);
       
-      ctx.font = 'bold 40px sans-serif'; ctx.fillText(`${formData.name} ${formData.lastname}`.toUpperCase(), 300, 650);
+      const guestName = isPrivate ? "INVITADO VIP" : `${formData.name} ${formData.lastname}`.toUpperCase();
+      ctx.font = 'bold 40px sans-serif'; ctx.fillText(guestName, 300, 650);
       
       ctx.font = '30px sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.7)';
       ctx.fillText(`Válido para: ${formData.guests} ${formData.guests === 1 ? 'persona' : 'personas'}`, 300, 710);
       
       setTicketImage(canvas.toDataURL('image/jpeg'));
-      if(onConfirmRSVP) onConfirmRSVP({...formData, id: ticketId});
+      if(onConfirmRSVP) onConfirmRSVP({...formData, isPrivate, id: ticketId});
       setLoading(false); setStep('qr');
     };
     img.src = qrUrl;
   };
 
-  if(step === 'button') {
-    return <button onClick={()=>setStep('form')} className="w-full py-5 rounded-2xl font-black shadow-xl text-white transition-all active:scale-95 cursor-pointer" style={{ background: primary }}>OBTENER PASE VIP</button>;
-  }
-
-  if(step === 'form') {
-    return (
-      <form onSubmit={generateTicket} className="p-6 rounded-3xl border space-y-4 shadow-sm" style={{ background: cardC, borderColor: `${primary}33` }}>
-        <input type="text" placeholder="Tu Nombre" className="w-full p-4 rounded-xl outline-none" style={{ background: `${textC}0d`, color: textC }} onChange={e=>setFormData({...formData, name: e.target.value})} required />
-        <input type="text" placeholder="Tu Apellido" className="w-full p-4 rounded-xl outline-none" style={{ background: `${textC}0d`, color: textC }} onChange={e=>setFormData({...formData, lastname: e.target.value})} required />
-        
-        <div className="flex items-center justify-between px-4 py-3 rounded-xl" style={{ background: `${textC}0d` }}>
-          <span className="text-xs font-bold flex items-center gap-2" style={{ color: textC }}><Users size={16}/> Acompañantes</span>
-          <div className="flex items-center gap-3">
-            <button type="button" onClick={() => setFormData({...formData, guests: Math.max(1, formData.guests - 1)})} className="w-8 h-8 rounded-lg flex items-center justify-center font-bold cursor-pointer transition-colors" style={{ background: `${textC}1a`, color: textC }}>-</button>
-            <span className="font-black w-4 text-center" style={{ color: textC }}>{formData.guests}</span>
-            <button type="button" onClick={() => setFormData({...formData, guests: Math.min(maxLimit, formData.guests + 1)})} className="w-8 h-8 rounded-lg flex items-center justify-center font-bold cursor-pointer transition-colors" style={{ background: `${textC}1a`, color: textC }}>+</button>
-          </div>
-        </div>
-
-        <button type="submit" disabled={loading} className="w-full py-4 font-black rounded-xl cursor-pointer" style={{ background: primary, color: '#fff' }}>{loading ? 'Procesando...' : 'GENERAR PASE'}</button>
-      </form>
-    );
-  }
-
   return (
-    <div className="text-center p-6 rounded-3xl border shadow-sm" style={{ background: cardC, borderColor: `${primary}33` }}>
-      <img src={ticketImage} className="w-full max-w-[240px] mx-auto rounded-xl shadow-2xl mb-4" alt="Pase VIP" />
-      <a href={ticketImage} download="Pase_VIP.jpg" className="block w-full py-3 bg-green-500 text-white font-black rounded-xl mb-3 cursor-pointer">DESCARGAR IMAGEN</a>
-      <button type="button" onClick={()=>setStep('button')} className="text-xs cursor-pointer font-bold" style={{ color: textC }}>Cerrar</button>
+    <div className="pt-8 text-center">
+      {cfg.showRsvpDeadline && cfg.rsvpDeadline && (
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-3 px-4" style={{ color: mutedC }}>
+          Confirmar asistencia antes del {formatToDDMMYYYY(cfg.rsvpDeadline)}
+        </p>
+      )}
+
+      {step === 'button' && (
+        <button onClick={()=>setStep('form')} className="w-full py-5 rounded-2xl font-black shadow-xl text-white transition-all active:scale-95 cursor-pointer uppercase tracking-widest" style={{ background: primary }}>
+          Obtener Pase VIP
+        </button>
+      )}
+
+      {step === 'form' && (
+        <form onSubmit={generateTicket} className="p-6 rounded-3xl border space-y-4 shadow-sm text-left" style={{ background: cardC, borderColor: `${primary}33` }}>
+          
+          {isPrivate ? (
+            <div className="p-4 rounded-xl mb-2 text-center" style={{ background: `${primary}15` }}>
+              <p className="text-xs font-black uppercase tracking-widest" style={{ color: primary }}>Invitación Nominal</p>
+              <p className="text-[11px] font-medium mt-1 opacity-80" style={{ color: textC }}>Tu lugar ya está reservado. Solo confirmanos con cuántas personas asistes.</p>
+            </div>
+          ) : (
+            <>
+              <input type="text" placeholder="Tu Nombre" className="w-full p-4 rounded-xl outline-none" style={{ background: `${textC}0d`, color: textC }} onChange={e=>setFormData({...formData, name: e.target.value})} required />
+              <input type="text" placeholder="Tu Apellido" className="w-full p-4 rounded-xl outline-none" style={{ background: `${textC}0d`, color: textC }} onChange={e=>setFormData({...formData, lastname: e.target.value})} required />
+            </>
+          )}
+          
+          <div className="flex items-center justify-between px-4 py-3 rounded-xl" style={{ background: `${textC}0d` }}>
+            <span className="text-xs font-bold flex items-center gap-2" style={{ color: textC }}><Users size={16}/> Acompañantes extras</span>
+            <div className="flex items-center gap-3">
+              <button type="button" onClick={() => setFormData({...formData, guests: Math.max(1, formData.guests - 1)})} className="w-8 h-8 rounded-lg flex items-center justify-center font-bold cursor-pointer transition-colors" style={{ background: `${textC}1a`, color: textC }}>-</button>
+              <span className="font-black w-4 text-center" style={{ color: textC }}>{formData.guests}</span>
+              <button type="button" onClick={() => setFormData({...formData, guests: Math.min(maxLimit, formData.guests + 1)})} className="w-8 h-8 rounded-lg flex items-center justify-center font-bold cursor-pointer transition-colors" style={{ background: `${textC}1a`, color: textC }}>+</button>
+            </div>
+          </div>
+
+          <button type="submit" disabled={loading} className="w-full py-4 font-black rounded-xl cursor-pointer uppercase tracking-widest mt-2" style={{ background: primary, color: '#fff' }}>
+            {loading ? 'Procesando...' : 'Generar Pase'}
+          </button>
+        </form>
+      )}
+
+      {step === 'qr' && (
+        <div className="text-center p-6 rounded-3xl border shadow-sm" style={{ background: cardC, borderColor: `${primary}33` }}>
+          <img src={ticketImage} className="w-full max-w-[240px] mx-auto rounded-xl shadow-2xl mb-4" alt="Pase VIP" />
+          <a href={ticketImage} download="Pase_VIP.jpg" className="block w-full py-3 bg-green-500 text-white font-black rounded-xl mb-3 cursor-pointer">DESCARGAR IMAGEN</a>
+          <button type="button" onClick={()=>setStep('button')} className="text-xs cursor-pointer font-bold" style={{ color: textC }}>Cerrar</button>
+        </div>
+      )}
     </div>
   );
 };
@@ -599,8 +621,9 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP }) => {
           </div>
         )}
 
-        <div className="pt-8">
-           <RsvpWidget cfg={cfg} primary={primary} textC={textC} cardC={cardC} onConfirmRSVP={onConfirmRSVP} />
+        {/* CONTENEDOR DEL WIDGET DE CONFIRMACIÓN Y REDES */}
+        <div className="pt-2">
+           <RsvpWidget cfg={cfg} primary={primary} textC={textC} cardC={cardC} mutedC={mutedC} onConfirmRSVP={onConfirmRSVP} />
            
            {(cfg.showInstagram || cfg.showFacebook || cfg.showTiktok) && (
              <div className="flex justify-center gap-4 mt-8 relative z-[50]">
