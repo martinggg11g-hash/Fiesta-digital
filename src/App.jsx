@@ -10,6 +10,8 @@ import { supabase } from "./supabase";
 import LoginScreen from "./Login";
 import DashboardScreen from "./Dashboard";
 import PuertaScreen from "./Puerta";
+// 👇 IMPORTAMOS LA NUEVA PANTALLA DEL CLIENTE
+import { ManageScreen } from "./Manage"; 
 
 const slugify = (text) => text?.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') || 'salon';
 
@@ -49,7 +51,6 @@ const PublicInviteScreen = ({ invitations, onConfirmRSVP }) => {
     if (inv) { document.title = inv.config?.honoreeName ? `${inv.config.honoreeName} | Invitación` : "Invitación"; }
   }, [inv]);
 
-  // Pantalla de carga (Splash) para la invitación pública
   if (!inv) return (
     <div className="h-screen bg-slate-950 flex flex-col items-center justify-center text-white relative overflow-hidden">
        <Loader2 size={30} className="animate-spin text-white opacity-50"/>
@@ -149,7 +150,6 @@ export default function App() {
     if(target) await supabase.from('invitaciones').update({ internal_data: { ...target.internal_data, [f]: v } }).eq('id', id);
   };
 
-  // Splash Screen de Carga (Oculta el flashazo de la base de datos)
   if (loading) return (
     <div className="h-screen bg-slate-950 flex flex-col items-center justify-center text-white relative overflow-hidden transition-opacity duration-1000">
        <div className="absolute inset-0 bg-[radial-gradient(#8b5cf6_1px,transparent_1px)] [background-size:20px_20px] opacity-10 animate-pulse"></div>
@@ -171,6 +171,10 @@ export default function App() {
           <Route path="/editor/:id" element={<EditorScreen invitations={invitations} onSave={handleSaveInv} />} />
           <Route path="/i/:salon/:invId" element={<PublicInviteScreen invitations={invitations} onConfirmRSVP={handleConfirmRSVP} />} />
           <Route path="/puerta/:id" element={<PuertaScreen invitations={invitations} onUpdateInternal={handleUpdateInternal} />} />
+          
+          {/* 👇 ACÁ SUMAMOS LA RUTA NUEVA DEL CLIENTE VIP */}
+          <Route path="/manage/:id" element={<ManageScreen />} />
+          
         </Routes>
       </Router>
     </>
