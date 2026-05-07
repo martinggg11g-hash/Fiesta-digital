@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Palette, Star, Image as ImageIcon, Layout, List, Trash2, Video, Link as LinkIcon, LayoutGrid, Smartphone, Calendar, Clock, CheckCircle2, MessageCircle, Plus, Edit2, RefreshCcw } from "lucide-react";
+import { Palette, Star, Image as ImageIcon, Layout, List, Trash2, Video, Link as LinkIcon, LayoutGrid, Smartphone, Calendar, Clock, CheckCircle2, MessageCircle, Plus, Edit2, RefreshCcw, Copy, ExternalLink } from "lucide-react";
 import { GiphySearch, Inp, MiniInp, SelectInp, TypoControl, FontSelector, FileUpload, Toggle, EmojiPicker, Acc, BordersGallery } from "./EditorUI";
 import { ANIMATION_CATEGORIES, THEMES, TRANSITION_OPTS, PARTICLE_CATEGORIES, FONTS } from "./config";
 
@@ -10,6 +10,15 @@ const TiktokIcon = ({ size = 20 }) => (<svg width={size} height={size} viewBox="
 export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim, mobileView }) {
   const [animCat, setAnimCategory] = useState("infantil");
   const [partCat, setPartCat] = useState("Clásicos");
+
+  // Extraemos el ID del evento de la URL actual para armar el link del cliente
+  const eventId = window.location.pathname.split('/').pop();
+  const hostManageLink = `${window.location.origin}/manage/${eventId}`;
+
+  const copyToClipboard = (txt) => {
+    navigator.clipboard.writeText(txt);
+    alert("¡Link copiado! Envíaselo a tu cliente.");
+  };
 
   const resetPositions = () => {
     const keys = ['topLeftBorderPos', 'topRightBorderPos', 'bottomLeftBorderPos', 'bottomRightBorderPos', 'eventTypePos', 'honoreePos', 'badgePos'];
@@ -112,7 +121,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
                <div className="flex-1"><Inp value={cfg.giftText} onChange={v => update("giftText", v)} placeholder="Lluvia de sobres..." className="!mb-0"/></div>
              </div>
              <div className="flex items-center justify-between mt-4 mb-2"><span className="text-[10px] font-bold text-slate-500 uppercase">Datos Transferencia</span><Toggle checked={cfg.showGiftNote} onChange={v => update("showGiftNote", v)} /></div>{cfg.showGiftNote && (<div className="mt-2 relative z-20"><Inp value={cfg.giftNoteText} onChange={v => update("giftNoteText", v)} multiline className="!mb-2" /><TypoControl label="Diseño Aclaración" colorVal={cfg.giftNoteColor || cfg.primary} onColor={v => update('giftNoteColor', v)} sizeVal={cfg.giftNoteSize || 11} onSize={v => update('giftNoteSize', v)} minSize={8} maxSize={24} /></div>)}<div className="flex items-center justify-between mt-6 mb-2 border-t pt-4"><span className="text-[10px] font-bold text-slate-500 uppercase">Links de Regalos</span></div><div className="space-y-3 mb-4">{cfg.giftLinks?.map((link, i) => (<div key={i} className="flex flex-col gap-2 bg-white p-3 rounded-xl border shadow-sm relative"><button onClick={() => update("giftLinks", cfg.giftLinks.filter((_, idx) => idx !== i))} type="button" className="absolute top-2 right-2 text-red-400 cursor-pointer"><Trash2 size={14}/></button><div className="pr-6"><MiniInp className="w-full p-2 mb-2 text-xs font-bold border rounded-lg" value={link.label} placeholder="Ej: Mesa en Amazon" onChange={v => { const n = [...cfg.giftLinks]; n[i].label = v; update("giftLinks", n); }} /><MiniInp className="w-full p-2 text-xs border rounded-lg" value={link.url} placeholder="https://..." onChange={v => { const n = [...cfg.giftLinks]; n[i].url = v; update("giftLinks", n); }} /></div></div>))}</div><button onClick={() => update("giftLinks", [...(cfg.giftLinks || []), { label: "Link", url: "" }])} type="button" className="w-full py-3 bg-white border-2 border-dashed rounded-xl text-xs font-bold text-slate-400 cursor-pointer"><Plus size={14} className="inline-block mr-2" /> AÑADIR LINK</button></>)}</Acc>
-      <Acc title="🔟 Galería" icon={ImageIcon} iconColor="#ec4899"><div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Galería</span><Toggle checked={cfg.showGallery} onChange={v => update("showGallery", v)} /></div>{cfg.showGallery && (<><div className="flex bg-slate-100 p-1 rounded-xl mb-4"><button onClick={() => update("galleryLayout", 'carousel')} type="button" className={`flex-1 py-2 rounded-lg text-[10px] font-bold flex items-center justify-center gap-2 ${cfg.galleryLayout === 'carousel' || !cfg.galleryLayout ? 'bg-white shadow-sm text-violet-600' : 'text-slate-500'} cursor-pointer`}><Smartphone size={14}/> Carrusel</button><button onClick={() => update("galleryLayout", 'grid')} type="button" className={`flex-1 py-2 rounded-lg text-[10px] font-bold flex items-center justify-center gap-2 ${cfg.galleryLayout === 'grid' ? 'bg-white shadow-sm text-violet-600' : 'text-slate-500'} cursor-pointer`}><LayoutGrid size={14}/> Cuadrícula</button></div><Inp label="Título" value={cfg.galleryTitle} onChange={v => update("galleryTitle", v)} /><div className="space-y-4 mb-4 mt-2">{cfg.galleryPhotos?.map((p, i) => (<div key={i} className="bg-white border rounded-xl p-2 relative"><FileUpload onChange={v => { const n = [...cfg.galleryPhotos]; n[i] = v; update("galleryPhotos", n); }} value={p} /><button onClick={() => update("galleryPhotos", cfg.galleryPhotos.filter((_, idx) => idx !== i))} type="button" className="absolute top-2 right-2 p-2 bg-red-50 text-red-500 rounded-lg cursor-pointer"><Trash2 size={14}/></button></div>))}</div><button onClick={() => update("galleryPhotos", [...(cfg.galleryPhotos || []), ""])} type="button" className="w-full py-3 bg-white border-2 border-dashed rounded-xl text-xs font-bold text-slate-400 cursor-pointer"><Plus size={14} className="inline-block mr-2" /> AÑADIR FOTO</button></>)}</Acc>
+      <Acc title="1️⃣0️⃣ Galería" icon={ImageIcon} iconColor="#ec4899"><div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Galería</span><Toggle checked={cfg.showGallery} onChange={v => update("showGallery", v)} /></div>{cfg.showGallery && (<><div className="flex bg-slate-100 p-1 rounded-xl mb-4"><button onClick={() => update("galleryLayout", 'carousel')} type="button" className={`flex-1 py-2 rounded-lg text-[10px] font-bold flex items-center justify-center gap-2 ${cfg.galleryLayout === 'carousel' || !cfg.galleryLayout ? 'bg-white shadow-sm text-violet-600' : 'text-slate-500'} cursor-pointer`}><Smartphone size={14}/> Carrusel</button><button onClick={() => update("galleryLayout", 'grid')} type="button" className={`flex-1 py-2 rounded-lg text-[10px] font-bold flex items-center justify-center gap-2 ${cfg.galleryLayout === 'grid' ? 'bg-white shadow-sm text-violet-600' : 'text-slate-500'} cursor-pointer`}><LayoutGrid size={14}/> Cuadrícula</button></div><Inp label="Título" value={cfg.galleryTitle} onChange={v => update("galleryTitle", v)} /><div className="space-y-4 mb-4 mt-2">{cfg.galleryPhotos?.map((p, i) => (<div key={i} className="bg-white border rounded-xl p-2 relative"><FileUpload onChange={v => { const n = [...cfg.galleryPhotos]; n[i] = v; update("galleryPhotos", n); }} value={p} /><button onClick={() => update("galleryPhotos", cfg.galleryPhotos.filter((_, idx) => idx !== i))} type="button" className="absolute top-2 right-2 p-2 bg-red-50 text-red-500 rounded-lg cursor-pointer"><Trash2 size={14}/></button></div>))}</div><button onClick={() => update("galleryPhotos", [...(cfg.galleryPhotos || []), ""])} type="button" className="w-full py-3 bg-white border-2 border-dashed rounded-xl text-xs font-bold text-slate-400 cursor-pointer"><Plus size={14} className="inline-block mr-2" /> AÑADIR FOTO</button></>)}</Acc>
       
       <Acc title="1️⃣1️⃣ Confirmación y Redes" icon={CheckCircle2} iconColor="#22c55e">
         <div className="bg-slate-50 p-4 rounded-xl border mb-6">
@@ -127,11 +136,22 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
            </p>
 
            {cfg.isPrivateList && (
-             <div className="mb-4 p-3 bg-violet-50 rounded-xl border border-violet-100">
-               <label className="block text-[10px] font-black text-violet-800 uppercase tracking-widest mb-1.5">PIN de Acceso para el Agasajado</label>
-               <MiniInp type="text" maxLength="4" placeholder="Ej: 1234" value={cfg.clientPin || ""} onChange={v => update("clientPin", v)} className="w-full px-4 py-2 rounded-xl border border-violet-200 text-sm outline-none focus:border-violet-500 font-bold tracking-widest text-center" />
-               <p className="text-[9px] text-violet-600 mt-2 font-medium leading-tight">El cliente usará este código para entrar a armar su lista. Podés cambiarlo si lo olvida.</p>
-             </div>
+             <>
+               <div className="mb-4 p-3 bg-violet-50 rounded-xl border border-violet-100">
+                 <label className="block text-[10px] font-black text-violet-800 uppercase tracking-widest mb-1.5">PIN de Acceso para el Agasajado</label>
+                 <MiniInp type="text" maxLength="4" placeholder="Ej: 1234" value={cfg.clientPin || ""} onChange={v => update("clientPin", v)} className="w-full px-4 py-2 rounded-xl border border-violet-200 text-sm outline-none focus:border-violet-500 font-bold tracking-widest text-center" />
+               </div>
+
+               <div className="mb-4 p-3 bg-white rounded-xl border border-slate-200 shadow-inner">
+                 <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Link para tu Cliente</label>
+                 <div className="flex gap-2">
+                   <div className="flex-1 px-3 py-2 bg-slate-50 rounded-lg text-[10px] text-slate-500 truncate font-mono">{hostManageLink}</div>
+                   <button onClick={() => copyToClipboard(hostManageLink)} className="p-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"><Copy size={14}/></button>
+                   <a href={hostManageLink} target="_blank" rel="noreferrer" className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors"><ExternalLink size={14}/></a>
+                 </div>
+                 <p className="text-[9px] text-slate-400 mt-2 leading-tight">Copiá este link y envíaselo al cliente junto con el PIN para que cargue sus invitados.</p>
+               </div>
+             </>
            )}
 
            <div className="flex items-center justify-between mb-2 border-t border-slate-200 pt-4">
