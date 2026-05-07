@@ -270,7 +270,7 @@ const MapEmbed = ({ name, address, primary }) => {
 };
 
 // ==========================================
-// RSVP WIDGET MEJORADO (CON FECHA LÍMITE Y MODO VIP)
+// RSVP WIDGET MEJORADO (MODO VIP Y FECHA LÍMITE)
 // ==========================================
 const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP }) => {
   const [step, setStep] = useState('button');
@@ -317,21 +317,24 @@ const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP }) => {
     img.src = qrUrl;
   };
 
-  return (
-    <div className="pt-8 text-center">
-      {cfg.showRsvpDeadline && cfg.rsvpDeadline && (
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-3 px-4" style={{ color: mutedC }}>
-          Confirmar asistencia antes del {formatToDDMMYYYY(cfg.rsvpDeadline)}
-        </p>
-      )}
-
-      {step === 'button' && (
-        <button onClick={()=>setStep('form')} className="w-full py-5 rounded-2xl font-black shadow-xl text-white transition-all active:scale-95 cursor-pointer uppercase tracking-widest" style={{ background: primary }}>
-          Obtener Pase VIP
+  if (step === 'button') {
+    return (
+      <div className="pt-8 text-center">
+        {cfg.showRsvpDeadline && cfg.rsvpDeadline && (
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-3 px-4" style={{ color: mutedC }}>
+            Confirmar asistencia antes del {formatToDDMMYYYY(cfg.rsvpDeadline)}
+          </p>
+        )}
+        <button onClick={() => setStep('form')} className="w-full py-5 rounded-2xl font-black shadow-xl text-white transition-all active:scale-95 cursor-pointer uppercase tracking-widest" style={{ background: primary }}>
+          {isPrivate ? "CONFIRMAR ASISTENCIA" : "OBTENER PASE VIP"}
         </button>
-      )}
+      </div>
+    );
+  }
 
-      {step === 'form' && (
+  if (step === 'form') {
+    return (
+      <div className="pt-8">
         <form onSubmit={generateTicket} className="p-6 rounded-3xl border space-y-4 shadow-sm text-left" style={{ background: cardC, borderColor: `${primary}33` }}>
           
           {isPrivate ? (
@@ -356,18 +359,23 @@ const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP }) => {
           </div>
 
           <button type="submit" disabled={loading} className="w-full py-4 font-black rounded-xl cursor-pointer uppercase tracking-widest mt-2" style={{ background: primary, color: '#fff' }}>
-            {loading ? 'Procesando...' : 'Generar Pase'}
+            {loading ? 'Procesando...' : (isPrivate ? 'CONFIRMAR AHORA' : 'GENERAR PASE')}
           </button>
+          
+          <button type="button" onClick={() => setStep('button')} className="w-full mt-2 text-xs font-bold uppercase tracking-widest cursor-pointer opacity-60 hover:opacity-100 transition-opacity" style={{ color: textC }}>Cancelar</button>
         </form>
-      )}
+      </div>
+    );
+  }
 
-      {step === 'qr' && (
-        <div className="text-center p-6 rounded-3xl border shadow-sm" style={{ background: cardC, borderColor: `${primary}33` }}>
-          <img src={ticketImage} className="w-full max-w-[240px] mx-auto rounded-xl shadow-2xl mb-4" alt="Pase VIP" />
-          <a href={ticketImage} download="Pase_VIP.jpg" className="block w-full py-3 bg-green-500 text-white font-black rounded-xl mb-3 cursor-pointer">DESCARGAR IMAGEN</a>
-          <button type="button" onClick={()=>setStep('button')} className="text-xs cursor-pointer font-bold" style={{ color: textC }}>Cerrar</button>
-        </div>
-      )}
+  // Si está en el paso 'qr'
+  return (
+    <div className="pt-8">
+      <div className="text-center p-6 rounded-3xl border shadow-sm" style={{ background: cardC, borderColor: `${primary}33` }}>
+        <img src={ticketImage} className="w-full max-w-[240px] mx-auto rounded-xl shadow-2xl mb-4" alt="Pase VIP" />
+        <a href={ticketImage} download="Pase_VIP.jpg" className="block w-full py-3 bg-green-500 text-white font-black rounded-xl mb-3 cursor-pointer">DESCARGAR IMAGEN</a>
+        <button type="button" onClick={()=>setStep('button')} className="text-xs cursor-pointer font-bold" style={{ color: textC }}>Cerrar</button>
+      </div>
     </div>
   );
 };
@@ -621,30 +629,28 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP }) => {
           </div>
         )}
 
-        {/* CONTENEDOR DEL WIDGET DE CONFIRMACIÓN Y REDES */}
-        <div className="pt-2">
-           <RsvpWidget cfg={cfg} primary={primary} textC={textC} cardC={cardC} mutedC={mutedC} onConfirmRSVP={onConfirmRSVP} />
+        {/* COMPONENTE WIDGET RSVP ACTUALIZADO CON CONDICIONAL VIP */}
+        <RsvpWidget cfg={cfg} primary={primary} textC={textC} cardC={cardC} mutedC={mutedC} onConfirmRSVP={onConfirmRSVP} />
            
-           {(cfg.showInstagram || cfg.showFacebook || cfg.showTiktok) && (
-             <div className="flex justify-center gap-4 mt-8 relative z-[50]">
-               {cfg.showInstagram && cfg.instagramUrl && (
-                 <a href={cfg.instagramUrl} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg border border-white/10" style={{ background: cardC, color: primary }}>
-                   <InstagramIcon size={20} />
-                 </a>
-               )}
-               {cfg.showFacebook && cfg.facebookUrl && (
-                 <a href={cfg.facebookUrl} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg border border-white/10" style={{ background: cardC, color: primary }}>
-                   <FacebookIcon size={20} />
-                 </a>
-               )}
-               {cfg.showTiktok && cfg.tiktokUrl && (
-                 <a href={cfg.tiktokUrl} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg border border-white/10" style={{ background: cardC, color: primary }}>
-                   <TiktokIcon size={20} />
-                 </a>
-               )}
-             </div>
-           )}
-        </div>
+        {(cfg.showInstagram || cfg.showFacebook || cfg.showTiktok) && (
+          <div className="flex justify-center gap-4 mt-8 relative z-[50]">
+            {cfg.showInstagram && cfg.instagramUrl && (
+              <a href={cfg.instagramUrl} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg border border-white/10" style={{ background: cardC, color: primary }}>
+                <InstagramIcon size={20} />
+              </a>
+            )}
+            {cfg.showFacebook && cfg.facebookUrl && (
+              <a href={cfg.facebookUrl} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg border border-white/10" style={{ background: cardC, color: primary }}>
+                <FacebookIcon size={20} />
+              </a>
+            )}
+            {cfg.showTiktok && cfg.tiktokUrl && (
+              <a href={cfg.tiktokUrl} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg border border-white/10" style={{ background: cardC, color: primary }}>
+                <TiktokIcon size={20} />
+              </a>
+            )}
+          </div>
+        )}
         
         <p className="text-center text-[10px] font-bold opacity-50 mt-8 pb-12 relative z-[50]" style={{ color: mutedC }}>
           Invitación creada con <strong className="tracking-wide">defiesta.lat</strong>
