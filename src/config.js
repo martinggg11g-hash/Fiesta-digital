@@ -48,6 +48,11 @@ export const DEF_CONFIG = {
   facebookUrl: "",
   showTiktok: false,
   tiktokUrl: "",
+
+  // NUEVAS VARIABLES RSVP VIP
+  showRsvpDeadline: false,
+  rsvpDeadline: "",
+  isPrivateList: false, // Si es true, asume que se usa link personalizado y no pide formulario
 };
 
 export const THEMES = [
@@ -93,10 +98,6 @@ export const FONT_CATEGORIES = {
   "Manuscritas": ["Monsieur La Doulaise", "Pinyon Script", "Great Vibes", "Alex Brush", "Dancing Script", "Pacifico"],
   "Serif": ["Merriweather", "Cormorant Garamond", "Libre Baskerville", "EB Garamond", "Radley", "Spectral"]
 };
-
-// ==========================================
-// NUEVAS CATEGORÍAS MASIVAS (ICONS, EMOJIS, PARTICULAS)
-// ==========================================
 
 export const ICON_CATEGORIES = {
   "Generales": ["icon-heart", "icon-crown", "icon-star", "icon-sparkles", "icon-gift", "icon-camera", "icon-church", "icon-rings", "icon-map-pin", "icon-calendar", "icon-clock"],
