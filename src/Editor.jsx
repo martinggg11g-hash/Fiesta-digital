@@ -5,7 +5,8 @@ import { InvitePreview } from './Preview';
 import { DEF_CONFIG } from './config';
 import { supabase } from './supabase';
 
-export default function Editor() {
+// ACÁ ESTABA EL ERROR: Volvemos a exportarlo como const EditorScreen
+export const EditorScreen = () => {
   const [inv, setInv] = useState({ config: DEF_CONFIG });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -32,7 +33,7 @@ export default function Editor() {
           .single();
 
         if (data) {
-          // Si existe, cargamos su config mezclada con la por defecto (por si agregamos variables nuevas)
+          // Si existe, cargamos su config mezclada con la por defecto
           setInv({ ...data, config: { ...DEF_CONFIG, ...data.config } });
         } else {
           // Si no existe, lo creamos en blanco en la base de datos
@@ -146,4 +147,4 @@ export default function Editor() {
       </div>
     </div>
   );
-}
+};
