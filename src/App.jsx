@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, useParams, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useParams, Navigate, useSearchParams } from "react-router-dom";
 import { Loader2, PartyPopper } from "lucide-react";
 
 import { EditorScreen } from "./Editor";
@@ -10,7 +10,6 @@ import { supabase } from "./supabase";
 import LoginScreen from "./Login";
 import DashboardScreen from "./Dashboard";
 import PuertaScreen from "./Puerta";
-// 👇 IMPORTAMOS LA NUEVA PANTALLA DEL CLIENTE
 import { ManageScreen } from "./Manage"; 
 
 const slugify = (text) => text?.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') || 'salon';
@@ -42,6 +41,83 @@ const GlobalStyles = () => {
   return null;
 };
 
+// ==========================================
+// 1️⃣ NUEVA PANTALLA PÚBLICA (CONECTADA A SUPABASE)
+// ==========================================
+const LiveInviteScreen = () => {
+  const { id: eventSlug } = useParams();
+  const [searchParams] = useSearchParams();
+  const guestId = searchParams.get('guest'); // Leemos el ?guest= del link
+  
+  const [inv, setInv] = useState(null);
+  const [guestData, setGuestData] = useState(null);
+  const [opened, setOpened] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchEventAndGuest = async () => {
+      // Buscar el evento en la BD
+      const { data: eventData } = await supabase
+        .from('eventos')
+        .select('*')
+        .eq('slug', eventSlug)
+        .single();
+
+      if (eventData) {
+        setInv(eventData);
+        document.title = eventData.config?.honoreeName ? `${eventData.config.honoreeName} | Invitación` : "Invitación";
+      }
+
+      // Si el link trae un invitado (?guest=uuid), lo buscamos
+      if (guestId) {
+        const { data: gData } = await supabase
+          .from('invitados')
+          .select('*')
+          .eq('id', guestId)
+          .single();
+        if (gData) setGuestData(gData);
+      }
+      
+      setLoading(false);
+    };
+    fetchEventAndGuest();
+  }, [eventSlug, guestId]);
+
+  if (loading) return (
+    <div className="h-screen bg-slate-950 flex flex-col items-center justify-center text-white relative overflow-hidden">
+       <Loader2 size={30} className="animate-spin text-violet-500 mb-4"/>
+       <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-50">Preparando Pase VIP...</p>
+    </div>
+  );
+
+  if (!inv) return <div className="h-screen bg-black text-white flex items-center justify-center font-black text-xl tracking-widest uppercase">Evento no encontrado 👻</div>;
+
+  return (
+    <div className="bg-black min-h-screen flex justify-center w-full relative overflow-hidden">
+      {!opened && <OpeningAnimation cfg={inv.config} onOpen={() => setOpened(true)} isPreview={false} />}
+      <div className={`w-full max-w-[480px] bg-white shadow-2xl relative transition-opacity duration-1000 ${opened ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
+        <InvitePreview 
+          cfg={inv.config} 
+          guestData={guestData} // Le pasamos los datos del invitado al Preview!
+          onConfirmRSVP={async (formData) => {
+             // LÓGICA DE CONFIRMACIÓN REAL EN SUPABASE
+             if (guestData) {
+                await supabase
+                  .from('invitados')
+                  .update({ asistencia_confirmada: true, acompanantes_confirmados: formData.guests })
+                  .eq('id', guestData.id);
+                alert("¡Asistencia confirmada! Ya le avisamos a los organizadores.");
+             }
+          }} 
+        />
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// VERSIÓN VIEJA (Mantenida por compatibilidad)
+// ==========================================
 const PublicInviteScreen = ({ invitations, onConfirmRSVP }) => {
   const { invId } = useParams();
   const inv = invitations.find(i => i.id === invId);
@@ -171,9 +247,10 @@ export default function App() {
           <Route path="/editor/:id" element={<EditorScreen invitations={invitations} onSave={handleSaveInv} />} />
           <Route path="/i/:salon/:invId" element={<PublicInviteScreen invitations={invitations} onConfirmRSVP={handleConfirmRSVP} />} />
           <Route path="/puerta/:id" element={<PuertaScreen invitations={invitations} onUpdateInternal={handleUpdateInternal} />} />
-          
-          {/* 👇 ACÁ SUMAMOS LA RUTA NUEVA DEL CLIENTE VIP */}
           <Route path="/manage/:id" element={<ManageScreen />} />
+          
+          {/* 👇 LA RUTA MÁGICA QUE SOLUCIONA LA PANTALLA BLANCA */}
+          <Route path="/invite/:id" element={<LiveInviteScreen />} />
           
         </Routes>
       </Router>
