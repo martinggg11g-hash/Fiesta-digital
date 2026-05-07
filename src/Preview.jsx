@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { OpeningAnimation } from "./Lotties"; 
-import { MapPin, Calendar, Clock, Star, CheckCircle2, ChevronLeft, ChevronRight, Download, MessageCircle, Users, ExternalLink } from "lucide-react";
+import { MapPin, Calendar, Clock, Star, CheckCircle2, ChevronLeft, ChevronRight, Download, MessageCircle, Users, ExternalLink, Loader2 } from "lucide-react";
 import { DEF_CONFIG, THEMES, getSpotifyEmbed, getYouTubeId, formatToDDMMYYYY } from "./config";
 import { IconRenderer } from "./EditorUI";
 
@@ -270,23 +270,30 @@ const MapEmbed = ({ name, address, primary }) => {
 };
 
 // ==========================================
-// RSVP WIDGET CORREGIDO (LISTA NOMINAL Y BOTÓN WHATSAPP)
+// RSVP WIDGET CORREGIDO (MUESTRA NOMBRE Y ESTADO DE CONFIRMACIÓN)
 // ==========================================
-const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP }) => {
+const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP, guestData }) => {
   const [step, setStep] = useState('button');
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ name: '', lastname: '', guests: 1 });
   const [ticketImage, setTicketImage] = useState('');
+  
+  // Variables locales para manejar la vista de "Confirmado" en tiempo real
+  const [localConfirmed, setLocalConfirmed] = useState(false);
+  const [companions, setCompanions] = useState(0);
 
-  const maxLimit = cfg.maxGuestsPerFamily || 5;
   const isPrivate = cfg.isPrivateList || false;
+  
+  // Determinamos si el invitado ya está confirmado (por Base de Datos o recién tocado)
+  const isConfirmed = localConfirmed || guestData?.asistencia_confirmada;
+  
+  // Si no hay guestData (estamos en el Editor), ponemos datos de prueba
+  const guestName = guestData?.nombre_completo || "Nombre del Invitado";
+  const ticketId = guestData?.id || "VIP-MOCK-1234";
+  const maxLimit = guestData ? guestData.max_acompanantes : (cfg.maxGuestsPerFamily || 5);
 
-  // Lógica para Lista Nominal (Botón WhatsApp)
+  // Lógica para Lista Nominal
   if (isPrivate) {
-    const cleanPhone = cfg.whatsappNumber ? cfg.whatsappNumber.replace(/\D/g, '') : '';
-    const waText = (cfg.whatsappMessage || "¡Hola! Confirmo mi asistencia.").replace('{nombre}', cfg.honoreeName || '');
-    const waLink = cleanPhone ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(waText)}` : '#';
-
     return (
       <div className="pt-8 text-center">
         {cfg.showRsvpDeadline && cfg.rsvpDeadline && (
@@ -299,15 +306,46 @@ const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP }) => {
            <div className="absolute top-0 left-0 right-0 py-1.5" style={{ background: primary }}>
              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white">Tu Pase Nominal</p>
            </div>
-           {/* Simulamos un QR único para la vista previa */}
-           <img src={`https://quickchart.io/qr?text=VIP-MOCK-1234&size=300`} className="w-full max-w-[180px] mx-auto rounded-xl shadow-md mt-6 mb-3" alt="QR VIP" />
-           <p className="text-xs font-bold uppercase tracking-widest" style={{ color: textC }}>Nombre del Invitado</p>
-           <p className="text-[10px] font-bold opacity-50" style={{ color: textC }}>Pase Intransferible</p>
+           
+           <img src={`https://quickchart.io/qr?text=${ticketId}&size=300`} className="w-full max-w-[180px] mx-auto rounded-xl shadow-md mt-6 mb-3" alt="QR VIP" />
+           <p className="text-xs font-black uppercase tracking-widest" style={{ color: textC }}>{guestName}</p>
+           {guestData?.apodo && <p className="text-[10px] font-bold opacity-60 mt-1" style={{ color: textC }}>"{guestData.apodo}"</p>}
+           <p className="text-[10px] font-bold opacity-40 mt-2" style={{ color: textC }}>Pase Intransferible</p>
         </div>
 
-        <a href={waLink} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-5 rounded-2xl font-black shadow-xl text-white transition-all active:scale-95 cursor-pointer uppercase tracking-widest" style={{ background: primary }}>
-          <MessageCircle size={20} /> CONFIRMAR ASISTENCIA
-        </a>
+        {isConfirmed ? (
+          <div className="w-full py-5 rounded-2xl font-black shadow-lg text-white bg-green-500 uppercase tracking-widest flex items-center justify-center gap-2">
+            <CheckCircle2 size={20} /> ASISTENCIA CONFIRMADA
+          </div>
+        ) : (
+          <>
+            {maxLimit > 0 && (
+              <div className="flex items-center justify-between px-4 py-4 rounded-xl mb-4" style={{ background: `${textC}0d` }}>
+                <span className="text-xs font-bold flex items-center gap-2" style={{ color: textC }}><Users size={16}/> Acompañantes extras</span>
+                <div className="flex items-center gap-3">
+                  <button type="button" onClick={() => setCompanions(Math.max(0, companions - 1))} className="w-8 h-8 rounded-lg flex items-center justify-center font-bold cursor-pointer transition-colors" style={{ background: `${textC}1a`, color: textC }}>-</button>
+                  <span className="font-black w-4 text-center" style={{ color: textC }}>{companions}</span>
+                  <button type="button" onClick={() => setCompanions(Math.min(maxLimit, companions + 1))} className="w-8 h-8 rounded-lg flex items-center justify-center font-bold cursor-pointer transition-colors" style={{ background: `${textC}1a`, color: textC }}>+</button>
+                </div>
+              </div>
+            )}
+            <button 
+              onClick={async () => {
+                setLoading(true);
+                // Acá disparamos la función que guarda en Supabase (definida en App.jsx)
+                if (onConfirmRSVP) await onConfirmRSVP({ guests: companions });
+                setLocalConfirmed(true);
+                setLoading(false);
+              }} 
+              disabled={loading}
+              className="flex items-center justify-center gap-2 w-full py-5 rounded-2xl font-black shadow-xl text-white transition-all active:scale-95 cursor-pointer uppercase tracking-widest" 
+              style={{ background: primary }}
+            >
+              {loading ? <Loader2 size={20} className="animate-spin" /> : <CheckCircle2 size={20} />} 
+              {loading ? "CONFIRMANDO..." : "CONFIRMAR ASISTENCIA"}
+            </button>
+          </>
+        )}
       </div>
     );
   }
@@ -336,8 +374,8 @@ const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP }) => {
       ctx.fillStyle = '#fff'; ctx.fillRect(150, 250, 300, 300);
       ctx.drawImage(img, 160, 260, 280, 280);
       
-      const guestName = `${formData.name} ${formData.lastname}`.toUpperCase();
-      ctx.font = 'bold 40px sans-serif'; ctx.fillText(guestName, 300, 650);
+      const guestNameOpen = `${formData.name} ${formData.lastname}`.toUpperCase();
+      ctx.font = 'bold 40px sans-serif'; ctx.fillText(guestNameOpen, 300, 650);
       
       ctx.font = '30px sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.7)';
       ctx.fillText(`Válido para: ${formData.guests} ${formData.guests === 1 ? 'persona' : 'personas'}`, 300, 710);
@@ -377,7 +415,7 @@ const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP }) => {
             <div className="flex items-center gap-3">
               <button type="button" onClick={() => setFormData({...formData, guests: Math.max(1, formData.guests - 1)})} className="w-8 h-8 rounded-lg flex items-center justify-center font-bold cursor-pointer transition-colors" style={{ background: `${textC}1a`, color: textC }}>-</button>
               <span className="font-black w-4 text-center" style={{ color: textC }}>{formData.guests}</span>
-              <button type="button" onClick={() => setFormData({...formData, guests: Math.min(maxLimit, formData.guests + 1)})} className="w-8 h-8 rounded-lg flex items-center justify-center font-bold cursor-pointer transition-colors" style={{ background: `${textC}1a`, color: textC }}>+</button>
+              <button type="button" onClick={() => setFormData({...formData, guests: Math.min(cfg.maxGuestsPerFamily || 5, formData.guests + 1)})} className="w-8 h-8 rounded-lg flex items-center justify-center font-bold cursor-pointer transition-colors" style={{ background: `${textC}1a`, color: textC }}>+</button>
             </div>
           </div>
 
@@ -418,7 +456,8 @@ const InfoCard = ({ icon: Icon, label, value, sub, fontSize, primary, textC, mut
   </div>
 );
 
-export const InvitePreview = ({ cfg, status, update, onConfirmRSVP }) => {
+// ACÁ RECIBIMOS LOS DATOS DEL INVITADO DESDE APP.JSX (guestData)
+export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData }) => {
   if (!cfg) return null;
   const primary = cfg.primary || "#8b5cf6";
   const bg1 = cfg.bg1 || "#f8f7ff";
@@ -652,7 +691,16 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP }) => {
           </div>
         )}
 
-        <RsvpWidget cfg={cfg} primary={primary} textC={textC} cardC={cardC} mutedC={mutedC} onConfirmRSVP={onConfirmRSVP} />
+        {/* COMPONENTE WIDGET RSVP ACTUALIZADO CON DATOS REALES */}
+        <RsvpWidget 
+           cfg={cfg} 
+           primary={primary} 
+           textC={textC} 
+           cardC={cardC} 
+           mutedC={mutedC} 
+           onConfirmRSVP={onConfirmRSVP} 
+           guestData={guestData} // Pasamos los datos que trajimos de Supabase
+        />
            
         {(cfg.showInstagram || cfg.showFacebook || cfg.showTiktok) && (
           <div className="flex justify-center gap-4 mt-8 relative z-[50]">
