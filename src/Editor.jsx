@@ -1,85 +1,149 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Save, Loader2 } from "lucide-react";
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import EditorSidebar from './EditorSidebar';
+import { InvitePreview } from './Preview';
+import { DEF_CONFIG } from './config';
+import { supabase } from './supabase';
 
-// Importamos la configuración y componentes externos
-import { DEF_CONFIG } from "./config";
-import { OpeningAnimation } from "./Lotties";
-import { InvitePreview } from "./Preview";
-
-// Importamos lo que separamos recién
-import { MiniInp } from "./EditorUI";
-import EditorSidebar from "./EditorSidebar";
-
-export const EditorScreen = ({ invitations, onSave }) => {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const [inv, setInv] = useState(null);
+export default function Editor() {
+  const [inv, setInv] = useState({ config: DEF_CONFIG });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [previewAnim, setPreviewAnim] = useState(false);
-  const [mobileView, setMobileView] = useState("editor");
+  const [mobileView, setMobileView] = useState('editor'); // Para responsivo en celulares
 
-  // Buscamos la invitación en la base de datos
+  // Extraemos el slug de la URL (ej: evt-cg6ek9)
+  const eventSlug = window.location.pathname.split('/').pop();
+
+  // 1️⃣ CARGAR DATOS DESDE SUPABASE AL ABRIR EL EDITOR
   useEffect(() => {
-    const found = invitations.find(i => i.id === id);
-    if (found) setInv({ ...found }); else navigate("/dashboard");
-  }, [id, invitations, navigate]);
+    const loadData = async () => {
+      if (!eventSlug || eventSlug === 'editor') {
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        // Buscamos si el evento ya existe en Supabase
+        const { data, error } = await supabase
+          .from('eventos')
+          .select('*')
+          .eq('slug', eventSlug)
+          .single();
 
-  if (!inv) return <div className="h-screen bg-slate-950 flex items-center justify-center text-white"><Loader2 className="animate-spin mr-3"/> Cargando editor...</div>;
+        if (data) {
+          // Si existe, cargamos su config mezclada con la por defecto (por si agregamos variables nuevas)
+          setInv({ ...data, config: { ...DEF_CONFIG, ...data.config } });
+        } else {
+          // Si no existe, lo creamos en blanco en la base de datos
+          const { data: newData, error: insertError } = await supabase
+            .from('eventos')
+            .insert([{ slug: eventSlug, config: DEF_CONFIG }])
+            .select()
+            .single();
+            
+          if (newData) setInv(newData);
+        }
+      } catch (err) {
+        console.error("Error cargando evento:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Funciones para actualizar datos y guardar
-  const update = (k, v) => setInv(p => ({ ...p, config: { ...(p.config || DEF_CONFIG), [k]: v } }));
-  const handleSave = () => { onSave(inv); navigate("/dashboard"); };
-  const cfg = inv.config || DEF_CONFIG;
+    loadData();
+  }, [eventSlug]);
+
+  // 2️⃣ GUARDAR DATOS EN SUPABASE AL TOCAR EL BOTÓN
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('eventos')
+        .update({ config: inv.config })
+        .eq('slug', eventSlug);
+
+      if (error) throw error;
+      
+      // Feedback visual para el usuario
+      alert("¡Cambios guardados correctamente en la base de datos! 🚀");
+    } catch (err) {
+      console.error("Error guardando:", err);
+      alert("Hubo un error al guardar. Intentá de nuevo.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Función para actualizar variables individuales del config
+  const updateConfig = (key, val) => {
+    setInv(prev => ({
+      ...prev,
+      config: { ...prev.config, [key]: val }
+    }));
+  };
+
+  // Pantalla de carga mientras trae los datos
+  if (loading) {
+    return (
+      <div className="w-screen h-screen flex flex-col items-center justify-center bg-[#0f172a] text-white">
+        <Loader2 size={48} className="animate-spin text-violet-500 mb-4" />
+        <p className="font-bold tracking-widest uppercase text-xs">Cargando evento desde Supabase...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="h-screen flex flex-col bg-slate-950 overflow-hidden">
-      
-      {/* HEADER SUPERIOR */}
-      <header className="h-16 border-b border-white/10 px-6 flex items-center justify-between shrink-0 bg-slate-950/80 backdrop-blur z-20">
-        <div className="flex items-center gap-4">
-          <button onClick={() => navigate("/dashboard")} className="w-10 h-10 bg-white/5 rounded-xl text-white flex items-center justify-center hover:bg-white/10 cursor-pointer transition-colors"><ArrowLeft size={20}/></button>
-          <MiniInp className="bg-transparent border-none text-white font-black text-sm outline-none w-48 px-2 py-1 rounded hover:bg-white/5 focus:bg-white/10 transition-colors" value={inv.title} onChange={v => setInv({...inv, title: v})} />
+    <div className="flex flex-col h-screen overflow-hidden bg-[#0f172a]">
+      {/* HEADER OSCURO */}
+      <header className="h-16 bg-[#0f172a] border-b border-white/10 flex items-center justify-between px-4 md:px-6 shrink-0 z-50">
+        <div className="flex items-center gap-4 text-white">
+          <button onClick={() => window.history.back()} className="p-2 hover:bg-white/10 rounded-xl transition-colors cursor-pointer">
+            <ArrowLeft size={20} />
+          </button>
+          <h1 className="font-black text-sm uppercase tracking-widest hidden md:block">
+            Editando: <span className="text-violet-400">{eventSlug}</span>
+          </h1>
         </div>
-        <button onClick={handleSave} className="px-8 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl font-black text-xs flex items-center gap-3 shadow-xl shadow-violet-900/40 cursor-pointer transition-colors">
-          <Save size={16}/> GUARDAR CAMBIOS
+        
+        {/* BOTÓN MÁGICO DE GUARDAR */}
+        <button 
+          onClick={handleSave} 
+          disabled={saving}
+          className="flex items-center gap-2 px-6 py-2.5 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all active:scale-95 shadow-[0_0_20px_rgba(124,58,246,0.3)] cursor-pointer"
+        >
+          {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+          {saving ? "Guardando..." : "GUARDAR CAMBIOS"}
         </button>
       </header>
 
-      {/* CONTENEDOR PRINCIPAL */}
-      <div className="flex-1 flex relative overflow-hidden bg-slate-950">
-        
-        {/* BOTTOM TABS FLOTANTES (Solo Mobile) */}
-        <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] flex bg-slate-900/95 backdrop-blur-xl rounded-full shadow-[0_10px_40px_rgba(0,0,0,0.5)] border border-white/10 p-1.5 anim-pop">
-          <button onClick={() => setMobileView("editor")} className={`px-6 py-2.5 rounded-full text-[11px] font-black tracking-widest uppercase transition-all duration-300 flex items-center gap-2 ${mobileView === "editor" ? 'bg-violet-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>✏️ Editar</button>
-          <button onClick={() => setMobileView("preview")} className={`px-6 py-2.5 rounded-full text-[11px] font-black tracking-widest uppercase transition-all duration-300 flex items-center gap-2 ${mobileView === "preview" ? 'bg-violet-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>👀 Previa</button>
-        </div>
-
-        {/* PANEL LATERAL DE CONTROLES (Importado desde EditorSidebar) */}
+      {/* ÁREA DE TRABAJO PRINCIPAL */}
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* PANEL LATERAL DE EDICIÓN */}
         <EditorSidebar 
           inv={inv} 
           setInv={setInv} 
-          cfg={cfg} 
-          update={update} 
+          cfg={inv.config} 
+          update={updateConfig} 
           setPreviewAnim={setPreviewAnim} 
           mobileView={mobileView} 
         />
 
-        {/* VISTA PREVIA CENTRAL (Celular Virtual) */}
-        <main className={`w-[100vw] md:flex-1 h-full shrink-0 snap-center bg-slate-900 flex items-center justify-center p-6 md:p-10 relative overflow-hidden pb-24 md:pb-6 ${mobileView === 'preview' ? 'block' : 'hidden md:flex'}`}>
-          <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:20px_20px]" />
-          
-          <div className="invite-phone anim-pop border-[8px] border-slate-800 shadow-2xl relative z-10 max-h-full">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-7 bg-[#1a1a2e] rounded-b-2xl z-50 flex items-center justify-center"><div className="w-10 h-1 bg-slate-800 rounded-full" /></div>
+        {/* ÁREA DE VISTA PREVIA (MOCKUP CELULAR) */}
+        <main className={`flex-1 overflow-y-auto bg-[#0b0f19] flex items-center justify-center p-4 md:p-8 ${mobileView === 'preview' ? 'block' : 'hidden md:flex'}`} style={{ backgroundImage: 'radial-gradient(#1e293b 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
+          <div className="w-[375px] h-[812px] bg-white rounded-[3rem] overflow-hidden shadow-2xl relative border-[8px] border-[#1e293b] shrink-0">
+            {/* Notch del iPhone */}
+            <div className="absolute top-0 inset-x-0 h-6 bg-[#1e293b] rounded-b-3xl w-40 mx-auto z-50"></div>
             
-            {previewAnim && <OpeningAnimation cfg={cfg} onOpen={() => setPreviewAnim(false)} isPreview={true} />}
-            
-            <div className="h-full w-full overflow-y-auto bg-black pb-10 fd-sb" style={{ scrollBehavior: 'smooth' }}>
-              {/* ACÁ ESTABA EL ERROR: AHORA LE PASAMOS EL UPDATE */}
-              <InvitePreview cfg={cfg} status={inv.internal_data?.eventStatus || "Nuevo"} update={update} />
+            <div className="w-full h-full overflow-y-auto overflow-x-hidden relative" id="preview-container">
+              <InvitePreview 
+                cfg={inv.config} 
+                update={updateConfig} 
+              />
             </div>
           </div>
         </main>
       </div>
     </div>
   );
-};
+}
