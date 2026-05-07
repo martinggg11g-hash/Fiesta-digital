@@ -126,6 +126,14 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
               {cfg.isPrivateList ? "Activado: Cada invitado recibe un link único. No llenan formulario." : "Desactivado: Link general. El invitado debe escribir su nombre para generar su QR."}
            </p>
 
+           {cfg.isPrivateList && (
+             <div className="mb-4 p-3 bg-violet-50 rounded-xl border border-violet-100">
+               <label className="block text-[10px] font-black text-violet-800 uppercase tracking-widest mb-1.5">PIN de Acceso para el Agasajado</label>
+               <MiniInp type="text" maxLength="4" placeholder="Ej: 1234" value={cfg.clientPin || ""} onChange={v => update("clientPin", v)} className="w-full px-4 py-2 rounded-xl border border-violet-200 text-sm outline-none focus:border-violet-500 font-bold tracking-widest text-center" />
+               <p className="text-[9px] text-violet-600 mt-2 font-medium leading-tight">El cliente usará este código para entrar a armar su lista. Podés cambiarlo si lo olvida.</p>
+             </div>
+           )}
+
            <div className="flex items-center justify-between mb-2 border-t border-slate-200 pt-4">
               <span className="text-[10px] font-bold text-slate-700 uppercase">Fecha Límite RSVP</span>
               <Toggle checked={cfg.showRsvpDeadline || false} onChange={v => update("showRsvpDeadline", v)} />
