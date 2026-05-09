@@ -5,7 +5,6 @@ import {
   Search, Sun, Moon, Settings, CreditCard, Send, Eye, Filter, ScanBarcode, Smartphone, AlertTriangle
 } from "lucide-react";
 
-// Importamos nuestros nuevos componentes segmentados
 import { Inp, FileUpload, Toast, QRScannerModal } from "./DashboardUI";
 import { MasterPanel } from "./MasterPanel";
 import { CrmModal } from "./CrmModal";
@@ -25,7 +24,6 @@ const formatDateSpanish = (dateStr) => {
 export default function DashboardScreen({ user, onLogout, users, onUpdateUser, onCreateSalon, onDeleteSalon, invitations, onCreateInv, onDeleteInv, onUpdateInternal }) {
   const navigate = useNavigate();
   
-  // Estados Globales
   const [toast, setToast] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all"); 
@@ -36,11 +34,13 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
   const [validationResult, setValidationResult] = useState(null);
   const [copiedStates, setCopiedStates] = useState({});
 
-  // Estados de Edición de Perfil
   const salonInfo = users.find(u => u.email === user?.email);
   const [newPassword, setNewPassword] = useState("");
   const [newLogo, setNewLogo] = useState(salonInfo?.logo || "");
   const [newPhone, setNewPhone] = useState(salonInfo?.phone || "");
+  const [newInstagram, setNewInstagram] = useState(salonInfo?.instagram || "");
+  const [newFacebook, setNewFacebook] = useState(salonInfo?.facebook || "");
+  const [newTiktok, setNewTiktok] = useState(salonInfo?.tiktok || "");
 
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem("fiesta_darkmode");
@@ -59,7 +59,6 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
     setTimeout(() => { setCopiedStates(prev => ({ ...prev, [id]: false })); }, 2000);
   };
 
-  // 1️⃣ FILTRADO Y BÚSQUEDA
   const isOwner = user.role === "owner";
   const myInvs = isOwner ? invitations : invitations.filter(i => i.salonId === user.email);
 
@@ -75,7 +74,6 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
     return true;
   });
 
-  // 2️⃣ PROCESAMIENTO DE QR (PUERTA RÁPIDA)
   const processQRScan = (qrString) => {
     const guestDb = scanningEvent.internal_data?.guests?.find(g => g.id === qrString) || 
                     scanningEvent.internal_data?.guests?.find(g => qrString.includes(g.id));
@@ -96,12 +94,10 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
     notify("Ingreso registrado");
   };
 
-  // VISTA MASTER
   if (isOwner) {
     return <MasterPanel mySalons={users.filter(u => u.role === "salon")} onLogout={onLogout} onCreateSalon={onCreateSalon} onUpdateUser={onUpdateUser} onDeleteSalon={onDeleteSalon} />;
   }
 
-  // VISTA SALÓN
   const themeBg = isDark ? "bg-slate-900" : "bg-[#f1f3f9]";
   const themeNav = isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200";
   const themeText = isDark ? "text-white" : "text-slate-800";
@@ -182,7 +178,6 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
         </div>
       </main>
 
-      {/* MODALES EXTERNALIZADOS */}
       {activeCrmId && (
         <CrmModal 
           activeInv={myInvs.find(i => i.id === activeCrmId)} 
@@ -196,7 +191,6 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
 
       {scanningEvent && !validationResult && <QRScannerModal onClose={() => setScanningEvent(null)} onScan={processQRScan} />}
 
-      {/* MODAL DE RESULTADO DE ESCANEO (SE MANTIENE ACÁ PARA FLUJO RÁPIDO) */}
       {validationResult && (
         <div className="fixed inset-0 z-[130] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
            <div className="w-full max-w-sm bg-white rounded-[2rem] p-8 shadow-2xl relative text-center anim-pop border-4" style={{ borderColor: validationResult.status === 'success' ? '#22c55e' : (validationResult.status === 'error' ? '#ef4444' : '#f59e0b') }}>
@@ -211,21 +205,40 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
         </div>
       )}
 
-      {/* MODAL AJUSTES DE SALON */}
       {showSettings && (
         <div className="fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
            <div className={`w-full max-w-sm rounded-[2rem] p-8 shadow-2xl relative text-center ${isDark ? 'bg-slate-800 text-white' : 'bg-white'}`}>
               <h2 className="text-xl font-black mb-6">Ajustes del Salón</h2>
-              <FileUpload label="Logo" value={newLogo} onChange={setNewLogo} isDark={isDark} />
-              <Inp label="Teléfono" value={newPhone} onChange={setNewPhone} isDark={isDark} />
-              <Inp label="Nueva Clave" type="password" value={newPassword} onChange={setNewPassword} isDark={isDark} />
-              <button onClick={() => { onUpdateUser(user.email, { logo: newLogo, phone: newPhone, ...(newPassword ? {pass: newPassword} : {}) }); setShowSettings(false); notify("Ajustes guardados"); }} className="w-full py-4 bg-violet-600 text-white rounded-xl font-black cursor-pointer">GUARDAR</button>
+              <div className="max-h-[60vh] overflow-y-auto px-2 fd-sb">
+                <FileUpload label="Logo" value={newLogo} onChange={setNewLogo} isDark={isDark} />
+                <Inp label="Teléfono (WhatsApp)" placeholder="Ej: +54 9 11 1234-5678" value={newPhone} onChange={setNewPhone} isDark={isDark} />
+                <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-700">
+                  <p className="text-[10px] font-black uppercase text-slate-400 mb-4 text-left">Redes Sociales (Se aplican a las nuevas invitaciones)</p>
+                  <Inp label="Instagram (URL completa)" placeholder="https://instagram.com/tusalon" value={newInstagram} onChange={setNewInstagram} isDark={isDark} />
+                  <Inp label="Facebook (URL completa)" placeholder="https://facebook.com/tusalon" value={newFacebook} onChange={setNewFacebook} isDark={isDark} />
+                  <Inp label="TikTok (URL completa)" placeholder="https://tiktok.com/@tusalon" value={newTiktok} onChange={setNewTiktok} isDark={isDark} />
+                </div>
+                <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-700">
+                  <Inp label="Nueva Clave de Acceso" type="password" value={newPassword} onChange={setNewPassword} isDark={isDark} />
+                </div>
+              </div>
+              <button onClick={() => { 
+                onUpdateUser(user.email, { 
+                  logo: newLogo, 
+                  phone: newPhone, 
+                  instagram: newInstagram, 
+                  facebook: newFacebook, 
+                  tiktok: newTiktok, 
+                  ...(newPassword ? {pass: newPassword} : {}) 
+                }); 
+                setShowSettings(false); 
+                notify("Ajustes guardados"); 
+              }} className="w-full py-4 mt-4 bg-violet-600 text-white rounded-xl font-black cursor-pointer shadow-lg active:scale-95 transition-transform">GUARDAR</button>
               <button onClick={() => setShowSettings(false)} className="mt-4 text-xs font-bold opacity-50 cursor-pointer">CANCELAR</button>
            </div>
         </div>
       )}
 
-      {/* MODAL PAGOS BBVA MÉXICO */}
       {showPaymentModal && (
         <div className="fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
            <div className={`w-full max-w-md rounded-[2rem] p-8 shadow-2xl relative text-center ${isDark ? 'bg-slate-800 text-white' : 'bg-white'}`}>
