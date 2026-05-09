@@ -17,17 +17,37 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
 
   const eventId = window.location.pathname.split('/').pop();
   const hostManageLink = `${window.location.origin}/manage/${eventId}`;
-  const salonEmail = inv?.salon_id || inv?.salonId;
 
-  // Descargamos la info del salón al abrir el editor
+  // 🚀 BÚSQUEDA AUTÓNOMA A PRUEBA DE FALLOS
   useEffect(() => {
-    if (!salonEmail) return;
-    const fetchProfile = async () => {
-      const { data } = await supabase.from('salones').select('instagram, facebook, tiktok, logo, name').eq('email', salonEmail).single();
-      if (data) setSalonProfile(data);
+    const fetchSalonProfile = async () => {
+      try {
+        // 1. Buscamos el email del dueño en la tabla 'invitaciones' usando el ID de la URL
+        const { data: invData } = await supabase
+          .from('invitaciones')
+          .select('salon_id')
+          .eq('id', eventId)
+          .single();
+
+        if (invData?.salon_id) {
+          // 2. Con ese email, traemos todas las redes, el nombre y el logo de la tabla 'salones'
+          const { data: salonData } = await supabase
+            .from('salones')
+            .select('*')
+            .eq('email', invData.salon_id)
+            .single();
+            
+          if (salonData) {
+            setSalonProfile(salonData);
+          }
+        }
+      } catch (error) {
+        console.error("Error sincronizando perfil:", error);
+      }
     };
-    fetchProfile();
-  }, [salonEmail]);
+    
+    fetchSalonProfile();
+  }, [eventId]);
 
   const copyToClipboard = (txt) => {
     navigator.clipboard.writeText(txt);
@@ -112,7 +132,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
       <Acc title="3️⃣ Banner Central" icon={Star} iconColor="#d97706"><div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Banner</span><Toggle checked={cfg.showBanner} onChange={v => update("showBanner", v)} /></div>{cfg.showBanner && (<><Inp label="Título del Banner" value={cfg.bannerTitle} onChange={v => update("bannerTitle", v)} /><div className="flex items-center justify-between mt-4 mb-2 bg-gray-50 p-2 rounded-xl"><span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">¿Usar GIF?</span><Toggle checked={cfg.useGiphyBanner || false} onChange={v => update("useGiphyBanner", v)} /></div>{cfg.useGiphyBanner ? (<GiphySearch onSelect={url => update("bannerPhoto", url)} />) : (<FileUpload value={cfg.bannerPhoto} onChange={v => update("bannerPhoto", v)} />)}</>)}</Acc>
       <Acc title="4️⃣ Cuándo y Dónde" icon={Calendar} iconColor="#e11d48"><TypoControl label="Tamaño Textos" sizeVal={cfg.dateSize ?? 18} onSize={v => update("dateSize", v)} minSize={12} maxSize={30} /><div className="flex items-center justify-between mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Día</span><Toggle checked={cfg.showDate} onChange={v => update("showDate", v)} /></div>{cfg.showDate && <Inp type="date" value={cfg.dateText} onChange={v => update("dateText", v)} />}<div className="flex items-center justify-between mt-4 mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Horario</span><Toggle checked={cfg.showTime} onChange={v => update("showTime", v)} /></div>{cfg.showTime && <Inp placeholder="16:00 a 20:00 hs" value={cfg.timeText} onChange={v => update("timeText", v)} />}<div className="flex items-center justify-between mt-4 mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Ubicación</span><Toggle checked={cfg.showLocation} onChange={v => update("showLocation", v)} /></div>{cfg.showLocation && (<><div className="p-3 bg-violet-50 rounded-xl border border-violet-100 mb-4 opacity-80"><p className="text-[10px] font-black text-violet-800 uppercase tracking-widest mb-1">📍 Dirección (Panel Maestro)</p><p className="text-xs font-bold text-violet-900">{cfg.locationName || "Nombre del Salón"}</p></div><div className="flex items-center justify-between mt-2 mb-2"><span className="text-xs font-bold text-slate-500">Aclarar Parking</span><Toggle checked={cfg.showParking} onChange={v => update("showParking", v)} /></div>{cfg.showParking && <SelectInp label="Tipo" value={cfg.parkingType} options={[{label:"Público", value:"Estacionamiento público"}, {label:"Privado", value:"Estacionamiento privado"}, {label:"Personalizado...", value:"otro"}]} onChange={v => update("parkingType", v)} />}{cfg.showParking && cfg.parkingType === 'otro' && <Inp placeholder="Escribe aquí..." value={cfg.customParking || ""} onChange={v => update("customParking", v)} />}</>)}</Acc>
       
-      {/* 🚀 TARJETA DEL SALÓN: INYECCIÓN ATÓMICA */}
+      {/* 🚀 TARJETA DEL SALÓN: Inyección Atómica de Nombre y Logo */}
       <Acc title="5️⃣ Tarjeta del Salón" icon={LinkIcon} iconColor="#6366f1">
         <div className="flex items-center justify-between mb-4">
           <span className="text-xs font-bold text-slate-500">Mostrar Tarjeta</span>
@@ -120,14 +140,14 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
             checked={cfg.showVenueLogo || false} 
             onChange={v => { 
               if (v && salonProfile) {
-                // Mandamos un paquete de datos completo para que React no falle
+                // Inyectamos todo en un solo movimiento para que React no falle
                 setInv(prev => ({
                   ...prev,
                   config: {
                     ...prev.config,
                     showVenueLogo: true,
-                    venueName: prev.config.venueName || salonProfile.name || "",
-                    venueLogoUrl: prev.config.venueLogoUrl || salonProfile.logo || ""
+                    venueName: salonProfile.name || prev.config.venueName || "",
+                    venueLogoUrl: salonProfile.logo || prev.config.venueLogoUrl || ""
                   }
                 }));
               } else {
@@ -217,6 +237,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
            <p className="text-[9px] text-slate-500 mt-2 font-bold">Pax máximo extra por cada pase de invitado.</p>
         </div>
 
+        {/* WhatsApp intacto (sin automatizar) */}
         <Inp label="WhatsApp Celular (+52)" value={cfg.whatsappNumber} onChange={v => update("whatsappNumber", v)} icon={MessageCircle} />
         <div className="bg-green-50 p-3 rounded-xl border border-green-100 mt-2 mb-6">
           <p className="text-[9px] text-green-700 font-bold mb-2">💡 Tip: Escribí {"{nombre}"} para reemplace automático.</p>
@@ -226,7 +247,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
         <h4 className="text-[10px] font-black text-slate-400 uppercase mb-4 border-t pt-4">Redes</h4>
         <div className="space-y-4">
           
-          {/* 🚀 REDES: INYECCIÓN ATÓMICA */}
+          {/* 🚀 REDES: Inyección Atómica de Links */}
           <div className="bg-slate-50 p-3 rounded-xl border">
             <div className="flex items-center justify-between mb-2">
                <span className="text-xs font-bold flex items-center gap-2"><InstagramIcon size={14}/> Instagram</span>
