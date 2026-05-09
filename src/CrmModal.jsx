@@ -175,15 +175,15 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
   return (
     <div className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 crm-modal-wrapper">
       <style>{`
+        /* 🚨 LA REGLA QUE FALTABA: Ocultar la hoja A4 en modo pantalla normal */
+        .only-print { display: none !important; }
+
         @media print {
-          /* Eliminamos márgenes de la página y forzamos fondo blanco */
           @page { margin: 0.5cm; }
           body { background: white !important; -webkit-print-color-adjust: exact; }
           
-          /* Ocultamos TODO el body por defecto */
           body * { visibility: hidden; }
           
-          /* Le sacamos el fondo negro, la posición fija y el blur al wrapper oscuro */
           .crm-modal-wrapper {
              position: absolute !important;
              left: 0 !important;
@@ -193,12 +193,12 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
              padding: 0 !important;
           }
 
-          /* Hacemos desaparecer completamente el modal que se ve en pantalla */
           .no-print { display: none !important; }
 
-          /* Forzamos a que el contenido a imprimir se vuelva visible y ocupe el 100% de la hoja */
+          /* En modo impresión, revivimos la hoja A4 */
           .only-print, .only-print * { visibility: visible; }
           .only-print { 
+             display: block !important;
              position: absolute !important; 
              left: 0 !important; 
              top: 0 !important; 
@@ -463,7 +463,6 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #1e293b', paddingBottom: '24px', marginBottom: '32px' }}>
                 <div>
                   <h2 style={{ fontSize: '24px', fontWeight: '900', color: '#1e293b', letterSpacing: '2px', margin: '0 0 4px 0', textTransform: 'uppercase' }}>LISTA DE ACCESOS</h2>
-                  {/* Acá cambiamos el título dinámico */}
                   <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#475569', margin: '0 0 4px 0' }}>
                     Evento: {activeInv.internal_data.internalHonoree || activeInv.config?.honoreeName || activeInv.title}
                   </p>
