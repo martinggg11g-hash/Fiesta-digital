@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { Palette, Star, Image as ImageIcon, Layout, List, Trash2, Video, Link as LinkIcon, LayoutGrid, Smartphone, Calendar, Clock, CheckCircle2, MessageCircle, Plus, Edit2, RefreshCcw, Copy, ExternalLink } from "lucide-react";
 import { GiphySearch, Inp, MiniInp, SelectInp, TypoControl, FontSelector, FileUpload, Toggle, EmojiPicker, Acc, BordersGallery } from "./EditorUI";
 import { ANIMATION_CATEGORIES, THEMES, TRANSITION_OPTS, PARTICLE_CATEGORIES, FONTS } from "./config";
@@ -12,15 +12,14 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
   const [animCat, setAnimCategory] = useState("infantil");
   const [partCat, setPartCat] = useState("Clásicos");
   
-  // Guardamos el perfil y usamos useRef para no auto-rellenar infinitamente si el usuario decide borrar el link a mano
+  // Guardamos los datos del salón
   const [salonProfile, setSalonProfile] = useState(null);
-  const autoFilled = useRef({ ig: false, fb: false, tk: false, venue: false });
 
   const eventId = window.location.pathname.split('/').pop();
   const hostManageLink = `${window.location.origin}/manage/${eventId}`;
   const salonEmail = inv?.salon_id || inv?.salonId;
 
-  // 1. Descargamos la info del salón al abrir el editor
+  // Descargamos la info del salón al abrir el editor
   useEffect(() => {
     if (!salonEmail) return;
     const fetchProfile = async () => {
@@ -29,29 +28,6 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
     };
     fetchProfile();
   }, [salonEmail]);
-
-  // 2. Efecto Vigía: Auto-rellena milisegundos después de que el usuario enciende el botón
-  useEffect(() => {
-    if (!salonProfile) return;
-
-    if (cfg.showInstagram && !cfg.instagramUrl && salonProfile.instagram && !autoFilled.current.ig) {
-      update("instagramUrl", salonProfile.instagram);
-      autoFilled.current.ig = true;
-    }
-    if (cfg.showFacebook && !cfg.facebookUrl && salonProfile.facebook && !autoFilled.current.fb) {
-      update("facebookUrl", salonProfile.facebook);
-      autoFilled.current.fb = true;
-    }
-    if (cfg.showTiktok && !cfg.tiktokUrl && salonProfile.tiktok && !autoFilled.current.tk) {
-      update("tiktokUrl", salonProfile.tiktok);
-      autoFilled.current.tk = true;
-    }
-    if (cfg.showVenueLogo && !cfg.venueLogoUrl && salonProfile.logo && !autoFilled.current.venue) {
-      update("venueLogoUrl", salonProfile.logo);
-      if (!cfg.venueName && salonProfile.name) update("venueName", salonProfile.name);
-      autoFilled.current.venue = true;
-    }
-  }, [cfg.showInstagram, cfg.showFacebook, cfg.showTiktok, cfg.showVenueLogo, salonProfile]);
 
   const copyToClipboard = (txt) => {
     navigator.clipboard.writeText(txt);
@@ -136,10 +112,21 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
       <Acc title="3️⃣ Banner Central" icon={Star} iconColor="#d97706"><div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Banner</span><Toggle checked={cfg.showBanner} onChange={v => update("showBanner", v)} /></div>{cfg.showBanner && (<><Inp label="Título del Banner" value={cfg.bannerTitle} onChange={v => update("bannerTitle", v)} /><div className="flex items-center justify-between mt-4 mb-2 bg-gray-50 p-2 rounded-xl"><span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">¿Usar GIF?</span><Toggle checked={cfg.useGiphyBanner || false} onChange={v => update("useGiphyBanner", v)} /></div>{cfg.useGiphyBanner ? (<GiphySearch onSelect={url => update("bannerPhoto", url)} />) : (<FileUpload value={cfg.bannerPhoto} onChange={v => update("bannerPhoto", v)} />)}</>)}</Acc>
       <Acc title="4️⃣ Cuándo y Dónde" icon={Calendar} iconColor="#e11d48"><TypoControl label="Tamaño Textos" sizeVal={cfg.dateSize ?? 18} onSize={v => update("dateSize", v)} minSize={12} maxSize={30} /><div className="flex items-center justify-between mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Día</span><Toggle checked={cfg.showDate} onChange={v => update("showDate", v)} /></div>{cfg.showDate && <Inp type="date" value={cfg.dateText} onChange={v => update("dateText", v)} />}<div className="flex items-center justify-between mt-4 mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Horario</span><Toggle checked={cfg.showTime} onChange={v => update("showTime", v)} /></div>{cfg.showTime && <Inp placeholder="16:00 a 20:00 hs" value={cfg.timeText} onChange={v => update("timeText", v)} />}<div className="flex items-center justify-between mt-4 mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Ubicación</span><Toggle checked={cfg.showLocation} onChange={v => update("showLocation", v)} /></div>{cfg.showLocation && (<><div className="p-3 bg-violet-50 rounded-xl border border-violet-100 mb-4 opacity-80"><p className="text-[10px] font-black text-violet-800 uppercase tracking-widest mb-1">📍 Dirección (Panel Maestro)</p><p className="text-xs font-bold text-violet-900">{cfg.locationName || "Nombre del Salón"}</p></div><div className="flex items-center justify-between mt-2 mb-2"><span className="text-xs font-bold text-slate-500">Aclarar Parking</span><Toggle checked={cfg.showParking} onChange={v => update("showParking", v)} /></div>{cfg.showParking && <SelectInp label="Tipo" value={cfg.parkingType} options={[{label:"Público", value:"Estacionamiento público"}, {label:"Privado", value:"Estacionamiento privado"}, {label:"Personalizado...", value:"otro"}]} onChange={v => update("parkingType", v)} />}{cfg.showParking && cfg.parkingType === 'otro' && <Inp placeholder="Escribe aquí..." value={cfg.customParking || ""} onChange={v => update("customParking", v)} />}</>)}</Acc>
       
+      {/* 🚀 ACÁ ESTÁ EL FIX PARA LA TARJETA DEL SALÓN Y EL LOGO */}
       <Acc title="5️⃣ Tarjeta del Salón" icon={LinkIcon} iconColor="#6366f1">
         <div className="flex items-center justify-between mb-4">
           <span className="text-xs font-bold text-slate-500">Mostrar Tarjeta</span>
-          <Toggle checked={cfg.showVenueLogo || false} onChange={v => update("showVenueLogo", v)} />
+          <Toggle 
+            checked={cfg.showVenueLogo || false} 
+            onChange={v => { 
+              update("showVenueLogo", v);
+              // Inyección directa de Nombre y Logo
+              if (v && salonProfile) {
+                if (!cfg.venueName && salonProfile.name) update("venueName", salonProfile.name);
+                if (!cfg.venueLogoUrl && salonProfile.logo) update("venueLogoUrl", salonProfile.logo);
+              }
+            }} 
+          />
         </div>
         {cfg.showVenueLogo && (
           <>
@@ -222,6 +209,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
            <p className="text-[9px] text-slate-500 mt-2 font-bold">Pax máximo extra por cada pase de invitado.</p>
         </div>
 
+        {/* Mantenemos WhatsApp intacto (sin automatizar) */}
         <Inp label="WhatsApp Celular (+52)" value={cfg.whatsappNumber} onChange={v => update("whatsappNumber", v)} icon={MessageCircle} />
         <div className="bg-green-50 p-3 rounded-xl border border-green-100 mt-2 mb-6">
           <p className="text-[9px] text-green-700 font-bold mb-2">💡 Tip: Escribí {"{nombre}"} para reemplace automático.</p>
@@ -230,10 +218,19 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
 
         <h4 className="text-[10px] font-black text-slate-400 uppercase mb-4 border-t pt-4">Redes</h4>
         <div className="space-y-4">
+          
+          {/* 🚀 ACÁ ESTÁ EL FIX PARA LAS REDES SOCIALES */}
           <div className="bg-slate-50 p-3 rounded-xl border">
             <div className="flex items-center justify-between mb-2">
                <span className="text-xs font-bold flex items-center gap-2"><InstagramIcon size={14}/> Instagram</span>
-               <Toggle checked={cfg.showInstagram || false} onChange={v => update("showInstagram", v)} />
+               <Toggle 
+                 checked={cfg.showInstagram || false} 
+                 onChange={v => { 
+                   update("showInstagram", v); 
+                   // Inyección directa de Instagram
+                   if (v && salonProfile?.instagram && !cfg.instagramUrl) update("instagramUrl", salonProfile.instagram);
+                 }} 
+               />
             </div>
             {cfg.showInstagram && <Inp placeholder={salonProfile?.instagram || "Link..."} value={cfg.instagramUrl || ""} onChange={v => update("instagramUrl", v)} className="!mb-0" />}
           </div>
@@ -241,7 +238,14 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
           <div className="bg-slate-50 p-3 rounded-xl border">
             <div className="flex items-center justify-between mb-2">
                <span className="text-xs font-bold flex items-center gap-2"><FacebookIcon size={14}/> Facebook</span>
-               <Toggle checked={cfg.showFacebook || false} onChange={v => update("showFacebook", v)} />
+               <Toggle 
+                 checked={cfg.showFacebook || false} 
+                 onChange={v => { 
+                   update("showFacebook", v); 
+                   // Inyección directa de Facebook
+                   if (v && salonProfile?.facebook && !cfg.facebookUrl) update("facebookUrl", salonProfile.facebook);
+                 }} 
+               />
             </div>
             {cfg.showFacebook && <Inp placeholder={salonProfile?.facebook || "Link..."} value={cfg.facebookUrl || ""} onChange={v => update("facebookUrl", v)} className="!mb-0" />}
           </div>
@@ -249,7 +253,14 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
           <div className="bg-slate-50 p-3 rounded-xl border">
             <div className="flex items-center justify-between mb-2">
                <span className="text-xs font-bold flex items-center gap-2"><TiktokIcon size={14}/> TikTok</span>
-               <Toggle checked={cfg.showTiktok || false} onChange={v => update("showTiktok", v)} />
+               <Toggle 
+                 checked={cfg.showTiktok || false} 
+                 onChange={v => { 
+                   update("showTiktok", v); 
+                   // Inyección directa de TikTok
+                   if (v && salonProfile?.tiktok && !cfg.tiktokUrl) update("tiktokUrl", salonProfile.tiktok);
+                 }} 
+               />
             </div>
             {cfg.showTiktok && <Inp placeholder={salonProfile?.tiktok || "Link..."} value={cfg.tiktokUrl || ""} onChange={v => update("tiktokUrl", v)} className="!mb-0" />}
           </div>
