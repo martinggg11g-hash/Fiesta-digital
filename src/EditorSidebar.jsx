@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Palette, Star, Image as ImageIcon, Layout, List, Trash2, Video, Link as LinkIcon, LayoutGrid, Smartphone, Calendar, Clock, CheckCircle2, MessageCircle, Plus, Edit2, RefreshCcw, Copy, ExternalLink } from "lucide-react";
 import { GiphySearch, Inp, MiniInp, SelectInp, TypoControl, FontSelector, FileUpload, Toggle, EmojiPicker, Acc, BordersGallery } from "./EditorUI";
 import { ANIMATION_CATEGORIES, THEMES, TRANSITION_OPTS, PARTICLE_CATEGORIES, FONTS } from "./config";
+import { supabase } from "./supabase";
 
 const InstagramIcon = ({ size = 20 }) => (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>);
 const FacebookIcon = ({ size = 20 }) => (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>);
@@ -11,9 +12,41 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
   const [animCat, setAnimCategory] = useState("infantil");
   const [partCat, setPartCat] = useState("Clásicos");
 
-  // Extraemos el ID del evento de la URL actual para armar el link del cliente
   const eventId = window.location.pathname.split('/').pop();
   const hostManageLink = `${window.location.origin}/manage/${eventId}`;
+
+  // 🚀 MAGIA: Sincronizar datos del salón automáticamente
+  useEffect(() => {
+    const syncSalonData = async () => {
+      if (!inv?.salon_id) return;
+      
+      // Evitamos consultar a la base de datos infinitamente
+      if (window.hasSyncedSalonData === inv.id) return;
+      
+      const { data } = await supabase.from('salones').select('instagram, facebook, tiktok, logo, name').eq('email', inv.salon_id).single();
+      
+      if (data) {
+        let hasChanges = false;
+        const newCfg = { ...cfg };
+        
+        // Si el salón configuró sus redes y en el editor están vacías, las autocompletamos
+        if (data.instagram && !newCfg.instagramUrl) { newCfg.instagramUrl = data.instagram; hasChanges = true; }
+        if (data.facebook && !newCfg.facebookUrl) { newCfg.facebookUrl = data.facebook; hasChanges = true; }
+        if (data.tiktok && !newCfg.tiktokUrl) { newCfg.tiktokUrl = data.tiktok; hasChanges = true; }
+        
+        // Lo mismo para el logo y nombre del salón en la tarjeta "5"
+        if (data.logo && !newCfg.venueLogoUrl) { newCfg.venueLogoUrl = data.logo; hasChanges = true; }
+        if (data.name && !newCfg.venueName) { newCfg.venueName = data.name; hasChanges = true; }
+
+        if (hasChanges) {
+          setInv(prev => ({ ...prev, config: { ...prev.config, ...newCfg } }));
+        }
+        window.hasSyncedSalonData = inv.id; // Marcamos como sincronizado para esta sesión
+      }
+    };
+    
+    syncSalonData();
+  }, [inv?.salon_id, inv?.id, cfg, setInv]);
 
   const copyToClipboard = (txt) => {
     navigator.clipboard.writeText(txt);
