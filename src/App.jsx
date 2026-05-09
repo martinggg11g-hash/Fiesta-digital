@@ -41,13 +41,10 @@ const GlobalStyles = () => {
   return null;
 };
 
-// ==========================================
-// 1️⃣ NUEVA PANTALLA PÚBLICA (CONECTADA A SUPABASE)
-// ==========================================
 const LiveInviteScreen = () => {
   const { id: eventSlug } = useParams();
   const [searchParams] = useSearchParams();
-  const guestId = searchParams.get('guest'); // Leemos el ?guest= del link
+  const guestId = searchParams.get('guest'); 
   
   const [inv, setInv] = useState(null);
   const [guestData, setGuestData] = useState(null);
@@ -56,28 +53,15 @@ const LiveInviteScreen = () => {
 
   useEffect(() => {
     const fetchEventAndGuest = async () => {
-      // Buscar el evento en la BD
-      const { data: eventData } = await supabase
-        .from('eventos')
-        .select('*')
-        .eq('slug', eventSlug)
-        .single();
-
+      const { data: eventData } = await supabase.from('eventos').select('*').eq('slug', eventSlug).single();
       if (eventData) {
         setInv(eventData);
         document.title = eventData.config?.honoreeName ? `${eventData.config.honoreeName} | Invitación` : "Invitación";
       }
-
-      // Si el link trae un invitado (?guest=uuid), lo buscamos
       if (guestId) {
-        const { data: gData } = await supabase
-          .from('invitados')
-          .select('*')
-          .eq('id', guestId)
-          .single();
+        const { data: gData } = await supabase.from('invitados').select('*').eq('id', guestId).single();
         if (gData) setGuestData(gData);
       }
-      
       setLoading(false);
     };
     fetchEventAndGuest();
@@ -98,14 +82,10 @@ const LiveInviteScreen = () => {
       <div className={`w-full max-w-[480px] bg-white shadow-2xl relative transition-opacity duration-1000 ${opened ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
         <InvitePreview 
           cfg={inv.config} 
-          guestData={guestData} // Le pasamos los datos del invitado al Preview!
+          guestData={guestData} 
           onConfirmRSVP={async (formData) => {
-             // LÓGICA DE CONFIRMACIÓN REAL EN SUPABASE
              if (guestData) {
-                await supabase
-                  .from('invitados')
-                  .update({ asistencia_confirmada: true, acompanantes_confirmados: formData.guests })
-                  .eq('id', guestData.id);
+                await supabase.from('invitados').update({ asistencia_confirmada: true, acompanantes_confirmados: formData.guests }).eq('id', guestData.id);
                 alert("¡Asistencia confirmada! Ya le avisamos a los organizadores.");
              }
           }} 
@@ -115,9 +95,6 @@ const LiveInviteScreen = () => {
   );
 };
 
-// ==========================================
-// VERSIÓN VIEJA (Mantenida por compatibilidad)
-// ==========================================
 const PublicInviteScreen = ({ invitations, onConfirmRSVP }) => {
   const { invId } = useParams();
   const inv = invitations.find(i => i.id === invId);
@@ -210,14 +187,32 @@ export default function App() {
 
   const handleCreateSalon = async (nU) => { const { error } = await supabase.from('salones').insert([nU]); if (!error) setUsers(p => [...p, nU]); };
   const handleDeleteSalon = async (em) => { await supabase.from('invitaciones').delete().eq('salon_id', em); await supabase.from('salones').delete().eq('email', em); setUsers(p => p.filter(u => u.email !== em)); setInvitations(p => p.filter(i => i.salonId !== em)); };
+  
+  // MAGIA ACA: Automatizamos la inyección del logo y redes del salón en las tarjetas nuevas
   const handleCreateInv = async (sE, sN) => { 
     const sInfo = users.find(u => u.email === sE);
     const nId = "evt-" + Math.random().toString(36).substr(2,6);
-    const cfg = { ...DEF_CONFIG, locationName: sN, locationAddress: sInfo?.address || "" };
+    
+    const cfg = { 
+      ...DEF_CONFIG, 
+      locationName: sN, 
+      locationAddress: sInfo?.address || "",
+      // Redes automáticas del salón:
+      venueLogoUrl: sInfo?.logo || "",
+      showVenueLogo: !!sInfo?.logo,
+      instagramUrl: sInfo?.instagram || "",
+      showInstagram: !!sInfo?.instagram,
+      facebookUrl: sInfo?.facebook || "",
+      showFacebook: !!sInfo?.facebook,
+      tiktokUrl: sInfo?.tiktok || "",
+      showTiktok: !!sInfo?.tiktok
+    };
+    
     const nI = { id: nId, salon_id: sE, title: "Nuevo Evento", config: cfg, internal_data: {} };
     const { error } = await supabase.from('invitaciones').insert([nI]);
     if (!error) { setInvitations(p => [...p, { ...nI, salonId: sE }]); return nId; }
   };
+  
   const handleSaveInv = async (uI) => { await supabase.from('invitaciones').update({ title: uI.title, config: uI.config, internal_data: uI.internal_data }).eq('id', uI.id); setInvitations(p => p.map(i => i.id === uI.id ? uI : i)); };
   const handleDeleteInv = async (id) => { await supabase.from('invitaciones').delete().eq('id', id); setInvitations(p => p.filter(i => i.id !== id)); };
   const handleUpdateInternal = async (id, f, v) => {
@@ -248,10 +243,7 @@ export default function App() {
           <Route path="/i/:salon/:invId" element={<PublicInviteScreen invitations={invitations} onConfirmRSVP={handleConfirmRSVP} />} />
           <Route path="/puerta/:id" element={<PuertaScreen invitations={invitations} onUpdateInternal={handleUpdateInternal} />} />
           <Route path="/manage/:id" element={<ManageScreen />} />
-          
-          {/* 👇 LA RUTA MÁGICA QUE SOLUCIONA LA PANTALLA BLANCA */}
           <Route path="/invite/:id" element={<LiveInviteScreen />} />
-          
         </Routes>
       </Router>
     </>
