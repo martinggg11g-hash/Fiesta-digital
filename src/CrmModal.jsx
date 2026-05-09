@@ -94,7 +94,6 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
     if(!gName && !editingGuest?.isVip) return alert("Falta nombre");
     
     if (editingGuest?.isVip) {
-      // Al VIP solo le dejamos editar la Mesa desde acá (el resto lo edita el cliente o él mismo).
       await supabase.from('invitados').update({ mesa: gTable }).eq('id', editingGuest.id);
       setVipGuests(vipGuests.map(v => v.id === editingGuest.id ? { ...v, mesa: gTable } : v));
     } else {
@@ -177,11 +176,37 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
     <div className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 crm-modal-wrapper">
       <style>{`
         @media print {
+          /* Eliminamos márgenes de la página y forzamos fondo blanco */
+          @page { margin: 0.5cm; }
+          body { background: white !important; -webkit-print-color-adjust: exact; }
+          
+          /* Ocultamos TODO el body por defecto */
           body * { visibility: hidden; }
-          .only-print, .only-print * { visibility: visible; }
-          .only-print { position: absolute !important; left: 0 !important; top: 0 !important; width: 100vw !important; margin: 0 !important; padding: 20px !important; background: white !important; }
+          
+          /* Le sacamos el fondo negro, la posición fija y el blur al wrapper oscuro */
+          .crm-modal-wrapper {
+             position: absolute !important;
+             left: 0 !important;
+             top: 0 !important;
+             background: white !important;
+             backdrop-filter: none !important;
+             padding: 0 !important;
+          }
+
+          /* Hacemos desaparecer completamente el modal que se ve en pantalla */
           .no-print { display: none !important; }
-          ::-webkit-scrollbar { display: none; }
+
+          /* Forzamos a que el contenido a imprimir se vuelva visible y ocupe el 100% de la hoja */
+          .only-print, .only-print * { visibility: visible; }
+          .only-print { 
+             position: absolute !important; 
+             left: 0 !important; 
+             top: 0 !important; 
+             width: 100% !important; 
+             margin: 0 !important; 
+             padding: 20px !important; 
+             background: white !important; 
+          }
         }
       `}</style>
       
@@ -397,7 +422,7 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                 <div>
                   <h3 style={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '2px', color: '#94a3b8', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px', marginBottom: '12px' }}>1. Detalles del Evento</h3>
                   <div style={{ fontSize: '14px', lineHeight: '1.6' }}>
-                    <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Agasajado:</span> <span style={{ fontWeight: '900', fontSize: '18px' }}>{activeInv.internal_data.internalHonoree || '---'}</span></p>
+                    <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Agasajado:</span> <span style={{ fontWeight: '900', fontSize: '18px' }}>{activeInv.internal_data.internalHonoree || activeInv.config?.honoreeName || activeInv.title}</span></p>
                     <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Tipo:</span> {activeInv.internal_data.eventType || '---'}</p>
                     <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Fecha:</span> {formatDateSpanish(activeInv.internal_data.internalDate)}</p>
                     <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Horario:</span> {activeInv.internal_data.internalTime || '---'} hs</p>
@@ -438,7 +463,10 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #1e293b', paddingBottom: '24px', marginBottom: '32px' }}>
                 <div>
                   <h2 style={{ fontSize: '24px', fontWeight: '900', color: '#1e293b', letterSpacing: '2px', margin: '0 0 4px 0', textTransform: 'uppercase' }}>LISTA DE ACCESOS</h2>
-                  <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#475569', margin: '0 0 4px 0' }}>Evento: {activeInv.title}</p>
+                  {/* Acá cambiamos el título dinámico */}
+                  <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#475569', margin: '0 0 4px 0' }}>
+                    Evento: {activeInv.internal_data.internalHonoree || activeInv.config?.honoreeName || activeInv.title}
+                  </p>
                   <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>Fecha: {formatDateSpanish(activeInv.internal_data.internalDate)}</p>
                 </div>
                 <div style={{ textAlign: 'right' }}>
