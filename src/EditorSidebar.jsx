@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Palette, Star, Image as ImageIcon, Layout, List, Trash2, Video, Link as LinkIcon, LayoutGrid, Smartphone, Calendar, Clock, CheckCircle2, MessageCircle, Plus, Edit2, RefreshCcw, Copy, ExternalLink } from "lucide-react";
 import { GiphySearch, Inp, MiniInp, SelectInp, TypoControl, FontSelector, FileUpload, Toggle, EmojiPicker, Acc, BordersGallery } from "./EditorUI";
 import { ANIMATION_CATEGORIES, THEMES, TRANSITION_OPTS, PARTICLE_CATEGORIES, FONTS } from "./config";
@@ -12,15 +12,15 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
   const [animCat, setAnimCategory] = useState("infantil");
   const [partCat, setPartCat] = useState("Clásicos");
   
-  // Guardamos los datos del salón acá para usarlos cuando toquen los botones
+  // Guardamos el perfil y usamos useRef para no auto-rellenar infinitamente si el usuario decide borrar el link a mano
   const [salonProfile, setSalonProfile] = useState(null);
+  const autoFilled = useRef({ ig: false, fb: false, tk: false, venue: false });
 
   const eventId = window.location.pathname.split('/').pop();
   const hostManageLink = `${window.location.origin}/manage/${eventId}`;
-
   const salonEmail = inv?.salon_id || inv?.salonId;
 
-  // 🚀 Descargamos la info del salón silenciosamente en segundo plano
+  // 1. Descargamos la info del salón al abrir el editor
   useEffect(() => {
     if (!salonEmail) return;
     const fetchProfile = async () => {
@@ -29,6 +29,29 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
     };
     fetchProfile();
   }, [salonEmail]);
+
+  // 2. Efecto Vigía: Auto-rellena milisegundos después de que el usuario enciende el botón
+  useEffect(() => {
+    if (!salonProfile) return;
+
+    if (cfg.showInstagram && !cfg.instagramUrl && salonProfile.instagram && !autoFilled.current.ig) {
+      update("instagramUrl", salonProfile.instagram);
+      autoFilled.current.ig = true;
+    }
+    if (cfg.showFacebook && !cfg.facebookUrl && salonProfile.facebook && !autoFilled.current.fb) {
+      update("facebookUrl", salonProfile.facebook);
+      autoFilled.current.fb = true;
+    }
+    if (cfg.showTiktok && !cfg.tiktokUrl && salonProfile.tiktok && !autoFilled.current.tk) {
+      update("tiktokUrl", salonProfile.tiktok);
+      autoFilled.current.tk = true;
+    }
+    if (cfg.showVenueLogo && !cfg.venueLogoUrl && salonProfile.logo && !autoFilled.current.venue) {
+      update("venueLogoUrl", salonProfile.logo);
+      if (!cfg.venueName && salonProfile.name) update("venueName", salonProfile.name);
+      autoFilled.current.venue = true;
+    }
+  }, [cfg.showInstagram, cfg.showFacebook, cfg.showTiktok, cfg.showVenueLogo, salonProfile]);
 
   const copyToClipboard = (txt) => {
     navigator.clipboard.writeText(txt);
@@ -116,17 +139,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
       <Acc title="5️⃣ Tarjeta del Salón" icon={LinkIcon} iconColor="#6366f1">
         <div className="flex items-center justify-between mb-4">
           <span className="text-xs font-bold text-slate-500">Mostrar Tarjeta</span>
-          <Toggle 
-            checked={cfg.showVenueLogo || false} 
-            onChange={v => { 
-              update("showVenueLogo", v);
-              // MAGIA: Al activar, si hay datos en el perfil y el campo está vacío, lo inyectamos
-              if (v && salonProfile) {
-                if (!cfg.venueName && salonProfile.name) setTimeout(() => update("venueName", salonProfile.name), 150);
-                if (!cfg.venueLogoUrl && salonProfile.logo) setTimeout(() => update("venueLogoUrl", salonProfile.logo), 300);
-              }
-            }} 
-          />
+          <Toggle checked={cfg.showVenueLogo || false} onChange={v => update("showVenueLogo", v)} />
         </div>
         {cfg.showVenueLogo && (
           <>
@@ -220,16 +233,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
           <div className="bg-slate-50 p-3 rounded-xl border">
             <div className="flex items-center justify-between mb-2">
                <span className="text-xs font-bold flex items-center gap-2"><InstagramIcon size={14}/> Instagram</span>
-               <Toggle 
-                 checked={cfg.showInstagram || false} 
-                 onChange={v => { 
-                   update("showInstagram", v); 
-                   // MAGIA: Al encenderlo inyectamos el perfil
-                   if (v && salonProfile?.instagram && !cfg.instagramUrl) {
-                     setTimeout(() => update("instagramUrl", salonProfile.instagram), 150);
-                   }
-                 }} 
-               />
+               <Toggle checked={cfg.showInstagram || false} onChange={v => update("showInstagram", v)} />
             </div>
             {cfg.showInstagram && <Inp placeholder={salonProfile?.instagram || "Link..."} value={cfg.instagramUrl || ""} onChange={v => update("instagramUrl", v)} className="!mb-0" />}
           </div>
@@ -237,15 +241,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
           <div className="bg-slate-50 p-3 rounded-xl border">
             <div className="flex items-center justify-between mb-2">
                <span className="text-xs font-bold flex items-center gap-2"><FacebookIcon size={14}/> Facebook</span>
-               <Toggle 
-                 checked={cfg.showFacebook || false} 
-                 onChange={v => { 
-                   update("showFacebook", v); 
-                   if (v && salonProfile?.facebook && !cfg.facebookUrl) {
-                     setTimeout(() => update("facebookUrl", salonProfile.facebook), 150);
-                   }
-                 }} 
-               />
+               <Toggle checked={cfg.showFacebook || false} onChange={v => update("showFacebook", v)} />
             </div>
             {cfg.showFacebook && <Inp placeholder={salonProfile?.facebook || "Link..."} value={cfg.facebookUrl || ""} onChange={v => update("facebookUrl", v)} className="!mb-0" />}
           </div>
@@ -253,15 +249,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
           <div className="bg-slate-50 p-3 rounded-xl border">
             <div className="flex items-center justify-between mb-2">
                <span className="text-xs font-bold flex items-center gap-2"><TiktokIcon size={14}/> TikTok</span>
-               <Toggle 
-                 checked={cfg.showTiktok || false} 
-                 onChange={v => { 
-                   update("showTiktok", v); 
-                   if (v && salonProfile?.tiktok && !cfg.tiktokUrl) {
-                     setTimeout(() => update("tiktokUrl", salonProfile.tiktok), 150);
-                   }
-                 }} 
-               />
+               <Toggle checked={cfg.showTiktok || false} onChange={v => update("showTiktok", v)} />
             </div>
             {cfg.showTiktok && <Inp placeholder={salonProfile?.tiktok || "Link..."} value={cfg.tiktokUrl || ""} onChange={v => update("tiktokUrl", v)} className="!mb-0" />}
           </div>
