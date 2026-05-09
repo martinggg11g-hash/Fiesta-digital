@@ -11,45 +11,24 @@ const TiktokIcon = ({ size = 20 }) => (<svg width={size} height={size} viewBox="
 export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim, mobileView }) {
   const [animCat, setAnimCategory] = useState("infantil");
   const [partCat, setPartCat] = useState("Clásicos");
+  
+  // Guardamos los datos del salón acá para usarlos cuando toquen los botones
+  const [salonProfile, setSalonProfile] = useState(null);
 
   const eventId = window.location.pathname.split('/').pop();
   const hostManageLink = `${window.location.origin}/manage/${eventId}`;
 
-  // Extraemos el email del salón (verificando ambas formas de escritura)
   const salonEmail = inv?.salon_id || inv?.salonId;
 
-  // 🚀 Sincronización Automática con la ficha del Salón
+  // 🚀 Descargamos la info del salón silenciosamente en segundo plano
   useEffect(() => {
-    const syncSalonData = async () => {
-      if (!salonEmail) return;
-      
-      // Evitamos consultar a la base de datos infinitamente
-      if (window.hasSyncedSalonData === inv.id) return;
-      
+    if (!salonEmail) return;
+    const fetchProfile = async () => {
       const { data } = await supabase.from('salones').select('instagram, facebook, tiktok, logo, name').eq('email', salonEmail).single();
-      
-      if (data) {
-        let hasChanges = false;
-        const newCfg = { ...cfg };
-        
-        // Si el salón configuró sus redes y en el editor están vacías, las autocompletamos
-        if (data.instagram && !newCfg.instagramUrl) { newCfg.instagramUrl = data.instagram; hasChanges = true; }
-        if (data.facebook && !newCfg.facebookUrl) { newCfg.facebookUrl = data.facebook; hasChanges = true; }
-        if (data.tiktok && !newCfg.tiktokUrl) { newCfg.tiktokUrl = data.tiktok; hasChanges = true; }
-        
-        // Lo mismo para el logo y nombre del salón en la tarjeta "5"
-        if (data.logo && !newCfg.venueLogoUrl) { newCfg.venueLogoUrl = data.logo; hasChanges = true; }
-        if (data.name && !newCfg.venueName) { newCfg.venueName = data.name; hasChanges = true; }
-
-        if (hasChanges) {
-          setInv(prev => ({ ...prev, config: { ...prev.config, ...newCfg } }));
-        }
-        window.hasSyncedSalonData = inv.id; // Marcamos como sincronizado para esta sesión
-      }
+      if (data) setSalonProfile(data);
     };
-    
-    syncSalonData();
-  }, [inv?.id, salonEmail]); // Solo depende del ID y el email para no hacer loops
+    fetchProfile();
+  }, [salonEmail]);
 
   const copyToClipboard = (txt) => {
     navigator.clipboard.writeText(txt);
@@ -133,7 +112,32 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
       <Acc title="2️⃣ Cuenta Regresiva" icon={Clock} iconColor="#f59e0b"><div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Reloj</span><Toggle checked={cfg.showCountdown || false} onChange={v => update("showCountdown", v)} /></div>{cfg.showCountdown && (<Inp label="Fecha y Hora exacta" type="datetime-local" value={cfg.countdownDate || ""} onChange={v => update("countdownDate", v)} />)}</Acc>
       <Acc title="3️⃣ Banner Central" icon={Star} iconColor="#d97706"><div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Banner</span><Toggle checked={cfg.showBanner} onChange={v => update("showBanner", v)} /></div>{cfg.showBanner && (<><Inp label="Título del Banner" value={cfg.bannerTitle} onChange={v => update("bannerTitle", v)} /><div className="flex items-center justify-between mt-4 mb-2 bg-gray-50 p-2 rounded-xl"><span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">¿Usar GIF?</span><Toggle checked={cfg.useGiphyBanner || false} onChange={v => update("useGiphyBanner", v)} /></div>{cfg.useGiphyBanner ? (<GiphySearch onSelect={url => update("bannerPhoto", url)} />) : (<FileUpload value={cfg.bannerPhoto} onChange={v => update("bannerPhoto", v)} />)}</>)}</Acc>
       <Acc title="4️⃣ Cuándo y Dónde" icon={Calendar} iconColor="#e11d48"><TypoControl label="Tamaño Textos" sizeVal={cfg.dateSize ?? 18} onSize={v => update("dateSize", v)} minSize={12} maxSize={30} /><div className="flex items-center justify-between mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Día</span><Toggle checked={cfg.showDate} onChange={v => update("showDate", v)} /></div>{cfg.showDate && <Inp type="date" value={cfg.dateText} onChange={v => update("dateText", v)} />}<div className="flex items-center justify-between mt-4 mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Horario</span><Toggle checked={cfg.showTime} onChange={v => update("showTime", v)} /></div>{cfg.showTime && <Inp placeholder="16:00 a 20:00 hs" value={cfg.timeText} onChange={v => update("timeText", v)} />}<div className="flex items-center justify-between mt-4 mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Ubicación</span><Toggle checked={cfg.showLocation} onChange={v => update("showLocation", v)} /></div>{cfg.showLocation && (<><div className="p-3 bg-violet-50 rounded-xl border border-violet-100 mb-4 opacity-80"><p className="text-[10px] font-black text-violet-800 uppercase tracking-widest mb-1">📍 Dirección (Panel Maestro)</p><p className="text-xs font-bold text-violet-900">{cfg.locationName || "Nombre del Salón"}</p></div><div className="flex items-center justify-between mt-2 mb-2"><span className="text-xs font-bold text-slate-500">Aclarar Parking</span><Toggle checked={cfg.showParking} onChange={v => update("showParking", v)} /></div>{cfg.showParking && <SelectInp label="Tipo" value={cfg.parkingType} options={[{label:"Público", value:"Estacionamiento público"}, {label:"Privado", value:"Estacionamiento privado"}, {label:"Personalizado...", value:"otro"}]} onChange={v => update("parkingType", v)} />}{cfg.showParking && cfg.parkingType === 'otro' && <Inp placeholder="Escribe aquí..." value={cfg.customParking || ""} onChange={v => update("customParking", v)} />}</>)}</Acc>
-      <Acc title="5️⃣ Tarjeta del Salón" icon={LinkIcon} iconColor="#6366f1"><div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Mostrar Tarjeta</span><Toggle checked={cfg.showVenueLogo || false} onChange={v => update("showVenueLogo", v)} /></div>{cfg.showVenueLogo && (<><Inp label="Nombre" value={cfg.venueName || ""} onChange={v => update("venueName", v)} /><FileUpload label="Logo" value={cfg.venueLogoUrl || ""} onChange={v => update("venueLogoUrl", v)} /><SelectInp label="Botón" value={cfg.venueLinkType || "web"} options={[{ label: "🌐 Web", value: "web" }, { label: "📱 WhatsApp", value: "whatsapp" }]} onChange={v => update("venueLinkType", v)} /><Inp label="Link o Número" value={cfg.venueLink || ""} onChange={v => update("venueLink", v)} /></>)}</Acc>
+      
+      <Acc title="5️⃣ Tarjeta del Salón" icon={LinkIcon} iconColor="#6366f1">
+        <div className="flex items-center justify-between mb-4">
+          <span className="text-xs font-bold text-slate-500">Mostrar Tarjeta</span>
+          <Toggle 
+            checked={cfg.showVenueLogo || false} 
+            onChange={v => { 
+              update("showVenueLogo", v);
+              // MAGIA: Al activar, si hay datos en el perfil y el campo está vacío, lo inyectamos
+              if (v && salonProfile) {
+                if (!cfg.venueName && salonProfile.name) setTimeout(() => update("venueName", salonProfile.name), 150);
+                if (!cfg.venueLogoUrl && salonProfile.logo) setTimeout(() => update("venueLogoUrl", salonProfile.logo), 300);
+              }
+            }} 
+          />
+        </div>
+        {cfg.showVenueLogo && (
+          <>
+            <Inp label="Nombre" value={cfg.venueName || ""} onChange={v => update("venueName", v)} />
+            <FileUpload label="Logo" value={cfg.venueLogoUrl || ""} onChange={v => update("venueLogoUrl", v)} />
+            <SelectInp label="Botón" value={cfg.venueLinkType || "web"} options={[{ label: "🌐 Web", value: "web" }, { label: "📱 WhatsApp", value: "whatsapp" }]} onChange={v => update("venueLinkType", v)} />
+            <Inp label="Link o Número" value={cfg.venueLink || ""} onChange={v => update("venueLink", v)} />
+          </>
+        )}
+      </Acc>
+
       <Acc title="6️⃣ Multimedia" icon={Video} iconColor="#8b5cf6"><div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Video YouTube</span><Toggle checked={cfg.showVideo || false} onChange={v => update("showVideo", v)} /></div>{cfg.showVideo && (<div className="mb-6 bg-gray-50 p-3 rounded-xl border border-gray-200"><Inp label="Título" value={cfg.videoTitle || ""} onChange={v => update("videoTitle", v)} /><Inp label="Link" value={cfg.videoUrl || ""} onChange={v => update("videoUrl", v)} /></div>)}<div className="flex items-center justify-between mb-4 pt-4 border-t border-gray-100"><span className="text-xs font-bold text-slate-500">Música Spotify</span><Toggle checked={cfg.showMusic || false} onChange={v => update("showMusic", v)} /></div>{cfg.showMusic && (<div className="bg-gray-50 p-3 rounded-xl border border-gray-200"><Inp label="Link" value={cfg.spotifyUrl || ""} onChange={v => update("spotifyUrl", v)} /></div>)}</Acc>
       <Acc title="7️⃣ Programa" icon={List} iconColor="#0ea5e9"><div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Cronograma</span><Toggle checked={cfg.showItinerary} onChange={v => update("showItinerary", v)} /></div>{cfg.showItinerary && (<><div className="mb-4"><Inp label="Título" value={cfg.itinerarySectionTitle || "¿Qué vamos a hacer?"} onChange={v => update("itinerarySectionTitle", v)} icon={Edit2} /></div><div className="space-y-4 mb-6">{cfg.itinerary?.map((item, i) => (<div key={i} className="flex flex-col gap-2 bg-white p-3 rounded-xl border shadow-sm relative"><button onClick={() => update("itinerary", cfg.itinerary.filter((_, idx) => idx !== i))} type="button" className="absolute top-2 right-2 text-red-400 cursor-pointer"><Trash2 size={14}/></button><div className="flex gap-2 pr-6"><MiniInp className="w-16 p-2 text-xs font-bold border rounded-lg" value={item.time} onChange={v => { const n = [...cfg.itinerary]; n[i].time = v; update("itinerary", n); }} /><MiniInp className="flex-1 p-2 text-xs border rounded-lg" value={item.title} onChange={v => { const n = [...cfg.itinerary]; n[i].title = v; update("itinerary", n); }} /></div><MiniInp className="w-full p-2 text-xs border rounded-lg" value={item.sub} placeholder="Aclaración" onChange={v => { const n = [...cfg.itinerary]; n[i].sub = v; update("itinerary", n); }} /></div>))}</div><button onClick={() => update("itinerary", [...(cfg.itinerary || []), { time: "16:00", title: "Nuevo Evento", sub: "" }])} type="button" className="w-full py-3 bg-white border-2 border-dashed rounded-xl text-xs font-bold text-slate-400 cursor-pointer"><Plus size={14} className="inline-block mr-2" /> AÑADIR EVENTO</button></>)}</Acc>
       
@@ -213,9 +217,54 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
 
         <h4 className="text-[10px] font-black text-slate-400 uppercase mb-4 border-t pt-4">Redes</h4>
         <div className="space-y-4">
-          <div className="bg-slate-50 p-3 rounded-xl border"><div className="flex items-center justify-between mb-2"><span className="text-xs font-bold flex items-center gap-2"><InstagramIcon size={14}/> Instagram</span><Toggle checked={cfg.showInstagram || false} onChange={v => update("showInstagram", v)} /></div>{cfg.showInstagram && <Inp placeholder="Link..." value={cfg.instagramUrl || ""} onChange={v => update("instagramUrl", v)} className="!mb-0" />}</div>
-          <div className="bg-slate-50 p-3 rounded-xl border"><div className="flex items-center justify-between mb-2"><span className="text-xs font-bold flex items-center gap-2"><FacebookIcon size={14}/> Facebook</span><Toggle checked={cfg.showFacebook || false} onChange={v => update("showFacebook", v)} /></div>{cfg.showFacebook && <Inp placeholder="Link..." value={cfg.facebookUrl || ""} onChange={v => update("facebookUrl", v)} className="!mb-0" />}</div>
-          <div className="bg-slate-50 p-3 rounded-xl border"><div className="flex items-center justify-between mb-2"><span className="text-xs font-bold flex items-center gap-2"><TiktokIcon size={14}/> TikTok</span><Toggle checked={cfg.showTiktok || false} onChange={v => update("showTiktok", v)} /></div>{cfg.showTiktok && <Inp placeholder="Link..." value={cfg.tiktokUrl || ""} onChange={v => update("tiktokUrl", v)} className="!mb-0" />}</div>
+          <div className="bg-slate-50 p-3 rounded-xl border">
+            <div className="flex items-center justify-between mb-2">
+               <span className="text-xs font-bold flex items-center gap-2"><InstagramIcon size={14}/> Instagram</span>
+               <Toggle 
+                 checked={cfg.showInstagram || false} 
+                 onChange={v => { 
+                   update("showInstagram", v); 
+                   // MAGIA: Al encenderlo inyectamos el perfil
+                   if (v && salonProfile?.instagram && !cfg.instagramUrl) {
+                     setTimeout(() => update("instagramUrl", salonProfile.instagram), 150);
+                   }
+                 }} 
+               />
+            </div>
+            {cfg.showInstagram && <Inp placeholder={salonProfile?.instagram || "Link..."} value={cfg.instagramUrl || ""} onChange={v => update("instagramUrl", v)} className="!mb-0" />}
+          </div>
+          
+          <div className="bg-slate-50 p-3 rounded-xl border">
+            <div className="flex items-center justify-between mb-2">
+               <span className="text-xs font-bold flex items-center gap-2"><FacebookIcon size={14}/> Facebook</span>
+               <Toggle 
+                 checked={cfg.showFacebook || false} 
+                 onChange={v => { 
+                   update("showFacebook", v); 
+                   if (v && salonProfile?.facebook && !cfg.facebookUrl) {
+                     setTimeout(() => update("facebookUrl", salonProfile.facebook), 150);
+                   }
+                 }} 
+               />
+            </div>
+            {cfg.showFacebook && <Inp placeholder={salonProfile?.facebook || "Link..."} value={cfg.facebookUrl || ""} onChange={v => update("facebookUrl", v)} className="!mb-0" />}
+          </div>
+
+          <div className="bg-slate-50 p-3 rounded-xl border">
+            <div className="flex items-center justify-between mb-2">
+               <span className="text-xs font-bold flex items-center gap-2"><TiktokIcon size={14}/> TikTok</span>
+               <Toggle 
+                 checked={cfg.showTiktok || false} 
+                 onChange={v => { 
+                   update("showTiktok", v); 
+                   if (v && salonProfile?.tiktok && !cfg.tiktokUrl) {
+                     setTimeout(() => update("tiktokUrl", salonProfile.tiktok), 150);
+                   }
+                 }} 
+               />
+            </div>
+            {cfg.showTiktok && <Inp placeholder={salonProfile?.tiktok || "Link..."} value={cfg.tiktokUrl || ""} onChange={v => update("tiktokUrl", v)} className="!mb-0" />}
+          </div>
         </div>
       </Acc>
     </aside>
