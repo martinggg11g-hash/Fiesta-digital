@@ -15,15 +15,18 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
   const eventId = window.location.pathname.split('/').pop();
   const hostManageLink = `${window.location.origin}/manage/${eventId}`;
 
-  // 🚀 MAGIA: Sincronizar datos del salón automáticamente
+  // Extraemos el email del salón (verificando ambas formas de escritura)
+  const salonEmail = inv?.salon_id || inv?.salonId;
+
+  // 🚀 Sincronización Automática con la ficha del Salón
   useEffect(() => {
     const syncSalonData = async () => {
-      if (!inv?.salon_id) return;
+      if (!salonEmail) return;
       
       // Evitamos consultar a la base de datos infinitamente
       if (window.hasSyncedSalonData === inv.id) return;
       
-      const { data } = await supabase.from('salones').select('instagram, facebook, tiktok, logo, name').eq('email', inv.salon_id).single();
+      const { data } = await supabase.from('salones').select('instagram, facebook, tiktok, logo, name').eq('email', salonEmail).single();
       
       if (data) {
         let hasChanges = false;
@@ -46,7 +49,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
     };
     
     syncSalonData();
-  }, [inv?.salon_id, inv?.id, cfg, setInv]);
+  }, [inv?.id, salonEmail]); // Solo depende del ID y el email para no hacer loops
 
   const copyToClipboard = (txt) => {
     navigator.clipboard.writeText(txt);
