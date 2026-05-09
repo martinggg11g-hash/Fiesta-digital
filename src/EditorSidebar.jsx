@@ -7,12 +7,24 @@ const InstagramIcon = ({ size = 20 }) => (<svg width={size} height={size} viewBo
 const FacebookIcon = ({ size = 20 }) => (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>);
 const TiktokIcon = ({ size = 20 }) => (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path></svg>);
 
-export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim, mobileView, salonProfile }) {
+export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim, mobileView }) {
   const [animCat, setAnimCategory] = useState("infantil");
   const [partCat, setPartCat] = useState("Clásicos");
 
   const eventId = window.location.pathname.split('/').pop();
   const hostManageLink = `${window.location.origin}/manage/${eventId}`;
+
+  // 🚀 MAGIA PURA: Sacamos los datos instantáneamente de la memoria del navegador
+  const [salonProfile] = useState(() => {
+    try {
+      const local = localStorage.getItem("fiesta_user");
+      const session = sessionStorage.getItem("fiesta_user");
+      const userStr = local || session;
+      return userStr ? JSON.parse(userStr) : null;
+    } catch (e) {
+      return null;
+    }
+  });
 
   const copyToClipboard = (txt) => {
     navigator.clipboard.writeText(txt);
@@ -97,7 +109,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
       <Acc title="3️⃣ Banner Central" icon={Star} iconColor="#d97706"><div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Banner</span><Toggle checked={cfg.showBanner} onChange={v => update("showBanner", v)} /></div>{cfg.showBanner && (<><Inp label="Título del Banner" value={cfg.bannerTitle} onChange={v => update("bannerTitle", v)} /><div className="flex items-center justify-between mt-4 mb-2 bg-gray-50 p-2 rounded-xl"><span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">¿Usar GIF?</span><Toggle checked={cfg.useGiphyBanner || false} onChange={v => update("useGiphyBanner", v)} /></div>{cfg.useGiphyBanner ? (<GiphySearch onSelect={url => update("bannerPhoto", url)} />) : (<FileUpload value={cfg.bannerPhoto} onChange={v => update("bannerPhoto", v)} />)}</>)}</Acc>
       <Acc title="4️⃣ Cuándo y Dónde" icon={Calendar} iconColor="#e11d48"><TypoControl label="Tamaño Textos" sizeVal={cfg.dateSize ?? 18} onSize={v => update("dateSize", v)} minSize={12} maxSize={30} /><div className="flex items-center justify-between mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Día</span><Toggle checked={cfg.showDate} onChange={v => update("showDate", v)} /></div>{cfg.showDate && <Inp type="date" value={cfg.dateText} onChange={v => update("dateText", v)} />}<div className="flex items-center justify-between mt-4 mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Horario</span><Toggle checked={cfg.showTime} onChange={v => update("showTime", v)} /></div>{cfg.showTime && <Inp placeholder="16:00 a 20:00 hs" value={cfg.timeText} onChange={v => update("timeText", v)} />}<div className="flex items-center justify-between mt-4 mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Ubicación</span><Toggle checked={cfg.showLocation} onChange={v => update("showLocation", v)} /></div>{cfg.showLocation && (<><div className="p-3 bg-violet-50 rounded-xl border border-violet-100 mb-4 opacity-80"><p className="text-[10px] font-black text-violet-800 uppercase tracking-widest mb-1">📍 Dirección (Panel Maestro)</p><p className="text-xs font-bold text-violet-900">{cfg.locationName || "Nombre del Salón"}</p></div><div className="flex items-center justify-between mt-2 mb-2"><span className="text-xs font-bold text-slate-500">Aclarar Parking</span><Toggle checked={cfg.showParking} onChange={v => update("showParking", v)} /></div>{cfg.showParking && <SelectInp label="Tipo" value={cfg.parkingType} options={[{label:"Público", value:"Estacionamiento público"}, {label:"Privado", value:"Estacionamiento privado"}, {label:"Personalizado...", value:"otro"}]} onChange={v => update("parkingType", v)} />}{cfg.showParking && cfg.parkingType === 'otro' && <Inp placeholder="Escribe aquí..." value={cfg.customParking || ""} onChange={v => update("customParking", v)} />}</>)}</Acc>
       
-      {/* 🚀 TARJETA DEL SALÓN: ACTUALIZACIÓN ATÓMICA DE NOMBRE Y LOGO */}
+      {/* 🚀 TARJETA DEL SALÓN AUTOMÁTICA DESDE LOCALSTORAGE */}
       <Acc title="5️⃣ Tarjeta del Salón" icon={LinkIcon} iconColor="#6366f1">
         <div className="flex items-center justify-between mb-4">
           <span className="text-xs font-bold text-slate-500">Mostrar Tarjeta</span>
@@ -105,6 +117,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
             checked={cfg.showVenueLogo || false} 
             onChange={v => { 
               if (v && salonProfile) {
+                // Inyectamos todo en un solo movimiento atómico
                 setInv(prev => ({
                   ...prev,
                   config: {
@@ -210,7 +223,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
         <h4 className="text-[10px] font-black text-slate-400 uppercase mb-4 border-t pt-4">Redes</h4>
         <div className="space-y-4">
           
-          {/* 🚀 REDES SOCIALES: ACTUALIZACIÓN ATÓMICA */}
+          {/* 🚀 REDES SOCIALES DESDE LOCALSTORAGE */}
           <div className="bg-slate-50 p-3 rounded-xl border">
             <div className="flex items-center justify-between mb-2">
                <span className="text-xs font-bold flex items-center gap-2"><InstagramIcon size={14}/> Instagram</span>
