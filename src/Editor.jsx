@@ -5,19 +5,15 @@ import { InvitePreview } from './Preview';
 import { DEF_CONFIG } from './config';
 import { supabase } from './supabase';
 
-// 🚀 AHORA RECIBE 'invitations' y 'onSave' desde App.jsx
-export const EditorScreen = ({ invitations, onSave }) => {
+export const EditorScreen = () => {
   const [inv, setInv] = useState({ config: DEF_CONFIG });
+  const [salonProfile, setSalonProfile] = useState(null); // 🔥 ESTADO PARA EL PERFIL DEL SALÓN
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [previewAnim, setPreviewAnim] = useState(false);
-  const [mobileView, setMobileView] = useState('editor'); 
+  const [mobileView, setMobileView] = useState('editor');
 
   const eventSlug = window.location.pathname.split('/').pop();
-
-  // 🔥 MAGIA ACÁ: Buscamos la invitación en los datos del Dashboard para saber quién es el dueño
-  const parentInv = invitations?.find(i => i.id === eventSlug);
-  const salonEmail = parentInv?.salon_id || parentInv?.salonId;
 
   // 1️⃣ CARGAR DATOS DESDE SUPABASE AL ABRIR EL EDITOR
   useEffect(() => {
@@ -28,24 +24,24 @@ export const EditorScreen = ({ invitations, onSave }) => {
       }
       
       try {
-        const { data, error } = await supabase
-          .from('eventos')
-          .select('*')
-          .eq('slug', eventSlug)
-          .single();
+        // A. Buscamos si el evento ya existe en la tabla eventos
+        const { data, error } = await supabase.from('eventos').select('*').eq('slug', eventSlug).single();
 
         if (data) {
-          // Le inyectamos el salon_id a la fuerza para que el Sidebar sepa de quién buscar las redes
-          setInv({ ...data, config: { ...DEF_CONFIG, ...data.config }, salon_id: salonEmail });
+          setInv({ ...data, config: { ...DEF_CONFIG, ...data.config } });
         } else {
-          const { data: newData, error: insertError } = await supabase
-            .from('eventos')
-            .insert([{ slug: eventSlug, config: DEF_CONFIG }])
-            .select()
-            .single();
-            
-          if (newData) setInv({ ...newData, salon_id: salonEmail });
+          // B. Si no existe, lo creamos
+          const { data: newData } = await supabase.from('eventos').insert([{ slug: eventSlug, config: DEF_CONFIG }]).select().single();
+          if (newData) setInv(newData);
         }
+
+        // 🔥 C. BUSCAMOS AL DUEÑO DE LA FIESTA Y SU PERFIL
+        const { data: invData } = await supabase.from('invitaciones').select('salon_id').eq('id', eventSlug).single();
+        if (invData?.salon_id) {
+          const { data: sData } = await supabase.from('salones').select('*').eq('email', invData.salon_id).single();
+          if (sData) setSalonProfile(sData); // Guardamos el logo, nombre y redes
+        }
+
       } catch (err) {
         console.error("Error cargando evento:", err);
       } finally {
@@ -54,26 +50,16 @@ export const EditorScreen = ({ invitations, onSave }) => {
     };
 
     loadData();
-  }, [eventSlug, salonEmail]);
+  }, [eventSlug]);
 
   // 2️⃣ GUARDAR DATOS EN SUPABASE AL TOCAR EL BOTÓN
   const handleSave = async () => {
     setSaving(true);
     try {
-      // 1. Guardamos en la tabla 'eventos' para la vista pública
-      const { error } = await supabase
-        .from('eventos')
-        .update({ config: inv.config })
-        .eq('slug', eventSlug);
-
-      if (error) throw error;
+      // 🔥 FIX CRÍTICO: Guardamos en AMBAS tablas para que el Dashboard actualice la miniatura
+      await supabase.from('eventos').update({ config: inv.config }).eq('slug', eventSlug);
+      await supabase.from('invitaciones').update({ config: inv.config }).eq('id', eventSlug);
       
-      // 2. SINCRONIZACIÓN: Le avisamos a App.jsx que actualice la tabla 'invitaciones'
-      // Así tu panel cambia la foto de portada cuando la editan
-      if (onSave && parentInv) {
-        await onSave({ ...parentInv, config: inv.config });
-      }
-
       alert("¡Cambios guardados correctamente en la base de datos! 🚀");
     } catch (err) {
       console.error("Error guardando:", err);
@@ -84,10 +70,7 @@ export const EditorScreen = ({ invitations, onSave }) => {
   };
 
   const updateConfig = (key, val) => {
-    setInv(prev => ({
-      ...prev,
-      config: { ...prev.config, [key]: val }
-    }));
+    setInv(prev => ({ ...prev, config: { ...prev.config, [key]: val } }));
   };
 
   if (loading) {
@@ -129,6 +112,7 @@ export const EditorScreen = ({ invitations, onSave }) => {
           update={updateConfig} 
           setPreviewAnim={setPreviewAnim} 
           mobileView={mobileView} 
+          salonProfile={salonProfile} // 🔥 LE PASAMOS EL PERFIL COMPLETO
         />
 
         <main className={`flex-1 overflow-y-auto bg-[#0b0f19] flex items-center justify-center p-4 md:p-8 ${mobileView === 'preview' ? 'block' : 'hidden md:flex'}`} style={{ backgroundImage: 'radial-gradient(#1e293b 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
