@@ -490,20 +490,20 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
   const gradOpacity = cfg.showCoverGradient === false ? 0 : ((cfg.coverGradientIntensity ?? 50) / 100).toFixed(2);
   const coverShadow = (cfg.coverTextShadowSize > 0) ? `0px 4px ${cfg.coverTextShadowSize}px ${cfg.coverTextShadowColor || '#000000'}` : 'none';
 
-  // 👉 DINÁMICA DEL GLOW (RESPLANDOR)
+  // 👉 DINÁMICA DEL GLOW (RESPLANDOR): Si está en 0, 'none'. Si es mayor a 0, aplica el estilo progresivo.
   const glowValue = cfg.cardGlow !== undefined ? cfg.cardGlow : 0;
   const hexAlpha = Math.floor((glowValue / 100) * 255).toString(16).padStart(2, '0');
-  const dynamicShadow = glowValue > 0 ? `${cfg.shadow || '0 8px 30px rgba(0,0,0,0.05)'}, 0 0 ${glowValue}px ${primary}${hexAlpha}` : (cfg.shadow || '0 8px 30px rgba(0,0,0,0.05)');
+  const dynamicShadow = glowValue === 0 ? 'none' : `${cfg.shadow || '0 8px 30px rgba(0,0,0,0.05)'}, 0 0 ${glowValue}px ${primary}${hexAlpha}`;
 
   // 👉 ESTILOS PREMIUM GLASSMORPHISM
   const glassContainerStyle = {
     background: cardC,
     boxShadow: dynamicShadow,
     border: cfg.border ? `1px solid ${cfg.border}` : `1px solid ${primary}22`,
-    backdropFilter: 'blur(16px)',
-    WebkitBackdropFilter: 'blur(16px)'
+    backdropFilter: glowValue === 0 ? 'none' : 'blur(16px)',
+    WebkitBackdropFilter: glowValue === 0 ? 'none' : 'blur(16px)'
   };
-  const shineOverlay = cfg.shine ? <div className="absolute inset-0 pointer-events-none rounded-[inherit]" style={{ background: cfg.shine }}></div> : null;
+  const shineOverlay = cfg.shine && glowValue !== 0 ? <div className="absolute inset-0 pointer-events-none rounded-[inherit]" style={{ background: cfg.shine }}></div> : null;
 
   let isLottieEffect = false;
   let lottieUrl = null;
@@ -608,7 +608,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
           <div className="rounded-[2rem] overflow-hidden relative" style={glassContainerStyle}>
             {shineOverlay}
             <div className="p-4 flex items-center gap-4 relative z-10">
-              <div className="w-14 h-14 rounded-[1.2rem] flex items-center justify-center shrink-0 border border-white/20 shadow-sm" style={{ background: cfg.accent || primary }}><MapPin size={24} color={cardC === '#000000' ? '#000' : '#fff'} /></div>
+              <div className="w-12 h-12 rounded-[1rem] flex items-center justify-center shrink-0 border border-white/20 shadow-sm" style={{ background: cfg.accent || primary }}><MapPin size={20} color={cardC === '#000000' ? '#000' : '#fff'} /></div>
               <div className="text-left">
                 <p className="text-[9px] uppercase font-black tracking-widest mb-0.5 opacity-80" style={{ color: mutedC }}>¿Dónde?</p>
                 <p className="font-bold" style={{ color: textC, fontFamily: cfg.fontBody, fontSize: `${cfg.locationSize ?? 18}px` }}>{cfg.locationName}</p>
