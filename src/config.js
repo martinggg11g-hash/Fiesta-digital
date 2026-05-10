@@ -161,6 +161,13 @@ export const PARTICLE_CATEGORIES = {
     { id: "emojis-love", name: "Mix Emojis Amor", icon: "😍" },
     { id: "emojis-music", name: "Mix Emojis Música", icon: "🎵" },
     { id: "streamers", name: "Serpentinas", icon: "🎊" }
+  ],
+  // 👉 ACÁ ESTÁ LA NUEVA CATEGORÍA DE LOTTIES PREMIUM
+  "Lotties Premium": [
+    { id: 'lottie_confeti', name: 'Confeti Pop', icon: '🎉', isLottie: true, url: 'https://lottie.host/0c7f0ad6-f5e9-4473-b606-8fe2ed1d10b1/QvafqoK8yh.lottie' },
+    { id: 'lottie_estrellas', name: 'Estrellas', icon: '🌟', isLottie: true, url: 'https://lottie.host/d9fafde0-2c87-4458-a716-f68341282a91/prNFp1cX0s.lottie' },
+    { id: 'lottie_nieve', name: 'Nieve/Polvo', icon: '❄️', isLottie: true, url: 'https://lottie.host/dc379347-ce11-49b0-8230-615f4eead16f/Ke19rkdxp8.lottie' },
+    { id: 'lottie_luces', name: 'Luces Cálidas', icon: '💡', isLottie: true, url: 'https://lottie.host/e3f319e3-fdc2-46ae-b485-69741b5b5c46/eeMH3uzxKU.lottie' }
   ]
 };
 
