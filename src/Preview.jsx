@@ -517,8 +517,14 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
         {/* 1. Capa más baja: LA IMAGEN DE FONDO */}
         <img src={cfg.coverPhoto || DEF_CONFIG.coverPhoto} className="absolute inset-0 w-full h-full object-cover z-0" alt="" />
         
-        {/* 2. Capa intermedia: LOS EFECTOS (Clásicos o Lotties) */}
-        <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden flex items-start justify-center">
+        {/* 2. Capa intermedia: EL DEGRADADO OSCURO */}
+        <div className="absolute inset-0 z-10" style={{ background: `linear-gradient(to top, ${cfg.bg1} 5%, rgba(0,0,0,${gradOpacity}) 60%, transparent 100%)` }} />
+
+        {/* 3. Capa superior 1: LOS EFECTOS (Clásicos o Lotties) -> ¡AHORA CON OPACIDAD REGULABLE! */}
+        <div 
+          className="absolute inset-0 pointer-events-none z-20 overflow-hidden flex items-start justify-center transition-opacity duration-200" 
+          style={{ opacity: (cfg.effectOpacity ?? 100) / 100 }}
+        >
           {isLottieEffect ? (
             <LottieOverlay url={lottieUrl} />
           ) : (
@@ -526,9 +532,6 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
           )}
         </div>
 
-        {/* 3. Capa superior 1: EL DEGRADADO OSCURO PARA QUE SE LEAN LAS LETRAS */}
-        <div className="absolute inset-0 z-20" style={{ background: `linear-gradient(to top, ${cfg.bg1} 5%, rgba(0,0,0,${gradOpacity}) 60%, transparent 100%)` }} />
-        
         {/* 4. Capa superior 2: LOS TEXTOS Y DRAGGABLES */}
         <div className="absolute bottom-0 left-0 right-0 p-8 flex flex-col items-center z-30">
           <DraggableItem id="eventType" cfg={cfg} update={update} className="relative !static flex justify-center w-full">
