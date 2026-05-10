@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   LogOut, Plus, Trash2, Copy, CheckCircle2, Building, Edit2, 
-  Search, Sun, Moon, Settings, CreditCard, Send, Eye, Filter, ScanBarcode, Smartphone, AlertTriangle, AlertCircle
+  Search, Sun, Moon, Settings, CreditCard, Send, Eye, Filter, ScanBarcode, Smartphone, AlertTriangle, AlertCircle, ImageIcon, Loader2
 } from "lucide-react";
 
 import { Inp, FileUpload, Toast, QRScannerModal } from "./DashboardUI";
@@ -21,7 +21,10 @@ const formatDateSpanish = (dateStr) => {
   return dateStr;
 };
 
-// 👉 ACÁ RECIBIMOS LA ALERTA (globalAlert) QUE VIENE DESDE APP.JSX
+// 👉 TUS DATOS DEL BOT DE TELEGRAM (Reemplazá esto por tus datos reales)
+const TELEGRAM_BOT_TOKEN = "8613978258:AAHC2F6xe9mwNxc3JFCBWWQen4CIGEqGvW8"; 
+const TELEGRAM_CHAT_ID = "5121261948";
+
 export default function DashboardScreen({ user, onLogout, users, onUpdateUser, onCreateSalon, onDeleteSalon, invitations, onCreateInv, onDeleteInv, onUpdateInternal, globalAlert, onUpdateAlert }) {
   const navigate = useNavigate();
   
@@ -34,6 +37,10 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
   const [scanningEvent, setScanningEvent] = useState(null);
   const [validationResult, setValidationResult] = useState(null);
   const [copiedStates, setCopiedStates] = useState({});
+
+  // 👉 Estados para el pago por Telegram
+  const [receiptFile, setReceiptFile] = useState(null);
+  const [sendingReceipt, setSendingReceipt] = useState(false);
 
   const salonInfo = users.find(u => u.email === user?.email);
   const [newPassword, setNewPassword] = useState("");
@@ -95,6 +102,37 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
     notify("Ingreso registrado");
   };
 
+  // 👉 Lógica de Telegram para enviar comprobante
+  const handleSendReceipt = async () => {
+    if (!receiptFile) return alert("Por favor, seleccioná una foto del comprobante primero.");
+    setSendingReceipt(true);
+    try {
+      const formData = new FormData();
+      formData.append("chat_id", TELEGRAM_CHAT_ID);
+      formData.append("photo", receiptFile);
+      formData.append("caption", `💰 Nuevo Comprobante de Pago\n🏢 Salón: ${user.name}\n📧 Email: ${user.email}`);
+
+      const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
+        method: "POST",
+        body: formData
+      });
+
+      if (res.ok) {
+        notify("¡Comprobante enviado con éxito!");
+        setShowPaymentModal(false);
+        setReceiptFile(null); // Reseteamos
+      } else {
+        const errorData = await res.json();
+        console.error("Error Telegram:", errorData);
+        alert("No se pudo enviar el comprobante. Verificá la configuración del bot.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error de red al intentar enviar el comprobante.");
+    }
+    setSendingReceipt(false);
+  };
+
   if (isOwner) {
     return <MasterPanel mySalons={users.filter(u => u.role === "salon")} onLogout={onLogout} onCreateSalon={onCreateSalon} onUpdateUser={onUpdateUser} onDeleteSalon={onDeleteSalon} globalAlert={globalAlert} onUpdateAlert={onUpdateAlert} />;
   }
@@ -108,7 +146,6 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
     <div className={`min-h-screen pb-20 text-left transition-colors duration-300 ${themeBg}`}>
       <style>{`@media print { .no-print { display: none !important; } .only-print { display: block !important; } }`}</style>
 
-      {/* 👉 BANNER DE ALERTA GLOBAL (CONTINUO, SIN PAUSAS RARAS, Y SUAVE) */}
       {globalAlert?.activo && globalAlert?.mensaje && (
         <>
           <style>{`
@@ -270,20 +307,65 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
         </div>
       )}
 
+      {/* 👉 MODAL DE PAGOS ACTUALIZADO CON SUBIDA A TELEGRAM */}
       {showPaymentModal && (
         <div className="fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-           <div className={`w-full max-w-md rounded-[2rem] p-8 shadow-2xl relative text-center ${isDark ? 'bg-slate-800 text-white' : 'bg-white'}`}>
-              <h2 className="text-xl font-black mb-2">Abonar Suscripción</h2>
-              <p className="text-sm opacity-70 mb-6">Transferí tu cuota para mantener el panel activo.</p>
-              <div className={`p-4 rounded-xl border mb-6 text-left ${isDark ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'}`}>
-                 <p className="text-[10px] font-black uppercase text-slate-400 mb-1">Transferencia BBVA (CLABE)</p>
-                 <p className="font-bold">Titular: Jonatán Rivas</p>
-                 <p className="font-mono text-xl mt-3 text-violet-500 font-bold tracking-wider text-center bg-white dark:bg-slate-800 py-2 rounded-lg border border-violet-200 dark:border-slate-600">
+           <div className={`w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative text-center anim-pop ${isDark ? 'bg-slate-800 text-white' : 'bg-white'}`}>
+              <button onClick={() => { setShowPaymentModal(false); setReceiptFile(null); }} className="absolute top-6 right-6 w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 cursor-pointer transition-colors"><X size={20}/></button>
+              
+              <div className="w-16 h-16 bg-amber-500/10 text-amber-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-amber-500/20">
+                <CreditCard size={32} />
+              </div>
+              
+              <h2 className="text-2xl font-black mb-2 tracking-tight">Abonar Suscripción</h2>
+              <p className="text-sm opacity-70 mb-6 font-medium">Transferí tu cuota para mantener el panel activo.</p>
+              
+              <div className={`p-5 rounded-2xl border mb-6 text-left shadow-inner ${isDark ? 'bg-slate-700/50 border-slate-600' : 'bg-slate-50 border-slate-200'}`}>
+                 <p className="text-[10px] font-black uppercase text-slate-400 mb-1 tracking-widest">Datos Bancarios</p>
+                 <p className="font-bold text-slate-700 dark:text-slate-300">Jonatán Rivas</p>
+                 <p className="font-mono text-xl mt-3 text-violet-600 dark:text-violet-400 font-bold tracking-wider text-center bg-white dark:bg-slate-800 py-3 rounded-xl border border-violet-200 dark:border-slate-600 shadow-sm">
                    {salonInfo?.payment_clabe || "012345678901234567"}
                  </p>
               </div>
-              <button onClick={() => window.open(`https://t.me/jonatanrivas?text=Hola,%20pagué%20la%20cuota%20de%20${user.name}`)} className="w-full py-4 bg-[#0088cc] text-white rounded-xl font-black flex items-center justify-center gap-2 cursor-pointer shadow-lg"><Send size={18}/> ENVIAR COMPROBANTE</button>
-              <button onClick={() => setShowPaymentModal(false)} className="mt-4 text-xs font-bold opacity-50 cursor-pointer">CERRAR</button>
+
+              {/* Uploader del comprobante */}
+              <div className="mb-6 relative">
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={(e) => setReceiptFile(e.target.files[0])} 
+                  className="hidden" 
+                  id="receipt-upload" 
+                  disabled={sendingReceipt}
+                />
+                <label 
+                  htmlFor="receipt-upload" 
+                  className={`w-full py-4 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors ${receiptFile ? 'bg-violet-50 border-violet-300 text-violet-600' : (isDark ? 'bg-slate-700 border-slate-500 text-slate-300' : 'bg-slate-50 border-slate-300 text-slate-500')}`}
+                >
+                  {receiptFile ? (
+                    <>
+                       <CheckCircle2 size={24} className="text-violet-500" />
+                       <span className="font-bold text-sm truncate max-w-[200px]">{receiptFile.name}</span>
+                       <span className="text-[10px] uppercase font-black opacity-60 mt-1 hover:underline">Cambiar foto</span>
+                    </>
+                  ) : (
+                    <>
+                       <ImageIcon size={24} />
+                       <span className="font-bold text-sm">Cargar Comprobante</span>
+                       <span className="text-[10px] uppercase font-black opacity-60 mt-1">Tap para subir foto</span>
+                    </>
+                  )}
+                </label>
+              </div>
+
+              <button 
+                onClick={handleSendReceipt} 
+                disabled={sendingReceipt || !receiptFile}
+                className={`w-full py-4 rounded-xl font-black flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 uppercase tracking-widest text-sm ${(!receiptFile || sendingReceipt) ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-[#0088cc] text-white hover:bg-[#0077b5] cursor-pointer'}`}
+              >
+                {sendingReceipt ? <Loader2 size={18} className="animate-spin"/> : <Send size={18}/>} 
+                {sendingReceipt ? 'ENVIANDO...' : 'ENVIAR COMPROBANTE'}
+              </button>
            </div>
         </div>
       )}
