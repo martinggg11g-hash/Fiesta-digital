@@ -14,8 +14,9 @@ const TiktokIcon = ({ size = 20, color = "currentColor", className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path></svg>
 );
 
+// 👉 FIX 2: Agregamos maskPosition 'center' para que escale mejor
 const CornerOrnament = ({ url, color, size, className, style }) => (
-  <div className={className} style={{ width: `${size}px`, height: `${size}px`, backgroundColor: color, WebkitMaskImage: `url("${url}")`, WebkitMaskSize: 'contain', WebkitMaskRepeat: 'no-repeat', maskImage: `url("${url}")`, maskSize: 'contain', maskRepeat: 'no-repeat', ...style }} />
+  <div className={className} style={{ width: `${size}px`, height: `${size}px`, backgroundColor: color, WebkitMaskImage: `url("${url}")`, WebkitMaskSize: 'contain', WebkitMaskRepeat: 'no-repeat', WebkitMaskPosition: 'center', maskImage: `url("${url}")`, maskSize: 'contain', maskRepeat: 'no-repeat', maskPosition: 'center', ...style }} />
 );
 
 const DraggableItem = ({ id, cfg, update, children, className }) => {
@@ -38,8 +39,13 @@ const DraggableItem = ({ id, cfg, update, children, className }) => {
     if (!isDragging) return;
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    const x = dragRef.current.origX + (clientX - dragRef.current.startX);
-    const y = dragRef.current.origY + (clientY - dragRef.current.startY);
+    let x = dragRef.current.origX + (clientX - dragRef.current.startX);
+    let y = dragRef.current.origY + (clientY - dragRef.current.startY);
+
+    // 👉 FIX 1: PARED INVISIBLE. No deja que los arrastres a la estratósfera
+    x = Math.max(-200, Math.min(x, 200));
+    y = Math.max(-200, Math.min(y, 200));
+
     setLocalPos({ x, y });
   };
 
@@ -483,7 +489,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
   return (
     <div style={{ backgroundColor: bg1, backgroundImage: bg2.includes('gradient') ? bg2 : `linear-gradient(180deg, ${bg1} 0%, ${bg2} 100%)`, fontFamily: cfg.fontBody, minHeight: '100%' }} className="pb-12 relative overflow-x-hidden flex flex-col">
       
-      {/* 🚀 CAPA DE BORDES: EN TODA LA INVITACIÓN PERO CON 'OVERFLOW-HIDDEN' PARA MATAR EL BUG DEL SCROLL */}
+      {/* 🚀 CAPA DE BORDES: CON LÍMITES MAGNÉTICOS PARA QUE NO SE VAYAN A NARNIA */}
       {cfg.showCoverBorders && cfg.selectedBorder && (
         <div className="absolute inset-0 pointer-events-none z-[25] overflow-hidden">
           {(cfg.borderPosition === 'both' || cfg.borderPosition === 'top') && (
@@ -518,7 +524,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
         {/* 2. Capa intermedia: EL DEGRADADO OSCURO */}
         <div className="absolute inset-0 z-10" style={{ background: `linear-gradient(to top, ${cfg.bg1} 5%, rgba(0,0,0,${gradOpacity}) 60%, transparent 100%)` }} />
 
-        {/* 3. Capa superior 1: LOS EFECTOS (Clásicos o Lotties) -> ¡CON OPACIDAD REGULABLE! */}
+        {/* 3. Capa superior 1: LOS EFECTOS (Clásicos o Lotties) */}
         <div 
           className="absolute inset-0 pointer-events-none z-20 overflow-hidden flex items-start justify-center transition-opacity duration-200" 
           style={{ opacity: (cfg.effectOpacity ?? 100) / 100 }}
