@@ -14,7 +14,6 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
   const eventId = window.location.pathname.split('/').pop();
   const hostManageLink = `${window.location.origin}/manage/${eventId}`;
 
-  // 🚀 Sacamos los datos instantáneamente de la memoria del navegador
   const [salonProfile] = useState(() => {
     try {
       const local = localStorage.getItem("fiesta_user");
@@ -55,7 +54,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
            </div>
          )}
 
-        {/* 🚀 BLOQUE DE BORDES ACTUALIZADO Y LIMPIO */}
+        {/* BORDES */}
         <div className="mb-6 p-4 rounded-xl border border-pink-100 bg-pink-50/50">
           <div className="flex items-center justify-between mb-4"><span className="text-[10px] font-black text-pink-600 uppercase tracking-widest">Bordes Ornamentales</span><button onClick={resetPositions} title="Resetear posiciones" className="p-2 bg-white border border-pink-200 text-pink-600 rounded-lg hover:bg-pink-100 cursor-pointer"><RefreshCcw size={14} /></button></div>
           <div className="flex items-center justify-between mb-4 bg-white p-2 rounded-lg border border-pink-100">
@@ -74,16 +73,12 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
           {cfg.showCoverBorders && (
             <div className="mt-4 pt-4 border-t border-pink-100">
               <BordersGallery value={cfg.selectedBorder} onChange={v => update("selectedBorder", v)} />
-              
               <div className="mt-4">
                 <SelectInp label="Posición" value={cfg.borderPosition || 'both'} options={[{label:'Arriba y Abajo', value:'both'}, {label:'Solo Arriba', value:'top'}, {label:'Solo Abajo', value:'bottom'}]} onChange={v => update('borderPosition', v)} />
               </div>
-
               <div className="flex flex-col gap-1 mt-3"><label className="text-[9px] font-bold text-slate-400 uppercase">Color del Borde</label><input type="color" value={cfg.borderColor || cfg.primary} onChange={e => update('borderColor', e.target.value)} className="w-full h-9 rounded-xl border-none shadow-sm cursor-pointer" /></div>
-              
               <div className="mt-4"><label className="flex justify-between items-center text-[9px] font-black text-pink-600 uppercase mb-2"><span>Tamaño</span><span className="bg-pink-200 px-2 py-0.5 rounded-full">{cfg.ornamentSize || 150}px</span></label><input type="range" min={50} max={400} value={cfg.ornamentSize || 150} onChange={e => update("ornamentSize", Number(e.target.value))} className="w-full accent-pink-600 cursor-pointer" /></div>
 
-              {/* ROTACIONES SEPARADAS */}
               <div className="mt-4 flex gap-3">
                  <div className="flex-1">
                    <label className="flex justify-between items-center text-[9px] font-black text-pink-600 uppercase mb-2"><span>Girar Arriba</span><span className="bg-pink-200 px-2 py-0.5 rounded-full">{cfg.borderRotationTop || 0}°</span></label>
@@ -109,6 +104,21 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
           <div className="flex flex-col gap-1"><label className="text-[9px] font-bold text-slate-400 uppercase">Fondo Abajo</label><input type="color" value={cfg.bg2} onChange={e => update('bg2', e.target.value)} className="w-full h-9 rounded-xl cursor-pointer border-none shadow-sm" /></div>
         </div>
 
+        {/* 👉 NUEVO: CONTROL DE RESPLANDOR (GLOW) DE TARJETAS */}
+        <div className="mb-6 p-3 bg-violet-50 rounded-xl border border-violet-100 shadow-inner">
+          <label className="flex justify-between items-center text-[9px] font-black text-violet-600 uppercase mb-2">
+            <span>Intensidad Luz / Sombra de Tarjetas</span>
+            <span className="bg-violet-200 text-violet-800 px-2 py-0.5 rounded-full">{cfg.cardGlow ?? 0}%</span>
+          </label>
+          <input 
+            type="range" 
+            min={0} max={100} step={5} 
+            value={cfg.cardGlow ?? 0} 
+            onChange={e => update("cardGlow", Number(e.target.value))} 
+            className="w-full accent-violet-600 cursor-pointer" 
+          />
+        </div>
+
         <div className="mb-2 text-left z-50 relative"><label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Tipografía Párrafos</label><FontSelector value={cfg.fontBody || "Montserrat"} onChange={v => update("fontBody", v)} /></div>
         <div className="flex gap-2 mt-4 mb-6"><div className="flex flex-col gap-1 flex-1"><label className="text-[9px] font-bold text-slate-400 uppercase">Color Texto Ppal</label><input type="color" value={cfg.text} onChange={e => update('text', e.target.value)} className="w-full h-9 rounded-xl cursor-pointer border-none shadow-sm" /></div><div className="flex flex-col gap-1 flex-1"><label className="text-[9px] font-bold text-slate-400 uppercase">Color Secundario</label><input type="color" value={cfg.muted} onChange={e => update('muted', e.target.value)} className="w-full h-9 rounded-xl cursor-pointer border-none shadow-sm" /></div></div>
         <TypoControl label="Tamaño Títulos (Menú, Regalos...)" sizeVal={cfg.titlesSize ?? 10} onSize={v => update("titlesSize", v)} minSize={8} maxSize={20} />
@@ -119,19 +129,24 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
           <div className="grid grid-cols-2 gap-2">{PARTICLE_CATEGORIES[partCat].map(eff => (<button key={eff.id} type="button" onClick={() => update("particleEffect", eff.id)} className={`p-2 rounded-xl border text-left flex items-center gap-2 transition-all cursor-pointer ${cfg.particleEffect === eff.id ? 'border-violet-500 bg-violet-50 text-violet-700 shadow-sm' : 'border-gray-200 bg-white text-slate-600 hover:border-violet-200'}`}><span className="text-xl">{eff.icon}</span><span className="truncate text-[10px] font-bold">{eff.name}</span></button>))}</div>
           
           {cfg.particleEffect && cfg.particleEffect !== 'none' && (
-            <div className="mt-4 p-3 bg-slate-50 rounded-xl border border-slate-200 shadow-inner">
-              <label className="flex justify-between items-center text-[9px] font-black text-slate-500 uppercase mb-2">
-                <span>Intensidad del Efecto</span>
-                <span className="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">{cfg.effectOpacity ?? 100}%</span>
-              </label>
-              <input 
-                type="range" 
-                min={10} max={100} step={5} 
-                value={cfg.effectOpacity ?? 100} 
-                onChange={e => update("effectOpacity", Number(e.target.value))} 
-                className="w-full accent-violet-600 cursor-pointer" 
-              />
-            </div>
+            <>
+              <div className="mt-4 p-3 bg-slate-50 rounded-xl border border-slate-200 shadow-inner">
+                <label className="flex justify-between items-center text-[9px] font-black text-slate-500 uppercase mb-2">
+                  <span>Intensidad del Efecto</span>
+                  <span className="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">{cfg.effectOpacity ?? 100}%</span>
+                </label>
+                <input type="range" min={10} max={100} step={5} value={cfg.effectOpacity ?? 100} onChange={e => update("effectOpacity", Number(e.target.value))} className="w-full accent-violet-600 cursor-pointer" />
+              </div>
+              
+              {/* 👉 NUEVO: TOGGLE PARA PANTALLA COMPLETA */}
+              <div className="flex items-center justify-between mt-4 bg-violet-50 p-3 rounded-xl border border-violet-100">
+                 <div>
+                   <span className="text-[10px] font-black text-violet-800 uppercase block mb-1">Efecto en toda la página</span>
+                   <span className="text-[9px] text-violet-600 leading-tight block">El efecto caerá constantemente mientras scrolleas.</span>
+                 </div>
+                 <Toggle checked={cfg.particlesFullscreen || false} onChange={v => update("particlesFullscreen", v)} />
+              </div>
+            </>
           )}
         </div>
       </Acc>
