@@ -108,19 +108,18 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
     <div className={`min-h-screen pb-20 text-left transition-colors duration-300 ${themeBg}`}>
       <style>{`@media print { .no-print { display: none !important; } .only-print { display: block !important; } }`}</style>
 
-      {/* 👉 BANNER DE ALERTA GLOBAL CORREGIDO (MÁS LENTO, INSTANTÁNEO Y CON PAUSA) */}
+      {/* 👉 BANNER DE ALERTA GLOBAL (CONTINUO, SIN PAUSAS RARAS, Y SUAVE) */}
       {globalAlert?.activo && globalAlert?.mensaje && (
         <>
           <style>{`
             @keyframes marquee {
               0% { transform: translateX(100vw); }
-              85% { transform: translateX(-100%); }
               100% { transform: translateX(-100%); }
             }
             .animate-marquee {
               display: inline-block;
               white-space: nowrap;
-              animation: marquee 25s linear infinite;
+              animation: marquee 20s linear infinite;
               will-change: transform;
             }
             .animate-marquee:hover {
@@ -132,7 +131,7 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
                <AlertCircle size={16} className="animate-pulse text-yellow-300"/>
                <span className="text-yellow-300">INFO</span>
             </div>
-            <div className="flex-1 overflow-hidden flex items-center h-full">
+            <div className="flex-1 overflow-hidden flex items-center h-full relative">
               <div className="animate-marquee cursor-default flex items-center h-full">{globalAlert.mensaje}</div>
             </div>
           </div>
