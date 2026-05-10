@@ -14,7 +14,6 @@ const TiktokIcon = ({ size = 20, color = "currentColor", className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path></svg>
 );
 
-// 👉 FIX 2: Agregamos maskPosition 'center' para que escale mejor
 const CornerOrnament = ({ url, color, size, className, style }) => (
   <div className={className} style={{ width: `${size}px`, height: `${size}px`, backgroundColor: color, WebkitMaskImage: `url("${url}")`, WebkitMaskSize: 'contain', WebkitMaskRepeat: 'no-repeat', WebkitMaskPosition: 'center', maskImage: `url("${url}")`, maskSize: 'contain', maskRepeat: 'no-repeat', maskPosition: 'center', ...style }} />
 );
@@ -41,11 +40,8 @@ const DraggableItem = ({ id, cfg, update, children, className }) => {
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
     let x = dragRef.current.origX + (clientX - dragRef.current.startX);
     let y = dragRef.current.origY + (clientY - dragRef.current.startY);
-
-    // 👉 FIX 1: PARED INVISIBLE. No deja que los arrastres a la estratósfera
     x = Math.max(-200, Math.min(x, 200));
     y = Math.max(-200, Math.min(y, 200));
-
     setLocalPos({ x, y });
   };
 
@@ -87,7 +83,7 @@ const RenderSymbol = ({ value, size = 32, color = "currentColor", className = ""
   );
 };
 
-const Countdown = ({ targetDate, primary, text }) => {
+const Countdown = ({ targetDate, primary, text, cfg, cardC }) => {
   const [timeLeft, setTimeLeft] = useState({ d:0, h:0, m:0, s:0 });
   const [expired, setExpired] = useState(false);
   useEffect(() => {
@@ -103,7 +99,27 @@ const Countdown = ({ targetDate, primary, text }) => {
   }, [targetDate]);
   if(!targetDate || isNaN(new Date(targetDate).getTime())) return null;
   const labels = { d:"días", h:"horas", m:"min", s:"seg" };
-  return (<div className="py-4">{text && <p className="text-center text-xs font-bold mb-3 opacity-70" style={{ color: primary }}>{text}</p>}{expired ? (<p className="text-center font-black text-lg" style={{ color: primary }}>🎉 ¡El día llegó!</p>) : (<div className="flex justify-center gap-3">{Object.entries(timeLeft).map(([unit, val]) => (<div key={unit} className="flex flex-col items-center gap-1"><div className="w-[52px] h-[52px] rounded-2xl flex items-center justify-center text-xl font-black text-white shadow-lg" style={{ background: primary }}>{(val || 0).toString().padStart(2, '0')}</div><span className="text-[10px] font-bold opacity-60" style={{ color: primary }}>{labels[unit]}</span></div>))}</div>)}</div>);
+  
+  return (
+    <div className="py-4 relative z-10">
+      {text && <p className="text-center text-xs font-black uppercase tracking-widest mb-4 opacity-80" style={{ color: primary }}>{text}</p>}
+      {expired ? (
+        <p className="text-center font-black text-lg" style={{ color: primary }}>🎉 ¡El día llegó!</p>
+      ) : (
+        <div className="flex justify-center gap-3">
+          {Object.entries(timeLeft).map(([unit, val]) => (
+            <div key={unit} className="flex flex-col items-center gap-1">
+              <div className="w-[54px] h-[54px] rounded-2xl flex items-center justify-center text-xl font-black shadow-lg relative overflow-hidden border" style={{ background: cfg.accent || primary, color: cardC === '#000000' ? '#000' : '#fff', borderColor: 'rgba(255,255,255,0.2)' }}>
+                {cfg.shine && <div className="absolute inset-0 pointer-events-none" style={{ background: cfg.shine }}></div>}
+                <span className="relative z-10">{(val || 0).toString().padStart(2, '0')}</span>
+              </div>
+              <span className="text-[10px] font-bold opacity-70 uppercase tracking-widest" style={{ color: primary }}>{labels[unit]}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 };
 
 const GalleryCarousel = ({ photos }) => {
@@ -116,15 +132,15 @@ const GalleryCarousel = ({ photos }) => {
   }, [valid.length]);
 
   if(valid.length === 0) return null;
-  if(valid.length === 1) return <img src={valid[0]} className="w-full h-64 rounded-2xl object-cover shadow-lg border border-white/5" alt="Galeria" />;
+  if(valid.length === 1) return <img src={valid[0]} className="w-full h-64 rounded-2xl object-cover shadow-lg border border-white/10" alt="Galeria" />;
 
   return (
-    <div className="relative w-full h-64 rounded-2xl overflow-hidden shadow-lg border border-white/5 group">
+    <div className="relative w-full h-64 rounded-2xl overflow-hidden shadow-lg border border-white/10 group">
        <img src={valid[idx]} className="w-full h-full object-cover transition-opacity duration-500" alt={`Foto ${idx+1}`} />
        <button onClick={() => setIdx(idx === 0 ? valid.length - 1 : idx - 1)} className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white p-1.5 rounded-full backdrop-blur-md transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"><ChevronLeft size={24} /></button>
        <button onClick={() => setIdx(idx === valid.length - 1 ? 0 : idx + 1)} className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white p-1.5 rounded-full backdrop-blur-md transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"><ChevronRight size={24} /></button>
-       <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
-         {valid.map((_, i) => <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === idx ? 'w-4 bg-white' : 'w-1.5 bg-white/40'}`} />)}
+       <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-10">
+         {valid.map((_, i) => <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === idx ? 'w-4 bg-white shadow-sm' : 'w-1.5 bg-white/40'}`} />)}
        </div>
     </div>
   );
@@ -276,62 +292,68 @@ const MapEmbed = ({ name, address, primary }) => {
 };
 
 // ==========================================
-// RSVP WIDGET CORREGIDO (MUESTRA NOMBRE Y ESTADO DE CONFIRMACIÓN)
+// RSVP WIDGET
 // ==========================================
 const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP, guestData }) => {
   const [step, setStep] = useState('button');
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ name: '', lastname: '', guests: 1 });
   const [ticketImage, setTicketImage] = useState('');
-  
-  // Variables locales para manejar la vista de "Confirmado" en tiempo real
   const [localConfirmed, setLocalConfirmed] = useState(false);
   const [companions, setCompanions] = useState(0);
 
   const isPrivate = cfg.isPrivateList || false;
-  
-  // Determinamos si el invitado ya está confirmado (por Base de Datos o recién tocado)
   const isConfirmed = localConfirmed || guestData?.asistencia_confirmada;
-  
-  // Si no hay guestData (estamos en el Editor), ponemos datos de prueba
   const guestName = guestData?.nombre_completo || "Nombre del Invitado";
   const ticketId = guestData?.id || "VIP-MOCK-1234";
   const maxLimit = guestData ? guestData.max_acompanantes : (cfg.maxGuestsPerFamily || 5);
 
-  // Lógica para Lista Nominal
+  // 👉 ESTILOS PREMIUM GLASSMORPHISM
+  const glassStyle = {
+    background: cardC,
+    boxShadow: cfg.shadow || '0 8px 32px rgba(0,0,0,0.05)',
+    border: cfg.border ? `1px solid ${cfg.border}` : `1px solid ${primary}33`,
+    backdropFilter: 'blur(16px)',
+    WebkitBackdropFilter: 'blur(16px)'
+  };
+  const shineOverlay = cfg.shine ? <div className="absolute inset-0 pointer-events-none rounded-[inherit]" style={{ background: cfg.shine }}></div> : null;
+
   if (isPrivate) {
     return (
       <div className="pt-8 text-center">
         {cfg.showRsvpDeadline && cfg.rsvpDeadline && (
           <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-3 px-4" style={{ color: mutedC }}>
-            Confirmar asistencia antes del {formatToDDMMYYYY(cfg.rsvpDeadline)}
+            Confirmar antes del {formatToDDMMYYYY(cfg.rsvpDeadline)}
           </p>
         )}
         
-        <div className="p-6 rounded-3xl border shadow-sm mb-4 relative overflow-hidden" style={{ background: cardC, borderColor: `${primary}33` }}>
-           <div className="absolute top-0 left-0 right-0 py-1.5" style={{ background: primary }}>
-             <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white">Tu Pase Nominal</p>
+        <div className="p-6 rounded-[2rem] mb-4 relative overflow-hidden text-center flex flex-col items-center" style={glassStyle}>
+           {shineOverlay}
+           <div className="absolute top-0 left-0 right-0 py-1.5 z-10" style={{ background: cfg.accent || primary }}>
+             <p className="text-[9px] font-black uppercase tracking-[0.2em]" style={{ color: cardC === '#000000' ? '#000' : '#fff' }}>Tu Pase Nominal</p>
            </div>
-           
-           <img src={`https://quickchart.io/qr?text=${ticketId}&size=300`} className="w-full max-w-[180px] mx-auto rounded-xl shadow-md mt-6 mb-3" alt="QR VIP" />
-           <p className="text-xs font-black uppercase tracking-widest" style={{ color: textC }}>{guestName}</p>
-           {guestData?.apodo && <p className="text-[10px] font-bold opacity-60 mt-1" style={{ color: textC }}>"{guestData.apodo}"</p>}
-           <p className="text-[10px] font-bold opacity-40 mt-2" style={{ color: textC }}>Pase Intransferible</p>
+           <div className="relative z-10 w-full flex flex-col items-center mt-6">
+             <img src={`https://quickchart.io/qr?text=${ticketId}&size=300`} className="w-full max-w-[160px] rounded-xl shadow-lg mb-3 border border-white/20" alt="QR VIP" />
+             <p className="text-sm font-black uppercase tracking-widest mt-2" style={{ color: textC }}>{guestName}</p>
+             {guestData?.apodo && <p className="text-[10px] font-bold opacity-60 mt-1" style={{ color: textC }}>"{guestData.apodo}"</p>}
+             <p className="text-[10px] font-bold opacity-40 mt-3" style={{ color: textC }}>Pase Intransferible</p>
+           </div>
         </div>
 
         {isConfirmed ? (
-          <div className="w-full py-5 rounded-2xl font-black shadow-lg text-white bg-green-500 uppercase tracking-widest flex items-center justify-center gap-2">
+          <div className="w-full py-5 rounded-[2rem] font-black shadow-lg text-white uppercase tracking-widest flex items-center justify-center gap-2 border border-green-400" style={{ background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' }}>
             <CheckCircle2 size={20} /> ASISTENCIA CONFIRMADA
           </div>
         ) : (
           <>
             {maxLimit > 0 && (
-              <div className="flex items-center justify-between px-4 py-4 rounded-xl mb-4" style={{ background: `${textC}0d` }}>
-                <span className="text-xs font-bold flex items-center gap-2" style={{ color: textC }}><Users size={16}/> Acompañantes extras</span>
-                <div className="flex items-center gap-3">
-                  <button type="button" onClick={() => setCompanions(Math.max(0, companions - 1))} className="w-8 h-8 rounded-lg flex items-center justify-center font-bold cursor-pointer transition-colors" style={{ background: `${textC}1a`, color: textC }}>-</button>
+              <div className="flex items-center justify-between px-5 py-4 rounded-[1.5rem] mb-4 border relative overflow-hidden" style={{ background: `${textC}0d`, borderColor: `${textC}1a` }}>
+                {shineOverlay}
+                <span className="text-xs font-bold flex items-center gap-2 relative z-10" style={{ color: textC }}><Users size={16}/> Acompañantes extras</span>
+                <div className="flex items-center gap-3 relative z-10">
+                  <button type="button" onClick={() => setCompanions(Math.max(0, companions - 1))} className="w-8 h-8 rounded-lg flex items-center justify-center font-bold transition-all hover:scale-105" style={{ background: `${textC}1a`, color: textC }}>-</button>
                   <span className="font-black w-4 text-center" style={{ color: textC }}>{companions}</span>
-                  <button type="button" onClick={() => setCompanions(Math.min(maxLimit, companions + 1))} className="w-8 h-8 rounded-lg flex items-center justify-center font-bold cursor-pointer transition-colors" style={{ background: `${textC}1a`, color: textC }}>+</button>
+                  <button type="button" onClick={() => setCompanions(Math.min(maxLimit, companions + 1))} className="w-8 h-8 rounded-lg flex items-center justify-center font-bold transition-all hover:scale-105" style={{ background: `${textC}1a`, color: textC }}>+</button>
                 </div>
               </div>
             )}
@@ -343,11 +365,14 @@ const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP, guestDa
                 setLoading(false);
               }} 
               disabled={loading}
-              className="flex items-center justify-center gap-2 w-full py-5 rounded-2xl font-black shadow-xl text-white transition-all active:scale-95 cursor-pointer uppercase tracking-widest" 
-              style={{ background: primary }}
+              className="flex items-center justify-center gap-2 w-full py-5 rounded-[2rem] font-black shadow-xl text-white transition-all active:scale-95 cursor-pointer uppercase tracking-widest relative overflow-hidden" 
+              style={{ background: cfg.accent || primary, textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
             >
-              {loading ? <Loader2 size={20} className="animate-spin" /> : <CheckCircle2 size={20} />} 
-              {loading ? "CONFIRMANDO..." : "CONFIRMAR ASISTENCIA"}
+              {shineOverlay}
+              <span className="relative z-10 flex items-center gap-2">
+                {loading ? <Loader2 size={20} className="animate-spin" /> : <CheckCircle2 size={20} />} 
+                {loading ? "CONFIRMANDO..." : "CONFIRMAR ASISTENCIA"}
+              </span>
             </button>
           </>
         )}
@@ -355,7 +380,7 @@ const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP, guestDa
     );
   }
 
-  // Lógica para Lista Abierta
+  // Lista Abierta
   const generateTicket = (e) => {
     e.preventDefault();
     setLoading(true);
@@ -367,24 +392,18 @@ const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP, guestDa
       const canvas = document.createElement('canvas');
       canvas.width = 600; canvas.height = 900;
       const ctx = canvas.getContext('2d');
-      
       const grd = ctx.createLinearGradient(0,0,0,900);
       grd.addColorStop(0, primary); grd.addColorStop(1, '#000000');
       ctx.fillStyle = grd; ctx.fillRect(0,0,600,900);
-      
       ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
       ctx.font = 'bold 30px sans-serif'; ctx.fillText("PASE VIP", 300, 80);
       ctx.font = 'bold 60px serif'; ctx.fillText(cfg.honoreeName || "Fiesta", 300, 180);
-      
       ctx.fillStyle = '#fff'; ctx.fillRect(150, 250, 300, 300);
       ctx.drawImage(img, 160, 260, 280, 280);
-      
       const guestNameOpen = `${formData.name} ${formData.lastname}`.toUpperCase();
       ctx.font = 'bold 40px sans-serif'; ctx.fillText(guestNameOpen, 300, 650);
-      
       ctx.font = '30px sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.7)';
       ctx.fillText(`Válido para: ${formData.guests} ${formData.guests === 1 ? 'persona' : 'personas'}`, 300, 710);
-      
       setTicketImage(canvas.toDataURL('image/jpeg'));
       if(onConfirmRSVP) onConfirmRSVP({...formData, isPrivate, id: ticketId});
       setLoading(false); setStep('qr');
@@ -397,11 +416,12 @@ const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP, guestDa
       <div className="pt-8 text-center">
         {cfg.showRsvpDeadline && cfg.rsvpDeadline && (
           <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-3 px-4" style={{ color: mutedC }}>
-            Confirmar asistencia antes del {formatToDDMMYYYY(cfg.rsvpDeadline)}
+            Confirmar antes del {formatToDDMMYYYY(cfg.rsvpDeadline)}
           </p>
         )}
-        <button onClick={() => setStep('form')} className="w-full py-5 rounded-2xl font-black shadow-xl text-white transition-all active:scale-95 cursor-pointer uppercase tracking-widest" style={{ background: primary }}>
-          OBTENER PASE VIP
+        <button onClick={() => setStep('form')} className="w-full py-5 rounded-[2rem] font-black shadow-xl text-white transition-all active:scale-95 cursor-pointer uppercase tracking-widest relative overflow-hidden" style={{ background: cfg.accent || primary }}>
+          {shineOverlay}
+          <span className="relative z-10" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>OBTENER PASE VIP</span>
         </button>
       </div>
     );
@@ -410,25 +430,26 @@ const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP, guestDa
   if (step === 'form') {
     return (
       <div className="pt-8">
-        <form onSubmit={generateTicket} className="p-6 rounded-3xl border space-y-4 shadow-sm text-left" style={{ background: cardC, borderColor: `${primary}33` }}>
-          
-          <input type="text" placeholder="Tu Nombre" className="w-full p-4 rounded-xl outline-none" style={{ background: `${textC}0d`, color: textC }} onChange={e=>setFormData({...formData, name: e.target.value})} required />
-          <input type="text" placeholder="Tu Apellido" className="w-full p-4 rounded-xl outline-none" style={{ background: `${textC}0d`, color: textC }} onChange={e=>setFormData({...formData, lastname: e.target.value})} required />
-          
-          <div className="flex items-center justify-between px-4 py-3 rounded-xl" style={{ background: `${textC}0d` }}>
-            <span className="text-xs font-bold flex items-center gap-2" style={{ color: textC }}><Users size={16}/> Acompañantes extras</span>
-            <div className="flex items-center gap-3">
-              <button type="button" onClick={() => setFormData({...formData, guests: Math.max(1, formData.guests - 1)})} className="w-8 h-8 rounded-lg flex items-center justify-center font-bold cursor-pointer transition-colors" style={{ background: `${textC}1a`, color: textC }}>-</button>
-              <span className="font-black w-4 text-center" style={{ color: textC }}>{formData.guests}</span>
-              <button type="button" onClick={() => setFormData({...formData, guests: Math.min(cfg.maxGuestsPerFamily || 5, formData.guests + 1)})} className="w-8 h-8 rounded-lg flex items-center justify-center font-bold cursor-pointer transition-colors" style={{ background: `${textC}1a`, color: textC }}>+</button>
+        <form onSubmit={generateTicket} className="p-6 rounded-[2rem] space-y-4 text-left relative overflow-hidden" style={glassStyle}>
+          {shineOverlay}
+          <div className="relative z-10 space-y-4">
+            <input type="text" placeholder="Tu Nombre" className="w-full p-4 rounded-xl outline-none font-bold placeholder-opacity-50" style={{ background: `${textC}0d`, color: textC, border: `1px solid ${textC}1a` }} onChange={e=>setFormData({...formData, name: e.target.value})} required />
+            <input type="text" placeholder="Tu Apellido" className="w-full p-4 rounded-xl outline-none font-bold placeholder-opacity-50" style={{ background: `${textC}0d`, color: textC, border: `1px solid ${textC}1a` }} onChange={e=>setFormData({...formData, lastname: e.target.value})} required />
+            
+            <div className="flex items-center justify-between px-4 py-3 rounded-xl border" style={{ background: `${textC}0d`, borderColor: `${textC}1a` }}>
+              <span className="text-xs font-bold flex items-center gap-2" style={{ color: textC }}><Users size={16}/> Extras</span>
+              <div className="flex items-center gap-3">
+                <button type="button" onClick={() => setFormData({...formData, guests: Math.max(1, formData.guests - 1)})} className="w-8 h-8 rounded-lg flex items-center justify-center font-bold transition-transform hover:scale-105" style={{ background: `${textC}1a`, color: textC }}>-</button>
+                <span className="font-black w-4 text-center" style={{ color: textC }}>{formData.guests}</span>
+                <button type="button" onClick={() => setFormData({...formData, guests: Math.min(cfg.maxGuestsPerFamily || 5, formData.guests + 1)})} className="w-8 h-8 rounded-lg flex items-center justify-center font-bold transition-transform hover:scale-105" style={{ background: `${textC}1a`, color: textC }}>+</button>
+              </div>
             </div>
-          </div>
 
-          <button type="submit" disabled={loading} className="w-full py-4 font-black rounded-xl cursor-pointer uppercase tracking-widest mt-2" style={{ background: primary, color: '#fff' }}>
-            {loading ? 'Procesando...' : 'GENERAR PASE'}
-          </button>
-          
-          <button type="button" onClick={() => setStep('button')} className="w-full mt-2 text-xs font-bold uppercase tracking-widest cursor-pointer opacity-60 hover:opacity-100 transition-opacity" style={{ color: textC }}>Cancelar</button>
+            <button type="submit" disabled={loading} className="w-full py-4 font-black rounded-[1.5rem] uppercase tracking-widest mt-2 shadow-lg transition-transform active:scale-95 border border-white/20" style={{ background: cfg.accent || primary, color: cardC === '#000000' ? '#000' : '#fff' }}>
+              {loading ? 'Procesando...' : 'GENERAR PASE'}
+            </button>
+            <button type="button" onClick={() => setStep('button')} className="w-full mt-2 text-xs font-bold uppercase tracking-widest opacity-60 hover:opacity-100 transition-opacity" style={{ color: textC }}>Cancelar</button>
+          </div>
         </form>
       </div>
     );
@@ -436,28 +457,42 @@ const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP, guestDa
 
   return (
     <div className="pt-8">
-      <div className="text-center p-6 rounded-3xl border shadow-sm" style={{ background: cardC, borderColor: `${primary}33` }}>
-        <img src={ticketImage} className="w-full max-w-[240px] mx-auto rounded-xl shadow-2xl mb-4" alt="Pase VIP" />
-        <a href={ticketImage} download="Pase_VIP.jpg" className="block w-full py-3 bg-green-500 text-white font-black rounded-xl mb-3 cursor-pointer">DESCARGAR IMAGEN</a>
-        <button type="button" onClick={()=>setStep('button')} className="text-xs cursor-pointer font-bold" style={{ color: textC }}>Cerrar</button>
+      <div className="text-center p-6 rounded-[2rem] relative overflow-hidden" style={glassStyle}>
+        {shineOverlay}
+        <div className="relative z-10 flex flex-col items-center">
+          <img src={ticketImage} className="w-full max-w-[200px] rounded-2xl shadow-2xl mb-5 border-2 border-white/20" alt="Pase VIP" />
+          <a href={ticketImage} download="Pase_VIP.jpg" className="block w-full py-4 text-white font-black rounded-xl mb-3 shadow-lg uppercase tracking-widest border border-green-400" style={{ background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' }}>DESCARGAR IMAGEN</a>
+          <button type="button" onClick={()=>setStep('button')} className="text-xs font-bold uppercase tracking-widest" style={{ color: textC }}>Cerrar</button>
+        </div>
       </div>
     </div>
   );
 };
 
-const SectionTitle = ({ children, mutedC, size }) => (
-  <h4 className="font-black uppercase tracking-[0.3em] text-center mb-6" style={{ color: mutedC, fontSize: `${size ?? 10}px` }}>{children}</h4>
-);
-
-const InfoCard = ({ icon: Icon, label, value, sub, fontSize, primary, textC, mutedC, cardC, cfg }) => (
-  <div className="flex items-center gap-4 p-4 rounded-2xl border border-white/5" style={{ background: cardC }}>
-    <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: primary }}><Icon size={20} color="white" /></div>
-    <div className="text-left">
-      <p className="text-[9px] uppercase font-black tracking-widest mb-0.5" style={{ color: mutedC }}>{label}</p>
-      <p className="font-bold" style={{ color: textC, fontFamily: cfg.fontBody, fontSize: `${fontSize}px` }}>{value}</p>
-      {sub && <p className="text-[11px] mt-0.5 opacity-70" style={{ color: mutedC, fontFamily: cfg.fontBody }}>{sub}</p>}
+// 👉 INFO CARD PREMIUM
+const InfoCard = ({ icon: Icon, label, value, sub, fontSize, primary, textC, mutedC, cardC, cfg }) => {
+  const glassStyle = {
+    background: cardC,
+    boxShadow: cfg.shadow || '0 8px 30px rgba(0,0,0,0.05)',
+    border: cfg.border ? `1px solid ${cfg.border}` : `1px solid ${primary}22`,
+    backdropFilter: 'blur(16px)',
+    WebkitBackdropFilter: 'blur(16px)'
+  };
+  return (
+    <div className="flex items-center gap-4 p-4 rounded-3xl relative overflow-hidden" style={glassStyle}>
+      {cfg.shine && <div className="absolute inset-0 pointer-events-none rounded-[inherit]" style={{ background: cfg.shine }}></div>}
+      <div className="w-12 h-12 rounded-[1rem] flex items-center justify-center shrink-0 relative z-10 shadow-sm border border-white/20" style={{ background: cfg.accent || primary }}><Icon size={20} color={cardC === '#000000' ? '#000' : '#fff'} /></div>
+      <div className="text-left relative z-10">
+        <p className="text-[9px] uppercase font-black tracking-widest mb-0.5 opacity-80" style={{ color: mutedC }}>{label}</p>
+        <p className="font-bold" style={{ color: textC, fontFamily: cfg.fontBody, fontSize: `${fontSize}px` }}>{value}</p>
+        {sub && <p className="text-[11px] mt-0.5 font-medium opacity-70" style={{ color: mutedC, fontFamily: cfg.fontBody }}>{sub}</p>}
+      </div>
     </div>
-  </div>
+  );
+};
+
+const SectionTitle = ({ children, mutedC, size, font }) => (
+  <h4 className="font-black uppercase tracking-[0.3em] text-center mb-6 opacity-80" style={{ color: mutedC, fontSize: `${size ?? 10}px`, fontFamily: font }}>{children}</h4>
 );
 
 // ACÁ RECIBIMOS LOS DATOS DEL INVITADO DESDE APP.JSX (guestData)
@@ -471,6 +506,16 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
   const cardC  = cfg.card  || "#ffffff";
   const gradOpacity = cfg.showCoverGradient === false ? 0 : ((cfg.coverGradientIntensity ?? 50) / 100).toFixed(2);
   const coverShadow = (cfg.coverTextShadowSize > 0) ? `0px 4px ${cfg.coverTextShadowSize}px ${cfg.coverTextShadowColor || '#000000'}` : 'none';
+
+  // 👉 ESTILOS PREMIUM GLASSMORPHISM GLOBALES PARA CONTENEDORES
+  const glassContainerStyle = {
+    background: cardC,
+    boxShadow: cfg.shadow || '0 8px 30px rgba(0,0,0,0.05)',
+    border: cfg.border ? `1px solid ${cfg.border}` : `1px solid ${primary}22`,
+    backdropFilter: 'blur(16px)',
+    WebkitBackdropFilter: 'blur(16px)'
+  };
+  const shineOverlay = cfg.shine ? <div className="absolute inset-0 pointer-events-none rounded-[inherit]" style={{ background: cfg.shine }}></div> : null;
 
   let isLottieEffect = false;
   let lottieUrl = null;
@@ -489,7 +534,6 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
   return (
     <div style={{ backgroundColor: bg1, backgroundImage: bg2.includes('gradient') ? bg2 : `linear-gradient(180deg, ${bg1} 0%, ${bg2} 100%)`, fontFamily: cfg.fontBody, minHeight: '100%' }} className="pb-12 relative overflow-x-hidden flex flex-col">
       
-      {/* 🚀 CAPA DE BORDES: CON LÍMITES MAGNÉTICOS PARA QUE NO SE VAYAN A NARNIA */}
       {cfg.showCoverBorders && cfg.selectedBorder && (
         <div className="absolute inset-0 pointer-events-none z-[25] overflow-hidden">
           {(cfg.borderPosition === 'both' || cfg.borderPosition === 'top') && (
@@ -515,43 +559,29 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
         </div>
       )}
 
-      {/* 🚀 EL CONTENEDOR DE LA PORTADA */}
-      <div className="relative h-[420px] overflow-hidden shrink-0">
-        
-        {/* 1. Capa más baja: LA IMAGEN DE FONDO */}
+      <div className="relative h-[450px] overflow-hidden shrink-0 rounded-b-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)]">
         <img src={cfg.coverPhoto || DEF_CONFIG.coverPhoto} className="absolute inset-0 w-full h-full object-cover z-0" alt="" />
-        
-        {/* 2. Capa intermedia: EL DEGRADADO OSCURO */}
         <div className="absolute inset-0 z-10" style={{ background: `linear-gradient(to top, ${cfg.bg1} 5%, rgba(0,0,0,${gradOpacity}) 60%, transparent 100%)` }} />
 
-        {/* 3. Capa superior 1: LOS EFECTOS (Clásicos o Lotties) */}
-        <div 
-          className="absolute inset-0 pointer-events-none z-20 overflow-hidden flex items-start justify-center transition-opacity duration-200" 
-          style={{ opacity: (cfg.effectOpacity ?? 100) / 100 }}
-        >
-          {isLottieEffect ? (
-            <LottieOverlay url={lottieUrl} />
-          ) : (
-            <ParticleCanvas effect={cfg.particleEffect || "none"} primary={primary} />
-          )}
+        <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden flex items-start justify-center transition-opacity duration-200" style={{ opacity: (cfg.effectOpacity ?? 100) / 100 }}>
+          {isLottieEffect ? <LottieOverlay url={lottieUrl} /> : <ParticleCanvas effect={cfg.particleEffect || "none"} primary={primary} />}
         </div>
 
-        {/* 4. Capa superior 2: LOS TEXTOS Y DRAGGABLES */}
-        <div className="absolute bottom-0 left-0 right-0 p-8 flex flex-col items-center z-30">
+        <div className="absolute bottom-0 left-0 right-0 p-8 pb-12 flex flex-col items-center z-30">
           <DraggableItem id="eventType" cfg={cfg} update={update} className="relative !static flex justify-center w-full">
-            <p className="font-black uppercase tracking-[0.2em] mb-4 flex items-center justify-center gap-2" style={{ color: cfg.eventTypeColor || primary, fontSize: `${cfg.eventTypeSize ?? 11}px`, fontFamily: cfg.eventTypeFont || cfg.fontBody, textShadow: coverShadow }}>
+            <p className="font-black uppercase tracking-[0.3em] mb-4 flex items-center justify-center gap-2" style={{ color: cfg.eventTypeColor || primary, fontSize: `${cfg.eventTypeSize ?? 11}px`, fontFamily: cfg.eventTypeFont || cfg.fontBody, textShadow: coverShadow }}>
               <RenderSymbol value={cfg.eventTypeEmoji} size={cfg.eventTypeSize ?? 11} color={cfg.eventTypeColor || primary} />
               {cfg.eventType}
             </p>
           </DraggableItem>
           
           <DraggableItem id="honoree" cfg={cfg} update={update} className="relative !static flex justify-center w-full">
-            <h1 style={{ fontFamily: cfg.honoreeFont || cfg.fontTitle, color: cfg.honoreeColor || textC, fontSize: `${cfg.honoreeSize ?? 48}px`, textShadow: coverShadow, textAlign: 'center' }}>{cfg.honoreeName}</h1>
+            <h1 style={{ fontFamily: cfg.honoreeFont || cfg.fontTitle, color: cfg.honoreeColor || textC, fontSize: `${cfg.honoreeSize ?? 48}px`, textShadow: coverShadow, textAlign: 'center', lineHeight: 1.1 }}>{cfg.honoreeName}</h1>
           </DraggableItem>
 
           {(cfg.showBadge ?? true) && (
-            <DraggableItem id="badge" cfg={cfg} update={update} className="relative !static flex justify-center mt-2 w-full">
-              <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full border border-white/10 backdrop-blur-md font-black" style={{ background: cfg.badgeBgColor || 'rgba(0,0,0,0.5)', color: textC, fontSize: `${cfg.badgeSize ?? 14}px`, fontFamily: cfg.badgeFont || cfg.fontBody }}>
+            <DraggableItem id="badge" cfg={cfg} update={update} className="relative !static flex justify-center mt-4 w-full">
+              <span className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full border border-white/20 backdrop-blur-md font-black shadow-lg" style={{ background: cfg.badgeBgColor || 'rgba(0,0,0,0.5)', color: textC, fontSize: `${cfg.badgeSize ?? 12}px`, fontFamily: cfg.badgeFont || cfg.fontBody, textTransform: 'uppercase', tracking: 'widest' }}>
                 <RenderSymbol value={cfg.badgeEmoji || "👑"} size={cfg.badgeSize ?? 14} color={textC} />
                 {cfg.badgeText}
               </span>
@@ -560,20 +590,20 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
         </div>
       </div>
 
-      <div className="px-5 -mt-8 relative z-30 space-y-4 flex-1">
+      <div className="px-5 -mt-8 relative z-30 space-y-5 flex-1">
         
         {cfg.showCountdown && cfg.countdownDate && (
-          <div className="p-5 rounded-3xl border border-white/5" style={{ background: cardC, color: textC }}>
-            <h3 className="text-center text-[11px] font-black uppercase tracking-widest opacity-80 mb-1" style={{ color: mutedC }}>Falta para el gran día</h3>
-            <Countdown targetDate={cfg.countdownDate} primary={primary} />
+          <div className="rounded-[2rem] relative overflow-hidden" style={glassContainerStyle}>
+            {shineOverlay}
+            <Countdown targetDate={cfg.countdownDate} primary={primary} text="Falta para el gran día" cfg={cfg} cardC={cardC} />
           </div>
         )}
 
         {cfg.showBanner && (
-          <div className="relative h-48 rounded-3xl overflow-hidden border-2" style={{ borderColor: `${primary}44` }}>
+          <div className="relative h-48 rounded-[2rem] overflow-hidden border shadow-lg" style={{ borderColor: cfg.border || `${primary}44` }}>
             <img src={cfg.bannerPhoto || DEF_CONFIG.bannerPhoto} className="w-full h-full object-cover" alt="Banner" />
             <div className="absolute inset-0 bg-black/40" />
-            <div className="absolute top-4 left-4 px-3 py-1 bg-black/50 backdrop-blur rounded-full text-[9px] font-black uppercase tracking-widest text-white">{cfg.bannerTitle}</div>
+            <div className="absolute top-4 left-4 px-4 py-1.5 bg-black/40 backdrop-blur-md border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest text-white shadow-md">{cfg.bannerTitle}</div>
           </div>
         )}
 
@@ -581,19 +611,20 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
         {cfg.showTime && <InfoCard icon={Clock} label="Horario" value={cfg.timeText} fontSize={cfg.dateSize ?? 18} primary={primary} textC={textC} mutedC={mutedC} cardC={cardC} cfg={cfg} />}
         
         {cfg.showLocation && (
-          <div className="rounded-3xl overflow-hidden border border-white/5" style={{ background: cardC }}>
-            <div className="p-4 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: primary }}><MapPin size={20} color="white" /></div>
+          <div className="rounded-[2rem] overflow-hidden relative" style={glassContainerStyle}>
+            {shineOverlay}
+            <div className="p-4 flex items-center gap-4 relative z-10">
+              <div className="w-12 h-12 rounded-[1rem] flex items-center justify-center shrink-0 border border-white/20 shadow-sm" style={{ background: cfg.accent || primary }}><MapPin size={20} color={cardC === '#000000' ? '#000' : '#fff'} /></div>
               <div className="text-left">
-                <p className="text-[9px] uppercase font-black tracking-widest mb-0.5" style={{ color: mutedC }}>¿Dónde?</p>
+                <p className="text-[9px] uppercase font-black tracking-widest mb-0.5 opacity-80" style={{ color: mutedC }}>¿Dónde?</p>
                 <p className="font-bold" style={{ color: textC, fontFamily: cfg.fontBody, fontSize: `${cfg.locationSize ?? 18}px` }}>{cfg.locationName}</p>
-                <p className="text-[11px] opacity-70" style={{ color: mutedC, fontFamily: cfg.fontBody }}>{cfg.locationAddress}</p>
+                <p className="text-[11px] font-medium opacity-70 mt-0.5" style={{ color: mutedC, fontFamily: cfg.fontBody }}>{cfg.locationAddress}</p>
               </div>
             </div>
-            <div className="px-4 pb-2"><MapEmbed name={cfg.locationName} address={cfg.locationAddress} primary={primary} /></div>
+            <div className="px-4 pb-2 relative z-10"><MapEmbed name={cfg.locationName} address={cfg.locationAddress} primary={primary} /></div>
             {cfg.showParking && (
-              <div className="p-4 text-center border-t border-white/5">
-                <span className="text-xs font-bold py-2 px-4 rounded-full inline-block" style={{ background: `${primary}22`, color: primary, fontFamily: cfg.fontBody }}>🚗 {cfg.parkingType === 'otro' ? cfg.customParking : cfg.parkingType}</span>
+              <div className="p-4 text-center border-t relative z-10" style={{ borderColor: `${primary}22` }}>
+                <span className="text-[10px] font-black uppercase tracking-widest py-2 px-5 rounded-full inline-block border shadow-sm" style={{ background: `${primary}15`, color: primary, borderColor: `${primary}33`, fontFamily: cfg.fontBody }}>🚗 {cfg.parkingType === 'otro' ? cfg.customParking : cfg.parkingType}</span>
               </div>
             )}
           </div>
@@ -601,12 +632,13 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
 
         {cfg.showVenueLogo && (
           <div className="pt-4">
-            <div className="p-5 rounded-3xl text-center border border-white/5 shadow-sm" style={{ background: cardC }}>
-              {cfg.venueLogoUrl && <img src={cfg.venueLogoUrl} className="w-16 h-16 rounded-xl object-contain mx-auto mb-3" alt="Lugar" />}
-              <p className="text-[10px] uppercase font-black tracking-widest mb-1" style={{ color: mutedC }}>Celebrado en</p>
-              <h3 className="font-black text-lg mb-4" style={{ color: textC, fontFamily: cfg.fontBody }}>{cfg.venueName}</h3>
+            <div className="p-6 rounded-[2rem] text-center relative overflow-hidden flex flex-col items-center" style={glassContainerStyle}>
+              {shineOverlay}
+              {cfg.venueLogoUrl && <img src={cfg.venueLogoUrl} className="h-16 w-auto object-contain mb-4 relative z-10 drop-shadow-md" alt="Lugar" />}
+              <p className="text-[9px] uppercase font-black tracking-widest mb-1 opacity-80 relative z-10" style={{ color: mutedC }}>Celebrado en</p>
+              <h3 className="font-black text-xl mb-5 relative z-10" style={{ color: textC, fontFamily: cfg.fontBody }}>{cfg.venueName}</h3>
               {cfg.venueLink && (
-                <a href={cfg.venueLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-5 py-2 rounded-xl font-bold text-xs shadow-sm transition-transform active:scale-95" style={{ background: `${primary}22`, color: primary }}>
+                <a href={cfg.venueLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-6 py-3 rounded-[1rem] font-black text-xs shadow-md transition-transform active:scale-95 uppercase tracking-widest relative z-10 border border-white/20" style={{ background: cfg.accent || primary, color: cardC === '#000000' ? '#000' : '#fff' }}>
                   {cfg.venueLinkType === 'whatsapp' ? 'Hablar por WhatsApp' : 'Visitar Sitio Web'}
                 </a>
               )}
@@ -616,31 +648,40 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
         
         {cfg.showVideo && cfg.videoUrl && (
           <div className="pt-4">
-            {cfg.videoTitle && <SectionTitle mutedC={mutedC} size={cfg.titlesSize}>{cfg.videoTitle}</SectionTitle>}
-            <div className="rounded-2xl overflow-hidden border border-white/5 shadow-lg relative" style={{ paddingTop: '56.25%' }}>
-              <iframe className="absolute inset-0 w-full h-full" src={`https://www.youtube.com/embed/${getYouTubeId(cfg.videoUrl)}`} title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen></iframe>
+            {cfg.videoTitle && <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={cfg.fontBody}>{cfg.videoTitle}</SectionTitle>}
+            <div className="rounded-[2rem] overflow-hidden border shadow-lg relative p-2" style={glassContainerStyle}>
+              {shineOverlay}
+              <div className="rounded-[1.5rem] overflow-hidden relative z-10" style={{ paddingTop: '56.25%' }}>
+                <iframe className="absolute inset-0 w-full h-full" src={`https://www.youtube.com/embed/${getYouTubeId(cfg.videoUrl)}`} title="YouTube" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen></iframe>
+              </div>
             </div>
           </div>
         )}
 
         {cfg.showMusic && cfg.spotifyUrl && (
           <div className="pt-4">
-            <SectionTitle mutedC={mutedC} size={cfg.titlesSize}>Música para entrar en clima</SectionTitle>
-            <iframe style={{ borderRadius: '12px' }} src={getSpotifyEmbed(cfg.spotifyUrl)} width="100%" height="152" frameBorder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+            <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={cfg.fontBody}>Música para entrar en clima</SectionTitle>
+            <div className="rounded-[2rem] p-2 relative overflow-hidden shadow-lg" style={glassContainerStyle}>
+              {shineOverlay}
+              <iframe className="relative z-10 rounded-[1.5rem]" src={getSpotifyEmbed(cfg.spotifyUrl)} width="100%" height="152" frameBorder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+            </div>
           </div>
         )}
 
         {cfg.showItinerary && cfg.itinerary?.length > 0 && (
           <div className="pt-4">
-            <SectionTitle mutedC={mutedC} size={cfg.titlesSize}>{cfg.itinerarySectionTitle || "Programa del evento"}</SectionTitle>
+            <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={cfg.fontBody}>{cfg.itinerarySectionTitle || "Programa del evento"}</SectionTitle>
             <div className="relative pl-6 space-y-8 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5" style={{ '--tw-before-bg': `${primary}33` }}>
-              <div className="absolute left-[7px] top-2 bottom-2 w-[2px]" style={{ background: primary, opacity: 0.2 }} />
+              <div className="absolute left-[7px] top-2 bottom-2 w-[2px]" style={{ background: primary, opacity: 0.3 }} />
               {cfg.itinerary.map((item, i) => (
-                <div key={i} className="relative text-left">
-                  <div className="absolute -left-[23px] top-1.5 w-3 h-3 rounded-full" style={{ background: primary, boxShadow: `0 0 10px ${primary}` }} />
-                  <p className="text-[10px] font-black mb-1" style={{ color: primary }}>{item.time}</p>
-                  <p className="font-bold text-sm" style={{ color: textC, fontFamily: cfg.fontBody }}>{item.title}</p>
-                  <p className="text-xs opacity-60" style={{ color: mutedC, fontFamily: cfg.fontBody }}>{item.sub}</p>
+                <div key={i} className="relative text-left p-4 rounded-3xl" style={glassContainerStyle}>
+                  {shineOverlay}
+                  <div className="absolute -left-[35px] top-[18px] w-4 h-4 rounded-full border-4 border-white z-20" style={{ background: cfg.accent || primary, boxShadow: `0 0 15px ${primary}` }} />
+                  <div className="relative z-10">
+                    <p className="text-[10px] font-black mb-1 uppercase tracking-widest" style={{ color: primary }}>{item.time}</p>
+                    <p className="font-bold text-sm" style={{ color: textC, fontFamily: cfg.fontBody }}>{item.title}</p>
+                    {item.sub && <p className="text-xs font-medium opacity-70 mt-1" style={{ color: mutedC, fontFamily: cfg.fontBody }}>{item.sub}</p>}
+                  </div>
                 </div>
               ))}
             </div>
@@ -649,14 +690,15 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
 
         {cfg.showMenu && cfg.menuItems?.length > 0 && (
           <div className="pt-4">
-            <SectionTitle mutedC={mutedC} size={cfg.titlesSize}>{cfg.menuSectionTitle || "¿Qué vamos a comer?"}</SectionTitle>
+            <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={cfg.fontBody}>{cfg.menuSectionTitle || "¿Qué vamos a comer?"}</SectionTitle>
             <div className="grid grid-cols-2 gap-3">
               {cfg.menuItems.map((m, i) => (
-                <div key={i} className="p-4 rounded-2xl text-center border border-white/5" style={{ background: cardC }}>
-                  <span className="mb-2 flex justify-center items-center h-10">
-                     <RenderSymbol value={m.emoji} size={32} color={primary} />
+                <div key={i} className="p-5 rounded-[2rem] text-center relative overflow-hidden flex flex-col items-center" style={glassContainerStyle}>
+                  {shineOverlay}
+                  <span className="mb-3 flex justify-center items-center h-12 w-12 rounded-2xl relative z-10 border shadow-sm" style={{ background: `${primary}15`, borderColor: `${primary}22` }}>
+                     <RenderSymbol value={m.emoji} size={24} color={primary} />
                   </span>
-                  <span className="text-xs font-bold" style={{ color: textC, fontFamily: cfg.fontBody }}>{m.label}</span>
+                  <span className="text-xs font-bold relative z-10" style={{ color: textC, fontFamily: cfg.fontBody }}>{m.label}</span>
                 </div>
               ))}
             </div>
@@ -665,24 +707,26 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
 
         {(cfg.showDressCode || cfg.showGifts) && (
           <div className="pt-6">
-            <SectionTitle mutedC={mutedC} size={cfg.titlesSize}>{cfg.notesSectionTitle || "A tener en cuenta"}</SectionTitle>
+            <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={cfg.fontBody}>{cfg.notesSectionTitle || "A tener en cuenta"}</SectionTitle>
             <div className="grid grid-cols-2 gap-3">
               {cfg.showDressCode && (
-                <div className="p-5 rounded-2xl text-center border border-white/5 shadow-sm" style={{ background: cardC }}>
-                  <span className="mb-2 flex justify-center items-center h-10">
-                    <RenderSymbol value={cfg.dressCodeIcon || "👔"} size={32} color={primary} />
+                <div className="p-6 rounded-[2rem] text-center relative overflow-hidden flex flex-col items-center" style={glassContainerStyle}>
+                  {shineOverlay}
+                  <span className="mb-3 flex justify-center items-center h-14 w-14 rounded-[1.2rem] relative z-10 border shadow-sm" style={{ background: cfg.accent || primary, borderColor: 'rgba(255,255,255,0.2)' }}>
+                    <RenderSymbol value={cfg.dressCodeIcon || "👔"} size={26} color={cardC === '#000000' ? '#000' : '#fff'} />
                   </span>
-                  <p className="text-[9px] font-black uppercase tracking-widest mb-1" style={{ color: mutedC }}>Vestimenta</p>
-                  <p className="font-bold text-xs" style={{ color: textC, fontFamily: cfg.fontBody }}>{cfg.dressCodeText}</p>
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] mb-1.5 opacity-80 relative z-10" style={{ color: mutedC }}>Vestimenta</p>
+                  <p className="font-bold text-xs relative z-10" style={{ color: textC, fontFamily: cfg.fontBody }}>{cfg.dressCodeText}</p>
                 </div>
               )}
               {cfg.showGifts && (
-                <div className="p-5 rounded-2xl text-center border border-white/5 shadow-sm" style={{ background: cardC }}>
-                  <span className="mb-2 flex justify-center items-center h-10">
-                    <RenderSymbol value={cfg.giftIcon || "🎁"} size={32} color={primary} />
+                <div className="p-6 rounded-[2rem] text-center relative overflow-hidden flex flex-col items-center" style={glassContainerStyle}>
+                  {shineOverlay}
+                  <span className="mb-3 flex justify-center items-center h-14 w-14 rounded-[1.2rem] relative z-10 border shadow-sm" style={{ background: cfg.accent || primary, borderColor: 'rgba(255,255,255,0.2)' }}>
+                    <RenderSymbol value={cfg.giftIcon || "🎁"} size={26} color={cardC === '#000000' ? '#000' : '#fff'} />
                   </span>
-                  <p className="text-[9px] font-black uppercase tracking-widest mb-1" style={{ color: mutedC }}>{cfg.giftLabel}</p>
-                  <p className="font-bold text-xs" style={{ color: textC, fontFamily: cfg.fontBody }}>{cfg.giftText}</p>
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] mb-1.5 opacity-80 relative z-10" style={{ color: mutedC }}>{cfg.giftLabel}</p>
+                  <p className="font-bold text-xs relative z-10" style={{ color: textC, fontFamily: cfg.fontBody }}>{cfg.giftText}</p>
                 </div>
               )}
             </div>
@@ -692,18 +736,24 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
         {cfg.showGifts && (
           <div className="pt-2">
             {cfg.showGiftNote && cfg.giftNoteText && (
-              <div className="text-center mb-4">
-                <span className="inline-block py-3 px-6 rounded-3xl font-bold border whitespace-pre-wrap leading-relaxed shadow-sm w-full" style={{ background: `${cfg.card}ee`, borderColor: `${primary}33`, color: cfg.giftNoteColor || primary, fontSize: `${cfg.giftNoteSize || 11}px`, fontFamily: cfg.fontBody }}>
-                  {cfg.giftNoteText}
-                </span>
+              <div className="text-center mb-5 relative overflow-hidden rounded-[2rem]" style={glassContainerStyle}>
+                {shineOverlay}
+                <div className="p-6 relative z-10">
+                  <span className="block font-bold whitespace-pre-wrap leading-relaxed" style={{ color: cfg.giftNoteColor || primary, fontSize: `${cfg.giftNoteSize || 12}px`, fontFamily: cfg.fontBody }}>
+                    {cfg.giftNoteText}
+                  </span>
+                </div>
               </div>
             )}
             {cfg.giftLinks && cfg.giftLinks.length > 0 && (
               <div className="flex flex-col gap-3">
                 {cfg.giftLinks.map((link, i) => (
-                  <a key={i} href={link.url} target="_blank" rel="noopener noreferrer" className="py-4 px-5 rounded-2xl border border-white/5 flex justify-between items-center transition-transform active:scale-95 shadow-sm" style={{ background: cardC }}>
-                    <span className="font-black text-sm" style={{ color: textC }}>{link.label}</span>
-                    <ExternalLink size={18} style={{ color: primary }} />
+                  <a key={i} href={link.url} target="_blank" rel="noopener noreferrer" className="py-4 px-6 rounded-[1.5rem] flex justify-between items-center transition-transform active:scale-95 relative overflow-hidden group" style={glassContainerStyle}>
+                    {shineOverlay}
+                    <span className="font-black text-sm relative z-10" style={{ color: textC }}>{link.label}</span>
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center relative z-10 transition-transform group-hover:scale-110" style={{ background: `${primary}15` }}>
+                      <ExternalLink size={14} style={{ color: primary }} />
+                    </div>
                   </a>
                 ))}
               </div>
@@ -713,10 +763,10 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
 
         {cfg.showGallery && cfg.galleryPhotos?.length > 0 && (
           <div className="pt-4">
-            <SectionTitle mutedC={mutedC} size={cfg.titlesSize}>{cfg.galleryTitle}</SectionTitle>
+            <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={cfg.fontBody}>{cfg.galleryTitle}</SectionTitle>
             {cfg.galleryLayout === 'grid' ? (
-              <div className="grid grid-cols-2 gap-2">
-                {cfg.galleryPhotos.map((p, i) => p && <img key={i} src={p} className="w-full h-48 rounded-xl object-cover shadow-md border border-white/5" alt={`Galeria ${i}`} />)}
+              <div className="grid grid-cols-2 gap-3">
+                {cfg.galleryPhotos.map((p, i) => p && <div key={i} className="rounded-3xl p-1 relative overflow-hidden" style={glassContainerStyle}>{shineOverlay}<img src={p} className="w-full h-48 rounded-[1.2rem] object-cover relative z-10" alt={`Galeria ${i}`} /></div>)}
               </div>
             ) : (
               <GalleryCarousel photos={cfg.galleryPhotos} />
@@ -724,39 +774,33 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
           </div>
         )}
 
-        {/* COMPONENTE WIDGET RSVP ACTUALIZADO CON DATOS REALES */}
-        <RsvpWidget 
-           cfg={cfg} 
-           primary={primary} 
-           textC={textC} 
-           cardC={cardC} 
-           mutedC={mutedC} 
-           onConfirmRSVP={onConfirmRSVP} 
-           guestData={guestData} 
-        />
+        <RsvpWidget cfg={cfg} primary={primary} textC={textC} cardC={cardC} mutedC={mutedC} onConfirmRSVP={onConfirmRSVP} guestData={guestData} />
             
         {(cfg.showInstagram || cfg.showFacebook || cfg.showTiktok) && (
-          <div className="flex justify-center gap-4 mt-8 relative z-[50]">
+          <div className="flex justify-center gap-5 mt-10 relative z-[50]">
             {cfg.showInstagram && cfg.instagramUrl && (
-              <a href={cfg.instagramUrl} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg border border-white/10" style={{ background: cardC, color: primary }}>
-                <InstagramIcon size={20} />
+              <a href={cfg.instagramUrl} target="_blank" rel="noopener noreferrer" className="w-14 h-14 rounded-full flex items-center justify-center transition-transform hover:scale-110 relative overflow-hidden group" style={glassContainerStyle}>
+                {shineOverlay}
+                <InstagramIcon size={22} color={primary} className="relative z-10 group-hover:text-pink-500 transition-colors" />
               </a>
             )}
             {cfg.showFacebook && cfg.facebookUrl && (
-              <a href={cfg.facebookUrl} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg border border-white/10" style={{ background: cardC, color: primary }}>
-                <FacebookIcon size={20} />
+              <a href={cfg.facebookUrl} target="_blank" rel="noopener noreferrer" className="w-14 h-14 rounded-full flex items-center justify-center transition-transform hover:scale-110 relative overflow-hidden group" style={glassContainerStyle}>
+                {shineOverlay}
+                <FacebookIcon size={22} color={primary} className="relative z-10 group-hover:text-blue-600 transition-colors" />
               </a>
             )}
             {cfg.showTiktok && cfg.tiktokUrl && (
-              <a href={cfg.tiktokUrl} target="_blank" rel="noopener noreferrer" className="w-12 h-12 rounded-full flex items-center justify-center transition-transform hover:scale-110 shadow-lg border border-white/10" style={{ background: cardC, color: primary }}>
-                <TiktokIcon size={20} />
+              <a href={cfg.tiktokUrl} target="_blank" rel="noopener noreferrer" className="w-14 h-14 rounded-full flex items-center justify-center transition-transform hover:scale-110 relative overflow-hidden group" style={glassContainerStyle}>
+                {shineOverlay}
+                <TiktokIcon size={22} color={primary} className="relative z-10 group-hover:text-black transition-colors" />
               </a>
             )}
           </div>
         )}
         
-        <p className="text-center text-[10px] font-bold opacity-50 mt-8 pb-12 relative z-[50]" style={{ color: mutedC }}>
-          Invitación creada con <strong className="tracking-wide">defiesta.lat</strong>
+        <p className="text-center text-[10px] font-black uppercase tracking-widest opacity-50 mt-10 pb-12 relative z-[50]" style={{ color: mutedC }}>
+          Invitación creada con <strong className="text-violet-500">defiesta.lat</strong>
         </p>
       </div>
     </div>
