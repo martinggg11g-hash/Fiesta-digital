@@ -165,7 +165,6 @@ export const PARTICLE_CATEGORIES = {
     { id: "emojis-music", name: "Mix Emojis Música", icon: "🎵" },
     { id: "streamers", name: "Serpentinas", icon: "🎊" }
   ],
-  // 👉 NUEVOS LOTTIES
   "Lotties Premium": [
     { id: 'lottie_confeti', name: 'Confeti Pop', icon: '🎉', isLottie: true, url: 'https://lottie.host/0c7f0ad6-f5e9-4473-b606-8fe2ed1d10b1/QvafqoK8yh.lottie' },
     { id: 'lottie_estrellas', name: 'Estrellas', icon: '🌟', isLottie: true, url: 'https://lottie.host/d9fafde0-2c87-4458-a716-f68341282a91/prNFp1cX0s.lottie' },
@@ -205,3 +204,24 @@ export const formatToDDMMYYYY = (dateString) => {
   const [year, month, day] = dateString.split('-');
   return `${day}/${month}/${year}`;
 };
+
+// 👉 ACÁ VAN TUS BORDES EN BASE64
+// Reemplazá "data:image/png;base64,PEGAR_AQUI..." por tus verdaderos códigos.
+export const BORDERS = [
+  { 
+    id: 'b1', 
+    name: 'Borde 1', 
+    url: 'data:image/png;base64,PEGAR_AQUI_TU_CODIGO_LARGUISIMO' 
+  },
+  { 
+    id: 'b2', 
+    name: 'Borde 2', 
+    url: 'data:image/png;base64,PEGAR_AQUI_OTRO_CODIGO' 
+  },
+  { 
+    id: 'b3', 
+    name: 'Borde 3', 
+    url: 'data:image/png;base64,PEGAR_AQUI_OTRO_CODIGO_MAS' 
+  },
+  // Podés seguir agregando todos los que quieras hacia abajo...
+];
