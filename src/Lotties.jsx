@@ -71,3 +71,19 @@ export const OpeningAnimation = ({ cfg, onOpen, isPreview = false }) => {
     </div>
   );
 };
+
+// 👉 NUEVO COMPONENTE PARA EL FONDO DE LOTTIES (PARTÍCULAS PREMIUM)
+export const LottieOverlay = ({ url }) => {
+  if (!url) return null;
+
+  return (
+    <div className="absolute inset-0 z-[45] pointer-events-none overflow-hidden">
+      <DotLottieReact
+        src={url}
+        loop
+        autoplay
+        className="w-full h-full object-cover opacity-80" 
+      />
+    </div>
+  );
+};
