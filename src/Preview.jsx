@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { OpeningAnimation } from "./Lotties"; 
+// 👉 ACÁ SUMAMOS LA IMPORTACIÓN DE LottieOverlay
+import { OpeningAnimation, LottieOverlay } from "./Lotties"; 
 import { MapPin, Calendar, Clock, Star, CheckCircle2, ChevronLeft, ChevronRight, Download, MessageCircle, Users, ExternalLink, Loader2 } from "lucide-react";
-import { DEF_CONFIG, THEMES, getSpotifyEmbed, getYouTubeId, formatToDDMMYYYY } from "./config";
+import { DEF_CONFIG, THEMES, getSpotifyEmbed, getYouTubeId, formatToDDMMYYYY, PARTICLE_CATEGORIES } from "./config";
 import { IconRenderer } from "./EditorUI";
 
 const InstagramIcon = ({ size = 20, color = "currentColor", className = "" }) => (
@@ -468,6 +469,22 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
   const gradOpacity = cfg.showCoverGradient === false ? 0 : ((cfg.coverGradientIntensity ?? 50) / 100).toFixed(2);
   const coverShadow = (cfg.coverTextShadowSize > 0) ? `0px 4px ${cfg.coverTextShadowSize}px ${cfg.coverTextShadowColor || '#000000'}` : 'none';
 
+  // 👉 MAGIA LOTTIE: Buscamos si el efecto de partícula elegido es en realidad un Lottie Premium
+  let isLottieEffect = false;
+  let lottieUrl = null;
+  
+  if (cfg.particleEffect && cfg.particleEffect !== "none") {
+    // Buscamos en todas las categorías de config.js para ver si el ID coincide
+    for (const category of Object.values(PARTICLE_CATEGORIES)) {
+      const effect = category.find(e => e.id === cfg.particleEffect);
+      if (effect && effect.isLottie) {
+        isLottieEffect = true;
+        lottieUrl = effect.url;
+        break;
+      }
+    }
+  }
+
   return (
     <div style={{ backgroundColor: bg1, backgroundImage: bg2.includes('gradient') ? bg2 : `linear-gradient(180deg, ${bg1} 0%, ${bg2} 100%)`, fontFamily: cfg.fontBody, minHeight: '100%' }} className="pb-12 relative overflow-x-hidden flex flex-col">
       
@@ -496,9 +513,14 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
         </div>
       )}
 
-      <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden" style={{ height: "100%" }}>
-        <ParticleCanvas effect={cfg.particleEffect || "none"} primary={primary} />
-      </div>
+      {/* 👉 LÓGICA DE PARTÍCULAS MIXTA: Clásicas vs Lotties */}
+      {isLottieEffect ? (
+        <LottieOverlay url={lottieUrl} />
+      ) : (
+        <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden" style={{ height: "100%" }}>
+          <ParticleCanvas effect={cfg.particleEffect || "none"} primary={primary} />
+        </div>
+      )}
 
       <div className="relative h-[420px] overflow-hidden shrink-0">
         <img src={cfg.coverPhoto || DEF_CONFIG.coverPhoto} className="w-full h-full object-cover" alt="" />
@@ -699,9 +721,9 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
            cardC={cardC} 
            mutedC={mutedC} 
            onConfirmRSVP={onConfirmRSVP} 
-           guestData={guestData} // Pasamos los datos que trajimos de Supabase
+           guestData={guestData} 
         />
-           
+            
         {(cfg.showInstagram || cfg.showFacebook || cfg.showTiktok) && (
           <div className="flex justify-center gap-4 mt-8 relative z-[50]">
             {cfg.showInstagram && cfg.instagramUrl && (
