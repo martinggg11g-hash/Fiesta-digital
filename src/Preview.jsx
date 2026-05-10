@@ -294,7 +294,7 @@ const MapEmbed = ({ name, address, primary }) => {
 // ==========================================
 // RSVP WIDGET
 // ==========================================
-const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP, guestData }) => {
+const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP, guestData, glassStyle, shineOverlay }) => {
   const [step, setStep] = useState('button');
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({ name: '', lastname: '', guests: 1 });
@@ -307,16 +307,6 @@ const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP, guestDa
   const guestName = guestData?.nombre_completo || "Nombre del Invitado";
   const ticketId = guestData?.id || "VIP-MOCK-1234";
   const maxLimit = guestData ? guestData.max_acompanantes : (cfg.maxGuestsPerFamily || 5);
-
-  // 👉 ESTILOS PREMIUM GLASSMORPHISM
-  const glassStyle = {
-    background: cardC,
-    boxShadow: cfg.shadow || '0 8px 32px rgba(0,0,0,0.05)',
-    border: cfg.border ? `1px solid ${cfg.border}` : `1px solid ${primary}33`,
-    backdropFilter: 'blur(16px)',
-    WebkitBackdropFilter: 'blur(16px)'
-  };
-  const shineOverlay = cfg.shine ? <div className="absolute inset-0 pointer-events-none rounded-[inherit]" style={{ background: cfg.shine }}></div> : null;
 
   if (isPrivate) {
     return (
@@ -470,18 +460,11 @@ const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP, guestDa
 };
 
 // 👉 INFO CARD PREMIUM
-const InfoCard = ({ icon: Icon, label, value, sub, fontSize, primary, textC, mutedC, cardC, cfg }) => {
-  const glassStyle = {
-    background: cardC,
-    boxShadow: cfg.shadow || '0 8px 30px rgba(0,0,0,0.05)',
-    border: cfg.border ? `1px solid ${cfg.border}` : `1px solid ${primary}22`,
-    backdropFilter: 'blur(16px)',
-    WebkitBackdropFilter: 'blur(16px)'
-  };
+const InfoCard = ({ icon: Icon, label, value, sub, fontSize, primary, textC, mutedC, cardC, cfg, glassStyle, shineOverlay }) => {
   return (
-    <div className="flex items-center gap-4 p-4 rounded-3xl relative overflow-hidden" style={glassStyle}>
-      {cfg.shine && <div className="absolute inset-0 pointer-events-none rounded-[inherit]" style={{ background: cfg.shine }}></div>}
-      <div className="w-12 h-12 rounded-[1rem] flex items-center justify-center shrink-0 relative z-10 shadow-sm border border-white/20" style={{ background: cfg.accent || primary }}><Icon size={20} color={cardC === '#000000' ? '#000' : '#fff'} /></div>
+    <div className="flex items-center gap-4 p-4 rounded-[2rem] relative overflow-hidden" style={glassStyle}>
+      {shineOverlay}
+      <div className="w-14 h-14 rounded-[1.2rem] flex items-center justify-center shrink-0 relative z-10 shadow-sm border border-white/20" style={{ background: cfg.accent || primary }}><Icon size={24} color={cardC === '#000000' ? '#000' : '#fff'} /></div>
       <div className="text-left relative z-10">
         <p className="text-[9px] uppercase font-black tracking-widest mb-0.5 opacity-80" style={{ color: mutedC }}>{label}</p>
         <p className="font-bold" style={{ color: textC, fontFamily: cfg.fontBody, fontSize: `${fontSize}px` }}>{value}</p>
@@ -507,10 +490,15 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
   const gradOpacity = cfg.showCoverGradient === false ? 0 : ((cfg.coverGradientIntensity ?? 50) / 100).toFixed(2);
   const coverShadow = (cfg.coverTextShadowSize > 0) ? `0px 4px ${cfg.coverTextShadowSize}px ${cfg.coverTextShadowColor || '#000000'}` : 'none';
 
-  // 👉 ESTILOS PREMIUM GLASSMORPHISM GLOBALES PARA CONTENEDORES
+  // 👉 DINÁMICA DEL GLOW (RESPLANDOR)
+  const glowValue = cfg.cardGlow !== undefined ? cfg.cardGlow : 0;
+  const hexAlpha = Math.floor((glowValue / 100) * 255).toString(16).padStart(2, '0');
+  const dynamicShadow = glowValue > 0 ? `${cfg.shadow || '0 8px 30px rgba(0,0,0,0.05)'}, 0 0 ${glowValue}px ${primary}${hexAlpha}` : (cfg.shadow || '0 8px 30px rgba(0,0,0,0.05)');
+
+  // 👉 ESTILOS PREMIUM GLASSMORPHISM
   const glassContainerStyle = {
     background: cardC,
-    boxShadow: cfg.shadow || '0 8px 30px rgba(0,0,0,0.05)',
+    boxShadow: dynamicShadow,
     border: cfg.border ? `1px solid ${cfg.border}` : `1px solid ${primary}22`,
     backdropFilter: 'blur(16px)',
     WebkitBackdropFilter: 'blur(16px)'
@@ -530,6 +518,13 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
       }
     }
   }
+
+  // 👉 CAPA DE PARTÍCULAS EXTRÁIDA
+  const ParticleLayer = () => (
+    <div className={`${cfg.particlesFullscreen ? 'fixed' : 'absolute'} inset-0 pointer-events-none ${cfg.particlesFullscreen ? 'z-[100]' : 'z-20'} overflow-hidden flex items-start justify-center transition-opacity duration-200`} style={{ opacity: (cfg.effectOpacity ?? 100) / 100 }}>
+       {isLottieEffect ? <LottieOverlay url={lottieUrl} /> : <ParticleCanvas effect={cfg.particleEffect || "none"} primary={primary} />}
+    </div>
+  );
 
   return (
     <div style={{ backgroundColor: bg1, backgroundImage: bg2.includes('gradient') ? bg2 : `linear-gradient(180deg, ${bg1} 0%, ${bg2} 100%)`, fontFamily: cfg.fontBody, minHeight: '100%' }} className="pb-12 relative overflow-x-hidden flex flex-col">
@@ -563,9 +558,8 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
         <img src={cfg.coverPhoto || DEF_CONFIG.coverPhoto} className="absolute inset-0 w-full h-full object-cover z-0" alt="" />
         <div className="absolute inset-0 z-10" style={{ background: `linear-gradient(to top, ${cfg.bg1} 5%, rgba(0,0,0,${gradOpacity}) 60%, transparent 100%)` }} />
 
-        <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden flex items-start justify-center transition-opacity duration-200" style={{ opacity: (cfg.effectOpacity ?? 100) / 100 }}>
-          {isLottieEffect ? <LottieOverlay url={lottieUrl} /> : <ParticleCanvas effect={cfg.particleEffect || "none"} primary={primary} />}
-        </div>
+        {/* Partículas confinadas al Banner si está apagado el Fullscreen */}
+        {!cfg.particlesFullscreen && <ParticleLayer />}
 
         <div className="absolute bottom-0 left-0 right-0 p-8 pb-12 flex flex-col items-center z-30">
           <DraggableItem id="eventType" cfg={cfg} update={update} className="relative !static flex justify-center w-full">
@@ -607,14 +601,14 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
           </div>
         )}
 
-        {cfg.showDate && <InfoCard icon={Calendar} label="¿Cuándo?" value={formatToDDMMYYYY(cfg.dateText)} fontSize={cfg.dateSize ?? 18} primary={primary} textC={textC} mutedC={mutedC} cardC={cardC} cfg={cfg} />}
-        {cfg.showTime && <InfoCard icon={Clock} label="Horario" value={cfg.timeText} fontSize={cfg.dateSize ?? 18} primary={primary} textC={textC} mutedC={mutedC} cardC={cardC} cfg={cfg} />}
+        {cfg.showDate && <InfoCard icon={Calendar} label="¿Cuándo?" value={formatToDDMMYYYY(cfg.dateText)} fontSize={cfg.dateSize ?? 18} primary={primary} textC={textC} mutedC={mutedC} cardC={cardC} cfg={cfg} glassStyle={glassContainerStyle} shineOverlay={shineOverlay} />}
+        {cfg.showTime && <InfoCard icon={Clock} label="Horario" value={cfg.timeText} fontSize={cfg.dateSize ?? 18} primary={primary} textC={textC} mutedC={mutedC} cardC={cardC} cfg={cfg} glassStyle={glassContainerStyle} shineOverlay={shineOverlay} />}
         
         {cfg.showLocation && (
           <div className="rounded-[2rem] overflow-hidden relative" style={glassContainerStyle}>
             {shineOverlay}
             <div className="p-4 flex items-center gap-4 relative z-10">
-              <div className="w-12 h-12 rounded-[1rem] flex items-center justify-center shrink-0 border border-white/20 shadow-sm" style={{ background: cfg.accent || primary }}><MapPin size={20} color={cardC === '#000000' ? '#000' : '#fff'} /></div>
+              <div className="w-14 h-14 rounded-[1.2rem] flex items-center justify-center shrink-0 border border-white/20 shadow-sm" style={{ background: cfg.accent || primary }}><MapPin size={24} color={cardC === '#000000' ? '#000' : '#fff'} /></div>
               <div className="text-left">
                 <p className="text-[9px] uppercase font-black tracking-widest mb-0.5 opacity-80" style={{ color: mutedC }}>¿Dónde?</p>
                 <p className="font-bold" style={{ color: textC, fontFamily: cfg.fontBody, fontSize: `${cfg.locationSize ?? 18}px` }}>{cfg.locationName}</p>
@@ -774,7 +768,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
           </div>
         )}
 
-        <RsvpWidget cfg={cfg} primary={primary} textC={textC} cardC={cardC} mutedC={mutedC} onConfirmRSVP={onConfirmRSVP} guestData={guestData} />
+        <RsvpWidget cfg={cfg} primary={primary} textC={textC} cardC={cardC} mutedC={mutedC} onConfirmRSVP={onConfirmRSVP} guestData={guestData} glassStyle={glassContainerStyle} shineOverlay={shineOverlay} />
             
         {(cfg.showInstagram || cfg.showFacebook || cfg.showTiktok) && (
           <div className="flex justify-center gap-5 mt-10 relative z-[50]">
@@ -803,6 +797,9 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
           Invitación creada con <strong className="text-violet-500">defiesta.lat</strong>
         </p>
       </div>
+
+      {/* Partículas a pantalla completa si el usuario prende el botón */}
+      {cfg.particlesFullscreen && <ParticleLayer />}
     </div>
   );
 };
