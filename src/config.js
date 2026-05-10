@@ -54,6 +54,9 @@ export const DEF_CONFIG = {
   rsvpDeadline: "",
   isPrivateList: false,
   clientPin: "", // PIN de 4 dígitos para que el agasajado acceda a su panel
+
+  // NUEVA VARIABLE: OPACIDAD DE LOS EFECTOS
+  effectOpacity: 100,
 };
 
 export const THEMES = [
@@ -162,7 +165,7 @@ export const PARTICLE_CATEGORIES = {
     { id: "emojis-music", name: "Mix Emojis Música", icon: "🎵" },
     { id: "streamers", name: "Serpentinas", icon: "🎊" }
   ],
-  // 👉 ACÁ ESTÁ LA NUEVA CATEGORÍA DE LOTTIES PREMIUM
+  // 👉 NUEVOS LOTTIES
   "Lotties Premium": [
     { id: 'lottie_confeti', name: 'Confeti Pop', icon: '🎉', isLottie: true, url: 'https://lottie.host/0c7f0ad6-f5e9-4473-b606-8fe2ed1d10b1/QvafqoK8yh.lottie' },
     { id: 'lottie_estrellas', name: 'Estrellas', icon: '🌟', isLottie: true, url: 'https://lottie.host/d9fafde0-2c87-4458-a716-f68341282a91/prNFp1cX0s.lottie' },
