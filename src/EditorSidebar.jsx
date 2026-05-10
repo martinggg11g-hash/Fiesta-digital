@@ -104,11 +104,13 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
           <div className="flex flex-col gap-1"><label className="text-[9px] font-bold text-slate-400 uppercase">Fondo Abajo</label><input type="color" value={cfg.bg2} onChange={e => update('bg2', e.target.value)} className="w-full h-9 rounded-xl cursor-pointer border-none shadow-sm" /></div>
         </div>
 
-        {/* 👉 NUEVO: CONTROL DE RESPLANDOR (GLOW) DE TARJETAS */}
+        {/* 👉 CONTROL DE RESPLANDOR (GLOW) CON TEXTO "SIN" */}
         <div className="mb-6 p-3 bg-violet-50 rounded-xl border border-violet-100 shadow-inner">
           <label className="flex justify-between items-center text-[9px] font-black text-violet-600 uppercase mb-2">
-            <span>Intensidad Luz / Sombra de Tarjetas</span>
-            <span className="bg-violet-200 text-violet-800 px-2 py-0.5 rounded-full">{cfg.cardGlow ?? 0}%</span>
+            <span>Intensidad Luz / Sombra</span>
+            <span className={`px-2 py-0.5 rounded-full ${cfg.cardGlow === 0 || cfg.cardGlow === undefined ? 'bg-slate-200 text-slate-600' : 'bg-violet-200 text-violet-800'}`}>
+              {(cfg.cardGlow === undefined || cfg.cardGlow === 0) ? "SIN" : `${cfg.cardGlow}%`}
+            </span>
           </label>
           <input 
             type="range" 
@@ -138,7 +140,6 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
                 <input type="range" min={10} max={100} step={5} value={cfg.effectOpacity ?? 100} onChange={e => update("effectOpacity", Number(e.target.value))} className="w-full accent-violet-600 cursor-pointer" />
               </div>
               
-              {/* 👉 NUEVO: TOGGLE PARA PANTALLA COMPLETA */}
               <div className="flex items-center justify-between mt-4 bg-violet-50 p-3 rounded-xl border border-violet-100">
                  <div>
                    <span className="text-[10px] font-black text-violet-800 uppercase block mb-1">Efecto en toda la página</span>
