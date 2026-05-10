@@ -14,7 +14,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
   const eventId = window.location.pathname.split('/').pop();
   const hostManageLink = `${window.location.origin}/manage/${eventId}`;
 
-  // 🚀 MAGIA PURA: Sacamos los datos instantáneamente de la memoria del navegador
+  // 🚀 Sacamos los datos instantáneamente de la memoria del navegador
   const [salonProfile] = useState(() => {
     try {
       const local = localStorage.getItem("fiesta_user");
@@ -55,16 +55,45 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
            </div>
          )}
 
+        {/* 🚀 BLOQUE DE BORDES ACTUALIZADO Y LIMPIO */}
         <div className="mb-6 p-4 rounded-xl border border-pink-100 bg-pink-50/50">
           <div className="flex items-center justify-between mb-4"><span className="text-[10px] font-black text-pink-600 uppercase tracking-widest">Bordes Ornamentales</span><button onClick={resetPositions} title="Resetear posiciones" className="p-2 bg-white border border-pink-200 text-pink-600 rounded-lg hover:bg-pink-100 cursor-pointer"><RefreshCcw size={14} /></button></div>
-          <div className="flex items-center justify-between mb-4 bg-white p-2 rounded-lg border border-pink-100"><span className="text-[10px] font-bold text-slate-500 uppercase">Activar Bordes</span><Toggle checked={cfg.showCoverBorders || false} onChange={v => update("showCoverBorders", v)} /></div>
+          <div className="flex items-center justify-between mb-4 bg-white p-2 rounded-lg border border-pink-100">
+            <span className="text-[10px] font-bold text-slate-500 uppercase">Activar Bordes</span>
+            <Toggle 
+              checked={cfg.showCoverBorders || false} 
+              onChange={v => {
+                update("showCoverBorders", v);
+                if (v && !cfg.selectedBorder) {
+                  update("selectedBorder", "/borders/1-Photoroom.png");
+                }
+              }} 
+            />
+          </div>
+          
           {cfg.showCoverBorders && (
             <div className="mt-4 pt-4 border-t border-pink-100">
               <BordersGallery value={cfg.selectedBorder} onChange={v => update("selectedBorder", v)} />
-              <Inp label="Link directo a tu propio PNG" className="mt-4" value={cfg.selectedBorder} onChange={v => update("selectedBorder", v)} placeholder="https://..." />
-              <SelectInp label="Posición" value={cfg.borderPosition || 'both'} options={[{label:'Arriba y Abajo', value:'both'}, {label:'Solo Arriba', value:'top'}, {label:'Solo Abajo', value:'bottom'}]} onChange={v => update('borderPosition', v)} />
+              
+              <div className="mt-4">
+                <SelectInp label="Posición" value={cfg.borderPosition || 'both'} options={[{label:'Arriba y Abajo', value:'both'}, {label:'Solo Arriba', value:'top'}, {label:'Solo Abajo', value:'bottom'}]} onChange={v => update('borderPosition', v)} />
+              </div>
+
               <div className="flex flex-col gap-1 mt-3"><label className="text-[9px] font-bold text-slate-400 uppercase">Color del Borde</label><input type="color" value={cfg.borderColor || cfg.primary} onChange={e => update('borderColor', e.target.value)} className="w-full h-9 rounded-xl border-none shadow-sm cursor-pointer" /></div>
+              
               <div className="mt-4"><label className="flex justify-between items-center text-[9px] font-black text-pink-600 uppercase mb-2"><span>Tamaño</span><span className="bg-pink-200 px-2 py-0.5 rounded-full">{cfg.ornamentSize || 150}px</span></label><input type="range" min={50} max={400} value={cfg.ornamentSize || 150} onChange={e => update("ornamentSize", Number(e.target.value))} className="w-full accent-pink-600 cursor-pointer" /></div>
+
+              {/* ROTACIONES SEPARADAS */}
+              <div className="mt-4 flex gap-3">
+                 <div className="flex-1">
+                   <label className="flex justify-between items-center text-[9px] font-black text-pink-600 uppercase mb-2"><span>Girar Arriba</span><span className="bg-pink-200 px-2 py-0.5 rounded-full">{cfg.borderRotationTop || 0}°</span></label>
+                   <input type="range" min={0} max={360} value={cfg.borderRotationTop || 0} onChange={e => update("borderRotationTop", Number(e.target.value))} className="w-full accent-pink-600 cursor-pointer" />
+                 </div>
+                 <div className="flex-1">
+                   <label className="flex justify-between items-center text-[9px] font-black text-pink-600 uppercase mb-2"><span>Girar Abajo</span><span className="bg-pink-200 px-2 py-0.5 rounded-full">{cfg.borderRotationBottom || 0}°</span></label>
+                   <input type="range" min={0} max={360} value={cfg.borderRotationBottom || 0} onChange={e => update("borderRotationBottom", Number(e.target.value))} className="w-full accent-pink-600 cursor-pointer" />
+                 </div>
+              </div>
             </div>
           )}
         </div>
@@ -89,7 +118,6 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
           <div className="flex gap-1 overflow-x-auto pb-2 mb-2 fd-sb">{Object.keys(PARTICLE_CATEGORIES).map(c => (<button key={c} type="button" onClick={() => setPartCat(c)} className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase shrink-0 transition-colors cursor-pointer ${partCat === c ? 'bg-violet-600 text-white shadow-sm' : 'bg-gray-100 text-gray-500'}`}>{c}</button>))}</div>
           <div className="grid grid-cols-2 gap-2">{PARTICLE_CATEGORIES[partCat].map(eff => (<button key={eff.id} type="button" onClick={() => update("particleEffect", eff.id)} className={`p-2 rounded-xl border text-left flex items-center gap-2 transition-all cursor-pointer ${cfg.particleEffect === eff.id ? 'border-violet-500 bg-violet-50 text-violet-700 shadow-sm' : 'border-gray-200 bg-white text-slate-600 hover:border-violet-200'}`}><span className="text-xl">{eff.icon}</span><span className="truncate text-[10px] font-bold">{eff.name}</span></button>))}</div>
           
-          {/* 🚀 NUEVO SLIDER DE OPACIDAD (Solo aparece si hay un efecto seleccionado) */}
           {cfg.particleEffect && cfg.particleEffect !== 'none' && (
             <div className="mt-4 p-3 bg-slate-50 rounded-xl border border-slate-200 shadow-inner">
               <label className="flex justify-between items-center text-[9px] font-black text-slate-500 uppercase mb-2">
@@ -126,7 +154,6 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
       <Acc title="3️⃣ Banner Central" icon={Star} iconColor="#d97706"><div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Banner</span><Toggle checked={cfg.showBanner} onChange={v => update("showBanner", v)} /></div>{cfg.showBanner && (<><Inp label="Título del Banner" value={cfg.bannerTitle} onChange={v => update("bannerTitle", v)} /><div className="flex items-center justify-between mt-4 mb-2 bg-gray-50 p-2 rounded-xl"><span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">¿Usar GIF?</span><Toggle checked={cfg.useGiphyBanner || false} onChange={v => update("useGiphyBanner", v)} /></div>{cfg.useGiphyBanner ? (<GiphySearch onSelect={url => update("bannerPhoto", url)} />) : (<FileUpload value={cfg.bannerPhoto} onChange={v => update("bannerPhoto", v)} />)}</>)}</Acc>
       <Acc title="4️⃣ Cuándo y Dónde" icon={Calendar} iconColor="#e11d48"><TypoControl label="Tamaño Textos" sizeVal={cfg.dateSize ?? 18} onSize={v => update("dateSize", v)} minSize={12} maxSize={30} /><div className="flex items-center justify-between mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Día</span><Toggle checked={cfg.showDate} onChange={v => update("showDate", v)} /></div>{cfg.showDate && <Inp type="date" value={cfg.dateText} onChange={v => update("dateText", v)} />}<div className="flex items-center justify-between mt-4 mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Horario</span><Toggle checked={cfg.showTime} onChange={v => update("showTime", v)} /></div>{cfg.showTime && <Inp placeholder="16:00 a 20:00 hs" value={cfg.timeText} onChange={v => update("timeText", v)} />}<div className="flex items-center justify-between mt-4 mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Ubicación</span><Toggle checked={cfg.showLocation} onChange={v => update("showLocation", v)} /></div>{cfg.showLocation && (<><div className="p-3 bg-violet-50 rounded-xl border border-violet-100 mb-4 opacity-80"><p className="text-[10px] font-black text-violet-800 uppercase tracking-widest mb-1">📍 Dirección (Panel Maestro)</p><p className="text-xs font-bold text-violet-900">{cfg.locationName || "Nombre del Salón"}</p></div><div className="flex items-center justify-between mt-2 mb-2"><span className="text-xs font-bold text-slate-500">Aclarar Parking</span><Toggle checked={cfg.showParking} onChange={v => update("showParking", v)} /></div>{cfg.showParking && <SelectInp label="Tipo" value={cfg.parkingType} options={[{label:"Público", value:"Estacionamiento público"}, {label:"Privado", value:"Estacionamiento privado"}, {label:"Personalizado...", value:"otro"}]} onChange={v => update("parkingType", v)} />}{cfg.showParking && cfg.parkingType === 'otro' && <Inp placeholder="Escribe aquí..." value={cfg.customParking || ""} onChange={v => update("customParking", v)} />}</>)}</Acc>
       
-      {/* 🚀 TARJETA DEL SALÓN AUTOMÁTICA DESDE LOCALSTORAGE */}
       <Acc title="5️⃣ Tarjeta del Salón" icon={LinkIcon} iconColor="#6366f1">
         <div className="flex items-center justify-between mb-4">
           <span className="text-xs font-bold text-slate-500">Mostrar Tarjeta</span>
@@ -134,7 +161,6 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
             checked={cfg.showVenueLogo || false} 
             onChange={v => { 
               if (v && salonProfile) {
-                // Inyectamos todo en un solo movimiento atómico
                 setInv(prev => ({
                   ...prev,
                   config: {
@@ -239,8 +265,6 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
 
         <h4 className="text-[10px] font-black text-slate-400 uppercase mb-4 border-t pt-4">Redes</h4>
         <div className="space-y-4">
-          
-          {/* 🚀 REDES SOCIALES DESDE LOCALSTORAGE */}
           <div className="bg-slate-50 p-3 rounded-xl border">
             <div className="flex items-center justify-between mb-2">
                <span className="text-xs font-bold flex items-center gap-2"><InstagramIcon size={14}/> Instagram</span>
