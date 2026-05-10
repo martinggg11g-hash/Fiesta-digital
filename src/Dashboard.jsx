@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   LogOut, Plus, Trash2, Copy, CheckCircle2, Building, Edit2, 
-  Search, Sun, Moon, Settings, CreditCard, Send, Eye, Filter, ScanBarcode, Smartphone, AlertTriangle, AlertCircle, ImageIcon, Loader2
+  Search, Sun, Moon, Settings, CreditCard, Send, Eye, Filter, ScanBarcode, Smartphone, AlertTriangle, AlertCircle, ImageIcon, Loader2, X
 } from "lucide-react";
 
 import { Inp, FileUpload, Toast, QRScannerModal } from "./DashboardUI";
