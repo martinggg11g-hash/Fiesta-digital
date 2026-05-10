@@ -225,8 +225,35 @@ export const THEMES = [
     accent: "#fde68a",
     shine: "linear-gradient(135deg, rgba(245,197,24,0.22) 0%, rgba(255,255,255,0) 60%)",
   },
+  
+  // 👉 ACÁ ESTÁN LOS NUEVOS DE BODAS SÚPER ELEGANTES
+  {
+    id: "t13", name: "Ivory & Gold (Boda)",
+    primary: "#d4af37",
+    bg1: "#ffffff",
+    bg2: "linear-gradient(145deg, #ffffff 0%, #fefcf9 30%, #f8f1df 70%, #eadcae 100%)",
+    text: "#3e3214",
+    card: "linear-gradient(160deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.85) 100%)",
+    muted: "#967f40",
+    shadow: "0 10px 40px rgba(212,175,55,0.15), 0 2px 8px rgba(0,0,0,0.02)",
+    border: "rgba(212,175,55,0.25)",
+    accent: "#e3cc7c",
+    shine: "linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 60%)",
+  },
+  {
+    id: "t14", name: "Perla Rosa (Boda)",
+    primary: "#d48b9c",
+    bg1: "#ffffff",
+    bg2: "linear-gradient(145deg, #ffffff 0%, #fffbfc 30%, #fbeff2 70%, #f0ced6 100%)",
+    text: "#4a2a32",
+    card: "linear-gradient(160deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.85) 100%)",
+    muted: "#ab6879",
+    shadow: "0 10px 40px rgba(212,139,156,0.15), 0 2px 8px rgba(0,0,0,0.02)",
+    border: "rgba(212,139,156,0.25)",
+    accent: "#e2afbd",
+    shine: "linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 60%)",
+  },
 ];
-
 export const FONTS = [
   { label: "Playfair Display", value: "Playfair Display" }, { label: "Bodoni Moda", value: "Bodoni Moda" },
   { label: "Abril Fatface", value: "Abril Fatface" }, { label: "Cinzel", value: "Cinzel" },
