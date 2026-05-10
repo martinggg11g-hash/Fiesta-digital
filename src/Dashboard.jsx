@@ -95,7 +95,6 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
     notify("Ingreso registrado");
   };
 
-  // 👉 SI ES MASTER, LE PASAMOS LAS PROPS DE ALERTA PARA QUE LAS VEA EN SU PANEL
   if (isOwner) {
     return <MasterPanel mySalons={users.filter(u => u.role === "salon")} onLogout={onLogout} onCreateSalon={onCreateSalon} onUpdateUser={onUpdateUser} onDeleteSalon={onDeleteSalon} globalAlert={globalAlert} onUpdateAlert={onUpdateAlert} />;
   }
@@ -109,19 +108,20 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
     <div className={`min-h-screen pb-20 text-left transition-colors duration-300 ${themeBg}`}>
       <style>{`@media print { .no-print { display: none !important; } .only-print { display: block !important; } }`}</style>
 
-      {/* 👉 BANNER DE ALERTA GLOBAL DESLIZABLE (MARQUESINA) */}
+      {/* 👉 BANNER DE ALERTA GLOBAL CORREGIDO (MÁS LENTO, INSTANTÁNEO Y CON PAUSA) */}
       {globalAlert?.activo && globalAlert?.mensaje && (
         <>
           <style>{`
             @keyframes marquee {
-              0% { transform: translateX(100%); }
+              0% { transform: translateX(100vw); }
+              85% { transform: translateX(-100%); }
               100% { transform: translateX(-100%); }
             }
             .animate-marquee {
               display: inline-block;
               white-space: nowrap;
-              padding-left: 100%;
-              animation: marquee 18s linear infinite;
+              animation: marquee 25s linear infinite;
+              will-change: transform;
             }
             .animate-marquee:hover {
               animation-play-state: paused;
@@ -139,7 +139,6 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
         </>
       )}
 
-      {/* 👉 ACÁ ESTABA EL ERROR: Le devolví la lógica top-9 para que no se superponga con la alerta */}
       <nav className={`h-20 border-b px-6 sm:px-8 flex items-center justify-between sticky ${globalAlert?.activo && globalAlert?.mensaje ? 'top-9' : 'top-0'} z-40 transition-colors duration-300 no-print ${themeNav}`}>
         <div className="flex items-center gap-4">
            {salonInfo?.logo ? <img src={salonInfo.logo} alt="Logo" className="h-10 object-contain" /> : <div className="w-10 h-10 bg-violet-600 rounded-xl flex items-center justify-center text-white shadow-lg"><Building size={20}/></div>}
