@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-// 👉 ACÁ SUMAMOS LA IMPORTACIÓN DE LottieOverlay
 import { OpeningAnimation, LottieOverlay } from "./Lotties"; 
 import { MapPin, Calendar, Clock, Star, CheckCircle2, ChevronLeft, ChevronRight, Download, MessageCircle, Users, ExternalLink, Loader2 } from "lucide-react";
 import { DEF_CONFIG, THEMES, getSpotifyEmbed, getYouTubeId, formatToDDMMYYYY, PARTICLE_CATEGORIES } from "./config";
@@ -474,7 +473,6 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
   let lottieUrl = null;
   
   if (cfg.particleEffect && cfg.particleEffect !== "none") {
-    // Buscamos en todas las categorías de config.js para ver si el ID coincide
     for (const category of Object.values(PARTICLE_CATEGORIES)) {
       const effect = category.find(e => e.id === cfg.particleEffect);
       if (effect && effect.isLottie) {
@@ -513,19 +511,25 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
         </div>
       )}
 
-      {/* 👉 LÓGICA DE PARTÍCULAS MIXTA: Clásicas vs Lotties */}
-      {isLottieEffect ? (
-        <LottieOverlay url={lottieUrl} />
-      ) : (
-        <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden" style={{ height: "100%" }}>
-          <ParticleCanvas effect={cfg.particleEffect || "none"} primary={primary} />
-        </div>
-      )}
-
+      {/* 🚀 EL CONTENEDOR DE LA PORTADA */}
       <div className="relative h-[420px] overflow-hidden shrink-0">
-        <img src={cfg.coverPhoto || DEF_CONFIG.coverPhoto} className="w-full h-full object-cover" alt="" />
-        <div className="absolute inset-0" style={{ background: `linear-gradient(to top, ${cfg.bg1} 5%, rgba(0,0,0,${gradOpacity}) 60%, transparent 100%)` }} />
         
+        {/* 1. Capa más baja: LA IMAGEN DE FONDO */}
+        <img src={cfg.coverPhoto || DEF_CONFIG.coverPhoto} className="absolute inset-0 w-full h-full object-cover z-0" alt="" />
+        
+        {/* 2. Capa intermedia: LOS EFECTOS (Clásicos o Lotties) */}
+        <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden flex items-start justify-center">
+          {isLottieEffect ? (
+            <LottieOverlay url={lottieUrl} />
+          ) : (
+            <ParticleCanvas effect={cfg.particleEffect || "none"} primary={primary} />
+          )}
+        </div>
+
+        {/* 3. Capa superior 1: EL DEGRADADO OSCURO PARA QUE SE LEAN LAS LETRAS */}
+        <div className="absolute inset-0 z-20" style={{ background: `linear-gradient(to top, ${cfg.bg1} 5%, rgba(0,0,0,${gradOpacity}) 60%, transparent 100%)` }} />
+        
+        {/* 4. Capa superior 2: LOS TEXTOS Y DRAGGABLES */}
         <div className="absolute bottom-0 left-0 right-0 p-8 flex flex-col items-center z-30">
           <DraggableItem id="eventType" cfg={cfg} update={update} className="relative !static flex justify-center w-full">
             <p className="font-black uppercase tracking-[0.2em] mb-4 flex items-center justify-center gap-2" style={{ color: cfg.eventTypeColor || primary, fontSize: `${cfg.eventTypeSize ?? 11}px`, fontFamily: cfg.eventTypeFont || cfg.fontBody, textShadow: coverShadow }}>
