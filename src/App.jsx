@@ -159,7 +159,6 @@ export default function App() {
       const { data: salones } = await supabase.from('salones').select('*');
       const { data: invs } = await supabase.from('invitaciones').select('*');
       
-      // 👉 BUSCAR LA ALERTA
       const { data: alertData } = await supabase.from('alertas').select('*').eq('id', 1).single();
       
       if (salones) setUsers(salones);
@@ -169,12 +168,27 @@ export default function App() {
       setLoading(false);
     };
     fetchData();
+
+    // 👉 RADAR AUTOMÁTICO: Consulta la alerta a Supabase cada 5 segundos
+    const radar = setInterval(async () => {
+      const { data: alertData } = await supabase.from('alertas').select('*').eq('id', 1).single();
+      if (alertData) {
+        setGlobalAlert({ mensaje: alertData.mensaje, activo: alertData.activo });
+      }
+    }, 5000);
+
+    return () => clearInterval(radar); // Limpia el radar si cerramos la app
   }, []);
 
-  // 👉 FUNCION PARA GUARDAR LA ALERTA EN SUPABASE
+  // 👉 GUARDA LA ALERTA (con aviso de error por si falla Supabase)
   const handleUpdateAlert = async (mensaje, activo) => {
     const { error } = await supabase.from('alertas').upsert({ id: 1, mensaje, activo });
-    if (!error) setGlobalAlert({ mensaje, activo });
+    if (error) {
+       alert("⚠️ ERROR EN SUPABASE:\nNo se pudo guardar la alerta. Por favor asegurate de haber corrido el código SQL para crear la tabla 'alertas'.\n\nDetalle: " + error.message);
+       console.error("Error alertas:", error);
+    } else {
+       setGlobalAlert({ mensaje, activo });
+    }
   };
 
   const handleUpdateUser = async (email, updateData) => {
@@ -252,7 +266,6 @@ export default function App() {
           <Route path="/" element={user ? <Navigate to="/dashboard" /> : <LoginScreen onLogin={handleLogin} users={users} />} />
           <Route path="/master" element={user ? <Navigate to="/dashboard" /> : <LoginScreen isMaster={true} onLogin={handleLogin} users={users} />} />
           
-          {/* 👉 PASAMOS LOS ESTADOS DE ALERTA AL DASHBOARD */}
           <Route path="/dashboard" element={user ? <DashboardScreen user={user} users={users} invitations={invitations} onCreateSalon={handleCreateSalon} onDeleteSalon={handleDeleteSalon} onCreateInv={handleCreateInv} onDeleteInv={handleDeleteInv} onUpdateUser={handleUpdateUser} onUpdateInternal={handleUpdateInternal} onLogout={handleLogout} globalAlert={globalAlert} onUpdateAlert={handleUpdateAlert} /> : <Navigate to="/" />} />
           
           <Route path="/editor/:id" element={<EditorScreen invitations={invitations} onSave={handleSaveInv} />} />
