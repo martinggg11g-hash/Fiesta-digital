@@ -72,18 +72,17 @@ export const OpeningAnimation = ({ cfg, onOpen, isPreview = false }) => {
   );
 };
 
-// 👉 NUEVO COMPONENTE PARA EL FONDO DE LOTTIES (PARTÍCULAS PREMIUM)
+// 👉 COMPONENTE LOTTIE CORREGIDO: Anclado arriba y sin z-index forzado
 export const LottieOverlay = ({ url }) => {
   if (!url) return null;
 
   return (
-    <div className="absolute inset-0 z-[45] pointer-events-none overflow-hidden">
-      <DotLottieReact
-        src={url}
-        loop
-        autoplay
-        className="w-full h-full object-cover opacity-80" 
-      />
-    </div>
+    <DotLottieReact
+      src={url}
+      loop
+      autoplay
+      className="w-full h-full opacity-80"
+      style={{ objectFit: 'cover', objectPosition: 'top' }} 
+    />
   );
 };
