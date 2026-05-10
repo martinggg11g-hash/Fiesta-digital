@@ -109,47 +109,35 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
     <div className={`min-h-screen pb-20 text-left transition-colors duration-300 ${themeBg}`}>
       <style>{`@media print { .no-print { display: none !important; } .only-print { display: block !important; } }`}</style>
 
-      {/* 👉 BANNER DE ALERTA GLOBAL (SOLO PARA SALONES) */}
+      {/* 👉 BANNER DE ALERTA GLOBAL DESLIZABLE (MARQUESINA) */}
       {globalAlert?.activo && globalAlert?.mensaje && (
-        <div className="bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white p-2.5 text-center text-[11px] sm:text-xs font-black uppercase tracking-widest shadow-md flex items-center justify-center gap-2 overflow-hidden sticky top-0 z-50">
-          <AlertCircle size={16} className="animate-pulse shrink-0"/>
-          <span className="truncate">{globalAlert.mensaje}</span>
-        </div>
+        <>
+          <style>{`
+            @keyframes marquee {
+              0% { transform: translateX(100%); }
+              100% { transform: translateX(-100%); }
+            }
+            .animate-marquee {
+              display: inline-block;
+              white-space: nowrap;
+              padding-left: 100%;
+              animation: marquee 18s linear infinite;
+            }
+            .animate-marquee:hover {
+              animation-play-state: paused;
+            }
+          `}</style>
+          <div className="bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white p-2 text-[11px] sm:text-xs font-black uppercase tracking-widest shadow-md flex items-center overflow-hidden sticky top-0 z-50">
+            <div className="shrink-0 z-10 bg-black/20 px-3 py-1.5 rounded-r-xl backdrop-blur-md flex items-center gap-2 border-r border-white/10 mr-2 shadow-[10px_0_15px_rgba(0,0,0,0.2)]">
+               <AlertCircle size={16} className="animate-pulse text-yellow-300"/>
+               <span className="text-yellow-300">INFO</span>
+            </div>
+            <div className="flex-1 overflow-hidden flex items-center">
+              <div className="animate-marquee cursor-default">{globalAlert.mensaje}</div>
+            </div>
+          </div>
+        </>
       )}
-
-      {/* Ajustamos el top del nav si hay alerta para que no la pise */}
-      <nav className={`h-20 border-b px-6 sm:px-8 flex items-center justify-between sticky ${globalAlert?.activo ? 'top-9' : 'top-0'} z-40 transition-colors duration-300 no-print ${themeNav}`}>
-        <div className="flex items-center gap-4">
-           {salonInfo?.logo ? <img src={salonInfo.logo} alt="Logo" className="h-10 object-contain" /> : <div className="w-10 h-10 bg-violet-600 rounded-xl flex items-center justify-center text-white shadow-lg"><Building size={20}/></div>}
-           <div className={`font-black text-xl tracking-tight ${themeText}`}>{user.name}</div>
-        </div>
-        <div className="flex items-center gap-3">
-           <button onClick={() => setShowPaymentModal(true)} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all flex items-center gap-2 border cursor-pointer ${isDark ? 'border-amber-500/30 text-amber-400 bg-amber-500/10' : 'border-amber-200 text-amber-600 bg-amber-50'}`}><CreditCard size={16}/> Pagos</button>
-           <button onClick={() => setIsDark(!isDark)} className="w-10 h-10 rounded-xl flex items-center justify-center bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-yellow-400 cursor-pointer">{isDark ? <Sun size={18}/> : <Moon size={18}/>}</button>
-           <button onClick={() => setShowSettings(true)} className="w-10 h-10 rounded-xl flex items-center justify-center bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer"><Settings size={18}/></button>
-           <button onClick={() => { onLogout(); navigate("/"); }} className="w-10 h-10 bg-red-500/10 text-red-500 rounded-xl flex items-center justify-center hover:bg-red-500/20 cursor-pointer"><LogOut size={18}/></button>
-        </div>
-      </nav>
-
-      <main className="max-w-7xl mx-auto p-6 md:p-12 no-print">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
-          <div>
-            <h1 className={`text-4xl font-black tracking-tight ${themeText}`}>Mis Eventos</h1>
-            <p className="text-slate-500 mt-1 font-medium">Gestioná tus invitaciones en tiempo real.</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-             <select className={`py-3.5 px-4 border rounded-2xl text-sm font-bold outline-none ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white'}`} value={filterType} onChange={(e) => setFilterType(e.target.value)}>
-                <option value="all">Todos</option>
-                <option value="upcoming">Próximos</option>
-                <option value="past">Pasados</option>
-             </select>
-             <div className="relative flex-1 md:flex-none">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18}/>
-                <input className={`w-full md:w-64 pl-11 pr-4 py-3.5 border rounded-2xl text-sm font-medium outline-none ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white'}`} placeholder="Buscar..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-             </div>
-             <button onClick={async () => { const id = await onCreateInv(user.email, user.name); navigate(`/editor/${id}`); }} className="px-8 py-3.5 bg-violet-600 hover:bg-violet-700 text-white rounded-2xl font-black text-sm shadow-xl flex items-center gap-3 cursor-pointer transition-transform active:scale-95"><Plus size={20}/> Nuevo Evento</button>
-          </div>
-        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
           {filteredInvs.map(inv => {
