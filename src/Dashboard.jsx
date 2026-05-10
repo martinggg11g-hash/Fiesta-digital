@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   LogOut, Plus, Trash2, Copy, CheckCircle2, Building, Edit2, 
-  Search, Sun, Moon, Settings, CreditCard, Send, Eye, Filter, ScanBarcode, Smartphone, AlertTriangle
+  Search, Sun, Moon, Settings, CreditCard, Send, Eye, Filter, ScanBarcode, Smartphone, AlertTriangle, AlertCircle
 } from "lucide-react";
 
 import { Inp, FileUpload, Toast, QRScannerModal } from "./DashboardUI";
@@ -21,7 +21,8 @@ const formatDateSpanish = (dateStr) => {
   return dateStr;
 };
 
-export default function DashboardScreen({ user, onLogout, users, onUpdateUser, onCreateSalon, onDeleteSalon, invitations, onCreateInv, onDeleteInv, onUpdateInternal }) {
+// 👉 ACÁ RECIBIMOS LA ALERTA (globalAlert) QUE VIENE DESDE APP.JSX
+export default function DashboardScreen({ user, onLogout, users, onUpdateUser, onCreateSalon, onDeleteSalon, invitations, onCreateInv, onDeleteInv, onUpdateInternal, globalAlert, onUpdateAlert }) {
   const navigate = useNavigate();
   
   const [toast, setToast] = useState("");
@@ -94,8 +95,9 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
     notify("Ingreso registrado");
   };
 
+  // 👉 SI ES MASTER, LE PASAMOS LAS PROPS DE ALERTA PARA QUE LAS VEA EN SU PANEL
   if (isOwner) {
-    return <MasterPanel mySalons={users.filter(u => u.role === "salon")} onLogout={onLogout} onCreateSalon={onCreateSalon} onUpdateUser={onUpdateUser} onDeleteSalon={onDeleteSalon} />;
+    return <MasterPanel mySalons={users.filter(u => u.role === "salon")} onLogout={onLogout} onCreateSalon={onCreateSalon} onUpdateUser={onUpdateUser} onDeleteSalon={onDeleteSalon} globalAlert={globalAlert} onUpdateAlert={onUpdateAlert} />;
   }
 
   const themeBg = isDark ? "bg-slate-900" : "bg-[#f1f3f9]";
@@ -107,7 +109,16 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
     <div className={`min-h-screen pb-20 text-left transition-colors duration-300 ${themeBg}`}>
       <style>{`@media print { .no-print { display: none !important; } .only-print { display: block !important; } }`}</style>
 
-      <nav className={`h-20 border-b px-6 sm:px-8 flex items-center justify-between sticky top-0 z-40 transition-colors duration-300 no-print ${themeNav}`}>
+      {/* 👉 BANNER DE ALERTA GLOBAL (SOLO PARA SALONES) */}
+      {globalAlert?.activo && globalAlert?.mensaje && (
+        <div className="bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white p-2.5 text-center text-[11px] sm:text-xs font-black uppercase tracking-widest shadow-md flex items-center justify-center gap-2 overflow-hidden sticky top-0 z-50">
+          <AlertCircle size={16} className="animate-pulse shrink-0"/>
+          <span className="truncate">{globalAlert.mensaje}</span>
+        </div>
+      )}
+
+      {/* Ajustamos el top del nav si hay alerta para que no la pise */}
+      <nav className={`h-20 border-b px-6 sm:px-8 flex items-center justify-between sticky ${globalAlert?.activo ? 'top-9' : 'top-0'} z-40 transition-colors duration-300 no-print ${themeNav}`}>
         <div className="flex items-center gap-4">
            {salonInfo?.logo ? <img src={salonInfo.logo} alt="Logo" className="h-10 object-contain" /> : <div className="w-10 h-10 bg-violet-600 rounded-xl flex items-center justify-center text-white shadow-lg"><Building size={20}/></div>}
            <div className={`font-black text-xl tracking-tight ${themeText}`}>{user.name}</div>
