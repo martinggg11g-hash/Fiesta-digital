@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ShieldCheck, LogOut, Plus, MapPin, Edit2, KeyRound, Trash2, X, CalendarClock, AlertCircle } from "lucide-react";
 import { Inp, Toggle, Toast } from "./DashboardUI";
@@ -13,21 +13,14 @@ const formatDateSpanish = (dateStr) => {
   return dateStr;
 };
 
-// 👉 ACÁ RECIBIMOS LAS PROPS DE LA ALERTA
 export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, onDeleteSalon, globalAlert, onUpdateAlert }) => {
   const navigate = useNavigate();
   const [toast, setToast] = useState("");
   const notify = (m) => { setToast(m); setTimeout(() => setToast(""), 3000); };
 
-  // 👉 ESTADOS PARA LA CAJA DE ALERTA DEL MASTER
+  // 👉 ESTADOS PARA LA CAJA DE ALERTA DEL MASTER (Sin el useEffect que hacía el loop)
   const [masterAlertMsg, setMasterAlertMsg] = useState(globalAlert?.mensaje || "");
   const [masterAlertActive, setMasterAlertActive] = useState(globalAlert?.activo || false);
-
-  // Sincronizar si la alerta viene desde la base de datos al cargar
-  useEffect(() => {
-    setMasterAlertMsg(globalAlert?.mensaje || "");
-    setMasterAlertActive(globalAlert?.activo || false);
-  }, [globalAlert]);
 
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState("create"); 
@@ -52,17 +45,21 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
     } else if (modalMode === "edit") {
       onUpdateUser(editingEmail, { name: fName, phone: fPhone, address: fAddress, payment_date: fPayDate, payment_alert: fAlert, payment_clabe: fClabe });
     } else if (modalMode === "password") {
+      if(!fPass) return alert("Escribe una contraseña");
       onUpdateUser(editingEmail, { pass: fPass });
     }
     setShowModal(false);
-    notify("¡Hecho!");
+    notify(modalMode === 'create' ? "¡Salón creado!" : "¡Cambios guardados!");
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-left">
-      <nav className="h-16 bg-slate-950 px-6 flex items-center justify-between sticky top-0 z-40 text-white">
-        <div className="font-extrabold text-xl flex items-center gap-3"><ShieldCheck className="text-violet-400"/> Panel Maestro</div>
-        <button onClick={() => { onLogout(); navigate("/master"); }} className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center hover:bg-white/20 transition-colors cursor-pointer"><LogOut size={18}/></button>
+    <div className="min-h-screen bg-slate-50 text-left pb-20">
+      <nav className="h-20 bg-slate-950 px-6 sm:px-8 flex items-center justify-between sticky top-0 z-40 text-white shadow-xl">
+        <div className="font-black text-2xl flex items-center gap-3 tracking-tight">
+          <div className="w-10 h-10 bg-violet-500/20 rounded-xl flex items-center justify-center"><ShieldCheck className="text-violet-400" size={24}/></div>
+          Panel Maestro
+        </div>
+        <button onClick={() => { onLogout(); navigate("/"); }} className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center hover:bg-white/20 transition-colors cursor-pointer"><LogOut size={18}/></button>
       </nav>
       
       <div className="max-w-7xl mx-auto p-6 sm:p-12">
@@ -102,7 +99,7 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-12">
           <div><h1 className="text-4xl font-black text-slate-900 tracking-tight">Gestión de Salones</h1><p className="text-slate-500 mt-2 font-medium">Administrando {mySalons.length} clientes activos</p></div>
-          <button onClick={openCreateModal} className="px-8 py-4 bg-violet-600 hover:bg-violet-700 text-white rounded-[1.5rem] font-black text-sm shadow-xl flex items-center gap-3 transition-transform active:scale-95 cursor-pointer"><Plus size={20}/> Nuevo Salón</button>
+          <button onClick={openCreateModal} className="px-8 py-4 bg-violet-600 hover:bg-violet-700 text-white rounded-[1.5rem] font-black text-sm shadow-xl flex items-center justify-center gap-3 transition-transform active:scale-95 cursor-pointer"><Plus size={20}/> Nuevo Salón</button>
         </div>
 
         <div className="bg-white rounded-3xl shadow-sm border overflow-hidden">
@@ -111,18 +108,26 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
               <thead><tr className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest"><th className="p-5">Salón</th><th className="p-5">Ubicación</th><th className="p-5">Vencimiento</th><th className="p-5">Estado</th><th className="p-5 text-right">Acciones</th></tr></thead>
               <tbody className="text-sm">
                 {mySalons.map(salon => {
-                  let status = <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 font-bold text-xs">Al día</span>;
-                  if (salon.payment_alert) status = <span className="px-3 py-1 rounded-full bg-red-100 text-red-700 font-bold text-xs">Bloqueado</span>;
+                  let status = <span className="px-3 py-1.5 rounded-lg bg-green-50 border border-green-200 text-green-700 font-black text-[10px] uppercase tracking-widest">Al día</span>;
+                  if (salon.payment_alert) status = <span className="px-3 py-1.5 rounded-lg bg-red-50 border border-red-200 text-red-600 font-black text-[10px] uppercase tracking-widest">Atrasado</span>;
                   return (
-                    <tr key={salon.email} className="border-b hover:bg-slate-50 transition-colors">
-                      <td className="p-5 font-bold">{salon.name}<br/><span className="text-xs text-slate-400 font-normal">{salon.email}</span></td>
-                      <td className="p-5"><div className="flex gap-2 max-w-[180px]"><MapPin size={16} className="text-slate-300"/><span className="text-xs truncate">{salon.address || 'N/A'}</span></div></td>
-                      <td className="p-5 font-bold">{salon.payment_date ? formatDateSpanish(salon.payment_date) : '--/--/----'}</td>
+                    <tr key={salon.email} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                      <td className="p-5">
+                        <p className="font-black text-slate-800 text-base">{salon.name}</p>
+                        <p className="text-xs text-slate-400 font-medium">{salon.email}</p>
+                      </td>
+                      <td className="p-5">
+                        <div className="flex gap-2 items-center max-w-[200px]">
+                          <MapPin size={16} className="text-slate-300 shrink-0"/>
+                          <span className="text-sm text-slate-600 truncate">{salon.address || 'Sin dirección'}</span>
+                        </div>
+                      </td>
+                      <td className="p-5 font-black text-slate-700">{salon.payment_date ? formatDateSpanish(salon.payment_date) : '--/--/----'}</td>
                       <td className="p-5">{status}</td>
-                      <td className="p-5 text-right flex justify-end gap-2">
-                        <button onClick={() => openEditModal(salon)} className="w-10 h-10 rounded-xl bg-slate-50 text-slate-600 flex items-center justify-center hover:bg-violet-50 cursor-pointer transition-all"><Edit2 size={16}/></button>
-                        <button onClick={() => openPassModal(salon)} className="w-10 h-10 rounded-xl bg-slate-50 text-slate-600 flex items-center justify-center hover:bg-blue-50 cursor-pointer transition-all"><KeyRound size={16}/></button>
-                        <button onClick={() => window.confirm("Eliminar?") && onDeleteSalon(salon.email)} className="w-10 h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center hover:bg-red-100 cursor-pointer transition-all"><Trash2 size={16}/></button>
+                      <td className="p-5 flex justify-end gap-2">
+                        <button onClick={() => openEditModal(salon)} title="Editar Salón" className="w-10 h-10 rounded-xl bg-white border border-slate-200 text-slate-600 flex items-center justify-center hover:border-violet-300 hover:text-violet-600 hover:bg-violet-50 cursor-pointer transition-all shadow-sm"><Edit2 size={16}/></button>
+                        <button onClick={() => openPassModal(salon)} title="Cambiar Contraseña" className="w-10 h-10 rounded-xl bg-white border border-slate-200 text-slate-600 flex items-center justify-center hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 cursor-pointer transition-all shadow-sm"><KeyRound size={16}/></button>
+                        <button onClick={() => window.confirm("¿Estás seguro de eliminar este salón y todas sus invitaciones? Esta acción no se puede deshacer.") && onDeleteSalon(salon.email)} title="Eliminar Salón" className="w-10 h-10 rounded-xl bg-white border border-slate-200 text-slate-400 flex items-center justify-center hover:border-red-300 hover:text-red-500 hover:bg-red-50 cursor-pointer transition-all shadow-sm"><Trash2 size={16}/></button>
                       </td>
                     </tr>
                   );
@@ -146,11 +151,17 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
                   {modalMode === 'create' && <Inp label="Contraseña" value={fPass} onChange={setFPass} type="password" />}
                   <Inp label="Ubicación Google Maps" value={fAddress} onChange={setFAddress} />
                   <Inp label="CLABE de Pago Asignada" placeholder="Ej: 012345678901234567" value={fClabe} onChange={setFClabe} />
-                  <div className="flex gap-4"><Inp label="Próximo Vencimiento" type="date" icon={CalendarClock} value={fPayDate} onChange={setFPayDate} className="flex-1" /><div className="flex flex-col items-center"><span className="text-[10px] font-black uppercase mb-2 text-red-500">Bloqueo</span><Toggle checked={fAlert} onChange={setFAlert} /></div></div>
+                  <div className="flex gap-4 items-center bg-slate-50 p-4 rounded-2xl border border-slate-200 mt-2">
+                    <Inp label="Vencimiento Cuota" type="date" icon={CalendarClock} value={fPayDate} onChange={setFPayDate} className="flex-1 !mb-0" />
+                    <div className="flex flex-col items-center justify-center shrink-0 border-l border-slate-200 pl-4">
+                      <span className="text-[10px] font-black uppercase mb-2 text-red-500 tracking-widest">Bloqueo Manual</span>
+                      <Toggle checked={fAlert} onChange={setFAlert} />
+                    </div>
+                  </div>
                 </>
               )}
               {modalMode === 'password' && <Inp label="Escribí Nueva Contraseña" value={fPass} onChange={setFPass} type="password" />}
-              <button onClick={handleSaveModal} className="w-full py-4 mt-6 bg-slate-900 text-white rounded-2xl font-black text-sm cursor-pointer shadow-lg">GUARDAR CAMBIOS</button>
+              <button onClick={handleSaveModal} className="w-full py-4 mt-6 bg-slate-900 text-white rounded-2xl font-black text-sm cursor-pointer shadow-lg active:scale-95 transition-transform uppercase tracking-widest">GUARDAR CAMBIOS</button>
             </div>
           </div>
         </div>
