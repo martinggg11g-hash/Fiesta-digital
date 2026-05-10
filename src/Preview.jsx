@@ -332,7 +332,6 @@ const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP, guestDa
             <button 
               onClick={async () => {
                 setLoading(true);
-                // Acá disparamos la función que guarda en Supabase (definida en App.jsx)
                 if (onConfirmRSVP) await onConfirmRSVP({ guests: companions });
                 setLocalConfirmed(true);
                 setLoading(false);
@@ -350,7 +349,7 @@ const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP, guestDa
     );
   }
 
-  // Lógica para Lista Abierta (Link General)
+  // Lógica para Lista Abierta
   const generateTicket = (e) => {
     e.preventDefault();
     setLoading(true);
@@ -429,7 +428,6 @@ const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP, guestDa
     );
   }
 
-  // Si está en el paso 'qr' (Solo ocurre en Lista Abierta)
   return (
     <div className="pt-8">
       <div className="text-center p-6 rounded-3xl border shadow-sm" style={{ background: cardC, borderColor: `${primary}33` }}>
@@ -485,32 +483,6 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
   return (
     <div style={{ backgroundColor: bg1, backgroundImage: bg2.includes('gradient') ? bg2 : `linear-gradient(180deg, ${bg1} 0%, ${bg2} 100%)`, fontFamily: cfg.fontBody, minHeight: '100%' }} className="pb-12 relative overflow-x-hidden flex flex-col">
       
-      {/* 🚀 CAPA DE BORDES CON ROTACIÓN INDEPENDIENTE Y ESPEJADO PERFECTO */}
-      {cfg.showCoverBorders && cfg.selectedBorder && (
-        <div className="absolute inset-0 pointer-events-none z-[100]">
-          {(cfg.borderPosition === 'both' || cfg.borderPosition === 'top') && (
-            <>
-              <DraggableItem id="topLeftBorder" cfg={cfg} update={update} className="top-0 left-0 pointer-events-auto">
-                <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} style={{ transform: `rotate(${cfg.borderRotationTop || 0}deg)` }} />
-              </DraggableItem>
-              <DraggableItem id="topRightBorder" cfg={cfg} update={update} className="top-0 right-0 pointer-events-auto">
-                <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} style={{ transform: `scaleX(-1) rotate(${cfg.borderRotationTop || 0}deg)` }} />
-              </DraggableItem>
-            </>
-          )}
-          {(cfg.borderPosition === 'both' || cfg.borderPosition === 'bottom') && (
-            <>
-               <DraggableItem id="bottomLeftBorder" cfg={cfg} update={update} className="bottom-0 left-0 pointer-events-auto">
-                 <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} style={{ transform: `scaleY(-1) rotate(${cfg.borderRotationBottom || 0}deg)` }} />
-               </DraggableItem>
-               <DraggableItem id="bottomRightBorder" cfg={cfg} update={update} className="bottom-0 right-0 pointer-events-auto">
-                 <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} style={{ transform: `scaleX(-1) scaleY(-1) rotate(${cfg.borderRotationBottom || 0}deg)` }} />
-               </DraggableItem>
-            </>
-          )}
-        </div>
-      )}
-
       {/* 🚀 EL CONTENEDOR DE LA PORTADA */}
       <div className="relative h-[420px] overflow-hidden shrink-0">
         
@@ -532,7 +504,33 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
           )}
         </div>
 
-        {/* 4. Capa superior 2: LOS TEXTOS Y DRAGGABLES */}
+        {/* 🚀 4. CAPA DE BORDES: AHORA ESTÁN DENTRO DE LA PORTADA (¡CHAU SCROLL INFINITO!) */}
+        {cfg.showCoverBorders && cfg.selectedBorder && (
+          <div className="absolute inset-0 pointer-events-none z-[25]">
+            {(cfg.borderPosition === 'both' || cfg.borderPosition === 'top') && (
+              <>
+                <DraggableItem id="topLeftBorder" cfg={cfg} update={update} className="top-0 left-0 pointer-events-auto">
+                  <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} style={{ transform: `rotate(${cfg.borderRotationTop || 0}deg)` }} />
+                </DraggableItem>
+                <DraggableItem id="topRightBorder" cfg={cfg} update={update} className="top-0 right-0 pointer-events-auto">
+                  <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} style={{ transform: `scaleX(-1) rotate(${cfg.borderRotationTop || 0}deg)` }} />
+                </DraggableItem>
+              </>
+            )}
+            {(cfg.borderPosition === 'both' || cfg.borderPosition === 'bottom') && (
+              <>
+                <DraggableItem id="bottomLeftBorder" cfg={cfg} update={update} className="bottom-0 left-0 pointer-events-auto">
+                  <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} style={{ transform: `scaleY(-1) rotate(${cfg.borderRotationBottom || 0}deg)` }} />
+                </DraggableItem>
+                <DraggableItem id="bottomRightBorder" cfg={cfg} update={update} className="bottom-0 right-0 pointer-events-auto">
+                  <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} style={{ transform: `scaleX(-1) scaleY(-1) rotate(${cfg.borderRotationBottom || 0}deg)` }} />
+                </DraggableItem>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* 5. Capa superior 2: LOS TEXTOS Y DRAGGABLES */}
         <div className="absolute bottom-0 left-0 right-0 p-8 flex flex-col items-center z-30">
           <DraggableItem id="eventType" cfg={cfg} update={update} className="relative !static flex justify-center w-full">
             <p className="font-black uppercase tracking-[0.2em] mb-4 flex items-center justify-center gap-2" style={{ color: cfg.eventTypeColor || primary, fontSize: `${cfg.eventTypeSize ?? 11}px`, fontFamily: cfg.eventTypeFont || cfg.fontBody, textShadow: coverShadow }}>
