@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ShieldCheck, LogOut, Plus, MapPin, Edit2, KeyRound, Trash2, X, CalendarClock } from "lucide-react";
+import { ShieldCheck, LogOut, Plus, MapPin, Edit2, KeyRound, Trash2, X, CalendarClock, AlertCircle } from "lucide-react";
 import { Inp, Toggle, Toast } from "./DashboardUI";
 
 const formatDateSpanish = (dateStr) => {
@@ -13,10 +13,21 @@ const formatDateSpanish = (dateStr) => {
   return dateStr;
 };
 
-export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, onDeleteSalon }) => {
+// 👉 ACÁ RECIBIMOS LAS PROPS DE LA ALERTA
+export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, onDeleteSalon, globalAlert, onUpdateAlert }) => {
   const navigate = useNavigate();
   const [toast, setToast] = useState("");
   const notify = (m) => { setToast(m); setTimeout(() => setToast(""), 3000); };
+
+  // 👉 ESTADOS PARA LA CAJA DE ALERTA DEL MASTER
+  const [masterAlertMsg, setMasterAlertMsg] = useState(globalAlert?.mensaje || "");
+  const [masterAlertActive, setMasterAlertActive] = useState(globalAlert?.activo || false);
+
+  // Sincronizar si la alerta viene desde la base de datos al cargar
+  useEffect(() => {
+    setMasterAlertMsg(globalAlert?.mensaje || "");
+    setMasterAlertActive(globalAlert?.activo || false);
+  }, [globalAlert]);
 
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState("create"); 
@@ -53,11 +64,47 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
         <div className="font-extrabold text-xl flex items-center gap-3"><ShieldCheck className="text-violet-400"/> Panel Maestro</div>
         <button onClick={() => { onLogout(); navigate("/master"); }} className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center hover:bg-white/20 transition-colors cursor-pointer"><LogOut size={18}/></button>
       </nav>
+      
       <div className="max-w-7xl mx-auto p-6 sm:p-12">
+        
+        {/* 👉 NUEVO PANEL DE CONTROL: ALERTA GLOBAL */}
+        <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 sm:p-8 mb-10 flex flex-col lg:flex-row items-start lg:items-center gap-6 relative overflow-hidden">
+          <div className="absolute top-0 left-0 bottom-0 w-2 bg-violet-500"></div>
+          
+          <div className="w-14 h-14 bg-violet-50 text-violet-600 rounded-full flex items-center justify-center shrink-0 shadow-sm border border-violet-100">
+            <AlertCircle size={28}/>
+          </div>
+          
+          <div className="flex-1 w-full">
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Anuncio Global para Salones</label>
+            <input 
+              type="text" 
+              placeholder="Ej: Mantenimiento programado hoy a las 03:00 AM..." 
+              value={masterAlertMsg} 
+              onChange={e => setMasterAlertMsg(e.target.value)} 
+              className="w-full py-3.5 px-4 rounded-xl text-slate-800 bg-slate-50 border border-slate-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all font-medium" 
+            />
+          </div>
+          
+          <div className="flex w-full lg:w-auto items-center justify-between lg:justify-center gap-6 lg:border-l lg:border-slate-100 lg:pl-6">
+            <div className="flex flex-col items-center justify-center shrink-0">
+              <span className="text-[10px] font-black uppercase mb-2 text-slate-400">Estado</span>
+              <Toggle checked={masterAlertActive} onChange={setMasterAlertActive} />
+            </div>
+            <button 
+              onClick={() => { onUpdateAlert(masterAlertMsg, masterAlertActive); notify("¡Alerta Actualizada!"); }} 
+              className="h-12 px-8 bg-slate-900 text-white rounded-xl font-black text-xs hover:bg-black transition-all shadow-lg active:scale-95 cursor-pointer shrink-0 uppercase tracking-widest"
+            >
+              Publicar
+            </button>
+          </div>
+        </div>
+
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-12">
           <div><h1 className="text-4xl font-black text-slate-900 tracking-tight">Gestión de Salones</h1><p className="text-slate-500 mt-2 font-medium">Administrando {mySalons.length} clientes activos</p></div>
           <button onClick={openCreateModal} className="px-8 py-4 bg-violet-600 hover:bg-violet-700 text-white rounded-[1.5rem] font-black text-sm shadow-xl flex items-center gap-3 transition-transform active:scale-95 cursor-pointer"><Plus size={20}/> Nuevo Salón</button>
         </div>
+
         <div className="bg-white rounded-3xl shadow-sm border overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -85,6 +132,7 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
           </div>
         </div>
       </div>
+
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl relative anim-pop">
