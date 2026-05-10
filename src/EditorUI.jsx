@@ -6,32 +6,12 @@ import {
   FONTS, 
   FONT_CATEGORIES, 
   ICON_CATEGORIES, 
-  EMOJI_CATEGORIES 
+  EMOJI_CATEGORIES,
+  BORDERS // 👉 IMPORTAMOS TU NUEVA GALERÍA DE BORDES
 } from "./config";
 
 const gf = new GiphyFetch('32PbboqCveiWSlj9vROPmyjv8l8cuaj1');
 const IMGBB_API_KEY = "904f81caf05efe58a799abdb1fedc2ce";
-
-const getB = (n) => {
-  const svg = [
-    `<path d="M0,0v100c5,-25 25,-45 55,-45c20,0 45,-15 45,-55v-0z" />`,
-    `<path d="M0,0v100h4v-96h96v-4z"/><circle cx="20" cy="20" r="4"/>`,
-    `<path d="M0,0c0,50 50,100 100,100v-5c-45,0-95-45-95-95z"/><path d="M0,0c0,30 30,60 60,60v-3c-25,0-57-25-57-57z"/>`,
-    `<path d="M0,0v100l20,-20v-60h60l20,-20z"/><rect x="30" y="30" width="10" height="10"/>`,
-    `<path d="M0,100Q0,0 100,0L95,0Q95,95 0,95z"/><circle cx="15" cy="15" r="5"/>`,
-    `<path d="M0,0v100c20,-20 80,-20 100,-100z" />`
-  ];
-  return "data:image/svg+xml;base64," + btoa(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="black">${svg[n-1]}</svg>`);
-};
-
-export const PRELOADED_BORDERS = [
-  { id: 'b1', name: 'Vintage', url: getB(1) },
-  { id: 'b2', name: 'Minimal', url: getB(2) },
-  { id: 'b3', name: 'Curvas', url: getB(3) },
-  { id: 'b4', name: 'Tribal', url: getB(4) },
-  { id: 'b5', name: 'Floral', url: getB(5) },
-  { id: 'b6', name: 'Abstracto', url: getB(6) }
-];
 
 export const IconRenderer = ({ name, size = 24, color = "currentColor", className = "" }) => {
   if (!name) return null;
@@ -73,7 +53,6 @@ export const IconRenderer = ({ name, size = 24, color = "currentColor", classNam
   }
 };
 
-// ACÁ ESTABA EL ERROR. AHORA TIENE z-[10] PARA NO ROMPER TODO
 export const FontSelector = ({ value, onChange }) => {
   const [open, setOpen] = useState(false);
   const [cat, setCat] = useState("Modernas");
@@ -166,9 +145,10 @@ export const EmojiPicker = ({ value, onSelect }) => {
   );
 };
 
+// 👉 ESTE ES EL COMPONENTE QUE AHORA LEE TUS BORDES DE CONFIG.JS
 export const BordersGallery = ({ value, onChange }) => (
   <div className="grid grid-cols-3 gap-2">
-    {PRELOADED_BORDERS.map(b => (
+    {BORDERS.map(b => (
       <button key={b.id} type="button" onClick={() => onChange(b.url)} className={`p-2 border rounded-xl flex flex-col items-center gap-2 transition-all cursor-pointer ${value === b.url ? 'border-violet-500 bg-violet-100 shadow-md' : 'border-slate-200 bg-white hover:bg-slate-50'}`}>
         <div style={{ width: '40px', height: '40px', backgroundColor: value === b.url ? '#7c3aed' : '#94a3b8', WebkitMaskImage: `url("${b.url}")`, WebkitMaskSize: 'contain', WebkitMaskRepeat: 'no-repeat', maskImage: `url("${b.url}")`, maskSize: 'contain', maskRepeat: 'no-repeat' }} />
         <span className={`text-[9px] font-bold ${value === b.url ? 'text-violet-700' : 'text-slate-500'}`}>{b.name}</span>
@@ -218,7 +198,6 @@ export const SelectInp = ({ label, value, onChange, options, className="" }) => 
   </div>
 );
 
-// ACA TAMBIEN AJUSTAMOS EL Z-INDEX BASE
 export const TypoControl = ({ label, fontVal, onFont, colorVal, onColor, sizeVal, onSize, minSize=10, maxSize=80 }) => (
   <div className="bg-gray-50/70 p-3 rounded-xl border border-gray-100 shadow-sm mb-5 relative overflow-visible z-[10]">
     <div className="absolute left-0 top-0 bottom-0 w-1 bg-violet-200 rounded-l-xl" /><label className="flex justify-between items-center text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 pl-2"><span>{label}</span>{sizeVal && <span className="text-violet-500 bg-violet-100 px-2 py-0.5 rounded-full">{sizeVal}px</span>}</label>
