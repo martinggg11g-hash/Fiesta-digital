@@ -137,6 +137,9 @@ export default function App() {
 
   const [users, setUsers] = useState([]);
   const [invitations, setInvitations] = useState([]);
+  
+  // 👉 ESTADO PARA LA ALERTA GLOBAL
+  const [globalAlert, setGlobalAlert] = useState({ mensaje: "", activo: false });
   const [loading, setLoading] = useState(true);
 
   const handleLogin = (userData, rememberMe) => {
@@ -155,12 +158,24 @@ export default function App() {
     const fetchData = async () => {
       const { data: salones } = await supabase.from('salones').select('*');
       const { data: invs } = await supabase.from('invitaciones').select('*');
+      
+      // 👉 BUSCAR LA ALERTA
+      const { data: alertData } = await supabase.from('alertas').select('*').eq('id', 1).single();
+      
       if (salones) setUsers(salones);
       if (invs) setInvitations(invs.map(i => ({ ...i, salonId: i.salon_id, internal_data: i.internal_data || {} })));
+      if (alertData) setGlobalAlert(alertData);
+      
       setLoading(false);
     };
     fetchData();
   }, []);
+
+  // 👉 FUNCION PARA GUARDAR LA ALERTA EN SUPABASE
+  const handleUpdateAlert = async (mensaje, activo) => {
+    const { error } = await supabase.from('alertas').upsert({ id: 1, mensaje, activo });
+    if (!error) setGlobalAlert({ mensaje, activo });
+  };
 
   const handleUpdateUser = async (email, updateData) => {
     const { error } = await supabase.from('salones').update(updateData).eq('email', email);
@@ -188,7 +203,6 @@ export default function App() {
   const handleCreateSalon = async (nU) => { const { error } = await supabase.from('salones').insert([nU]); if (!error) setUsers(p => [...p, nU]); };
   const handleDeleteSalon = async (em) => { await supabase.from('invitaciones').delete().eq('salon_id', em); await supabase.from('salones').delete().eq('email', em); setUsers(p => p.filter(u => u.email !== em)); setInvitations(p => p.filter(i => i.salonId !== em)); };
   
-  // MAGIA ACA: Automatizamos la inyección del logo y redes del salón en las tarjetas nuevas
   const handleCreateInv = async (sE, sN) => { 
     const sInfo = users.find(u => u.email === sE);
     const nId = "evt-" + Math.random().toString(36).substr(2,6);
@@ -197,7 +211,6 @@ export default function App() {
       ...DEF_CONFIG, 
       locationName: sN, 
       locationAddress: sInfo?.address || "",
-      // Redes automáticas del salón:
       venueLogoUrl: sInfo?.logo || "",
       showVenueLogo: !!sInfo?.logo,
       instagramUrl: sInfo?.instagram || "",
@@ -238,7 +251,10 @@ export default function App() {
         <Routes>
           <Route path="/" element={user ? <Navigate to="/dashboard" /> : <LoginScreen onLogin={handleLogin} users={users} />} />
           <Route path="/master" element={user ? <Navigate to="/dashboard" /> : <LoginScreen isMaster={true} onLogin={handleLogin} users={users} />} />
-          <Route path="/dashboard" element={user ? <DashboardScreen user={user} users={users} invitations={invitations} onCreateSalon={handleCreateSalon} onDeleteSalon={handleDeleteSalon} onCreateInv={handleCreateInv} onDeleteInv={handleDeleteInv} onUpdateUser={handleUpdateUser} onUpdateInternal={handleUpdateInternal} onLogout={handleLogout} /> : <Navigate to="/" />} />
+          
+          {/* 👉 PASAMOS LOS ESTADOS DE ALERTA AL DASHBOARD */}
+          <Route path="/dashboard" element={user ? <DashboardScreen user={user} users={users} invitations={invitations} onCreateSalon={handleCreateSalon} onDeleteSalon={handleDeleteSalon} onCreateInv={handleCreateInv} onDeleteInv={handleDeleteInv} onUpdateUser={handleUpdateUser} onUpdateInternal={handleUpdateInternal} onLogout={handleLogout} globalAlert={globalAlert} onUpdateAlert={handleUpdateAlert} /> : <Navigate to="/" />} />
+          
           <Route path="/editor/:id" element={<EditorScreen invitations={invitations} onSave={handleSaveInv} />} />
           <Route path="/i/:salon/:invId" element={<PublicInviteScreen invitations={invitations} onConfirmRSVP={handleConfirmRSVP} />} />
           <Route path="/puerta/:id" element={<PuertaScreen invitations={invitations} onUpdateInternal={handleUpdateInternal} />} />
