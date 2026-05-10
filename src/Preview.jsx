@@ -468,7 +468,6 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
   const gradOpacity = cfg.showCoverGradient === false ? 0 : ((cfg.coverGradientIntensity ?? 50) / 100).toFixed(2);
   const coverShadow = (cfg.coverTextShadowSize > 0) ? `0px 4px ${cfg.coverTextShadowSize}px ${cfg.coverTextShadowColor || '#000000'}` : 'none';
 
-  // 👉 MAGIA LOTTIE: Buscamos si el efecto de partícula elegido es en realidad un Lottie Premium
   let isLottieEffect = false;
   let lottieUrl = null;
   
@@ -486,25 +485,26 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
   return (
     <div style={{ backgroundColor: bg1, backgroundImage: bg2.includes('gradient') ? bg2 : `linear-gradient(180deg, ${bg1} 0%, ${bg2} 100%)`, fontFamily: cfg.fontBody, minHeight: '100%' }} className="pb-12 relative overflow-x-hidden flex flex-col">
       
+      {/* 🚀 CAPA DE BORDES CON ROTACIÓN INDEPENDIENTE Y ESPEJADO PERFECTO */}
       {cfg.showCoverBorders && cfg.selectedBorder && (
         <div className="absolute inset-0 pointer-events-none z-[100]">
           {(cfg.borderPosition === 'both' || cfg.borderPosition === 'top') && (
             <>
               <DraggableItem id="topLeftBorder" cfg={cfg} update={update} className="top-0 left-0 pointer-events-auto">
-                <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} />
+                <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} style={{ transform: `rotate(${cfg.borderRotationTop || 0}deg)` }} />
               </DraggableItem>
               <DraggableItem id="topRightBorder" cfg={cfg} update={update} className="top-0 right-0 pointer-events-auto">
-                <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} style={{ transform: 'scaleX(-1)' }} />
+                <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} style={{ transform: `scaleX(-1) rotate(${cfg.borderRotationTop || 0}deg)` }} />
               </DraggableItem>
             </>
           )}
           {(cfg.borderPosition === 'both' || cfg.borderPosition === 'bottom') && (
             <>
                <DraggableItem id="bottomLeftBorder" cfg={cfg} update={update} className="bottom-0 left-0 pointer-events-auto">
-                 <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} style={{ transform: 'scaleY(-1)' }} />
+                 <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} style={{ transform: `scaleY(-1) rotate(${cfg.borderRotationBottom || 0}deg)` }} />
                </DraggableItem>
                <DraggableItem id="bottomRightBorder" cfg={cfg} update={update} className="bottom-0 right-0 pointer-events-auto">
-                 <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} style={{ transform: 'scaleX(-1) scaleY(-1)' }} />
+                 <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} style={{ transform: `scaleX(-1) scaleY(-1) rotate(${cfg.borderRotationBottom || 0}deg)` }} />
                </DraggableItem>
             </>
           )}
@@ -520,7 +520,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
         {/* 2. Capa intermedia: EL DEGRADADO OSCURO */}
         <div className="absolute inset-0 z-10" style={{ background: `linear-gradient(to top, ${cfg.bg1} 5%, rgba(0,0,0,${gradOpacity}) 60%, transparent 100%)` }} />
 
-        {/* 3. Capa superior 1: LOS EFECTOS (Clásicos o Lotties) -> ¡AHORA CON OPACIDAD REGULABLE! */}
+        {/* 3. Capa superior 1: LOS EFECTOS (Clásicos o Lotties) -> ¡CON OPACIDAD REGULABLE! */}
         <div 
           className="absolute inset-0 pointer-events-none z-20 overflow-hidden flex items-start justify-center transition-opacity duration-200" 
           style={{ opacity: (cfg.effectOpacity ?? 100) / 100 }}
