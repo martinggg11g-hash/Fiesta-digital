@@ -69,77 +69,208 @@ export const DEF_CONFIG = {
 };
 
 export const THEMES = [
-  { 
-    id: "t1", name: "Rose Gold", 
-    primary: "#d97793", bg1: "#fdf8f9", 
-    bg2: "linear-gradient(135deg, #fdf8f9 0%, #f6e5e9 50%, #f0d5dc 100%)", 
-    text: "#4a2c33", card: "#ffffff", muted: "#8a5a66" 
+  {
+    id: "t1",
+    name: "Rose Gold Luxe",
+    primary: "#e58aa8",
+    secondary: "#f7c6d5",
+    accent: "#fff1f5",
+    bg1: "#fff8fa",
+    bg2: "radial-gradient(circle at top left, #ffe4ec 0%, #f8d6df 35%, #f2c2d0 65%, #e6a8bc 100%)",
+    glass: "rgba(255,255,255,0.55)",
+    card: "linear-gradient(145deg, rgba(255,255,255,0.92), rgba(255,245,248,0.72))",
+    border: "rgba(255,255,255,0.45)",
+    text: "#4b2330",
+    muted: "#8f5d6d",
+    shadow: "0 25px 50px rgba(229,138,168,0.25)",
+    glow: "0 0 40px rgba(229,138,168,0.35)",
   },
-  { 
-    id: "t2", name: "Galaxia (Dark)", 
-    primary: "#a855f7", bg1: "#0f0c29", 
-    bg2: "linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)", 
-    text: "#f8fafc", card: "rgba(30, 30, 45, 0.6)", muted: "#cbd5e1" 
+
+  {
+    id: "t2",
+    name: "Galaxia Prime",
+    primary: "#9d4edd",
+    secondary: "#5a189a",
+    accent: "#c77dff",
+    bg1: "#090611",
+    bg2: "radial-gradient(circle at top, #3c096c 0%, #240046 35%, #10002b 65%, #030014 100%)",
+    glass: "rgba(32,22,58,0.55)",
+    card: "linear-gradient(145deg, rgba(34,24,60,0.85), rgba(17,12,33,0.65))",
+    border: "rgba(199,125,255,0.18)",
+    text: "#faf5ff",
+    muted: "#d8b4fe",
+    shadow: "0 25px 60px rgba(157,78,221,0.35)",
+    glow: "0 0 55px rgba(199,125,255,0.45)",
   },
-  { 
-    id: "t3", name: "Esmeralda", 
-    primary: "#10b981", bg1: "#ecfdf5", 
-    bg2: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 50%, #a7f3d0 100%)", 
-    text: "#064e3b", card: "#ffffff", muted: "#047857" 
+
+  {
+    id: "t3",
+    name: "Emerald Forest",
+    primary: "#10b981",
+    secondary: "#065f46",
+    accent: "#6ee7b7",
+    bg1: "#ecfdf5",
+    bg2: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 30%, #86efac 70%, #34d399 100%)",
+    glass: "rgba(255,255,255,0.48)",
+    card: "linear-gradient(145deg, rgba(255,255,255,0.88), rgba(220,252,231,0.7))",
+    border: "rgba(16,185,129,0.18)",
+    text: "#042f2e",
+    muted: "#047857",
+    shadow: "0 25px 55px rgba(16,185,129,0.22)",
+    glow: "0 0 40px rgba(16,185,129,0.28)",
   },
-  { 
-    id: "t4", name: "Océano", 
-    primary: "#0ea5e9", bg1: "#f0f9ff", 
-    bg2: "linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #bae6fd 100%)", 
-    text: "#0c4a6e", card: "#ffffff", muted: "#0284c7" 
+
+  {
+    id: "t4",
+    name: "Ocean Depths",
+    primary: "#0ea5e9",
+    secondary: "#0369a1",
+    accent: "#7dd3fc",
+    bg1: "#eff9ff",
+    bg2: "radial-gradient(circle at top right, #dbeafe 0%, #bae6fd 35%, #38bdf8 70%, #0f172a 100%)",
+    glass: "rgba(255,255,255,0.5)",
+    card: "linear-gradient(145deg, rgba(255,255,255,0.9), rgba(224,242,254,0.65))",
+    border: "rgba(14,165,233,0.18)",
+    text: "#082f49",
+    muted: "#0369a1",
+    shadow: "0 25px 60px rgba(14,165,233,0.25)",
+    glow: "0 0 50px rgba(56,189,248,0.3)",
   },
-  { 
-    id: "t5", name: "Atardecer", 
-    primary: "#f43f5e", bg1: "#fff1f2", 
-    bg2: "linear-gradient(135deg, #fff1f2 0%, #ffe4e6 50%, #fecdd3 100%)", 
-    text: "#881337", card: "#ffffff", muted: "#be123c" 
+
+  {
+    id: "t5",
+    name: "Neon Sunset",
+    primary: "#ff4d6d",
+    secondary: "#fb7185",
+    accent: "#fecdd3",
+    bg1: "#fff1f2",
+    bg2: "linear-gradient(135deg, #ffedd5 0%, #fecdd3 30%, #fb7185 65%, #7f1d1d 100%)",
+    glass: "rgba(255,255,255,0.42)",
+    card: "linear-gradient(145deg, rgba(255,255,255,0.88), rgba(255,228,230,0.7))",
+    border: "rgba(255,255,255,0.28)",
+    text: "#4c0519",
+    muted: "#be123c",
+    shadow: "0 25px 60px rgba(255,77,109,0.28)",
+    glow: "0 0 45px rgba(251,113,133,0.38)",
   },
-  { 
-    id: "t6", name: "Terciopelo (Dark)", 
-    primary: "#8b5cf6", bg1: "#1e1b4b", 
-    bg2: "linear-gradient(135deg, #1e1b4b 0%, #2e1065 50%, #4c1d95 100%)", 
-    text: "#f5f3ff", card: "rgba(46, 16, 101, 0.6)", muted: "#c4b5fd" 
+
+  {
+    id: "t6",
+    name: "Velvet Nebula",
+    primary: "#8b5cf6",
+    secondary: "#4c1d95",
+    accent: "#c4b5fd",
+    bg1: "#140c2e",
+    bg2: "radial-gradient(circle at top left, #4c1d95 0%, #312e81 35%, #1e1b4b 70%, #09090b 100%)",
+    glass: "rgba(49,46,129,0.38)",
+    card: "linear-gradient(145deg, rgba(55,48,163,0.55), rgba(17,24,39,0.62))",
+    border: "rgba(196,181,253,0.18)",
+    text: "#f5f3ff",
+    muted: "#ddd6fe",
+    shadow: "0 25px 65px rgba(139,92,246,0.35)",
+    glow: "0 0 50px rgba(167,139,250,0.4)",
   },
-  { 
-    id: "t7", name: "Champagne", 
-    primary: "#d4af37", bg1: "#fcfbf9", 
-    bg2: "linear-gradient(135deg, #fdfbf7 0%, #f6f0e4 50%, #f3ead3 100%)", 
-    text: "#3e3214", card: "#ffffff", muted: "#8c7322" 
+
+  {
+    id: "t7",
+    name: "Imperial Champagne",
+    primary: "#eab308",
+    secondary: "#ca8a04",
+    accent: "#fde68a",
+    bg1: "#fffbeb",
+    bg2: "linear-gradient(135deg, #fffdf5 0%, #fef3c7 35%, #facc15 70%, #78350f 100%)",
+    glass: "rgba(255,255,255,0.55)",
+    card: "linear-gradient(145deg, rgba(255,255,255,0.92), rgba(254,249,195,0.72))",
+    border: "rgba(234,179,8,0.2)",
+    text: "#422006",
+    muted: "#92400e",
+    shadow: "0 25px 55px rgba(234,179,8,0.28)",
+    glow: "0 0 45px rgba(250,204,21,0.38)",
   },
-  { 
-    id: "t8", name: "Cyberpunk (Dark)", 
-    primary: "#ec4899", bg1: "#09090b", 
-    bg2: "linear-gradient(135deg, #09090b 0%, #171717 50%, #27272a 100%)", 
-    text: "#fdf2f8", card: "rgba(39, 39, 42, 0.6)", muted: "#f472b6" 
+
+  {
+    id: "t8",
+    name: "Cyberpunk X",
+    primary: "#ff2ea6",
+    secondary: "#7c3aed",
+    accent: "#22d3ee",
+    bg1: "#050505",
+    bg2: "linear-gradient(135deg, #050505 0%, #111827 30%, #3b0764 65%, #ff0080 100%)",
+    glass: "rgba(24,24,27,0.45)",
+    card: "linear-gradient(145deg, rgba(39,39,42,0.7), rgba(17,24,39,0.6))",
+    border: "rgba(255,46,166,0.25)",
+    text: "#fdf4ff",
+    muted: "#f0abfc",
+    shadow: "0 30px 70px rgba(255,46,166,0.32)",
+    glow: "0 0 60px rgba(34,211,238,0.35)",
   },
-  { 
-    id: "t9", name: "Durazno Suave", 
-    primary: "#f97316", bg1: "#fff7ed", 
-    bg2: "linear-gradient(135deg, #fff7ed 0%, #ffedd5 50%, #fed7aa 100%)", 
-    text: "#431407", card: "#ffffff", muted: "#9a3412" 
+
+  {
+    id: "t9",
+    name: "Peach Aurora",
+    primary: "#fb923c",
+    secondary: "#ea580c",
+    accent: "#fdba74",
+    bg1: "#fff7ed",
+    bg2: "radial-gradient(circle at top right, #ffedd5 0%, #fdba74 40%, #fb923c 70%, #7c2d12 100%)",
+    glass: "rgba(255,255,255,0.5)",
+    card: "linear-gradient(145deg, rgba(255,255,255,0.9), rgba(255,237,213,0.7))",
+    border: "rgba(251,146,60,0.2)",
+    text: "#431407",
+    muted: "#9a3412",
+    shadow: "0 25px 60px rgba(251,146,60,0.28)",
+    glow: "0 0 45px rgba(253,186,116,0.32)",
   },
-  { 
-    id: "t10", name: "Plata Glacial", 
-    primary: "#64748b", bg1: "#f8fafc", 
-    bg2: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%)", 
-    text: "#0f172a", card: "#ffffff", muted: "#475569" 
+
+  {
+    id: "t10",
+    name: "Glacial Silver",
+    primary: "#94a3b8",
+    secondary: "#475569",
+    accent: "#e2e8f0",
+    bg1: "#f8fafc",
+    bg2: "linear-gradient(135deg, #ffffff 0%, #e2e8f0 35%, #cbd5e1 70%, #94a3b8 100%)",
+    glass: "rgba(255,255,255,0.58)",
+    card: "linear-gradient(145deg, rgba(255,255,255,0.95), rgba(241,245,249,0.72))",
+    border: "rgba(148,163,184,0.18)",
+    text: "#0f172a",
+    muted: "#475569",
+    shadow: "0 25px 55px rgba(100,116,139,0.22)",
+    glow: "0 0 40px rgba(203,213,225,0.45)",
   },
-  { 
-    id: "t11", name: "Rubí Pasión", 
-    primary: "#e11d48", bg1: "#fff1f2", 
-    bg2: "linear-gradient(135deg, #fff1f2 0%, #ffe4e6 50%, #fda4af 100%)", 
-    text: "#4c0519", card: "#ffffff", muted: "#9f1239" 
+
+  {
+    id: "t11",
+    name: "Ruby Inferno",
+    primary: "#f43f5e",
+    secondary: "#9f1239",
+    accent: "#fda4af",
+    bg1: "#fff1f2",
+    bg2: "radial-gradient(circle at center, #ffe4e6 0%, #fb7185 40%, #be123c 70%, #3f0013 100%)",
+    glass: "rgba(255,255,255,0.42)",
+    card: "linear-gradient(145deg, rgba(255,255,255,0.9), rgba(255,228,230,0.68))",
+    border: "rgba(244,63,94,0.22)",
+    text: "#4c0519",
+    muted: "#9f1239",
+    shadow: "0 25px 65px rgba(244,63,94,0.32)",
+    glow: "0 0 50px rgba(251,113,133,0.4)",
   },
-  { 
-    id: "t12", name: "Black & Gold", 
-    primary: "#fbbf24", bg1: "#000000", 
-    bg2: "linear-gradient(135deg, #18181b 0%, #09090b 50%, #000000 100%)", 
-    text: "#fef3c7", card: "rgba(39, 39, 42, 0.5)", muted: "#d97706" 
+
+  {
+    id: "t12",
+    name: "Black Gold Elite",
+    primary: "#fbbf24",
+    secondary: "#78350f",
+    accent: "#fde68a",
+    bg1: "#000000",
+    bg2: "linear-gradient(135deg, #000000 0%, #111111 35%, #2b1d00 70%, #fbbf24 120%)",
+    glass: "rgba(24,24,27,0.55)",
+    card: "linear-gradient(145deg, rgba(39,39,42,0.82), rgba(10,10,10,0.72))",
+    border: "rgba(251,191,36,0.22)",
+    text: "#fef3c7",
+    muted: "#fcd34d",
+    shadow: "0 30px 70px rgba(251,191,36,0.28)",
+    glow: "0 0 55px rgba(251,191,36,0.42)",
   },
 ];
 
