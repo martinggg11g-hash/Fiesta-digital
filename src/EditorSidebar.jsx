@@ -88,6 +88,23 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
           <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-left">Efectos y Partículas</label>
           <div className="flex gap-1 overflow-x-auto pb-2 mb-2 fd-sb">{Object.keys(PARTICLE_CATEGORIES).map(c => (<button key={c} type="button" onClick={() => setPartCat(c)} className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase shrink-0 transition-colors cursor-pointer ${partCat === c ? 'bg-violet-600 text-white shadow-sm' : 'bg-gray-100 text-gray-500'}`}>{c}</button>))}</div>
           <div className="grid grid-cols-2 gap-2">{PARTICLE_CATEGORIES[partCat].map(eff => (<button key={eff.id} type="button" onClick={() => update("particleEffect", eff.id)} className={`p-2 rounded-xl border text-left flex items-center gap-2 transition-all cursor-pointer ${cfg.particleEffect === eff.id ? 'border-violet-500 bg-violet-50 text-violet-700 shadow-sm' : 'border-gray-200 bg-white text-slate-600 hover:border-violet-200'}`}><span className="text-xl">{eff.icon}</span><span className="truncate text-[10px] font-bold">{eff.name}</span></button>))}</div>
+          
+          {/* 🚀 NUEVO SLIDER DE OPACIDAD (Solo aparece si hay un efecto seleccionado) */}
+          {cfg.particleEffect && cfg.particleEffect !== 'none' && (
+            <div className="mt-4 p-3 bg-slate-50 rounded-xl border border-slate-200 shadow-inner">
+              <label className="flex justify-between items-center text-[9px] font-black text-slate-500 uppercase mb-2">
+                <span>Intensidad del Efecto</span>
+                <span className="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">{cfg.effectOpacity ?? 100}%</span>
+              </label>
+              <input 
+                type="range" 
+                min={10} max={100} step={5} 
+                value={cfg.effectOpacity ?? 100} 
+                onChange={e => update("effectOpacity", Number(e.target.value))} 
+                className="w-full accent-violet-600 cursor-pointer" 
+              />
+            </div>
+          )}
         </div>
       </Acc>
 
