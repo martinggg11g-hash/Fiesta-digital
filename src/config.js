@@ -69,21 +69,79 @@ export const DEF_CONFIG = {
 };
 
 export const THEMES = [
-  { id: "t1", name: "Rosa Chicle", primary: "#e91e8c", bg1: "#fff0f7", bg2: "linear-gradient(135deg, #fce4f3 0%, #f8d0ea 100%)", text: "#6b0f4a", card: "#ffffff", muted: "#c4178a" },
-  { id: "t2", name: "Celeste Nube", primary: "#0ea5e9", bg1: "#f0f9ff", bg2: "linear-gradient(135deg, #dbeafe 0%, #bae6fd 100%)", text: "#0c4a6e", card: "#ffffff", muted: "#0284c7" },
-  { id: "t3", name: "Rojo Héroe", primary: "#dc2626", bg1: "#fff5f5", bg2: "linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)", text: "#7f1d1d", card: "#ffffff", muted: "#b91c1c" },
-  { id: "t4", name: "Lila Mágico", primary: "#9333ea", bg1: "#faf5ff", bg2: "linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%)", text: "#4c1d95", card: "#ffffff", muted: "#7c3aed" },
-  { id: "t5", name: "Verde Selva", primary: "#16a34a", bg1: "#f0fdf4", bg2: "linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)", text: "#14532d", card: "#ffffff", muted: "#15803d" },
-  { id: "t6", name: "Rose Gold", primary: "#be185d", bg1: "#fdf4ff", bg2: "linear-gradient(135deg, #fce7f3 0%, #f5d0e8 100%)", text: "#500724", card: "#fff8fc", muted: "#9d174d" },
-  { id: "t7", name: "Neón Noche", primary: "#c026d3", bg1: "#0f0a1e", bg2: "linear-gradient(135deg, #1a0a2e 0%, #0d0d1f 100%)", text: "#f0e6ff", card: "#1e1030", muted: "#a855f7" },
-  { id: "t8", name: "Esmeralda", primary: "#059669", bg1: "#f0fdf8", bg2: "linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)", text: "#064e3b", card: "#ffffff", muted: "#047857" },
-  { id: "t9", name: "Azul Rey", primary: "#1d4ed8", bg1: "#f8faff", bg2: "linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)", text: "#1e3a8a", card: "#ffffff", muted: "#1e40af" },
-  { id: "t10", name: "Black & Gold Elite", primary: "#d4af37", bg1: "#000000", bg2: "linear-gradient(135deg, #000000 0%, #1a1a1a 100%)", text: "#000000", card: "#d4af37", muted: "#d4af37" },
-  { id: "t11", name: "Ivory Gold", primary: "#b8953f", bg1: "#fefefe", bg2: "linear-gradient(135deg, #fafaf9 0%, #f5f0e8 100%)", text: "#292524", card: "#ffffff", muted: "#a8a29e" },
-  { id: "t12", name: "Olive Rustic", primary: "#65a30d", bg1: "#fefdf0", bg2: "linear-gradient(135deg, #fef9c3 0%, #fef08a 40%, #ecfccb 100%)", text: "#3f6212", card: "#fefce8", muted: "#4d7c0f" },
-  { id: "t13", name: "Burgundy Velvet", primary: "#9f1239", bg1: "#fff4f5", bg2: "linear-gradient(135deg, #ffe4e6 0%, #fecdd3 100%)", text: "#4c0519", card: "#ffffff", muted: "#881337" },
-  { id: "t14", name: "Terracotta Warm", primary: "#c2410c", bg1: "#fffaf5", bg2: "linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%)", text: "#7c2d12", card: "#ffffff", muted: "#9a3412" },
-]; 
+  { 
+    id: "t1", name: "Rose Gold", 
+    primary: "#d97793", bg1: "#fdf8f9", 
+    bg2: "linear-gradient(135deg, #fdf8f9 0%, #f6e5e9 50%, #f0d5dc 100%)", 
+    text: "#4a2c33", card: "#ffffff", muted: "#8a5a66" 
+  },
+  { 
+    id: "t2", name: "Galaxia (Dark)", 
+    primary: "#a855f7", bg1: "#0f0c29", 
+    bg2: "linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)", 
+    text: "#f8fafc", card: "rgba(30, 30, 45, 0.6)", muted: "#cbd5e1" 
+  },
+  { 
+    id: "t3", name: "Esmeralda", 
+    primary: "#10b981", bg1: "#ecfdf5", 
+    bg2: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 50%, #a7f3d0 100%)", 
+    text: "#064e3b", card: "#ffffff", muted: "#047857" 
+  },
+  { 
+    id: "t4", name: "Océano", 
+    primary: "#0ea5e9", bg1: "#f0f9ff", 
+    bg2: "linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #bae6fd 100%)", 
+    text: "#0c4a6e", card: "#ffffff", muted: "#0284c7" 
+  },
+  { 
+    id: "t5", name: "Atardecer", 
+    primary: "#f43f5e", bg1: "#fff1f2", 
+    bg2: "linear-gradient(135deg, #fff1f2 0%, #ffe4e6 50%, #fecdd3 100%)", 
+    text: "#881337", card: "#ffffff", muted: "#be123c" 
+  },
+  { 
+    id: "t6", name: "Terciopelo (Dark)", 
+    primary: "#8b5cf6", bg1: "#1e1b4b", 
+    bg2: "linear-gradient(135deg, #1e1b4b 0%, #2e1065 50%, #4c1d95 100%)", 
+    text: "#f5f3ff", card: "rgba(46, 16, 101, 0.6)", muted: "#c4b5fd" 
+  },
+  { 
+    id: "t7", name: "Champagne", 
+    primary: "#d4af37", bg1: "#fcfbf9", 
+    bg2: "linear-gradient(135deg, #fdfbf7 0%, #f6f0e4 50%, #f3ead3 100%)", 
+    text: "#3e3214", card: "#ffffff", muted: "#8c7322" 
+  },
+  { 
+    id: "t8", name: "Cyberpunk (Dark)", 
+    primary: "#ec4899", bg1: "#09090b", 
+    bg2: "linear-gradient(135deg, #09090b 0%, #171717 50%, #27272a 100%)", 
+    text: "#fdf2f8", card: "rgba(39, 39, 42, 0.6)", muted: "#f472b6" 
+  },
+  { 
+    id: "t9", name: "Durazno Suave", 
+    primary: "#f97316", bg1: "#fff7ed", 
+    bg2: "linear-gradient(135deg, #fff7ed 0%, #ffedd5 50%, #fed7aa 100%)", 
+    text: "#431407", card: "#ffffff", muted: "#9a3412" 
+  },
+  { 
+    id: "t10", name: "Plata Glacial", 
+    primary: "#64748b", bg1: "#f8fafc", 
+    bg2: "linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%)", 
+    text: "#0f172a", card: "#ffffff", muted: "#475569" 
+  },
+  { 
+    id: "t11", name: "Rubí Pasión", 
+    primary: "#e11d48", bg1: "#fff1f2", 
+    bg2: "linear-gradient(135deg, #fff1f2 0%, #ffe4e6 50%, #fda4af 100%)", 
+    text: "#4c0519", card: "#ffffff", muted: "#9f1239" 
+  },
+  { 
+    id: "t12", name: "Black & Gold", 
+    primary: "#fbbf24", bg1: "#000000", 
+    bg2: "linear-gradient(135deg, #18181b 0%, #09090b 50%, #000000 100%)", 
+    text: "#fef3c7", card: "rgba(39, 39, 42, 0.5)", muted: "#d97706" 
+  },
+];
 
 export const FONTS = [
   { label: "Playfair Display", value: "Playfair Display" }, { label: "Bodoni Moda", value: "Bodoni Moda" },
