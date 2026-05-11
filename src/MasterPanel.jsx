@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ShieldCheck, LogOut, Plus, MapPin, Edit2, KeyRound, Trash2, X, CalendarClock, AlertCircle, Info } from "lucide-react";
+import { ShieldCheck, LogOut, Plus, MapPin, Edit2, KeyRound, Trash2, X, CalendarClock, AlertCircle, Info, MessageCircle, Send } from "lucide-react";
 import { Inp, Toggle, Toast } from "./DashboardUI";
 
 const formatDateSpanish = (dateStr) => {
@@ -37,25 +37,48 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
   const [fPayDate, setFPayDate] = useState("");
   const [fAlert, setFAlert] = useState(false);
   const [fClabe, setFClabe] = useState(""); 
-  // 👉 NUEVO ESTADO PARA SALÓN LIBRE
   const [fIsFree, setFIsFree] = useState(false);
+  // 👉 NUEVO ESTADO PARA DEMO Y CHAT
+  const [fIsDemo, setFIsDemo] = useState(false);
+  const [chatInput, setChatInput] = useState("");
+  
+  const chatEndRef = useRef(null);
 
-  const openCreateModal = () => { setModalMode("create"); setFName(""); setFEmail(""); setFPhone(""); setFPass(""); setFAddress(""); setFPayDate(""); setFAlert(false); setFClabe(""); setFIsFree(false); setShowModal(true); };
-  const openEditModal = (salon) => { setModalMode("edit"); setEditingEmail(salon.email); setFName(salon.name); setFEmail(salon.email); setFPhone(salon.phone || ""); setFAddress(salon.address || ""); setFPayDate(salon.payment_date || ""); setFAlert(salon.payment_alert || false); setFClabe(salon.payment_clabe || ""); setFIsFree(salon.is_free || false); setShowModal(true); };
+  const activeSalonChat = mySalons.find(s => s.email === editingEmail);
+
+  useEffect(() => {
+    if (modalMode === 'support' && chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [modalMode, activeSalonChat?.support_chat]);
+
+  const openCreateModal = () => { setModalMode("create"); setFName(""); setFEmail(""); setFPhone(""); setFPass(""); setFAddress(""); setFPayDate(""); setFAlert(false); setFClabe(""); setFIsFree(false); setFIsDemo(false); setShowModal(true); };
+  const openEditModal = (salon) => { setModalMode("edit"); setEditingEmail(salon.email); setFName(salon.name); setFEmail(salon.email); setFPhone(salon.phone || ""); setFAddress(salon.address || ""); setFPayDate(salon.payment_date || ""); setFAlert(salon.payment_alert || false); setFClabe(salon.payment_clabe || ""); setFIsFree(salon.is_free || false); setFIsDemo(salon.is_demo || false); setShowModal(true); };
   const openPassModal = (salon) => { setModalMode("password"); setEditingEmail(salon.email); setFPass(""); setShowModal(true); };
+  
+  // 👉 ABRIR MODAL DE CHAT SOPORTE
+  const openSupportModal = (salon) => { setModalMode("support"); setEditingEmail(salon.email); setFName(salon.name); setChatInput(""); setShowModal(true); };
 
   const handleSaveModal = () => {
     if (modalMode === "create") {
       if(!fName || !fEmail || !fPass) return alert("Faltan datos");
-      onCreateSalon({ name: fName, email: fEmail, pass: fPass, role: "salon", address: fAddress, phone: fPhone, payment_date: fPayDate, payment_alert: fAlert, payment_clabe: fClabe, is_free: fIsFree });
+      onCreateSalon({ name: fName, email: fEmail, pass: fPass, role: "salon", address: fAddress, phone: fPhone, payment_date: fPayDate, payment_alert: fAlert, payment_clabe: fClabe, is_free: fIsFree, is_demo: fIsDemo });
     } else if (modalMode === "edit") {
-      onUpdateUser(editingEmail, { name: fName, phone: fPhone, address: fAddress, payment_date: fPayDate, payment_alert: fAlert, payment_clabe: fClabe, is_free: fIsFree });
+      onUpdateUser(editingEmail, { name: fName, phone: fPhone, address: fAddress, payment_date: fPayDate, payment_alert: fAlert, payment_clabe: fClabe, is_free: fIsFree, is_demo: fIsDemo });
     } else if (modalMode === "password") {
       if(!fPass) return alert("Escribe una contraseña");
       onUpdateUser(editingEmail, { pass: fPass });
     }
     setShowModal(false);
     notify(modalMode === 'create' ? "¡Salón creado!" : "¡Cambios guardados!");
+  };
+
+  const handleSendMasterReply = () => {
+    if (!chatInput.trim() || !activeSalonChat) return;
+    const newMsg = { sender: 'master', text: chatInput, date: new Date().toISOString() };
+    const newChat = [...(activeSalonChat.support_chat || []), newMsg];
+    onUpdateUser(editingEmail, { support_chat: newChat });
+    setChatInput("");
   };
 
   return (
@@ -110,15 +133,23 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
                         <p className="text-xs text-slate-400 font-medium">{salon.email}</p>
                       </td>
                       <td className="p-5">
-                        {salon.is_free ? (
-                           <div className="flex gap-2 items-center text-violet-600 bg-violet-50 px-3 py-1.5 rounded-lg w-fit border border-violet-100"><Info size={14}/> <span className="text-xs font-bold uppercase tracking-wider">Salón Libre</span></div>
-                        ) : (
-                           <div className="flex gap-2 items-center max-w-[200px]"><MapPin size={16} className="text-slate-300 shrink-0"/><span className="text-sm text-slate-600 truncate">{salon.address || 'Sin dirección'}</span></div>
-                        )}
+                        <div className="flex flex-col gap-2">
+                          {salon.is_free ? (
+                             <div className="flex gap-2 items-center text-violet-600 bg-violet-50 px-2 py-1 rounded-md w-fit border border-violet-100"><Info size={12}/> <span className="text-[10px] font-bold uppercase tracking-wider">Libre</span></div>
+                          ) : (
+                             <div className="flex gap-2 items-center max-w-[150px]"><MapPin size={14} className="text-slate-300 shrink-0"/><span className="text-xs text-slate-600 truncate">{salon.address || 'Sin dirección'}</span></div>
+                          )}
+                          {salon.is_demo && <div className="text-[10px] font-black uppercase text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md w-fit">Modo Demo</div>}
+                        </div>
                       </td>
                       <td className="p-5 font-black text-slate-700">{salon.payment_date ? formatDateSpanish(salon.payment_date) : '--/--/----'}</td>
                       <td className="p-5">{status}</td>
                       <td className="p-5 flex justify-end gap-2">
+                        {/* BOTÓN CHAT DE SOPORTE */}
+                        <button onClick={() => openSupportModal(salon)} title="Chat de Soporte" className="relative w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center hover:bg-emerald-100 cursor-pointer transition-all shadow-sm">
+                           <MessageCircle size={16}/>
+                           {salon.support_chat?.length > 0 && <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white animate-pulse" />}
+                        </button>
                         <button onClick={() => openEditModal(salon)} title="Editar Salón" className="w-10 h-10 rounded-xl bg-white border border-slate-200 text-slate-600 flex items-center justify-center hover:border-violet-300 hover:text-violet-600 hover:bg-violet-50 cursor-pointer transition-all shadow-sm"><Edit2 size={16}/></button>
                         <button onClick={() => openPassModal(salon)} title="Cambiar Contraseña" className="w-10 h-10 rounded-xl bg-white border border-slate-200 text-slate-600 flex items-center justify-center hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 cursor-pointer transition-all shadow-sm"><KeyRound size={16}/></button>
                         <button onClick={() => window.confirm("¿Estás seguro de eliminar este salón y todas sus invitaciones? Esta acción no se puede deshacer.") && onDeleteSalon(salon.email)} title="Eliminar Salón" className="w-10 h-10 rounded-xl bg-white border border-slate-200 text-slate-400 flex items-center justify-center hover:border-red-300 hover:text-red-500 hover:bg-red-50 cursor-pointer transition-all shadow-sm"><Trash2 size={16}/></button>
@@ -136,7 +167,8 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl relative anim-pop max-h-[90vh] overflow-y-auto fd-sb">
             <button onClick={() => setShowModal(false)} className="absolute top-6 right-6 w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 cursor-pointer"><X size={20}/></button>
-            <h2 className="text-2xl font-black mb-8">{modalMode === 'create' ? 'Nuevo Salón' : modalMode === 'edit' ? 'Editar Salón' : 'Nueva Clave'}</h2>
+            <h2 className="text-2xl font-black mb-8">{modalMode === 'create' ? 'Nuevo Salón' : modalMode === 'edit' ? 'Editar Salón' : modalMode === 'password' ? 'Nueva Clave' : `Chat con ${fName}`}</h2>
+            
             <div className="space-y-4">
               {(modalMode === 'create' || modalMode === 'edit') && (
                 <>
@@ -144,17 +176,19 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
                   <Inp label="Email" value={fEmail} onChange={setFEmail} className={modalMode === 'edit' ? 'opacity-50 pointer-events-none' : ''} />
                   {modalMode === 'create' && <Inp label="Contraseña" value={fPass} onChange={setFPass} type="password" />}
                   
-                  {/* 👉 TOGGLE DE SALÓN LIBRE Y DIRECCIÓN */}
-                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
-                     <div className="flex items-center justify-between mb-4">
-                        <div>
-                          <span className="text-[10px] font-black uppercase text-violet-700 block mb-1">¿Salón Libre?</span>
-                          <span className="text-[9px] font-medium text-slate-500 block leading-tight">Si se activa, el cliente podrá escribir la dirección manualmente por cada evento que cree.</span>
-                        </div>
+                  {/* 👉 TOGGLE DE SALÓN LIBRE Y DEMO */}
+                  <div className="grid grid-cols-2 gap-3 mt-4 mb-2">
+                     <div className="p-3 bg-violet-50 border border-violet-100 rounded-2xl flex flex-col items-center justify-center text-center">
+                        <span className="text-[10px] font-black uppercase text-violet-700 mb-2">¿Salón Libre?</span>
                         <Toggle checked={fIsFree} onChange={setFIsFree} />
                      </div>
-                     {!fIsFree && <Inp label="Ubicación Global (Google Maps)" value={fAddress} onChange={setFAddress} className="!mb-0" />}
+                     <div className="p-3 bg-amber-50 border border-amber-100 rounded-2xl flex flex-col items-center justify-center text-center">
+                        <span className="text-[10px] font-black uppercase text-amber-700 mb-2">¿Modo DEMO?</span>
+                        <Toggle checked={fIsDemo} onChange={setFIsDemo} />
+                     </div>
                   </div>
+                  
+                  {!fIsFree && <Inp label="Ubicación Global (Google Maps)" value={fAddress} onChange={setFAddress} className="!mb-0" />}
 
                   <Inp label="CLABE de Pago Asignada" placeholder="Ej: 012345678901234567" value={fClabe} onChange={setFClabe} />
                   <div className="flex gap-4 items-center bg-slate-50 p-4 rounded-2xl border border-slate-200 mt-2">
@@ -164,10 +198,35 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
                       <Toggle checked={fAlert} onChange={setFAlert} />
                     </div>
                   </div>
+                  <button onClick={handleSaveModal} className="w-full py-4 mt-6 bg-slate-900 text-white rounded-2xl font-black text-sm cursor-pointer shadow-lg active:scale-95 transition-transform uppercase tracking-widest">GUARDAR CAMBIOS</button>
                 </>
               )}
-              {modalMode === 'password' && <Inp label="Escribí Nueva Contraseña" value={fPass} onChange={setFPass} type="password" />}
-              <button onClick={handleSaveModal} className="w-full py-4 mt-6 bg-slate-900 text-white rounded-2xl font-black text-sm cursor-pointer shadow-lg active:scale-95 transition-transform uppercase tracking-widest">GUARDAR CAMBIOS</button>
+              
+              {modalMode === 'password' && (
+                <>
+                  <Inp label="Escribí Nueva Contraseña" value={fPass} onChange={setFPass} type="password" />
+                  <button onClick={handleSaveModal} className="w-full py-4 mt-6 bg-slate-900 text-white rounded-2xl font-black text-sm cursor-pointer shadow-lg active:scale-95 transition-transform uppercase tracking-widest">GUARDAR CAMBIOS</button>
+                </>
+              )}
+
+              {modalMode === 'support' && (
+                <div className="flex flex-col h-[50vh]">
+                   <div className="flex-1 overflow-y-auto bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4 space-y-3 fd-sb">
+                      {!(activeSalonChat?.support_chat?.length) && <p className="text-center text-slate-400 text-xs mt-10 font-bold">No hay mensajes en este chat.</p>}
+                      {(activeSalonChat?.support_chat || []).map((msg, i) => (
+                          <div key={i} className={`p-3 rounded-2xl max-w-[85%] text-sm shadow-sm ${msg.sender === 'master' ? 'bg-violet-600 text-white self-end ml-auto rounded-tr-sm' : 'bg-white border text-slate-800 rounded-tl-sm'}`}>
+                             <p className="whitespace-pre-wrap">{msg.text}</p>
+                             <span className={`text-[9px] block mt-1.5 opacity-70 ${msg.sender==='master'?'text-right':''}`}>{new Date(msg.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                          </div>
+                      ))}
+                      <div ref={chatEndRef} />
+                   </div>
+                   <div className="flex gap-2 shrink-0">
+                      <input type="text" value={chatInput} onChange={e=>setChatInput(e.target.value)} onKeyDown={e=>{if(e.key==='Enter') handleSendMasterReply();}} placeholder="Responder a tu cliente..." className="flex-1 p-3.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-violet-500" />
+                      <button onClick={handleSendMasterReply} disabled={!chatInput.trim()} className="w-14 h-14 bg-violet-600 text-white rounded-xl flex items-center justify-center shadow-lg hover:bg-violet-700 disabled:opacity-50 cursor-pointer"><Send size={20}/></button>
+                   </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
