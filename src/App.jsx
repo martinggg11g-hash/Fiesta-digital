@@ -171,6 +171,7 @@ export default function App() {
       if (alertData) {
         setGlobalAlert({ mensaje: alertData.mensaje, activo: alertData.activo });
       }
+      // También refrescamos silenciosamente los usuarios para traer los últimos mensajes de soporte
       const { data: salones } = await supabase.from('salones').select('*');
       if (salones) setUsers(salones);
     }, 5000);
@@ -216,6 +217,7 @@ export default function App() {
   const handleCreateInv = async (sE, sN) => { 
     const sInfo = users.find(u => u.email === sE);
     
+    // VERIFICAMOS LÍMITE DEMO
     if (sInfo?.is_demo && (sInfo?.invites_created || 0) >= 3) {
       alert("⚠️ LÍMITE DEMO ALCANZADO\nTu cuenta Demo solo permite crear 3 invitaciones en total. Contactá a soporte para actualizar tu plan.");
       return null;
