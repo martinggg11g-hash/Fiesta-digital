@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route, useParams, Navigate, useSearchParams } from "react-router-dom";
+import { Routes, Route, useParams, Navigate, useSearchParams } from "react-router-dom";
 import { Loader2, PartyPopper } from "lucide-react";
 
 import { EditorScreen } from "./Editor";
@@ -216,7 +216,6 @@ export default function App() {
   const handleCreateInv = async (sE, sN) => { 
     const sInfo = users.find(u => u.email === sE);
     
-    // VERIFICAMOS LÍMITE DEMO
     if (sInfo?.is_demo && (sInfo?.invites_created || 0) >= 3) {
       alert("⚠️ LÍMITE DEMO ALCANZADO\nTu cuenta Demo solo permite crear 3 invitaciones en total. Contactá a soporte para actualizar tu plan.");
       return null;
@@ -272,20 +271,16 @@ export default function App() {
   return (
     <>
       <GlobalStyles />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={user ? <Navigate to="/dashboard" /> : <LoginScreen onLogin={handleLogin} users={users} />} />
-          <Route path="/master" element={user ? <Navigate to="/dashboard" /> : <LoginScreen isMaster={true} onLogin={handleLogin} users={users} />} />
-          
-          <Route path="/dashboard" element={user ? <DashboardScreen user={user} users={users} invitations={invitations} onCreateSalon={handleCreateSalon} onDeleteSalon={handleDeleteSalon} onCreateInv={handleCreateInv} onDeleteInv={handleDeleteInv} onUpdateUser={handleUpdateUser} onUpdateInternal={handleUpdateInternal} onLogout={handleLogout} globalAlert={globalAlert} onUpdateAlert={handleUpdateAlert} /> : <Navigate to="/" />} />
-          
-          <Route path="/editor/:id" element={<EditorScreen invitations={invitations} onSave={handleSaveInv} />} />
-          <Route path="/i/:salon/:invId" element={<PublicInviteScreen invitations={invitations} onConfirmRSVP={handleConfirmRSVP} />} />
-          <Route path="/puerta/:id" element={<PuertaScreen invitations={invitations} onUpdateInternal={handleUpdateInternal} />} />
-          <Route path="/manage/:id" element={<ManageScreen />} />
-          <Route path="/invite/:id" element={<LiveInviteScreen />} />
-        </Routes>
-      </BrowserRouter>
+      <Routes>
+        <Route path="/" element={user ? <Navigate to="/dashboard" /> : <LoginScreen onLogin={handleLogin} users={users} />} />
+        <Route path="/master" element={user ? <Navigate to="/dashboard" /> : <LoginScreen isMaster={true} onLogin={handleLogin} users={users} />} />
+        <Route path="/dashboard" element={user ? <DashboardScreen user={user} users={users} invitations={invitations} onCreateSalon={handleCreateSalon} onDeleteSalon={handleDeleteSalon} onCreateInv={handleCreateInv} onDeleteInv={handleDeleteInv} onUpdateUser={handleUpdateUser} onUpdateInternal={handleUpdateInternal} onLogout={handleLogout} globalAlert={globalAlert} onUpdateAlert={handleUpdateAlert} /> : <Navigate to="/" />} />
+        <Route path="/editor/:id" element={<EditorScreen invitations={invitations} onSave={handleSaveInv} />} />
+        <Route path="/i/:salon/:invId" element={<PublicInviteScreen invitations={invitations} onConfirmRSVP={handleConfirmRSVP} />} />
+        <Route path="/puerta/:id" element={<PuertaScreen invitations={invitations} onUpdateInternal={handleUpdateInternal} />} />
+        <Route path="/manage/:id" element={<ManageScreen />} />
+        <Route path="/invite/:id" element={<LiveInviteScreen />} />
+      </Routes>
     </>
   );
 }
