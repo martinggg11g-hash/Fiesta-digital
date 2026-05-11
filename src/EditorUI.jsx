@@ -1,17 +1,50 @@
 import React, { useState, useEffect, useRef } from "react";
 import { GiphyFetch } from '@giphy/js-fetch-api';
 import { Grid } from '@giphy/react-components';
-import { ChevronDown, Loader2, Trash2, Image as ImageIcon, Search } from "lucide-react";
+import { ChevronDown, Loader2, Trash2, Image as ImageIcon, Search, HelpCircle } from "lucide-react";
 import { 
   FONTS, 
   FONT_CATEGORIES, 
   ICON_CATEGORIES, 
   EMOJI_CATEGORIES,
-  BORDERS // 👉 IMPORTAMOS TU NUEVA GALERÍA DE BORDES
+  BORDERS 
 } from "./config";
 
 const gf = new GiphyFetch('32PbboqCveiWSlj9vROPmyjv8l8cuaj1');
 const IMGBB_API_KEY = "904f81caf05efe58a799abdb1fedc2ce";
+
+// 👉 NUEVO: COMPONENTE TOOLTIP
+export const Tooltip = ({ text }) => {
+  const [show, setShow] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => { 
+    const fn = e => { if (ref.current && !ref.current.contains(e.target)) setShow(false); }; 
+    document.addEventListener("mousedown", fn); 
+    document.addEventListener("touchstart", fn);
+    return () => { document.removeEventListener("mousedown", fn); document.removeEventListener("touchstart", fn); }; 
+  }, []);
+
+  return (
+    <div className="relative inline-flex items-center ml-1.5" ref={ref}>
+      <button 
+        type="button" 
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShow(!show); }} 
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+        className="text-slate-300 hover:text-violet-500 cursor-pointer transition-colors"
+      >
+        <HelpCircle size={14} />
+      </button>
+      {show && (
+        <div className="absolute z-[99999] bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2.5 bg-slate-800 text-white text-[10px] font-medium leading-tight rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.3)] text-center pointer-events-none normal-case tracking-normal">
+          {text}
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-slate-800" />
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const IconRenderer = ({ name, size = 24, color = "currentColor", className = "" }) => {
   if (!name) return null;
@@ -145,7 +178,6 @@ export const EmojiPicker = ({ value, onSelect }) => {
   );
 };
 
-// 👉 ESTE ES EL COMPONENTE QUE AHORA LEE TUS BORDES DE CONFIG.JS
 export const BordersGallery = ({ value, onChange }) => (
   <div className="grid grid-cols-3 gap-2">
     {BORDERS.map(b => (
@@ -170,13 +202,18 @@ export const GiphySearch = ({ onSelect, placeholder = "Buscar GIF..." }) => {
   );
 };
 
-export const Inp = ({ label, value, onChange, placeholder, type="text", multiline = false, className="", icon: Icon = null }) => {
+export const Inp = ({ label, value, onChange, placeholder, type="text", multiline = false, className="", icon: Icon = null, tooltip = null }) => {
   const [localVal, setLocalVal] = useState(value || "");
   useEffect(() => { setLocalVal(value || ""); }, [value]);
   useEffect(() => { const timeout = setTimeout(() => { if (localVal !== (value || "")) onChange(localVal); }, 300); return () => clearTimeout(timeout); }, [localVal, onChange, value]);
   return (
     <div className={`mb-2 text-left ${className}`}>
-      {label && <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{label}</label>}
+      {label && (
+        <label className="flex items-center text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
+          {label}
+          {tooltip && <Tooltip text={tooltip} />}
+        </label>
+      )}
       <div className="relative flex items-center">{Icon && <div className="absolute left-4 text-slate-400"><Icon size={16}/></div>}{multiline ? (<textarea value={localVal} onChange={e => setLocalVal(e.target.value)} placeholder={placeholder} rows={3} className={`w-full py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm resize-none focus:bg-white focus:border-violet-400 outline-none transition-all ${Icon ? 'pl-11 pr-4' : 'px-4'}`} />) : (<input type={type} value={localVal} onChange={e => setLocalVal(e.target.value)} placeholder={placeholder} className={`w-full py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all ${Icon ? 'pl-11 pr-4' : 'px-4'}`} />)}</div>
     </div>
   );
@@ -189,24 +226,33 @@ export const MiniInp = ({ value, onChange, placeholder, className, type="text" }
   return <input type={type} className={className} value={localVal} onChange={e => setLocalVal(e.target.value)} placeholder={placeholder} />;
 };
 
-export const SelectInp = ({ label, value, onChange, options, className="" }) => (
+export const SelectInp = ({ label, value, onChange, options, className="", tooltip = null }) => (
   <div className={`mb-2 text-left ${className}`}>
-    {label && <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{label}</label>}
+    {label && (
+      <label className="flex items-center text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
+        {label}
+        {tooltip && <Tooltip text={tooltip} />}
+      </label>
+    )}
     <select value={value || ""} onChange={e => onChange(e.target.value)} className="w-full px-4 py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all cursor-pointer">
       {options.map((opt, i) => <option key={i} value={opt.value}>{opt.label}</option>)}
     </select>
   </div>
 );
 
-export const TypoControl = ({ label, fontVal, onFont, colorVal, onColor, sizeVal, onSize, minSize=10, maxSize=80 }) => (
+export const TypoControl = ({ label, fontVal, onFont, colorVal, onColor, sizeVal, onSize, minSize=10, maxSize=80, tooltip = null }) => (
   <div className="bg-gray-50/70 p-3 rounded-xl border border-gray-100 shadow-sm mb-5 relative overflow-visible z-[10]">
-    <div className="absolute left-0 top-0 bottom-0 w-1 bg-violet-200 rounded-l-xl" /><label className="flex justify-between items-center text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 pl-2"><span>{label}</span>{sizeVal && <span className="text-violet-500 bg-violet-100 px-2 py-0.5 rounded-full">{sizeVal}px</span>}</label>
+    <div className="absolute left-0 top-0 bottom-0 w-1 bg-violet-200 rounded-l-xl" />
+    <label className="flex justify-between items-center text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 pl-2">
+      <span className="flex items-center">{label} {tooltip && <Tooltip text={tooltip} />}</span>
+      {sizeVal && <span className="text-violet-500 bg-violet-100 px-2 py-0.5 rounded-full">{sizeVal}px</span>}
+    </label>
     <div className="flex gap-2 pl-2 items-start">{onFont && <div className="flex-1"><FontSelector value={fontVal} onChange={onFont} /></div>}{onColor && <div className="shrink-0"><input type="color" value={colorVal} onChange={e => onColor(e.target.value)} className="w-10 h-11 rounded-lg cursor-pointer border border-gray-200 p-0 shadow-sm bg-white" /></div>}</div>
     {onSize && (<div className="mt-4 pl-2"><input type="range" min={minSize} max={maxSize} value={sizeVal} onChange={e => onSize(Number(e.target.value))} className="w-full accent-violet-600 cursor-pointer" /></div>)}
   </div>
 );
 
-export const FileUpload = ({ label, onChange, value }) => {
+export const FileUpload = ({ label, onChange, value, tooltip = null }) => {
   const [uploading, setUploading] = useState(false);
   const handleFile = async (e) => {
     const file = e.target.files[0]; if (!file) return;
@@ -215,7 +261,13 @@ export const FileUpload = ({ label, onChange, value }) => {
     finally { setUploading(false); }
   };
   return (
-    <div className="mb-4 text-left relative">{label && <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{label}</label>}
+    <div className="mb-4 text-left relative">
+      {label && (
+        <label className="flex items-center text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
+          {label}
+          {tooltip && <Tooltip text={tooltip} />}
+        </label>
+      )}
       <div className="relative"><label className={`flex items-center justify-center w-full py-3 px-4 rounded-xl text-xs font-bold border transition-all cursor-pointer ${uploading ? 'bg-violet-100 border-violet-200 text-violet-400 cursor-not-allowed' : 'bg-white border-violet-200 text-violet-600 hover:bg-violet-50 hover:border-violet-300 shadow-sm'}`}><span className="flex items-center gap-2">{uploading ? <><Loader2 size={14} className="animate-spin" /> Subiendo...</> : <><ImageIcon size={16}/> Subir PNG/JPG</>}</span><input type="file" accept="image/*" onChange={handleFile} disabled={uploading} className="hidden" /></label></div>
       {value && !uploading && (<div className="relative mt-3 group w-fit"><img src={value} alt="preview" className="h-20 w-auto object-cover rounded-xl border border-gray-200 shadow-sm" /><button type="button" onClick={() => onChange("")} className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg cursor-pointer"><Trash2 size={12} /></button></div>)}
     </div>
