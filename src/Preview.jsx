@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { OpeningAnimation, LottieOverlay } from "./Lotties"; 
-import { MapPin, Calendar, Clock, Star, CheckCircle2, ChevronLeft, ChevronRight, Download, MessageCircle, Users, ExternalLink, Loader2 } from "lucide-react";
+import { MapPin, Calendar, Clock, Star, CheckCircle2, ChevronLeft, ChevronRight, Download, MessageCircle, Users, ExternalLink, Loader2, Camera, Lock, ImageIcon } from "lucide-react";
 import { DEF_CONFIG, THEMES, getSpotifyEmbed, getYouTubeId, formatToDDMMYYYY, PARTICLE_CATEGORIES } from "./config";
 import { IconRenderer } from "./EditorUI";
+
+const IMGBB_API_KEY = "904f81caf05efe58a799abdb1fedc2ce";
 
 const InstagramIcon = ({ size = 20, color = "currentColor", className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
@@ -459,7 +461,6 @@ const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP, guestDa
   );
 };
 
-// 👉 INFO CARD PREMIUM
 const InfoCard = ({ icon: Icon, label, value, sub, fontSize, primary, textC, mutedC, cardC, cfg, glassStyle, shineOverlay }) => {
   return (
     <div className="flex items-center gap-4 p-4 rounded-[2rem] relative overflow-hidden" style={glassStyle}>
@@ -478,8 +479,7 @@ const SectionTitle = ({ children, mutedC, size, font }) => (
   <h4 className="font-black uppercase tracking-[0.3em] text-center mb-6 opacity-80" style={{ color: mutedC, fontSize: `${size ?? 10}px`, fontFamily: font }}>{children}</h4>
 );
 
-// ACÁ RECIBIMOS LOS DATOS DEL INVITADO DESDE APP.JSX (guestData)
-export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData }) => {
+export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, internalData, onUploadLivePhoto }) => {
   if (!cfg) return null;
   const primary = cfg.primary || "#8b5cf6";
   const bg1 = cfg.bg1 || "#f8f7ff";
@@ -490,12 +490,10 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
   const gradOpacity = cfg.showCoverGradient === false ? 0 : ((cfg.coverGradientIntensity ?? 50) / 100).toFixed(2);
   const coverShadow = (cfg.coverTextShadowSize > 0) ? `0px 4px ${cfg.coverTextShadowSize}px ${cfg.coverTextShadowColor || '#000000'}` : 'none';
 
-  // 👉 DINÁMICA DEL GLOW (RESPLANDOR): Si está en 0, 'none'. Si es mayor a 0, aplica el estilo progresivo.
   const glowValue = cfg.cardGlow !== undefined ? cfg.cardGlow : 0;
   const hexAlpha = Math.floor((glowValue / 100) * 255).toString(16).padStart(2, '0');
   const dynamicShadow = glowValue === 0 ? 'none' : `${cfg.shadow || '0 8px 30px rgba(0,0,0,0.05)'}, 0 0 ${glowValue}px ${primary}${hexAlpha}`;
 
-  // 👉 ESTILOS PREMIUM GLASSMORPHISM
   const glassContainerStyle = {
     background: cardC,
     boxShadow: dynamicShadow,
@@ -519,12 +517,52 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
     }
   }
 
-  // 👉 CAPA DE PARTÍCULAS EXTRÁIDA
   const ParticleLayer = () => (
     <div className={`${cfg.particlesFullscreen ? 'fixed' : 'absolute'} inset-0 pointer-events-none ${cfg.particlesFullscreen ? 'z-[100]' : 'z-20'} overflow-hidden flex items-start justify-center transition-opacity duration-200`} style={{ opacity: (cfg.effectOpacity ?? 100) / 100 }}>
        {isLottieEffect ? <LottieOverlay url={lottieUrl} /> : <ParticleCanvas effect={cfg.particleEffect || "none"} primary={primary} />}
     </div>
   );
+
+  // 👉 LÓGICA DE TIEMPO PARA LA CÁMARA EN VIVO
+  let cameraStatus = 'active'; // 'locked', 'active', 'expired'
+  const eventDateStr = cfg.countdownDate || (cfg.dateText ? `${cfg.dateText}T00:00:00` : null);
+  
+  if (eventDateStr) {
+    const evDate = new Date(eventDateStr);
+    const now = new Date();
+    // Restamos la fecha actual con la del evento en milisegundos
+    const msDiff = now.getTime() - evDate.getTime();
+    const hoursDiff = msDiff / (1000 * 60 * 60);
+
+    if (hoursDiff < -12) {
+      cameraStatus = 'locked'; // Falta mucho (más de 12 horas antes)
+    } else if (hoursDiff > 24) {
+      cameraStatus = 'expired'; // Pasaron más de 24 horas del inicio
+    } else {
+      cameraStatus = 'active'; // Día del evento
+    }
+  }
+
+  const [uploadingLive, setUploadingLive] = useState(false);
+  const livePhotos = internalData?.live_photos || [];
+
+  const handleLivePhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploadingLive(true);
+    const formData = new FormData();
+    formData.append("image", file);
+    try {
+      const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: "POST", body: formData });
+      const data = await res.json();
+      if (data.success && onUploadLivePhoto) {
+        await onUploadLivePhoto(data.data.url);
+      } else if (!onUploadLivePhoto) {
+        alert("En el panel de edición, la foto no se guarda. Subí la web para probarlo.");
+      }
+    } catch (err) { alert("Error al subir foto"); }
+    setUploadingLive(false);
+  };
 
   return (
     <div style={{ backgroundColor: bg1, backgroundImage: bg2.includes('gradient') ? bg2 : `linear-gradient(180deg, ${bg1} 0%, ${bg2} 100%)`, fontFamily: cfg.fontBody, minHeight: '100%' }} className="pb-12 relative overflow-x-hidden flex flex-col">
@@ -557,14 +595,12 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
       <div className="relative h-[450px] overflow-hidden shrink-0 rounded-b-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)]">
         <img src={cfg.coverPhoto || DEF_CONFIG.coverPhoto} className="absolute inset-0 w-full h-full object-cover z-0" alt="" />
         <div className="absolute inset-0 z-10" style={{ background: `linear-gradient(to top, ${cfg.bg1} 5%, rgba(0,0,0,${gradOpacity}) 60%, transparent 100%)` }} />
-
-        {/* Partículas confinadas al Banner si está apagado el Fullscreen */}
         {!cfg.particlesFullscreen && <ParticleLayer />}
 
         <div className="absolute bottom-0 left-0 right-0 p-8 pb-12 flex flex-col items-center z-30">
           <DraggableItem id="eventType" cfg={cfg} update={update} className="relative !static flex justify-center w-full">
-            <p className="font-black uppercase tracking-[0.3em] mb-4 flex items-center justify-center gap-2" style={{ color: cfg.eventTypeColor || primary, fontSize: `${cfg.eventTypeSize ?? 11}px`, fontFamily: cfg.eventTypeFont || cfg.fontBody, textShadow: coverShadow }}>
-              <RenderSymbol value={cfg.eventTypeEmoji} size={cfg.eventTypeSize ?? 11} color={cfg.eventTypeColor || primary} />
+            <p className="font-black uppercase tracking-[0.3em] mb-4 flex items-center justify-center gap-2 text-center" style={{ color: cfg.eventTypeColor || primary, fontSize: `${cfg.eventTypeSize ?? 11}px`, fontFamily: cfg.eventTypeFont || cfg.fontBody, textShadow: coverShadow }}>
+              {cfg.eventTypeEmoji && <RenderSymbol value={cfg.eventTypeEmoji} size={cfg.eventTypeSize ?? 11} color={cfg.eventTypeColor || primary} />}
               {cfg.eventType}
             </p>
           </DraggableItem>
@@ -608,7 +644,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
           <div className="rounded-[2rem] overflow-hidden relative" style={glassContainerStyle}>
             {shineOverlay}
             <div className="p-4 flex items-center gap-4 relative z-10">
-              <div className="w-12 h-12 rounded-[1rem] flex items-center justify-center shrink-0 border border-white/20 shadow-sm" style={{ background: cfg.accent || primary }}><MapPin size={20} color={cardC === '#000000' ? '#000' : '#fff'} /></div>
+              <div className="w-14 h-14 rounded-[1.2rem] flex items-center justify-center shrink-0 border border-white/20 shadow-sm" style={{ background: cfg.accent || primary }}><MapPin size={24} color={cardC === '#000000' ? '#000' : '#fff'} /></div>
               <div className="text-left">
                 <p className="text-[9px] uppercase font-black tracking-widest mb-0.5 opacity-80" style={{ color: mutedC }}>¿Dónde?</p>
                 <p className="font-bold" style={{ color: textC, fontFamily: cfg.fontBody, fontSize: `${cfg.locationSize ?? 18}px` }}>{cfg.locationName}</p>
@@ -695,6 +731,57 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
                   <span className="text-xs font-bold relative z-10" style={{ color: textC, fontFamily: cfg.fontBody }}>{m.label}</span>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* 👉 NUEVA SECCIÓN: ÁLBUM EN VIVO (CÁMARA DESECHABLE) */}
+        {cfg.showLiveCamera && (
+          <div className="pt-6">
+            <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={cfg.fontBody}>{cfg.liveCameraTitle || "Álbum Colaborativo"}</SectionTitle>
+            <div className="relative overflow-hidden rounded-[2rem] text-center p-6 border shadow-lg" style={glassContainerStyle}>
+              {shineOverlay}
+              <div className="relative z-10 flex flex-col items-center">
+                 {cameraStatus === 'locked' && (
+                   <div className="py-6 flex flex-col items-center opacity-70">
+                     <Lock size={40} className="mb-4" style={{ color: primary }} />
+                     <p className="text-xs font-black uppercase tracking-widest" style={{ color: textC }}>Álbum Bloqueado</p>
+                     <p className="text-[10px] mt-2 font-bold max-w-[200px]" style={{ color: mutedC }}>La cámara se habilitará el día del evento para que compartas tus fotos.</p>
+                   </div>
+                 )}
+                 {cameraStatus === 'expired' && (
+                   <div className="py-6 flex flex-col items-center opacity-70">
+                     <CheckCircle2 size={40} className="mb-4 text-slate-400" />
+                     <p className="text-xs font-black uppercase tracking-widest" style={{ color: textC }}>Álbum Cerrado</p>
+                     <p className="text-[10px] mt-2 font-bold max-w-[200px]" style={{ color: mutedC }}>El evento finalizó y las fotos se han eliminado por privacidad.</p>
+                   </div>
+                 )}
+                 {cameraStatus === 'active' && (
+                   <div className="w-full">
+                     <p className="text-[10px] font-black uppercase tracking-widest mb-4 opacity-80" style={{ color: mutedC }}>Capturá el momento</p>
+                     <label className={`w-full py-5 rounded-[1.5rem] flex items-center justify-center gap-2 font-black shadow-lg text-white uppercase tracking-widest transition-transform ${uploadingLive ? 'opacity-50 cursor-not-allowed' : 'active:scale-95 cursor-pointer hover:brightness-110'}`} style={{ background: cfg.accent || primary }}>
+                        {uploadingLive ? <Loader2 size={20} className="animate-spin" /> : <Camera size={20} />}
+                        {uploadingLive ? "SUBIENDO..." : "SUBIR FOTO"}
+                        <input type="file" accept="image/*" capture="environment" onChange={handleLivePhotoUpload} disabled={uploadingLive} className="hidden" />
+                     </label>
+                     <p className="text-[9px] font-bold mt-3 opacity-60" style={{ color: textC }}>Las fotos se borrarán 24hs después del evento.</p>
+                     
+                     {/* Grilla de fotos */}
+                     {livePhotos.length > 0 && (
+                       <div className="grid grid-cols-2 gap-2 mt-6">
+                         {livePhotos.map((url, i) => (
+                           <div key={i} className="aspect-square rounded-2xl overflow-hidden shadow-sm border border-white/10 relative group">
+                             <img src={url} alt={`Foto ${i}`} className="w-full h-full object-cover" />
+                             <a href={url} download target="_blank" rel="noreferrer" className="absolute bottom-2 right-2 p-2 bg-black/50 text-white rounded-xl backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity">
+                               <Download size={14} />
+                             </a>
+                           </div>
+                         ))}
+                       </div>
+                     )}
+                   </div>
+                 )}
+              </div>
             </div>
           </div>
         )}
@@ -798,7 +885,6 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData })
         </p>
       </div>
 
-      {/* Partículas a pantalla completa si el usuario prende el botón */}
       {cfg.particlesFullscreen && <ParticleLayer />}
     </div>
   );
