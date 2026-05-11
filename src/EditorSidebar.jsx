@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Palette, Star, Image as ImageIcon, Layout, List, Trash2, Video, Link as LinkIcon, LayoutGrid, Smartphone, Calendar, Clock, CheckCircle2, MessageCircle, Plus, Edit2, RefreshCcw, Copy, ExternalLink } from "lucide-react";
-import { GiphySearch, Inp, MiniInp, SelectInp, TypoControl, FontSelector, FileUpload, Toggle, EmojiPicker, Acc, BordersGallery } from "./EditorUI";
+import { GiphySearch, Inp, MiniInp, SelectInp, TypoControl, FontSelector, FileUpload, Toggle, EmojiPicker, Acc, BordersGallery, Tooltip } from "./EditorUI";
 import { ANIMATION_CATEGORIES, THEMES, TRANSITION_OPTS, PARTICLE_CATEGORIES, FONTS } from "./config";
 
 const InstagramIcon = ({ size = 20 }) => (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>);
@@ -42,30 +42,30 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
 
       <Acc title="🎨 Diseño Base y Animación" icon={Palette} iconColor="#6366f1">
          <div className="flex items-center justify-between mb-4 bg-gray-50 p-2 rounded-xl border border-gray-200">
-           <span className="text-xs font-bold text-slate-600 ml-2">¿Animación de Entrada?</span>
+           <span className="text-xs font-bold text-slate-600 ml-2 flex items-center">¿Animación de Entrada? <Tooltip text="Crea un efecto de apertura (como un sobre abriéndose o telones) antes de ver la invitación." /></span>
            <Toggle checked={cfg.openingAnimation !== 'none'} onChange={v => update("openingAnimation", v ? "envelope" : "none")} />
          </div>
          {cfg.openingAnimation !== 'none' && (
            <div className="mb-6 border-b border-gray-100 pb-4">
              <div className="flex gap-2 overflow-x-auto fd-sb pb-2 mb-4">{Object.keys(ANIMATION_CATEGORIES).map(c => (<button key={c} onClick={() => setAnimCategory(c)} type="button" className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest shrink-0 transition-colors cursor-pointer ${animCat === c ? 'bg-violet-600 text-white shadow-md' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}>{c === 'quince' ? '15 Años' : c}</button>))}</div>
              <div className="grid grid-cols-2 gap-2 mb-4">{ANIMATION_CATEGORIES[animCat].map(anim => (<button key={anim.id} onClick={() => { update('openingAnimation', anim.id); setPreviewAnim(true); }} type="button" className={`p-2.5 border rounded-xl text-xs font-bold flex flex-col items-center gap-1 transition-all cursor-pointer ${cfg.openingAnimation === anim.id ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 bg-white text-slate-600 hover:bg-gray-50'}`}><span className="text-2xl mb-1">{anim.emoji}</span><span className="text-center text-[10px] leading-tight">{anim.name}</span></button>))}</div>
-             <SelectInp label="Efecto de Salida" value={cfg.animationTransition || 'fade'} options={TRANSITION_OPTS} onChange={v => update("animationTransition", v)} />
+             <SelectInp label="Efecto de Salida" value={cfg.animationTransition || 'fade'} options={TRANSITION_OPTS} onChange={v => update("animationTransition", v)} tooltip="¿Cómo desaparece la animación inicial para revelar la tarjeta?" />
              <button type="button" onClick={() => setPreviewAnim(true)} className="w-full mt-2 py-3 bg-amber-50 text-amber-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-amber-100 border border-amber-200 cursor-pointer">▶ PROBAR ANIMACIÓN</button>
            </div>
          )}
 
-        {/* BORDES */}
         <div className="mb-6 p-4 rounded-xl border border-pink-100 bg-pink-50/50">
-          <div className="flex items-center justify-between mb-4"><span className="text-[10px] font-black text-pink-600 uppercase tracking-widest">Bordes Ornamentales</span><button onClick={resetPositions} title="Resetear posiciones" className="p-2 bg-white border border-pink-200 text-pink-600 rounded-lg hover:bg-pink-100 cursor-pointer"><RefreshCcw size={14} /></button></div>
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-[10px] font-black text-pink-600 uppercase tracking-widest flex items-center">Bordes Ornamentales <Tooltip text="Añade esquineros decorativos (florales, geométricos) a la foto principal. Podes moverlos arrastrándolos directamente en la tarjeta derecha." /></span>
+            <button onClick={resetPositions} title="Resetear posiciones" className="p-2 bg-white border border-pink-200 text-pink-600 rounded-lg hover:bg-pink-100 cursor-pointer"><RefreshCcw size={14} /></button>
+          </div>
           <div className="flex items-center justify-between mb-4 bg-white p-2 rounded-lg border border-pink-100">
             <span className="text-[10px] font-bold text-slate-500 uppercase">Activar Bordes</span>
             <Toggle 
               checked={cfg.showCoverBorders || false} 
               onChange={v => {
                 update("showCoverBorders", v);
-                if (v && !cfg.selectedBorder) {
-                  update("selectedBorder", "/borders/1-Photoroom.png");
-                }
+                if (v && !cfg.selectedBorder) update("selectedBorder", "/borders/1-Photoroom.png");
               }} 
             />
           </div>
@@ -93,10 +93,10 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
           )}
         </div>
 
-        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Temas Sugeridos</label>
+        <label className="flex items-center text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Temas Sugeridos <Tooltip text="Paletas de color y estilos pre-armados creados por diseñadores." /></label>
         <div className="flex flex-wrap gap-2.5 mb-6">{THEMES.map(th => <button key={th.id} title={th.name} onClick={() => setInv({...inv, config: {...cfg, theme: th.id, ...th}})} className={`w-9 h-9 rounded-full border-2 transition-all hover:scale-110 cursor-pointer ${cfg.theme === th.id ? 'border-violet-600 ring-2 ring-violet-200' : 'border-transparent'}`} style={{ background: th.primary }} />)}</div>
 
-        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Colores Base Manuales</label>
+        <label className="flex items-center text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Colores Base Manuales <Tooltip text="Ajusta manualmente cualquier color del tema sugerido." /></label>
         <div className="grid grid-cols-2 gap-3 mb-6">
           <div className="flex flex-col gap-1"><label className="text-[9px] font-bold text-slate-400 uppercase">Primario</label><input type="color" value={cfg.primary} onChange={e => update('primary', e.target.value)} className="w-full h-9 rounded-xl cursor-pointer border-none shadow-sm" /></div>
           <div className="flex flex-col gap-1"><label className="text-[9px] font-bold text-slate-400 uppercase">Tarjetas</label><input type="color" value={cfg.card} onChange={e => update('card', e.target.value)} className="w-full h-9 rounded-xl cursor-pointer border-none shadow-sm" /></div>
@@ -104,29 +104,22 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
           <div className="flex flex-col gap-1"><label className="text-[9px] font-bold text-slate-400 uppercase">Fondo Abajo</label><input type="color" value={cfg.bg2} onChange={e => update('bg2', e.target.value)} className="w-full h-9 rounded-xl cursor-pointer border-none shadow-sm" /></div>
         </div>
 
-        {/* 👉 CONTROL DE RESPLANDOR (GLOW) CON TEXTO "SIN" */}
         <div className="mb-6 p-3 bg-violet-50 rounded-xl border border-violet-100 shadow-inner">
           <label className="flex justify-between items-center text-[9px] font-black text-violet-600 uppercase mb-2">
-            <span>Intensidad Luz / Sombra</span>
+            <span className="flex items-center">Luz / Sombra Tarjetas <Tooltip text="Añade un aura luminosa o de sombra al fondo de las tarjetas de información. Al 0% queda plana." /></span>
             <span className={`px-2 py-0.5 rounded-full ${cfg.cardGlow === 0 || cfg.cardGlow === undefined ? 'bg-slate-200 text-slate-600' : 'bg-violet-200 text-violet-800'}`}>
               {(cfg.cardGlow === undefined || cfg.cardGlow === 0) ? "SIN" : `${cfg.cardGlow}%`}
             </span>
           </label>
-          <input 
-            type="range" 
-            min={0} max={100} step={5} 
-            value={cfg.cardGlow ?? 0} 
-            onChange={e => update("cardGlow", Number(e.target.value))} 
-            className="w-full accent-violet-600 cursor-pointer" 
-          />
+          <input type="range" min={0} max={100} step={5} value={cfg.cardGlow ?? 0} onChange={e => update("cardGlow", Number(e.target.value))} className="w-full accent-violet-600 cursor-pointer" />
         </div>
 
         <div className="mb-2 text-left z-50 relative"><label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Tipografía Párrafos</label><FontSelector value={cfg.fontBody || "Montserrat"} onChange={v => update("fontBody", v)} /></div>
         <div className="flex gap-2 mt-4 mb-6"><div className="flex flex-col gap-1 flex-1"><label className="text-[9px] font-bold text-slate-400 uppercase">Color Texto Ppal</label><input type="color" value={cfg.text} onChange={e => update('text', e.target.value)} className="w-full h-9 rounded-xl cursor-pointer border-none shadow-sm" /></div><div className="flex flex-col gap-1 flex-1"><label className="text-[9px] font-bold text-slate-400 uppercase">Color Secundario</label><input type="color" value={cfg.muted} onChange={e => update('muted', e.target.value)} className="w-full h-9 rounded-xl cursor-pointer border-none shadow-sm" /></div></div>
-        <TypoControl label="Tamaño Títulos (Menú, Regalos...)" sizeVal={cfg.titlesSize ?? 10} onSize={v => update("titlesSize", v)} minSize={8} maxSize={20} />
+        <TypoControl label="Tamaño Títulos Secundarios" sizeVal={cfg.titlesSize ?? 10} onSize={v => update("titlesSize", v)} minSize={8} maxSize={20} tooltip="Controla el tamaño de letras como 'A TENER EN CUENTA' o 'EL MENÚ'." />
 
         <div className="mb-2 border-t border-gray-100 pt-4 z-10 relative">
-          <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-left">Efectos y Partículas</label>
+          <label className="flex items-center text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-left">Efectos y Partículas <Tooltip text="Añade confeti, luces, estrellas o emojis que caen sobre la portada principal." /></label>
           <div className="flex gap-1 overflow-x-auto pb-2 mb-2 fd-sb">{Object.keys(PARTICLE_CATEGORIES).map(c => (<button key={c} type="button" onClick={() => setPartCat(c)} className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase shrink-0 transition-colors cursor-pointer ${partCat === c ? 'bg-violet-600 text-white shadow-sm' : 'bg-gray-100 text-gray-500'}`}>{c}</button>))}</div>
           <div className="grid grid-cols-2 gap-2">{PARTICLE_CATEGORIES[partCat].map(eff => (<button key={eff.id} type="button" onClick={() => update("particleEffect", eff.id)} className={`p-2 rounded-xl border text-left flex items-center gap-2 transition-all cursor-pointer ${cfg.particleEffect === eff.id ? 'border-violet-500 bg-violet-50 text-violet-700 shadow-sm' : 'border-gray-200 bg-white text-slate-600 hover:border-violet-200'}`}><span className="text-xl">{eff.icon}</span><span className="truncate text-[10px] font-bold">{eff.name}</span></button>))}</div>
           
@@ -142,8 +135,8 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
               
               <div className="flex items-center justify-between mt-4 bg-violet-50 p-3 rounded-xl border border-violet-100">
                  <div>
-                   <span className="text-[10px] font-black text-violet-800 uppercase block mb-1">Efecto en toda la página</span>
-                   <span className="text-[9px] text-violet-600 leading-tight block">El efecto caerá constantemente mientras scrolleas.</span>
+                   <span className="text-[10px] font-black text-violet-800 uppercase block mb-1 flex items-center">Efecto Pantalla Completa <Tooltip text="Si lo activas, las partículas no se quedarán solo en el banner de arriba, sino que caerán permanentemente sobre toda la invitación." /></span>
+                   <span className="text-[9px] text-violet-600 leading-tight block">Caerán constantemente mientras scrolleas.</span>
                  </div>
                  <Toggle checked={cfg.particlesFullscreen || false} onChange={v => update("particlesFullscreen", v)} />
               </div>
@@ -153,8 +146,8 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
       </Acc>
 
       <Acc title="1️⃣ Portada Principal" icon={ImageIcon} defaultOpen iconColor="#ec4899">
-        <div className="mb-6 bg-gray-50 p-3 rounded-xl border border-gray-200"><div className="flex items-center justify-between mb-2"><span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">¿Fondo GIF Animado?</span><Toggle checked={cfg.useGiphyCover || false} onChange={v => update("useGiphyCover", v)} /></div>{cfg.useGiphyCover ? (<GiphySearch onSelect={url => update("coverPhoto", url)} placeholder="Ej: brillos, spiderman..." />) : (<FileUpload value={cfg.coverPhoto} onChange={v => update("coverPhoto", v)} />)}<div className="flex items-center justify-between mt-3 mb-1 pt-3 border-t border-gray-200"><span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Sombreado Base Oscuro</span><Toggle checked={cfg.showCoverGradient !== false} onChange={v => update("showCoverGradient", v)} /></div>{cfg.showCoverGradient !== false && (<input type="range" min={0} max={100} step={5} value={cfg.coverGradientIntensity ?? 50} onChange={e => update("coverGradientIntensity", Number(e.target.value))} className="w-full accent-violet-600 cursor-pointer mt-2" />)}</div>
-        <div className="bg-gray-50/70 p-3 rounded-xl border border-gray-100 shadow-sm mb-5 relative overflow-hidden"><div className="absolute left-0 top-0 bottom-0 w-1 bg-slate-400" /><label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3 pl-2">Sombreado para Legibilidad</label><div className="flex gap-3 pl-2"><div className="flex flex-col gap-1 shrink-0"><label className="text-[9px] font-bold text-slate-400 uppercase">Color</label><input type="color" value={cfg.coverTextShadowColor || "#000000"} onChange={e => update('coverTextShadowColor', e.target.value)} className="w-10 h-9 rounded-lg cursor-pointer border-none shadow-sm" /></div><div className="flex flex-col gap-1 flex-1"><label className="flex justify-between items-center text-[9px] font-bold text-slate-400 uppercase"><span>Intensidad</span><span className="text-slate-500 bg-slate-200 px-2 py-0.5 rounded-full">{cfg.coverTextShadowSize ?? 10}px</span></label><input type="range" min={0} max={30} value={cfg.coverTextShadowSize ?? 10} onChange={e => update("coverTextShadowSize", Number(e.target.value))} className="w-full accent-slate-500 cursor-pointer mt-1" /></div></div></div>
+        <div className="mb-6 bg-gray-50 p-3 rounded-xl border border-gray-200"><div className="flex items-center justify-between mb-2"><span className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center">¿Fondo GIF Animado? <Tooltip text="Busca y usa un GIF de la base de datos de Giphy en lugar de una foto fija." /></span><Toggle checked={cfg.useGiphyCover || false} onChange={v => update("useGiphyCover", v)} /></div>{cfg.useGiphyCover ? (<GiphySearch onSelect={url => update("coverPhoto", url)} placeholder="Ej: brillos, spiderman..." />) : (<FileUpload value={cfg.coverPhoto} onChange={v => update("coverPhoto", v)} />)}<div className="flex items-center justify-between mt-3 mb-1 pt-3 border-t border-gray-200"><span className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center">Sombreado Base Oscuro <Tooltip text="Agrega una neblina negra en la parte de abajo de la foto para que el texto blanco resalte mejor." /></span><Toggle checked={cfg.showCoverGradient !== false} onChange={v => update("showCoverGradient", v)} /></div>{cfg.showCoverGradient !== false && (<input type="range" min={0} max={100} step={5} value={cfg.coverGradientIntensity ?? 50} onChange={e => update("coverGradientIntensity", Number(e.target.value))} className="w-full accent-violet-600 cursor-pointer mt-2" />)}</div>
+        <div className="bg-gray-50/70 p-3 rounded-xl border border-gray-100 shadow-sm mb-5 relative overflow-hidden"><div className="absolute left-0 top-0 bottom-0 w-1 bg-slate-400" /><label className="flex items-center text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3 pl-2">Sombreado para Legibilidad <Tooltip text="Le agrega una sombra a la tipografía principal para que no se pierda si el fondo es muy claro." /></label><div className="flex gap-3 pl-2"><div className="flex flex-col gap-1 shrink-0"><label className="text-[9px] font-bold text-slate-400 uppercase">Color</label><input type="color" value={cfg.coverTextShadowColor || "#000000"} onChange={e => update('coverTextShadowColor', e.target.value)} className="w-10 h-9 rounded-lg cursor-pointer border-none shadow-sm" /></div><div className="flex flex-col gap-1 flex-1"><label className="flex justify-between items-center text-[9px] font-bold text-slate-400 uppercase"><span>Intensidad</span><span className="text-slate-500 bg-slate-200 px-2 py-0.5 rounded-full">{cfg.coverTextShadowSize ?? 10}px</span></label><input type="range" min={0} max={30} value={cfg.coverTextShadowSize ?? 10} onChange={e => update("coverTextShadowSize", Number(e.target.value))} className="w-full accent-slate-500 cursor-pointer mt-1" /></div></div></div>
         
         <div className="flex gap-2 z-[90] relative mt-2 border-t border-gray-100 pt-4"><EmojiPicker value={cfg.eventTypeEmoji || "✨"} onSelect={v => update("eventTypeEmoji", v)} /><div className="flex-1"><Inp label="Frase Superior" value={cfg.eventType} onChange={v => update("eventType", v)} placeholder="Estás invitado a..." /></div></div>
         <TypoControl label="Diseño Frase Superior" fontVal={cfg.eventTypeFont || cfg.fontBody} onFont={v => update("eventTypeFont", v)} colorVal={cfg.eventTypeColor || cfg.primary} onColor={v => update('eventTypeColor', v)} sizeVal={cfg.eventTypeSize ?? 11} onSize={v => update("eventTypeSize", v)} minSize={8} maxSize={24} />
@@ -162,30 +155,54 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
         <div className="z-[80] relative"><Inp label="Nombre Principal" value={cfg.honoreeName} onChange={v => update("honoreeName", v)} /></div>
         <TypoControl label="Diseño del Nombre" fontVal={cfg.honoreeFont || cfg.fontTitle} onFont={v => update("honoreeFont", v)} colorVal={cfg.honoreeColor || cfg.text} onColor={v => update('honoreeColor', v)} sizeVal={cfg.honoreeSize ?? 48} onSize={v => update("honoreeSize", v)} minSize={30} maxSize={80} />
         
-        <div className="flex items-center justify-between mb-4 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Mostrar Medalla Flotante</span><Toggle checked={cfg.showBadge ?? true} onChange={v => update("showBadge", v)} /></div>
-        {(cfg.showBadge ?? true) && (<><div className="flex gap-2 z-[70] relative"><EmojiPicker value={cfg.badgeEmoji} onSelect={v => update("badgeEmoji", v)} /><div className="flex-1"><Inp label="Medalla Flotante" value={cfg.badgeText} onChange={v => update("badgeText", v)} placeholder="Ej: 5 añitos" /></div></div><TypoControl label="Diseño Medalla" fontVal={cfg.badgeFont || cfg.fontBody} onFont={v => update("badgeFont", v)} sizeVal={cfg.badgeSize ?? 14} onSize={v => update("badgeSize", v)} minSize={10} max={30} /><div className="mt-4 p-3 bg-violet-50 rounded-xl border border-violet-100"><label className="block text-[10px] font-black text-violet-600 uppercase mb-2">Fondo de la Medalla</label><input type="color" value={cfg.badgeBgColor || "#000000"} onChange={e => update('badgeBgColor', e.target.value)} className="w-full h-10 rounded-xl cursor-pointer border-none"/></div></>)}
+        <div className="flex items-center justify-between mb-4 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500 flex items-center">Mostrar Medalla Flotante <Tooltip text="Es el globito tipo 'Mis 15 Años' o 'Nos casamos' que flota debajo del nombre principal." /></span><Toggle checked={cfg.showBadge ?? true} onChange={v => update("showBadge", v)} /></div>
+        {(cfg.showBadge ?? true) && (<><div className="flex gap-2 z-[70] relative"><EmojiPicker value={cfg.badgeEmoji} onSelect={v => update("badgeEmoji", v)} /><div className="flex-1"><Inp label="Texto Medalla" value={cfg.badgeText} onChange={v => update("badgeText", v)} placeholder="Ej: 5 añitos" /></div></div><TypoControl label="Diseño Medalla" fontVal={cfg.badgeFont || cfg.fontBody} onFont={v => update("badgeFont", v)} sizeVal={cfg.badgeSize ?? 14} onSize={v => update("badgeSize", v)} minSize={10} max={30} /><div className="mt-4 p-3 bg-violet-50 rounded-xl border border-violet-100"><label className="block text-[10px] font-black text-violet-600 uppercase mb-2">Fondo de la Medalla</label><input type="color" value={cfg.badgeBgColor || "#000000"} onChange={e => update('badgeBgColor', e.target.value)} className="w-full h-10 rounded-xl cursor-pointer border-none"/></div></>)}
       </Acc>
 
-      <Acc title="2️⃣ Cuenta Regresiva" icon={Clock} iconColor="#f59e0b"><div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Reloj</span><Toggle checked={cfg.showCountdown || false} onChange={v => update("showCountdown", v)} /></div>{cfg.showCountdown && (<Inp label="Fecha y Hora exacta" type="datetime-local" value={cfg.countdownDate || ""} onChange={v => update("countdownDate", v)} />)}</Acc>
-      <Acc title="3️⃣ Banner Central" icon={Star} iconColor="#d97706"><div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Banner</span><Toggle checked={cfg.showBanner} onChange={v => update("showBanner", v)} /></div>{cfg.showBanner && (<><Inp label="Título del Banner" value={cfg.bannerTitle} onChange={v => update("bannerTitle", v)} /><div className="flex items-center justify-between mt-4 mb-2 bg-gray-50 p-2 rounded-xl"><span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">¿Usar GIF?</span><Toggle checked={cfg.useGiphyBanner || false} onChange={v => update("useGiphyBanner", v)} /></div>{cfg.useGiphyBanner ? (<GiphySearch onSelect={url => update("bannerPhoto", url)} />) : (<FileUpload value={cfg.bannerPhoto} onChange={v => update("bannerPhoto", v)} />)}</>)}</Acc>
-      <Acc title="4️⃣ Cuándo y Dónde" icon={Calendar} iconColor="#e11d48"><TypoControl label="Tamaño Textos" sizeVal={cfg.dateSize ?? 18} onSize={v => update("dateSize", v)} minSize={12} maxSize={30} /><div className="flex items-center justify-between mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Día</span><Toggle checked={cfg.showDate} onChange={v => update("showDate", v)} /></div>{cfg.showDate && <Inp type="date" value={cfg.dateText} onChange={v => update("dateText", v)} />}<div className="flex items-center justify-between mt-4 mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Horario</span><Toggle checked={cfg.showTime} onChange={v => update("showTime", v)} /></div>{cfg.showTime && <Inp placeholder="16:00 a 20:00 hs" value={cfg.timeText} onChange={v => update("timeText", v)} />}<div className="flex items-center justify-between mt-4 mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Ubicación</span><Toggle checked={cfg.showLocation} onChange={v => update("showLocation", v)} /></div>{cfg.showLocation && (<><div className="p-3 bg-violet-50 rounded-xl border border-violet-100 mb-4 opacity-80"><p className="text-[10px] font-black text-violet-800 uppercase tracking-widest mb-1">📍 Dirección (Panel Maestro)</p><p className="text-xs font-bold text-violet-900">{cfg.locationName || "Nombre del Salón"}</p></div><div className="flex items-center justify-between mt-2 mb-2"><span className="text-xs font-bold text-slate-500">Aclarar Parking</span><Toggle checked={cfg.showParking} onChange={v => update("showParking", v)} /></div>{cfg.showParking && <SelectInp label="Tipo" value={cfg.parkingType} options={[{label:"Público", value:"Estacionamiento público"}, {label:"Privado", value:"Estacionamiento privado"}, {label:"Personalizado...", value:"otro"}]} onChange={v => update("parkingType", v)} />}{cfg.showParking && cfg.parkingType === 'otro' && <Inp placeholder="Escribe aquí..." value={cfg.customParking || ""} onChange={v => update("customParking", v)} />}</>)}</Acc>
+      <Acc title="2️⃣ Cuenta Regresiva" icon={Clock} iconColor="#f59e0b"><div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500 flex items-center">Activar Reloj <Tooltip text="Muestra los días, horas y minutos que faltan para el evento." /></span><Toggle checked={cfg.showCountdown || false} onChange={v => update("showCountdown", v)} /></div>{cfg.showCountdown && (<Inp label="Fecha y Hora exacta" type="datetime-local" value={cfg.countdownDate || ""} onChange={v => update("countdownDate", v)} />)}</Acc>
+      <Acc title="3️⃣ Banner Central" icon={Star} iconColor="#d97706"><div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500 flex items-center">Activar Banner <Tooltip text="Una foto horizontal separadora a mitad de la invitación." /></span><Toggle checked={cfg.showBanner} onChange={v => update("showBanner", v)} /></div>{cfg.showBanner && (<><Inp label="Título del Banner" value={cfg.bannerTitle} onChange={v => update("bannerTitle", v)} /><div className="flex items-center justify-between mt-4 mb-2 bg-gray-50 p-2 rounded-xl"><span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">¿Usar GIF?</span><Toggle checked={cfg.useGiphyBanner || false} onChange={v => update("useGiphyBanner", v)} /></div>{cfg.useGiphyBanner ? (<GiphySearch onSelect={url => update("bannerPhoto", url)} />) : (<FileUpload value={cfg.bannerPhoto} onChange={v => update("bannerPhoto", v)} />)}</>)}</Acc>
+      
+      <Acc title="4️⃣ Cuándo y Dónde" icon={Calendar} iconColor="#e11d48">
+         <TypoControl label="Tamaño Textos" sizeVal={cfg.dateSize ?? 18} onSize={v => update("dateSize", v)} minSize={12} maxSize={30} tooltip="Ajusta el tamaño de la fecha, hora y el nombre del lugar." />
+         
+         <div className="flex items-center justify-between mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Día</span><Toggle checked={cfg.showDate} onChange={v => update("showDate", v)} /></div>
+         {cfg.showDate && <Inp type="date" value={cfg.dateText} onChange={v => update("dateText", v)} />}
+         
+         <div className="flex items-center justify-between mt-4 mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Horario</span><Toggle checked={cfg.showTime} onChange={v => update("showTime", v)} /></div>
+         {cfg.showTime && <Inp placeholder="16:00 a 20:00 hs" value={cfg.timeText} onChange={v => update("timeText", v)} />}
+         
+         <div className="flex items-center justify-between mt-4 mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500 flex items-center">Ubicación <Tooltip text="El lugar donde se realizará el evento." /></span><Toggle checked={cfg.showLocation} onChange={v => update("showLocation", v)} /></div>
+         {cfg.showLocation && (
+           <>
+             {salonProfile?.is_free ? (
+               <div className="bg-violet-50 p-3 rounded-xl border border-violet-100 mb-4">
+                 <p className="text-[10px] text-violet-700 font-bold mb-3 flex items-center gap-1">✨ SALÓN LIBRE ACTIVO <Tooltip text="Como este es un panel de salón libre, puedes escribir la dirección que quieras para este evento en particular." /></p>
+                 <Inp label="Nombre del Lugar" value={cfg.locationName || ""} onChange={v => update("locationName", v)} placeholder="Ej: Quinta Los Pinos" />
+                 <Inp label="Dirección / Google Maps" value={cfg.locationAddress || ""} onChange={v => update("locationAddress", v)} placeholder="Ej: Calle Falsa 123, Ciudad" />
+               </div>
+             ) : (
+               <div className="p-3 bg-violet-50 rounded-xl border border-violet-100 mb-4 opacity-80">
+                 <p className="text-[10px] font-black text-violet-800 uppercase tracking-widest mb-1 flex items-center gap-1">📍 Dirección Global <Tooltip text="La dirección se toma automáticamente de la información de tu salón configurada en el Panel Maestro." /></p>
+                 <p className="text-xs font-bold text-violet-900">{cfg.locationName || "Nombre del Salón"}</p>
+                 <p className="text-[10px] text-violet-700 mt-1">{salonProfile?.address || ""}</p>
+               </div>
+             )}
+
+             <div className="flex items-center justify-between mt-2 mb-2"><span className="text-xs font-bold text-slate-500 flex items-center">Aclarar Parking <Tooltip text="Ideal para avisar si hay estacionamiento libre o hay que pagar." /></span><Toggle checked={cfg.showParking} onChange={v => update("showParking", v)} /></div>
+             {cfg.showParking && <SelectInp label="Tipo" value={cfg.parkingType} options={[{label:"Público", value:"Estacionamiento público"}, {label:"Privado", value:"Estacionamiento privado"}, {label:"Personalizado...", value:"otro"}]} onChange={v => update("parkingType", v)} />}
+             {cfg.showParking && cfg.parkingType === 'otro' && <Inp placeholder="Escribe aquí..." value={cfg.customParking || ""} onChange={v => update("customParking", v)} />}
+           </>
+         )}
+      </Acc>
       
       <Acc title="5️⃣ Tarjeta del Salón" icon={LinkIcon} iconColor="#6366f1">
         <div className="flex items-center justify-between mb-4">
-          <span className="text-xs font-bold text-slate-500">Mostrar Tarjeta</span>
+          <span className="text-xs font-bold text-slate-500 flex items-center">Mostrar Tarjeta <Tooltip text="Muestra tu logo como organizador o salón al final de la ubicación para dar prestigio." /></span>
           <Toggle 
             checked={cfg.showVenueLogo || false} 
             onChange={v => { 
-              if (v && salonProfile) {
-                setInv(prev => ({
-                  ...prev,
-                  config: {
-                    ...prev.config,
-                    showVenueLogo: true,
-                    venueName: prev.config.venueName || salonProfile.name || "",
-                    venueLogoUrl: prev.config.venueLogoUrl || salonProfile.logo || ""
-                  }
-                }));
+              if (v && salonProfile && !salonProfile.is_free) {
+                setInv(prev => ({ ...prev, config: { ...prev.config, showVenueLogo: true, venueName: prev.config.venueName || salonProfile.name || "", venueLogoUrl: prev.config.venueLogoUrl || salonProfile.logo || "" } }));
               } else {
                 update("showVenueLogo", v);
               }
@@ -196,27 +213,27 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
           <>
             <Inp label="Nombre" value={cfg.venueName || ""} onChange={v => update("venueName", v)} />
             <FileUpload label="Logo" value={cfg.venueLogoUrl || ""} onChange={v => update("venueLogoUrl", v)} />
-            <SelectInp label="Botón" value={cfg.venueLinkType || "web"} options={[{ label: "🌐 Web", value: "web" }, { label: "📱 WhatsApp", value: "whatsapp" }]} onChange={v => update("venueLinkType", v)} />
+            <SelectInp label="Botón" value={cfg.venueLinkType || "web"} options={[{ label: "🌐 Web", value: "web" }, { label: "📱 WhatsApp", value: "whatsapp" }]} onChange={v => update("venueLinkType", v)} tooltip="El botón llevará al usuario a charlar por WhatsApp o abrir tu web." />
             <Inp label="Link o Número" value={cfg.venueLink || ""} onChange={v => update("venueLink", v)} />
           </>
         )}
       </Acc>
 
-      <Acc title="6️⃣ Multimedia" icon={Video} iconColor="#8b5cf6"><div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Video YouTube</span><Toggle checked={cfg.showVideo || false} onChange={v => update("showVideo", v)} /></div>{cfg.showVideo && (<div className="mb-6 bg-gray-50 p-3 rounded-xl border border-gray-200"><Inp label="Título" value={cfg.videoTitle || ""} onChange={v => update("videoTitle", v)} /><Inp label="Link" value={cfg.videoUrl || ""} onChange={v => update("videoUrl", v)} /></div>)}<div className="flex items-center justify-between mb-4 pt-4 border-t border-gray-100"><span className="text-xs font-bold text-slate-500">Música Spotify</span><Toggle checked={cfg.showMusic || false} onChange={v => update("showMusic", v)} /></div>{cfg.showMusic && (<div className="bg-gray-50 p-3 rounded-xl border border-gray-200"><Inp label="Link" value={cfg.spotifyUrl || ""} onChange={v => update("spotifyUrl", v)} /></div>)}</Acc>
-      <Acc title="7️⃣ Programa" icon={List} iconColor="#0ea5e9"><div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Cronograma</span><Toggle checked={cfg.showItinerary} onChange={v => update("showItinerary", v)} /></div>{cfg.showItinerary && (<><div className="mb-4"><Inp label="Título" value={cfg.itinerarySectionTitle || "¿Qué vamos a hacer?"} onChange={v => update("itinerarySectionTitle", v)} icon={Edit2} /></div><div className="space-y-4 mb-6">{cfg.itinerary?.map((item, i) => (<div key={i} className="flex flex-col gap-2 bg-white p-3 rounded-xl border shadow-sm relative"><button onClick={() => update("itinerary", cfg.itinerary.filter((_, idx) => idx !== i))} type="button" className="absolute top-2 right-2 text-red-400 cursor-pointer"><Trash2 size={14}/></button><div className="flex gap-2 pr-6"><MiniInp className="w-16 p-2 text-xs font-bold border rounded-lg" value={item.time} onChange={v => { const n = [...cfg.itinerary]; n[i].time = v; update("itinerary", n); }} /><MiniInp className="flex-1 p-2 text-xs border rounded-lg" value={item.title} onChange={v => { const n = [...cfg.itinerary]; n[i].title = v; update("itinerary", n); }} /></div><MiniInp className="w-full p-2 text-xs border rounded-lg" value={item.sub} placeholder="Aclaración" onChange={v => { const n = [...cfg.itinerary]; n[i].sub = v; update("itinerary", n); }} /></div>))}</div><button onClick={() => update("itinerary", [...(cfg.itinerary || []), { time: "16:00", title: "Nuevo Evento", sub: "" }])} type="button" className="w-full py-3 bg-white border-2 border-dashed rounded-xl text-xs font-bold text-slate-400 cursor-pointer"><Plus size={14} className="inline-block mr-2" /> AÑADIR EVENTO</button></>)}</Acc>
+      <Acc title="6️⃣ Multimedia" icon={Video} iconColor="#8b5cf6"><div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500 flex items-center">Video YouTube <Tooltip text="Ideal para videos preboda o resúmenes de historia de vida." /></span><Toggle checked={cfg.showVideo || false} onChange={v => update("showVideo", v)} /></div>{cfg.showVideo && (<div className="mb-6 bg-gray-50 p-3 rounded-xl border border-gray-200"><Inp label="Título" value={cfg.videoTitle || ""} onChange={v => update("videoTitle", v)} /><Inp label="Link" value={cfg.videoUrl || ""} onChange={v => update("videoUrl", v)} tooltip="Solo pegá la URL directa del video de YouTube." /></div>)}<div className="flex items-center justify-between mb-4 pt-4 border-t border-gray-100"><span className="text-xs font-bold text-slate-500 flex items-center">Música Spotify <Tooltip text="Añade un mini reproductor de Spotify para poner al invitado en clima." /></span><Toggle checked={cfg.showMusic || false} onChange={v => update("showMusic", v)} /></div>{cfg.showMusic && (<div className="bg-gray-50 p-3 rounded-xl border border-gray-200"><Inp label="Link" value={cfg.spotifyUrl || ""} onChange={v => update("spotifyUrl", v)} tooltip="Abre Spotify, selecciona Compartir -> Copiar enlace de la canción y pégalo aquí." /></div>)}</Acc>
+      <Acc title="7️⃣ Programa" icon={List} iconColor="#0ea5e9"><div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500 flex items-center">Activar Cronograma <Tooltip text="Una línea de tiempo con los horarios clave del evento (Recepción, Cena, Vals, etc)." /></span><Toggle checked={cfg.showItinerary} onChange={v => update("showItinerary", v)} /></div>{cfg.showItinerary && (<><div className="mb-4"><Inp label="Título" value={cfg.itinerarySectionTitle || "¿Qué vamos a hacer?"} onChange={v => update("itinerarySectionTitle", v)} icon={Edit2} /></div><div className="space-y-4 mb-6">{cfg.itinerary?.map((item, i) => (<div key={i} className="flex flex-col gap-2 bg-white p-3 rounded-xl border shadow-sm relative"><button onClick={() => update("itinerary", cfg.itinerary.filter((_, idx) => idx !== i))} type="button" className="absolute top-2 right-2 text-red-400 cursor-pointer"><Trash2 size={14}/></button><div className="flex gap-2 pr-6"><MiniInp className="w-16 p-2 text-xs font-bold border rounded-lg" value={item.time} onChange={v => { const n = [...cfg.itinerary]; n[i].time = v; update("itinerary", n); }} /><MiniInp className="flex-1 p-2 text-xs border rounded-lg" value={item.title} onChange={v => { const n = [...cfg.itinerary]; n[i].title = v; update("itinerary", n); }} /></div><MiniInp className="w-full p-2 text-xs border rounded-lg" value={item.sub} placeholder="Aclaración" onChange={v => { const n = [...cfg.itinerary]; n[i].sub = v; update("itinerary", n); }} /></div>))}</div><button onClick={() => update("itinerary", [...(cfg.itinerary || []), { time: "16:00", title: "Nuevo Evento", sub: "" }])} type="button" className="w-full py-3 bg-white border-2 border-dashed rounded-xl text-xs font-bold text-slate-400 cursor-pointer"><Plus size={14} className="inline-block mr-2" /> AÑADIR EVENTO</button></>)}</Acc>
       
       <Acc title="8️⃣ Menú" icon={LayoutGrid} iconColor="#10b981"><div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Menú</span><Toggle checked={cfg.showMenu} onChange={v => update("showMenu", v)} /></div>{cfg.showMenu && (<><div className="mb-4"><Inp label="Título" value={cfg.menuSectionTitle || "¿Qué vamos a comer?"} onChange={v => update("menuSectionTitle", v)} icon={Edit2} /></div><div className="space-y-3 mb-6 relative z-[70]">{cfg.menuItems?.map((m, i) => (<div key={i} className="flex items-center gap-2 bg-white p-2 rounded-xl border shadow-sm relative" style={{ zIndex: 50 - i }}><EmojiPicker value={m.emoji} onSelect={e => { const n = [...cfg.menuItems]; n[i].emoji = e; update("menuItems", n); }} /><MiniInp className="flex-1 p-2 text-xs border rounded-lg" value={m.label} onChange={v => { const n = [...cfg.menuItems]; n[i].label = v; update("menuItems", n); }} /><button onClick={() => update("menuItems", cfg.menuItems.filter((_, idx) => idx !== i))} type="button" className="text-red-400 p-2 cursor-pointer"><Trash2 size={14}/></button></div>))}</div><button onClick={() => update("menuItems", [...(cfg.menuItems || []), { emoji: "🍕", label: "Nueva Opción" }])} type="button" className="w-full py-3 bg-white border-2 border-dashed rounded-xl text-xs font-bold text-slate-400 cursor-pointer"><Plus size={14} className="inline-block mr-2"/> AÑADIR COMIDA</button></>)}</Acc>
       
       <Acc title="9️⃣ Vestimenta y Regalos" icon={Layout} iconColor="#f43f5e">
          <div className="mb-6 pb-6 border-b"><Inp label="Título" value={cfg.notesSectionTitle || "A tener en cuenta"} onChange={v => update("notesSectionTitle", v)} icon={Edit2} /></div>
-         <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Vestimenta</span><Toggle checked={cfg.showDressCode} onChange={v => update("showDressCode", v)} /></div>
+         <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500 flex items-center">Activar Vestimenta <Tooltip text="Útil para marcar si el evento requiere ropa de gala, elegante sport, blanca, etc." /></span><Toggle checked={cfg.showDressCode} onChange={v => update("showDressCode", v)} /></div>
          {cfg.showDressCode && (
            <div className="flex gap-2 mb-6 bg-gray-50 p-2 rounded-xl border relative z-[40]">
              <EmojiPicker value={cfg.dressCodeIcon} onSelect={e => update("dressCodeIcon", e)} />
              <div className="flex-1"><Inp value={cfg.dressCodeText} onChange={v => update("dressCodeText", v)} placeholder="Ej: Elegante Sport" className="!mb-0"/></div>
            </div>
          )}
-         <div className="flex items-center justify-between mb-4 pt-4 border-t"><span className="text-xs font-bold text-slate-500">Activar Regalos</span><Toggle checked={cfg.showGifts} onChange={v => update("showGifts", v)} /></div>
+         <div className="flex items-center justify-between mb-4 pt-4 border-t"><span className="text-xs font-bold text-slate-500 flex items-center">Activar Regalos <Tooltip text="Informa a los invitados cómo pueden regalar o si prefieren depósitos bancarios." /></span><Toggle checked={cfg.showGifts} onChange={v => update("showGifts", v)} /></div>
          {cfg.showGifts && (
            <>
              <div className="flex gap-2 mb-2 bg-gray-50 p-2 rounded-xl border relative z-[30]">
@@ -224,7 +241,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
                <div className="w-24"><Inp value={cfg.giftLabel} onChange={v => update("giftLabel", v)} placeholder="Título" className="!mb-0"/></div>
                <div className="flex-1"><Inp value={cfg.giftText} onChange={v => update("giftText", v)} placeholder="Lluvia de sobres..." className="!mb-0"/></div>
              </div>
-             <div className="flex items-center justify-between mt-4 mb-2"><span className="text-[10px] font-bold text-slate-500 uppercase">Datos Transferencia</span><Toggle checked={cfg.showGiftNote} onChange={v => update("showGiftNote", v)} /></div>{cfg.showGiftNote && (<div className="mt-2 relative z-20"><Inp value={cfg.giftNoteText} onChange={v => update("giftNoteText", v)} multiline className="!mb-2" /><TypoControl label="Diseño Aclaración" colorVal={cfg.giftNoteColor || cfg.primary} onColor={v => update('giftNoteColor', v)} sizeVal={cfg.giftNoteSize || 11} onSize={v => update('giftNoteSize', v)} minSize={8} maxSize={24} /></div>)}<div className="flex items-center justify-between mt-6 mb-2 border-t pt-4"><span className="text-[10px] font-bold text-slate-500 uppercase">Links de Regalos</span></div><div className="space-y-3 mb-4">{cfg.giftLinks?.map((link, i) => (<div key={i} className="flex flex-col gap-2 bg-white p-3 rounded-xl border shadow-sm relative"><button onClick={() => update("giftLinks", cfg.giftLinks.filter((_, idx) => idx !== i))} type="button" className="absolute top-2 right-2 text-red-400 cursor-pointer"><Trash2 size={14}/></button><div className="pr-6"><MiniInp className="w-full p-2 mb-2 text-xs font-bold border rounded-lg" value={link.label} placeholder="Ej: Mesa en Amazon" onChange={v => { const n = [...cfg.giftLinks]; n[i].label = v; update("giftLinks", n); }} /><MiniInp className="w-full p-2 text-xs border rounded-lg" value={link.url} placeholder="https://..." onChange={v => { const n = [...cfg.giftLinks]; n[i].url = v; update("giftLinks", n); }} /></div></div>))}</div><button onClick={() => update("giftLinks", [...(cfg.giftLinks || []), { label: "Link", url: "" }])} type="button" className="w-full py-3 bg-white border-2 border-dashed rounded-xl text-xs font-bold text-slate-400 cursor-pointer"><Plus size={14} className="inline-block mr-2" /> AÑADIR LINK</button></>)}</Acc>
+             <div className="flex items-center justify-between mt-4 mb-2"><span className="text-[10px] font-bold text-slate-500 uppercase flex items-center">Datos Transferencia <Tooltip text="Añade un texto grande y amigable donde puedes pegar tu alias o CBU/CVU bancario." /></span><Toggle checked={cfg.showGiftNote} onChange={v => update("showGiftNote", v)} /></div>{cfg.showGiftNote && (<div className="mt-2 relative z-20"><Inp value={cfg.giftNoteText} onChange={v => update("giftNoteText", v)} multiline className="!mb-2" /><TypoControl label="Diseño Aclaración" colorVal={cfg.giftNoteColor || cfg.primary} onColor={v => update('giftNoteColor', v)} sizeVal={cfg.giftNoteSize || 11} onSize={v => update('giftNoteSize', v)} minSize={8} maxSize={24} /></div>)}<div className="flex items-center justify-between mt-6 mb-2 border-t pt-4"><span className="text-[10px] font-bold text-slate-500 uppercase">Links de Regalos</span></div><div className="space-y-3 mb-4">{cfg.giftLinks?.map((link, i) => (<div key={i} className="flex flex-col gap-2 bg-white p-3 rounded-xl border shadow-sm relative"><button onClick={() => update("giftLinks", cfg.giftLinks.filter((_, idx) => idx !== i))} type="button" className="absolute top-2 right-2 text-red-400 cursor-pointer"><Trash2 size={14}/></button><div className="pr-6"><MiniInp className="w-full p-2 mb-2 text-xs font-bold border rounded-lg" value={link.label} placeholder="Ej: Mesa en Amazon" onChange={v => { const n = [...cfg.giftLinks]; n[i].label = v; update("giftLinks", n); }} /><MiniInp className="w-full p-2 text-xs border rounded-lg" value={link.url} placeholder="https://..." onChange={v => { const n = [...cfg.giftLinks]; n[i].url = v; update("giftLinks", n); }} /></div></div>))}</div><button onClick={() => update("giftLinks", [...(cfg.giftLinks || []), { label: "Link", url: "" }])} type="button" className="w-full py-3 bg-white border-2 border-dashed rounded-xl text-xs font-bold text-slate-400 cursor-pointer"><Plus size={14} className="inline-block mr-2" /> AÑADIR LINK</button></>)}</Acc>
       <Acc title="1️⃣0️⃣ Galería" icon={ImageIcon} iconColor="#ec4899"><div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Galería</span><Toggle checked={cfg.showGallery} onChange={v => update("showGallery", v)} /></div>{cfg.showGallery && (<><div className="flex bg-slate-100 p-1 rounded-xl mb-4"><button onClick={() => update("galleryLayout", 'carousel')} type="button" className={`flex-1 py-2 rounded-lg text-[10px] font-bold flex items-center justify-center gap-2 ${cfg.galleryLayout === 'carousel' || !cfg.galleryLayout ? 'bg-white shadow-sm text-violet-600' : 'text-slate-500'} cursor-pointer`}><Smartphone size={14}/> Carrusel</button><button onClick={() => update("galleryLayout", 'grid')} type="button" className={`flex-1 py-2 rounded-lg text-[10px] font-bold flex items-center justify-center gap-2 ${cfg.galleryLayout === 'grid' ? 'bg-white shadow-sm text-violet-600' : 'text-slate-500'} cursor-pointer`}><LayoutGrid size={14}/> Cuadrícula</button></div><Inp label="Título" value={cfg.galleryTitle} onChange={v => update("galleryTitle", v)} /><div className="space-y-4 mb-4 mt-2">{cfg.galleryPhotos?.map((p, i) => (<div key={i} className="bg-white border rounded-xl p-2 relative"><FileUpload onChange={v => { const n = [...cfg.galleryPhotos]; n[i] = v; update("galleryPhotos", n); }} value={p} /><button onClick={() => update("galleryPhotos", cfg.galleryPhotos.filter((_, idx) => idx !== i))} type="button" className="absolute top-2 right-2 p-2 bg-red-50 text-red-500 rounded-lg cursor-pointer"><Trash2 size={14}/></button></div>))}</div><button onClick={() => update("galleryPhotos", [...(cfg.galleryPhotos || []), ""])} type="button" className="w-full py-3 bg-white border-2 border-dashed rounded-xl text-xs font-bold text-slate-400 cursor-pointer"><Plus size={14} className="inline-block mr-2" /> AÑADIR FOTO</button></>)}</Acc>
       
       <Acc title="1️⃣1️⃣ Confirmación y Redes" icon={CheckCircle2} iconColor="#22c55e">
@@ -232,7 +249,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
            <h4 className="text-xs font-black text-slate-800 uppercase mb-3">Control de Accesos y RSVP</h4>
            
            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] font-bold text-slate-700 uppercase">Modo Lista VIP (Nominal)</span>
+              <span className="text-[10px] font-bold text-slate-700 uppercase flex items-center">Modo Lista VIP (Nominal) <Tooltip text="Al activarlo, se genera un enlace maestro con PIN. Tu cliente debe ingresar y agregar los nombres de sus invitados uno por uno, y a cada uno se le generará una URL única con QR." /></span>
               <Toggle checked={cfg.isPrivateList || false} onChange={v => update("isPrivateList", v)} />
            </div>
            <p className="text-[9px] text-slate-500 mb-4 font-medium leading-tight">
@@ -242,7 +259,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
            {cfg.isPrivateList && (
              <>
                <div className="mb-4 p-3 bg-violet-50 rounded-xl border border-violet-100">
-                 <label className="block text-[10px] font-black text-violet-800 uppercase tracking-widest mb-1.5">PIN de Acceso para el Agasajado</label>
+                 <label className="flex items-center text-[10px] font-black text-violet-800 uppercase tracking-widest mb-1.5">PIN de Acceso Agasajado <Tooltip text="Tu cliente necesitará este código de 4 números para entrar al 'Panel del Cliente' y cargar a sus invitados." /></label>
                  <MiniInp type="text" maxLength="4" placeholder="Ej: 1234" value={cfg.clientPin || ""} onChange={v => update("clientPin", v)} className="w-full px-4 py-2 rounded-xl border border-violet-200 text-sm outline-none focus:border-violet-500 font-bold tracking-widest text-center" />
                </div>
 
@@ -259,7 +276,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
            )}
 
            <div className="flex items-center justify-between mb-2 border-t border-slate-200 pt-4">
-              <span className="text-[10px] font-bold text-slate-700 uppercase">Fecha Límite RSVP</span>
+              <span className="text-[10px] font-bold text-slate-700 uppercase flex items-center">Fecha Límite RSVP <Tooltip text="A partir de esta fecha, ya no dejará que nuevos invitados confirmen asistencia ni obtengan su QR." /></span>
               <Toggle checked={cfg.showRsvpDeadline || false} onChange={v => update("showRsvpDeadline", v)} />
            </div>
            {cfg.showRsvpDeadline && (
@@ -268,12 +285,12 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
               </div>
            )}
 
-           <h4 className="text-[10px] font-bold text-slate-700 uppercase mb-2 border-t border-slate-200 pt-4">Límite Acompañantes</h4>
+           <h4 className="flex items-center text-[10px] font-bold text-slate-700 uppercase mb-2 border-t border-slate-200 pt-4">Límite Acompañantes <Tooltip text="Define cuántas personas MAXIMO puede llevar un invitado (hijos, parejas) por pase." /></h4>
            <MiniInp type="number" value={cfg.maxGuestsPerFamily || 5} onChange={v => update("maxGuestsPerFamily", Number(v))} className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm outline-none focus:border-violet-400" />
            <p className="text-[9px] text-slate-500 mt-2 font-bold">Pax máximo extra por cada pase de invitado.</p>
         </div>
 
-        <Inp label="WhatsApp Celular (+52)" value={cfg.whatsappNumber} onChange={v => update("whatsappNumber", v)} icon={MessageCircle} />
+        <Inp label="WhatsApp Celular (+52)" value={cfg.whatsappNumber} onChange={v => update("whatsappNumber", v)} icon={MessageCircle} tooltip="Si completas esto y el invitado le da a confirmar, se te abrirá tu WhatsApp con el mensaje automático." />
         <div className="bg-green-50 p-3 rounded-xl border border-green-100 mt-2 mb-6">
           <p className="text-[9px] text-green-700 font-bold mb-2">💡 Tip: Escribí {"{nombre}"} para reemplace automático.</p>
           <Inp label="Mensaje" value={cfg.whatsappMessage} onChange={v => update("whatsappMessage", v)} multiline className="!mb-0" />
