@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ShieldCheck, LogOut, Plus, MapPin, Edit2, KeyRound, Trash2, X, CalendarClock, AlertCircle } from "lucide-react";
+import { ShieldCheck, LogOut, Plus, MapPin, Edit2, KeyRound, Trash2, X, CalendarClock, AlertCircle, Info } from "lucide-react";
 import { Inp, Toggle, Toast } from "./DashboardUI";
 
 const formatDateSpanish = (dateStr) => {
@@ -18,9 +18,13 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
   const [toast, setToast] = useState("");
   const notify = (m) => { setToast(m); setTimeout(() => setToast(""), 3000); };
 
-  // 👉 ESTADOS PARA LA CAJA DE ALERTA DEL MASTER (Sin el useEffect que hacía el loop)
   const [masterAlertMsg, setMasterAlertMsg] = useState(globalAlert?.mensaje || "");
   const [masterAlertActive, setMasterAlertActive] = useState(globalAlert?.activo || false);
+
+  useEffect(() => {
+    setMasterAlertMsg(globalAlert?.mensaje || "");
+    setMasterAlertActive(globalAlert?.activo || false);
+  }, [globalAlert]);
 
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState("create"); 
@@ -33,17 +37,19 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
   const [fPayDate, setFPayDate] = useState("");
   const [fAlert, setFAlert] = useState(false);
   const [fClabe, setFClabe] = useState(""); 
+  // 👉 NUEVO ESTADO PARA SALÓN LIBRE
+  const [fIsFree, setFIsFree] = useState(false);
 
-  const openCreateModal = () => { setModalMode("create"); setFName(""); setFEmail(""); setFPhone(""); setFPass(""); setFAddress(""); setFPayDate(""); setFAlert(false); setFClabe(""); setShowModal(true); };
-  const openEditModal = (salon) => { setModalMode("edit"); setEditingEmail(salon.email); setFName(salon.name); setFEmail(salon.email); setFPhone(salon.phone || ""); setFAddress(salon.address || ""); setFPayDate(salon.payment_date || ""); setFAlert(salon.payment_alert || false); setFClabe(salon.payment_clabe || ""); setShowModal(true); };
+  const openCreateModal = () => { setModalMode("create"); setFName(""); setFEmail(""); setFPhone(""); setFPass(""); setFAddress(""); setFPayDate(""); setFAlert(false); setFClabe(""); setFIsFree(false); setShowModal(true); };
+  const openEditModal = (salon) => { setModalMode("edit"); setEditingEmail(salon.email); setFName(salon.name); setFEmail(salon.email); setFPhone(salon.phone || ""); setFAddress(salon.address || ""); setFPayDate(salon.payment_date || ""); setFAlert(salon.payment_alert || false); setFClabe(salon.payment_clabe || ""); setFIsFree(salon.is_free || false); setShowModal(true); };
   const openPassModal = (salon) => { setModalMode("password"); setEditingEmail(salon.email); setFPass(""); setShowModal(true); };
 
   const handleSaveModal = () => {
     if (modalMode === "create") {
       if(!fName || !fEmail || !fPass) return alert("Faltan datos");
-      onCreateSalon({ name: fName, email: fEmail, pass: fPass, role: "salon", address: fAddress, phone: fPhone, payment_date: fPayDate, payment_alert: fAlert, payment_clabe: fClabe });
+      onCreateSalon({ name: fName, email: fEmail, pass: fPass, role: "salon", address: fAddress, phone: fPhone, payment_date: fPayDate, payment_alert: fAlert, payment_clabe: fClabe, is_free: fIsFree });
     } else if (modalMode === "edit") {
-      onUpdateUser(editingEmail, { name: fName, phone: fPhone, address: fAddress, payment_date: fPayDate, payment_alert: fAlert, payment_clabe: fClabe });
+      onUpdateUser(editingEmail, { name: fName, phone: fPhone, address: fAddress, payment_date: fPayDate, payment_alert: fAlert, payment_clabe: fClabe, is_free: fIsFree });
     } else if (modalMode === "password") {
       if(!fPass) return alert("Escribe una contraseña");
       onUpdateUser(editingEmail, { pass: fPass });
@@ -64,34 +70,21 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
       
       <div className="max-w-7xl mx-auto p-6 sm:p-12">
         
-        {/* 👉 NUEVO PANEL DE CONTROL: ALERTA GLOBAL */}
         <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-6 sm:p-8 mb-10 flex flex-col lg:flex-row items-start lg:items-center gap-6 relative overflow-hidden">
           <div className="absolute top-0 left-0 bottom-0 w-2 bg-violet-500"></div>
-          
           <div className="w-14 h-14 bg-violet-50 text-violet-600 rounded-full flex items-center justify-center shrink-0 shadow-sm border border-violet-100">
             <AlertCircle size={28}/>
           </div>
-          
           <div className="flex-1 w-full">
             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Anuncio Global para Salones</label>
-            <input 
-              type="text" 
-              placeholder="Ej: Mantenimiento programado hoy a las 03:00 AM..." 
-              value={masterAlertMsg} 
-              onChange={e => setMasterAlertMsg(e.target.value)} 
-              className="w-full py-3.5 px-4 rounded-xl text-slate-800 bg-slate-50 border border-slate-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all font-medium" 
-            />
+            <input type="text" placeholder="Ej: Mantenimiento programado hoy a las 03:00 AM..." value={masterAlertMsg} onChange={e => setMasterAlertMsg(e.target.value)} className="w-full py-3.5 px-4 rounded-xl text-slate-800 bg-slate-50 border border-slate-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all font-medium" />
           </div>
-          
           <div className="flex w-full lg:w-auto items-center justify-between lg:justify-center gap-6 lg:border-l lg:border-slate-100 lg:pl-6">
             <div className="flex flex-col items-center justify-center shrink-0">
               <span className="text-[10px] font-black uppercase mb-2 text-slate-400">Estado</span>
               <Toggle checked={masterAlertActive} onChange={setMasterAlertActive} />
             </div>
-            <button 
-              onClick={() => { onUpdateAlert(masterAlertMsg, masterAlertActive); notify("¡Alerta Actualizada!"); }} 
-              className="h-12 px-8 bg-slate-900 text-white rounded-xl font-black text-xs hover:bg-black transition-all shadow-lg active:scale-95 cursor-pointer shrink-0 uppercase tracking-widest"
-            >
+            <button onClick={() => { onUpdateAlert(masterAlertMsg, masterAlertActive); notify("¡Alerta Actualizada!"); }} className="h-12 px-8 bg-slate-900 text-white rounded-xl font-black text-xs hover:bg-black transition-all shadow-lg active:scale-95 cursor-pointer shrink-0 uppercase tracking-widest">
               Publicar
             </button>
           </div>
@@ -105,7 +98,7 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
         <div className="bg-white rounded-3xl shadow-sm border overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
-              <thead><tr className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest"><th className="p-5">Salón</th><th className="p-5">Ubicación</th><th className="p-5">Vencimiento</th><th className="p-5">Estado</th><th className="p-5 text-right">Acciones</th></tr></thead>
+              <thead><tr className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest"><th className="p-5">Salón</th><th className="p-5">Tipo/Ubicación</th><th className="p-5">Vencimiento</th><th className="p-5">Estado</th><th className="p-5 text-right">Acciones</th></tr></thead>
               <tbody className="text-sm">
                 {mySalons.map(salon => {
                   let status = <span className="px-3 py-1.5 rounded-lg bg-green-50 border border-green-200 text-green-700 font-black text-[10px] uppercase tracking-widest">Al día</span>;
@@ -117,10 +110,11 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
                         <p className="text-xs text-slate-400 font-medium">{salon.email}</p>
                       </td>
                       <td className="p-5">
-                        <div className="flex gap-2 items-center max-w-[200px]">
-                          <MapPin size={16} className="text-slate-300 shrink-0"/>
-                          <span className="text-sm text-slate-600 truncate">{salon.address || 'Sin dirección'}</span>
-                        </div>
+                        {salon.is_free ? (
+                           <div className="flex gap-2 items-center text-violet-600 bg-violet-50 px-3 py-1.5 rounded-lg w-fit border border-violet-100"><Info size={14}/> <span className="text-xs font-bold uppercase tracking-wider">Salón Libre</span></div>
+                        ) : (
+                           <div className="flex gap-2 items-center max-w-[200px]"><MapPin size={16} className="text-slate-300 shrink-0"/><span className="text-sm text-slate-600 truncate">{salon.address || 'Sin dirección'}</span></div>
+                        )}
                       </td>
                       <td className="p-5 font-black text-slate-700">{salon.payment_date ? formatDateSpanish(salon.payment_date) : '--/--/----'}</td>
                       <td className="p-5">{status}</td>
@@ -140,7 +134,7 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
 
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl relative anim-pop">
+          <div className="bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl relative anim-pop max-h-[90vh] overflow-y-auto fd-sb">
             <button onClick={() => setShowModal(false)} className="absolute top-6 right-6 w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 cursor-pointer"><X size={20}/></button>
             <h2 className="text-2xl font-black mb-8">{modalMode === 'create' ? 'Nuevo Salón' : modalMode === 'edit' ? 'Editar Salón' : 'Nueva Clave'}</h2>
             <div className="space-y-4">
@@ -149,7 +143,19 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
                   <div className="grid grid-cols-2 gap-3"><Inp label="Nombre" value={fName} onChange={setFName} /><Inp label="WhatsApp" value={fPhone} onChange={setFPhone} /></div>
                   <Inp label="Email" value={fEmail} onChange={setFEmail} className={modalMode === 'edit' ? 'opacity-50 pointer-events-none' : ''} />
                   {modalMode === 'create' && <Inp label="Contraseña" value={fPass} onChange={setFPass} type="password" />}
-                  <Inp label="Ubicación Google Maps" value={fAddress} onChange={setFAddress} />
+                  
+                  {/* 👉 TOGGLE DE SALÓN LIBRE Y DIRECCIÓN */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                     <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <span className="text-[10px] font-black uppercase text-violet-700 block mb-1">¿Salón Libre?</span>
+                          <span className="text-[9px] font-medium text-slate-500 block leading-tight">Si se activa, el cliente podrá escribir la dirección manualmente por cada evento que cree.</span>
+                        </div>
+                        <Toggle checked={fIsFree} onChange={setFIsFree} />
+                     </div>
+                     {!fIsFree && <Inp label="Ubicación Global (Google Maps)" value={fAddress} onChange={setFAddress} className="!mb-0" />}
+                  </div>
+
                   <Inp label="CLABE de Pago Asignada" placeholder="Ej: 012345678901234567" value={fClabe} onChange={setFClabe} />
                   <div className="flex gap-4 items-center bg-slate-50 p-4 rounded-2xl border border-slate-200 mt-2">
                     <Inp label="Vencimiento Cuota" type="date" icon={CalendarClock} value={fPayDate} onChange={setFPayDate} className="flex-1 !mb-0" />
