@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Routes, Route, useParams, Navigate, useSearchParams } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useParams, Navigate, useSearchParams } from "react-router-dom";
 import { Loader2, PartyPopper } from "lucide-react";
 
 import { EditorScreen } from "./Editor";
@@ -171,6 +171,7 @@ export default function App() {
       if (alertData) {
         setGlobalAlert({ mensaje: alertData.mensaje, activo: alertData.activo });
       }
+      // Refrescamos silenciosamente los usuarios para traer los últimos mensajes de soporte
       const { data: salones } = await supabase.from('salones').select('*');
       if (salones) setUsers(salones);
     }, 5000);
@@ -213,6 +214,7 @@ export default function App() {
   const handleCreateSalon = async (nU) => { const { error } = await supabase.from('salones').insert([nU]); if (!error) setUsers(p => [...p, nU]); };
   const handleDeleteSalon = async (em) => { await supabase.from('invitaciones').delete().eq('salon_id', em); await supabase.from('salones').delete().eq('email', em); setUsers(p => p.filter(u => u.email !== em)); setInvitations(p => p.filter(i => i.salonId !== em)); };
   
+  // 👉 MAGIA DEL LÍMITE DEMO ACÁ
   const handleCreateInv = async (sE, sN) => { 
     const sInfo = users.find(u => u.email === sE);
     
@@ -243,6 +245,7 @@ export default function App() {
     if (!error) { 
       setInvitations(p => [...p, { ...nI, salonId: sE }]); 
       
+      // SUMAMOS 1 AL CONTADOR HISTÓRICO
       const newCount = (sInfo?.invites_created || 0) + 1;
       await supabase.from('salones').update({ invites_created: newCount }).eq('email', sE);
       setUsers(prev => prev.map(u => u.email === sE ? { ...u, invites_created: newCount } : u));
@@ -269,22 +272,24 @@ export default function App() {
     </div>
   );
 
-  // 👉 ACÁ ESTABA EL PROBLEMA: Le sacamos las etiquetas <Router> que rodeaban a <Routes>
+  // 👉 ACÁ ESTÁ EL ROUTER RESTAURADO
   return (
     <>
       <GlobalStyles />
-      <Routes>
-        <Route path="/" element={user ? <Navigate to="/dashboard" /> : <LoginScreen onLogin={handleLogin} users={users} />} />
-        <Route path="/master" element={user ? <Navigate to="/dashboard" /> : <LoginScreen isMaster={true} onLogin={handleLogin} users={users} />} />
-        
-        <Route path="/dashboard" element={user ? <DashboardScreen user={user} users={users} invitations={invitations} onCreateSalon={handleCreateSalon} onDeleteSalon={handleDeleteSalon} onCreateInv={handleCreateInv} onDeleteInv={handleDeleteInv} onUpdateUser={handleUpdateUser} onUpdateInternal={handleUpdateInternal} onLogout={handleLogout} globalAlert={globalAlert} onUpdateAlert={handleUpdateAlert} /> : <Navigate to="/" />} />
-        
-        <Route path="/editor/:id" element={<EditorScreen invitations={invitations} onSave={handleSaveInv} />} />
-        <Route path="/i/:salon/:invId" element={<PublicInviteScreen invitations={invitations} onConfirmRSVP={handleConfirmRSVP} />} />
-        <Route path="/puerta/:id" element={<PuertaScreen invitations={invitations} onUpdateInternal={handleUpdateInternal} />} />
-        <Route path="/manage/:id" element={<ManageScreen />} />
-        <Route path="/invite/:id" element={<LiveInviteScreen />} />
-      </Routes>
+      <Router>
+        <Routes>
+          <Route path="/" element={user ? <Navigate to="/dashboard" /> : <LoginScreen onLogin={handleLogin} users={users} />} />
+          <Route path="/master" element={user ? <Navigate to="/dashboard" /> : <LoginScreen isMaster={true} onLogin={handleLogin} users={users} />} />
+          
+          <Route path="/dashboard" element={user ? <DashboardScreen user={user} users={users} invitations={invitations} onCreateSalon={handleCreateSalon} onDeleteSalon={handleDeleteSalon} onCreateInv={handleCreateInv} onDeleteInv={handleDeleteInv} onUpdateUser={handleUpdateUser} onUpdateInternal={handleUpdateInternal} onLogout={handleLogout} globalAlert={globalAlert} onUpdateAlert={handleUpdateAlert} /> : <Navigate to="/" />} />
+          
+          <Route path="/editor/:id" element={<EditorScreen invitations={invitations} onSave={handleSaveInv} />} />
+          <Route path="/i/:salon/:invId" element={<PublicInviteScreen invitations={invitations} onConfirmRSVP={handleConfirmRSVP} />} />
+          <Route path="/puerta/:id" element={<PuertaScreen invitations={invitations} onUpdateInternal={handleUpdateInternal} />} />
+          <Route path="/manage/:id" element={<ManageScreen />} />
+          <Route path="/invite/:id" element={<LiveInviteScreen />} />
+        </Routes>
+      </Router>
     </>
   );
 }
