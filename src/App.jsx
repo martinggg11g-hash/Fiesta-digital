@@ -41,6 +41,7 @@ const GlobalStyles = () => {
   return null;
 };
 
+// 👉 PANTALLA INVITADO REAL (LINK CORTO /invite/:slug)
 const LiveInviteScreen = () => {
   const { id: eventSlug } = useParams();
   const [searchParams] = useSearchParams();
@@ -82,6 +83,7 @@ const LiveInviteScreen = () => {
       <div className={`w-full max-w-[480px] bg-white shadow-2xl relative transition-opacity duration-1000 ${opened ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
         <InvitePreview 
           cfg={inv.config} 
+          internalData={inv.internal_data}
           guestData={guestData} 
           onConfirmRSVP={async (formData) => {
              if (guestData) {
@@ -89,13 +91,22 @@ const LiveInviteScreen = () => {
                 alert("¡Asistencia confirmada! Ya le avisamos a los organizadores.");
              }
           }} 
+          onUploadLivePhoto={async (url) => {
+             // Subimos la foto directo a Supabase
+             const currentPhotos = inv.internal_data?.live_photos || [];
+             const updatedPhotos = [url, ...currentPhotos];
+             const updatedInternal = { ...inv.internal_data, live_photos: updatedPhotos };
+             await supabase.from('invitaciones').update({ internal_data: updatedInternal }).eq('id', inv.id);
+             setInv({ ...inv, internal_data: updatedInternal });
+          }}
         />
       </div>
     </div>
   );
 };
 
-const PublicInviteScreen = ({ invitations, onConfirmRSVP }) => {
+// 👉 PANTALLA INVITADO PÚBLICO (LISTA ABIERTA /i/:salon/:id)
+const PublicInviteScreen = ({ invitations, onConfirmRSVP, onUpdateInternal }) => {
   const { invId } = useParams();
   const inv = invitations.find(i => i.id === invId);
   const [opened, setOpened] = useState(false);
@@ -116,8 +127,14 @@ const PublicInviteScreen = ({ invitations, onConfirmRSVP }) => {
       <div className={`w-full max-w-[480px] bg-white shadow-2xl relative transition-opacity duration-1000 ${opened ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
         <InvitePreview 
           cfg={inv.config} 
+          internalData={inv.internal_data}
           status={inv.internal_data?.eventStatus} 
           onConfirmRSVP={(guestData) => onConfirmRSVP(inv.id, guestData)} 
+          onUploadLivePhoto={async (url) => {
+             const currentPhotos = inv.internal_data?.live_photos || [];
+             const updatedPhotos = [url, ...currentPhotos];
+             await onUpdateInternal(inv.id, 'live_photos', updatedPhotos);
+          }}
         />
       </div>
     </div>
@@ -274,11 +291,9 @@ export default function App() {
       <Routes>
         <Route path="/" element={user ? <Navigate to="/dashboard" /> : <LoginScreen onLogin={handleLogin} users={users} />} />
         <Route path="/master" element={user ? <Navigate to="/dashboard" /> : <LoginScreen isMaster={true} onLogin={handleLogin} users={users} />} />
-        
         <Route path="/dashboard" element={user ? <DashboardScreen user={user} users={users} invitations={invitations} onCreateSalon={handleCreateSalon} onDeleteSalon={handleDeleteSalon} onCreateInv={handleCreateInv} onDeleteInv={handleDeleteInv} onUpdateUser={handleUpdateUser} onUpdateInternal={handleUpdateInternal} onLogout={handleLogout} globalAlert={globalAlert} onUpdateAlert={handleUpdateAlert} /> : <Navigate to="/" />} />
-        
         <Route path="/editor/:id" element={<EditorScreen invitations={invitations} onSave={handleSaveInv} />} />
-        <Route path="/i/:salon/:invId" element={<PublicInviteScreen invitations={invitations} onConfirmRSVP={handleConfirmRSVP} />} />
+        <Route path="/i/:salon/:invId" element={<PublicInviteScreen invitations={invitations} onConfirmRSVP={handleConfirmRSVP} onUpdateInternal={handleUpdateInternal} />} />
         <Route path="/puerta/:id" element={<PuertaScreen invitations={invitations} onUpdateInternal={handleUpdateInternal} />} />
         <Route path="/manage/:id" element={<ManageScreen />} />
         <Route path="/invite/:id" element={<LiveInviteScreen />} />
