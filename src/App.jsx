@@ -138,7 +138,6 @@ export default function App() {
   const [users, setUsers] = useState([]);
   const [invitations, setInvitations] = useState([]);
   
-  // 👉 ESTADO PARA LA ALERTA GLOBAL
   const [globalAlert, setGlobalAlert] = useState({ mensaje: "", activo: false });
   const [loading, setLoading] = useState(true);
 
@@ -158,34 +157,32 @@ export default function App() {
     const fetchData = async () => {
       const { data: salones } = await supabase.from('salones').select('*');
       const { data: invs } = await supabase.from('invitaciones').select('*');
-      
       const { data: alertData } = await supabase.from('alertas').select('*').eq('id', 1).single();
       
       if (salones) setUsers(salones);
       if (invs) setInvitations(invs.map(i => ({ ...i, salonId: i.salon_id, internal_data: i.internal_data || {} })));
       if (alertData) setGlobalAlert(alertData);
-      
       setLoading(false);
     };
     fetchData();
 
-    // 👉 RADAR AUTOMÁTICO: Consulta la alerta a Supabase cada 5 segundos
     const radar = setInterval(async () => {
       const { data: alertData } = await supabase.from('alertas').select('*').eq('id', 1).single();
       if (alertData) {
         setGlobalAlert({ mensaje: alertData.mensaje, activo: alertData.activo });
       }
+      // También refrescamos silenciosamente los usuarios para traer los últimos mensajes de soporte
+      const { data: salones } = await supabase.from('salones').select('*');
+      if (salones) setUsers(salones);
     }, 5000);
 
-    return () => clearInterval(radar); // Limpia el radar si cerramos la app
+    return () => clearInterval(radar);
   }, []);
 
-  // 👉 GUARDA LA ALERTA (con aviso de error por si falla Supabase)
   const handleUpdateAlert = async (mensaje, activo) => {
     const { error } = await supabase.from('alertas').upsert({ id: 1, mensaje, activo });
     if (error) {
-       alert("⚠️ ERROR EN SUPABASE:\nNo se pudo guardar la alerta. Por favor asegurate de haber corrido el código SQL para crear la tabla 'alertas'.\n\nDetalle: " + error.message);
-       console.error("Error alertas:", error);
+       alert("⚠️ ERROR EN SUPABASE:\nNo se pudo guardar la alerta.\nDetalle: " + error.message);
     } else {
        setGlobalAlert({ mensaje, activo });
     }
@@ -217,8 +214,16 @@ export default function App() {
   const handleCreateSalon = async (nU) => { const { error } = await supabase.from('salones').insert([nU]); if (!error) setUsers(p => [...p, nU]); };
   const handleDeleteSalon = async (em) => { await supabase.from('invitaciones').delete().eq('salon_id', em); await supabase.from('salones').delete().eq('email', em); setUsers(p => p.filter(u => u.email !== em)); setInvitations(p => p.filter(i => i.salonId !== em)); };
   
+  // 👉 MAGIA DEL LÍMITE DEMO ACÁ
   const handleCreateInv = async (sE, sN) => { 
     const sInfo = users.find(u => u.email === sE);
+    
+    // VERIFICAMOS LÍMITE
+    if (sInfo?.is_demo && (sInfo?.invites_created || 0) >= 3) {
+      alert("⚠️ LÍMITE DEMO ALCANZADO\nTu cuenta Demo solo permite crear 3 invitaciones en total. Contactá a soporte para actualizar tu plan.");
+      return null;
+    }
+
     const nId = "evt-" + Math.random().toString(36).substr(2,6);
     
     const cfg = { 
@@ -237,7 +242,16 @@ export default function App() {
     
     const nI = { id: nId, salon_id: sE, title: "Nuevo Evento", config: cfg, internal_data: {} };
     const { error } = await supabase.from('invitaciones').insert([nI]);
-    if (!error) { setInvitations(p => [...p, { ...nI, salonId: sE }]); return nId; }
+    if (!error) { 
+      setInvitations(p => [...p, { ...nI, salonId: sE }]); 
+      
+      // SUMAMOS 1 AL CONTADOR HISTÓRICO
+      const newCount = (sInfo?.invites_created || 0) + 1;
+      await supabase.from('salones').update({ invites_created: newCount }).eq('email', sE);
+      setUsers(prev => prev.map(u => u.email === sE ? { ...u, invites_created: newCount } : u));
+
+      return nId; 
+    }
   };
   
   const handleSaveInv = async (uI) => { await supabase.from('invitaciones').update({ title: uI.title, config: uI.config, internal_data: uI.internal_data }).eq('id', uI.id); setInvitations(p => p.map(i => i.id === uI.id ? uI : i)); };
