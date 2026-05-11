@@ -1,294 +1,375 @@
-import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, useParams, Navigate, useSearchParams } from "react-router-dom";
-import { Loader2, PartyPopper } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { 
+  LogOut, Plus, Trash2, Copy, CheckCircle2, Building, Edit2, 
+  Search, Sun, Moon, Settings, CreditCard, Send, Eye, Filter, ScanBarcode, Smartphone, AlertTriangle, AlertCircle, ImageIcon, Loader2, X, MessageCircle
+} from "lucide-react";
 
-import { EditorScreen } from "./Editor";
-import { InvitePreview } from "./Preview";
-import { DEF_CONFIG } from "./config";
-import { OpeningAnimation } from "./Lotties";
-import { supabase } from "./supabase"; 
-import LoginScreen from "./Login";
-import DashboardScreen from "./Dashboard";
-import PuertaScreen from "./Puerta";
-import { ManageScreen } from "./Manage"; 
+import { Inp, FileUpload, Toast, QRScannerModal } from "./DashboardUI";
+import { MasterPanel } from "./MasterPanel";
+import { CrmModal } from "./CrmModal";
 
 const slugify = (text) => text?.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') || 'salon';
 
-const GlobalStyles = () => {
-  useEffect(() => {
-    if (!document.getElementById("tw-cdn")) {
-      const tw = document.createElement("script");
-      tw.id = "tw-cdn"; tw.src = "https://cdn.tailwindcss.com";
-      document.head.appendChild(tw);
-    }
-    if (!document.getElementById("fd-global")) {
-      const s = document.createElement("style");
-      s.id = "fd-global";
-      s.textContent = `
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Playfair+Display:wght@400;700;900&family=Pacifico&family=Caveat:wght@400;700&family=Syne:wght@400;700;800&family=Bebas+Neue&display=swap');
-        body { margin: 0; padding: 0; background: #f8f7ff; font-family: 'Montserrat', sans-serif; -webkit-font-smoothing: antialiased; }
-        .fd-sb::-webkit-scrollbar { width: 8px !important; height: 8px !important; }
-        .fd-sb::-webkit-scrollbar-thumb { background: #b4aee8 !important; border-radius: 10px !important; }
-        .fd-sb::-webkit-scrollbar-thumb:hover { background: #8b5cf6 !important; }
-        .fd-sb::-webkit-scrollbar-track { background: #f1f0f5 !important; border-radius: 10px !important; }
-        @keyframes fdPop { from { opacity: 0; transform: scale(.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-        .anim-pop { animation: fdPop 0.4s cubic-bezier(0.2, 1, 0.3, 1) both; }
-        .invite-phone { width: 100%; max-width: 390px; border-radius: 50px; overflow: hidden; box-shadow: 0 0 0 12px #1a1a2e, 0 0 0 14px #0d0d1a, 0 32px 64px rgba(0,0,0,.65); position: relative; height: 780px; background: #000; }
-      `;
-      document.head.appendChild(s);
-    }
-  }, []);
-  return null;
+const formatDateSpanish = (dateStr) => {
+  if (!dateStr) return 'Sin fecha';
+  if (dateStr.includes('-')) {
+    const [y, m, d] = dateStr.split('-');
+    const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    return `${parseInt(d, 10)} de ${months[parseInt(m, 10) - 1]} de ${y}`;
+  }
+  return dateStr;
 };
 
-const LiveInviteScreen = () => {
-  const { id: eventSlug } = useParams();
-  const [searchParams] = useSearchParams();
-  const guestId = searchParams.get('guest'); 
+// 👉 TUS DATOS DEL BOT DE TELEGRAM 
+const TELEGRAM_BOT_TOKEN = "ACA_VA_EL_TOKEN_DE_TU_BOT"; 
+const TELEGRAM_CHAT_ID = "ACA_VA_TU_CHAT_ID";
+
+export default function DashboardScreen({ user, onLogout, users, onUpdateUser, onCreateSalon, onDeleteSalon, invitations, onCreateInv, onDeleteInv, onUpdateInternal, globalAlert, onUpdateAlert }) {
+  const navigate = useNavigate();
   
-  const [inv, setInv] = useState(null);
-  const [guestData, setGuestData] = useState(null);
-  const [opened, setOpened] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState("all"); 
+  const [activeCrmId, setActiveCrmId] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showSupportModal, setShowSupportModal] = useState(false);
+  const [supportMessage, setSupportMessage] = useState("");
 
-  useEffect(() => {
-    const fetchEventAndGuest = async () => {
-      const { data: eventData } = await supabase.from('eventos').select('*').eq('slug', eventSlug).single();
-      if (eventData) {
-        setInv(eventData);
-        document.title = eventData.config?.honoreeName ? `${eventData.config.honoreeName} | Invitación` : "Invitación";
-      }
-      if (guestId) {
-        const { data: gData } = await supabase.from('invitados').select('*').eq('id', guestId).single();
-        if (gData) setGuestData(gData);
-      }
-      setLoading(false);
-    };
-    fetchEventAndGuest();
-  }, [eventSlug, guestId]);
+  const [scanningEvent, setScanningEvent] = useState(null);
+  const [validationResult, setValidationResult] = useState(null);
+  const [copiedStates, setCopiedStates] = useState({});
 
-  if (loading) return (
-    <div className="h-screen bg-slate-950 flex flex-col items-center justify-center text-white relative overflow-hidden">
-       <Loader2 size={30} className="animate-spin text-violet-500 mb-4"/>
-       <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-50">Preparando Pase VIP...</p>
-    </div>
-  );
+  const [receiptFile, setReceiptFile] = useState(null);
+  const [sendingReceipt, setSendingReceipt] = useState(false);
 
-  if (!inv) return <div className="h-screen bg-black text-white flex items-center justify-center font-black text-xl tracking-widest uppercase">Evento no encontrado 👻</div>;
+  const salonInfo = users.find(u => u.email === user?.email);
+  const [newPassword, setNewPassword] = useState("");
+  const [newLogo, setNewLogo] = useState(salonInfo?.logo || "");
+  const [newPhone, setNewPhone] = useState(salonInfo?.phone || "");
+  const [newInstagram, setNewInstagram] = useState(salonInfo?.instagram || "");
+  const [newFacebook, setNewFacebook] = useState(salonInfo?.facebook || "");
+  const [newTiktok, setNewTiktok] = useState(salonInfo?.tiktok || "");
 
-  return (
-    <div className="bg-black min-h-screen flex justify-center w-full relative overflow-hidden">
-      {!opened && <OpeningAnimation cfg={inv.config} onOpen={() => setOpened(true)} isPreview={false} />}
-      <div className={`w-full max-w-[480px] bg-white shadow-2xl relative transition-opacity duration-1000 ${opened ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
-        <InvitePreview 
-          cfg={inv.config} 
-          guestData={guestData} 
-          onConfirmRSVP={async (formData) => {
-             if (guestData) {
-                await supabase.from('invitados').update({ asistencia_confirmada: true, acompanantes_confirmados: formData.guests }).eq('id', guestData.id);
-                alert("¡Asistencia confirmada! Ya le avisamos a los organizadores.");
-             }
-          }} 
-        />
-      </div>
-    </div>
-  );
-};
+  const chatEndRef = useRef(null);
 
-const PublicInviteScreen = ({ invitations, onConfirmRSVP }) => {
-  const { invId } = useParams();
-  const inv = invitations.find(i => i.id === invId);
-  const [opened, setOpened] = useState(false);
-  
-  useEffect(() => {
-    if (inv) { document.title = inv.config?.honoreeName ? `${inv.config.honoreeName} | Invitación` : "Invitación"; }
-  }, [inv]);
-
-  if (!inv) return (
-    <div className="h-screen bg-slate-950 flex flex-col items-center justify-center text-white relative overflow-hidden">
-       <Loader2 size={30} className="animate-spin text-white opacity-50"/>
-    </div>
-  );
-  
-  return (
-    <div className="bg-black min-h-screen flex justify-center w-full relative overflow-hidden">
-      {!opened && <OpeningAnimation cfg={inv.config} onOpen={() => setOpened(true)} isPreview={false} />}
-      <div className={`w-full max-w-[480px] bg-white shadow-2xl relative transition-opacity duration-1000 ${opened ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
-        <InvitePreview 
-          cfg={inv.config} 
-          status={inv.internal_data?.eventStatus} 
-          onConfirmRSVP={(guestData) => onConfirmRSVP(inv.id, guestData)} 
-        />
-      </div>
-    </div>
-  );
-};
-
-export default function App() {
-  const [user, setUser] = useState(() => {
-    try {
-      const local = localStorage.getItem("fiesta_user");
-      const session = sessionStorage.getItem("fiesta_user");
-      if (local) return JSON.parse(local);
-      if (session) return JSON.parse(session);
-      return null;
-    } catch (e) { return null; }
+  const [isDark, setIsDark] = useState(() => {
+    const saved = localStorage.getItem("fiesta_darkmode");
+    return saved ? JSON.parse(saved) : false;
   });
 
-  const [users, setUsers] = useState([]);
-  const [invitations, setInvitations] = useState([]);
+  useEffect(() => { localStorage.setItem("fiesta_darkmode", JSON.stringify(isDark)); }, [isDark]);
   
-  const [globalAlert, setGlobalAlert] = useState({ mensaje: "", activo: false });
-  const [loading, setLoading] = useState(true);
-
-  const handleLogin = (userData, rememberMe) => {
-    setUser(userData);
-    if (rememberMe) localStorage.setItem("fiesta_user", JSON.stringify(userData));
-    else sessionStorage.setItem("fiesta_user", JSON.stringify(userData));
-  };
-
-  const handleLogout = () => {
-    setUser(null);
-    localStorage.removeItem("fiesta_user");
-    sessionStorage.removeItem("fiesta_user");
-  };
-
+  // Auto-scroll del chat
   useEffect(() => {
-    const fetchData = async () => {
-      const { data: salones } = await supabase.from('salones').select('*');
-      const { data: invs } = await supabase.from('invitaciones').select('*');
-      const { data: alertData } = await supabase.from('alertas').select('*').eq('id', 1).single();
-      
-      if (salones) setUsers(salones);
-      if (invs) setInvitations(invs.map(i => ({ ...i, salonId: i.salon_id, internal_data: i.internal_data || {} })));
-      if (alertData) setGlobalAlert(alertData);
-      setLoading(false);
-    };
-    fetchData();
+    if (showSupportModal && chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [showSupportModal, salonInfo?.support_chat]);
 
-    const radar = setInterval(async () => {
-      const { data: alertData } = await supabase.from('alertas').select('*').eq('id', 1).single();
-      if (alertData) {
-        setGlobalAlert({ mensaje: alertData.mensaje, activo: alertData.activo });
-      }
-      // También refrescamos silenciosamente los usuarios para traer los últimos mensajes de soporte
-      const { data: salones } = await supabase.from('salones').select('*');
-      if (salones) setUsers(salones);
-    }, 5000);
+  if (!user) return null;
 
-    return () => clearInterval(radar);
-  }, []);
+  const notify = (m) => { setToast(m); setTimeout(() => setToast(""), 3000); };
 
-  const handleUpdateAlert = async (mensaje, activo) => {
-    const { error } = await supabase.from('alertas').upsert({ id: 1, mensaje, activo });
-    if (error) {
-       alert("⚠️ ERROR EN SUPABASE:\nNo se pudo guardar la alerta.\nDetalle: " + error.message);
+  const handleCopyLink = (id, url) => {
+    navigator.clipboard.writeText(url);
+    setCopiedStates(prev => ({ ...prev, [id]: true }));
+    setTimeout(() => { setCopiedStates(prev => ({ ...prev, [id]: false })); }, 2000);
+  };
+
+  const isOwner = user.role === "owner";
+  const myInvs = isOwner ? invitations : invitations.filter(i => i.salonId === user.email);
+
+  let filteredInvs = myInvs.filter(inv => {
+    const term = searchTerm.trim().toLowerCase();
+    const data = inv.internal_data || {};
+    const honoree = inv.config?.honoreeName || "";
+    const matchText = !term || inv.title?.toLowerCase().includes(term) || (data.clientName || "").toLowerCase().includes(term) || honoree.toLowerCase().includes(term);
+    
+    if (!matchText) return false;
+    if (filterType === 'upcoming') return !data.internalDate || new Date(data.internalDate) >= new Date().setHours(0,0,0,0);
+    if (filterType === 'past') return data.internalDate && new Date(data.internalDate) < new Date().setHours(0,0,0,0);
+    return true;
+  });
+
+  const processQRScan = (qrString) => {
+    const guestDb = scanningEvent.internal_data?.guests?.find(g => g.id === qrString) || 
+                    scanningEvent.internal_data?.guests?.find(g => qrString.includes(g.id));
+
+    if (!guestDb) {
+      setValidationResult({ status: 'error', title: 'Pase Inválido', desc: 'Este QR no pertenece a este evento o es falso.' });
+    } else if (guestDb.status === 'Ingresó') {
+      setValidationResult({ status: 'warning', title: 'Pase Usado', desc: `${guestDb.name} ya ingresó.`, data: guestDb });
     } else {
-       setGlobalAlert({ mensaje, activo });
+      setValidationResult({ status: 'success', title: 'Acceso Permitido', desc: 'Pase verificado correctamente.', data: guestDb });
     }
   };
 
-  const handleUpdateUser = async (email, updateData) => {
-    const { error } = await supabase.from('salones').update(updateData).eq('email', email);
-    if (error) return alert("Error: " + error.message);
-
-    setUsers(prev => prev.map(u => u.email === email ? {...u, ...updateData} : u));
-    if (user && user.email === email) {
-      const updatedUser = { ...user, ...updateData };
-      setUser(updatedUser);
-      localStorage.setItem("fiesta_user", JSON.stringify(updatedUser));
-    }
+  const confirmAccess = () => {
+    const updated = scanningEvent.internal_data.guests.map(g => g.id === validationResult.data.id ? { ...g, status: 'Ingresó' } : g);
+    onUpdateInternal(scanningEvent.id, 'guests', updated);
+    setValidationResult(null);
+    notify("Ingreso registrado");
   };
 
-  const handleConfirmRSVP = async (invId, guestData) => {
-    const inv = invitations.find(i => i.id === invId);
-    if (!inv) return;
-    const currentGuests = inv.internal_data?.guests || [];
-    const updatedGuests = [...currentGuests, guestData];
-    const updatedInternal = { ...inv.internal_data, guests: updatedGuests };
+  const handleSendReceipt = async () => {
+    if (!receiptFile) return alert("Por favor, seleccioná una foto del comprobante primero.");
+    setSendingReceipt(true);
+    try {
+      const formData = new FormData();
+      formData.append("chat_id", TELEGRAM_CHAT_ID);
+      formData.append("photo", receiptFile);
+      formData.append("caption", `💰 Nuevo Comprobante de Pago\n🏢 Salón: ${user.name}\n📧 Email: ${user.email}`);
 
-    await supabase.from('invitaciones').update({ internal_data: updatedInternal }).eq('id', invId);
-    setInvitations(prev => prev.map(i => i.id === invId ? { ...i, internal_data: updatedInternal } : i));
+      const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, { method: "POST", body: formData });
+      if (res.ok) { notify("¡Comprobante enviado con éxito!"); setShowPaymentModal(false); setReceiptFile(null); } 
+      else { alert("No se pudo enviar el comprobante. Verificá la configuración del bot."); }
+    } catch (e) { alert("Error de red al intentar enviar el comprobante."); }
+    setSendingReceipt(false);
   };
 
-  const handleCreateSalon = async (nU) => { const { error } = await supabase.from('salones').insert([nU]); if (!error) setUsers(p => [...p, nU]); };
-  const handleDeleteSalon = async (em) => { await supabase.from('invitaciones').delete().eq('salon_id', em); await supabase.from('salones').delete().eq('email', em); setUsers(p => p.filter(u => u.email !== em)); setInvitations(p => p.filter(i => i.salonId !== em)); };
-  
-  // 👉 MAGIA DEL LÍMITE DEMO ACÁ
-  const handleCreateInv = async (sE, sN) => { 
-    const sInfo = users.find(u => u.email === sE);
+  // 👉 ENVIAR MENSAJE DE SOPORTE Y NOTIFICAR A TELEGRAM
+  const handleSendSupportMessage = async () => {
+    if (!supportMessage.trim()) return;
+    const newMsg = { sender: 'salon', text: supportMessage, date: new Date().toISOString() };
+    const chatArray = [...(salonInfo?.support_chat || []), newMsg];
     
-    // VERIFICAMOS LÍMITE
-    if (sInfo?.is_demo && (sInfo?.invites_created || 0) >= 3) {
-      alert("⚠️ LÍMITE DEMO ALCANZADO\nTu cuenta Demo solo permite crear 3 invitaciones en total. Contactá a soporte para actualizar tu plan.");
-      return null;
-    }
-
-    const nId = "evt-" + Math.random().toString(36).substr(2,6);
+    setSupportMessage(""); 
+    await onUpdateUser(user.email, { support_chat: chatArray });
     
-    const cfg = { 
-      ...DEF_CONFIG, 
-      locationName: sN, 
-      locationAddress: sInfo?.address || "",
-      venueLogoUrl: sInfo?.logo || "",
-      showVenueLogo: !!sInfo?.logo,
-      instagramUrl: sInfo?.instagram || "",
-      showInstagram: !!sInfo?.instagram,
-      facebookUrl: sInfo?.facebook || "",
-      showFacebook: !!sInfo?.facebook,
-      tiktokUrl: sInfo?.tiktok || "",
-      showTiktok: !!sInfo?.tiktok
-    };
-    
-    const nI = { id: nId, salon_id: sE, title: "Nuevo Evento", config: cfg, internal_data: {} };
-    const { error } = await supabase.from('invitaciones').insert([nI]);
-    if (!error) { 
-      setInvitations(p => [...p, { ...nI, salonId: sE }]); 
-      
-      // SUMAMOS 1 AL CONTADOR HISTÓRICO
-      const newCount = (sInfo?.invites_created || 0) + 1;
-      await supabase.from('salones').update({ invites_created: newCount }).eq('email', sE);
-      setUsers(prev => prev.map(u => u.email === sE ? { ...u, invites_created: newCount } : u));
-
-      return nId; 
-    }
-  };
-  
-  const handleSaveInv = async (uI) => { await supabase.from('invitaciones').update({ title: uI.title, config: uI.config, internal_data: uI.internal_data }).eq('id', uI.id); setInvitations(p => p.map(i => i.id === uI.id ? uI : i)); };
-  const handleDeleteInv = async (id) => { await supabase.from('invitaciones').delete().eq('id', id); setInvitations(p => p.filter(i => i.id !== id)); };
-  const handleUpdateInternal = async (id, f, v) => {
-    setInvitations(p => p.map(i => i.id === id ? { ...i, internal_data: { ...i.internal_data, [f]: v } } : i));
-    const target = invitations.find(i => i.id === id);
-    if(target) await supabase.from('invitaciones').update({ internal_data: { ...target.internal_data, [f]: v } }).eq('id', id);
+    try {
+      const formData = new FormData();
+      formData.append("chat_id", TELEGRAM_CHAT_ID);
+      formData.append("text", `🆘 *NUEVO MENSAJE DE SOPORTE*\n🏢 Salón: ${user.name}\n\n💬 Mensaje:\n_${newMsg.text}_\n\n📲 _Entrá al Master Panel para responderle._`);
+      formData.append("parse_mode", "Markdown");
+      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, { method: "POST", body: formData });
+    } catch (e) { console.error("Error enviando notificación a Telegram:", e); }
   };
 
-  if (loading) return (
-    <div className="h-screen bg-slate-950 flex flex-col items-center justify-center text-white relative overflow-hidden transition-opacity duration-1000">
-       <div className="absolute inset-0 bg-[radial-gradient(#8b5cf6_1px,transparent_1px)] [background-size:20px_20px] opacity-10 animate-pulse"></div>
-       <div className="w-20 h-20 bg-violet-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-violet-600/50 mb-6 anim-pop">
-          <PartyPopper size={40} className="text-white animate-bounce" />
-       </div>
-       <h1 className="font-black text-2xl tracking-widest uppercase text-white/90">DeFiesta<span className="text-violet-400">.lat</span></h1>
-    </div>
-  );
+  if (isOwner) {
+    return <MasterPanel mySalons={users.filter(u => u.role === "salon")} onLogout={onLogout} onCreateSalon={onCreateSalon} onUpdateUser={onUpdateUser} onDeleteSalon={onDeleteSalon} globalAlert={globalAlert} onUpdateAlert={onUpdateAlert} />;
+  }
+
+  const themeBg = isDark ? "bg-slate-900" : "bg-[#f1f3f9]";
+  const themeNav = isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200";
+  const themeText = isDark ? "text-white" : "text-slate-800";
+  const themeCard = isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200/60";
+
+  // 👉 LÓGICA DE DEMO
+  const isDemo = salonInfo?.is_demo;
+  const invitesCreated = salonInfo?.invites_created || 0;
+  const canCreate = !isDemo || invitesCreated < 3;
 
   return (
-    <>
-      <GlobalStyles />
-      <Router>
-        <Routes>
-          <Route path="/" element={user ? <Navigate to="/dashboard" /> : <LoginScreen onLogin={handleLogin} users={users} />} />
-          <Route path="/master" element={user ? <Navigate to="/dashboard" /> : <LoginScreen isMaster={true} onLogin={handleLogin} users={users} />} />
-          
-          <Route path="/dashboard" element={user ? <DashboardScreen user={user} users={users} invitations={invitations} onCreateSalon={handleCreateSalon} onDeleteSalon={handleDeleteSalon} onCreateInv={handleCreateInv} onDeleteInv={handleDeleteInv} onUpdateUser={handleUpdateUser} onUpdateInternal={handleUpdateInternal} onLogout={handleLogout} globalAlert={globalAlert} onUpdateAlert={handleUpdateAlert} /> : <Navigate to="/" />} />
-          
-          <Route path="/editor/:id" element={<EditorScreen invitations={invitations} onSave={handleSaveInv} />} />
-          <Route path="/i/:salon/:invId" element={<PublicInviteScreen invitations={invitations} onConfirmRSVP={handleConfirmRSVP} />} />
-          <Route path="/puerta/:id" element={<PuertaScreen invitations={invitations} onUpdateInternal={handleUpdateInternal} />} />
-          <Route path="/manage/:id" element={<ManageScreen />} />
-          <Route path="/invite/:id" element={<LiveInviteScreen />} />
-        </Routes>
-      </Router>
-    </>
+    <div className={`min-h-screen pb-20 text-left transition-colors duration-300 ${themeBg}`}>
+      <style>{`@media print { .no-print { display: none !important; } .only-print { display: block !important; } }`}</style>
+
+      {globalAlert?.activo && globalAlert?.mensaje && (
+        <>
+          <style>{`@keyframes marquee { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100%); } } .animate-marquee { display: inline-block; white-space: nowrap; animation: marquee 20s linear infinite; will-change: transform; } .animate-marquee:hover { animation-play-state: paused; }`}</style>
+          <div className="bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white p-2 text-[11px] sm:text-xs font-black uppercase tracking-widest shadow-md flex items-center overflow-hidden sticky top-0 z-50 h-9">
+            <div className="shrink-0 z-10 bg-black/20 px-3 py-1.5 rounded-r-xl backdrop-blur-md flex items-center gap-2 border-r border-white/10 mr-2 shadow-[10px_0_15px_rgba(0,0,0,0.2)]">
+               <AlertCircle size={16} className="animate-pulse text-yellow-300"/>
+               <span className="text-yellow-300">INFO</span>
+            </div>
+            <div className="flex-1 overflow-hidden flex items-center h-full relative"><div className="animate-marquee cursor-default flex items-center h-full">{globalAlert.mensaje}</div></div>
+          </div>
+        </>
+      )}
+
+      <nav className={`h-20 border-b px-6 sm:px-8 flex items-center justify-between sticky ${globalAlert?.activo && globalAlert?.mensaje ? 'top-9' : 'top-0'} z-40 transition-colors duration-300 no-print ${themeNav}`}>
+        <div className="flex items-center gap-4">
+           {salonInfo?.logo ? <img src={salonInfo.logo} alt="Logo" className="h-10 object-contain" /> : <div className="w-10 h-10 bg-violet-600 rounded-xl flex items-center justify-center text-white shadow-lg"><Building size={20}/></div>}
+           <div className={`font-black text-xl tracking-tight ${themeText}`}>{user.name}</div>
+        </div>
+        <div className="flex items-center gap-3">
+           <button onClick={() => setShowSupportModal(true)} className={`w-10 h-10 rounded-xl flex items-center justify-center bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100 cursor-pointer relative transition-colors`}><MessageCircle size={18}/></button>
+           <button onClick={() => setShowPaymentModal(true)} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all flex items-center gap-2 border cursor-pointer ${isDark ? 'border-amber-500/30 text-amber-400 bg-amber-500/10' : 'border-amber-200 text-amber-600 bg-amber-50'}`}><CreditCard size={16}/> Pagos</button>
+           <button onClick={() => setIsDark(!isDark)} className="w-10 h-10 rounded-xl flex items-center justify-center bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-yellow-400 cursor-pointer">{isDark ? <Sun size={18}/> : <Moon size={18}/>}</button>
+           <button onClick={() => setShowSettings(true)} className="w-10 h-10 rounded-xl flex items-center justify-center bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer"><Settings size={18}/></button>
+           <button onClick={() => { onLogout(); navigate("/"); }} className="w-10 h-10 bg-red-500/10 text-red-500 rounded-xl flex items-center justify-center hover:bg-red-500/20 cursor-pointer"><LogOut size={18}/></button>
+        </div>
+      </nav>
+
+      <main className="max-w-7xl mx-auto p-6 md:p-12 no-print">
+        
+        {/* 👉 BANNER AVISO DE DEMO */}
+        {isDemo && (
+           <div className={`mb-8 p-4 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 border ${invitesCreated >= 3 ? 'bg-red-50 border-red-200 text-red-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
+              <div>
+                 <p className="font-black flex items-center gap-2 uppercase tracking-widest text-sm mb-1"><AlertTriangle size={18}/> Cuenta Demo Activa</p>
+                 <p className="text-xs font-medium">Has creado {invitesCreated} de 3 invitaciones permitidas. {invitesCreated >= 3 && 'Límite alcanzado.'}</p>
+              </div>
+              <button onClick={() => setShowSupportModal(true)} className={`px-6 py-2.5 rounded-xl font-black text-xs text-white uppercase tracking-widest cursor-pointer shadow-md transition-transform active:scale-95 ${invitesCreated >= 3 ? 'bg-red-600 hover:bg-red-700' : 'bg-amber-500 hover:bg-amber-600'}`}>Mejorar Plan</button>
+           </div>
+        )}
+
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
+          <div>
+            <h1 className={`text-4xl font-black tracking-tight ${themeText}`}>Mis Eventos</h1>
+            <p className="text-slate-500 mt-1 font-medium">Gestioná tus invitaciones en tiempo real.</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+             <select className={`py-3.5 px-4 border rounded-2xl text-sm font-bold outline-none ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white'}`} value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+                <option value="all">Todos</option>
+                <option value="upcoming">Próximos</option>
+                <option value="past">Pasados</option>
+             </select>
+             <div className="relative flex-1 md:flex-none">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18}/>
+                <input className={`w-full md:w-64 pl-11 pr-4 py-3.5 border rounded-2xl text-sm font-medium outline-none ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white'}`} placeholder="Buscar..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+             </div>
+             
+             {/* 👉 BOTÓN CREAR */}
+             <button onClick={async () => { 
+                 if (!canCreate) return alert("Has alcanzado el límite de 3 invitaciones en tu cuenta Demo. Por favor, contacta a soporte.");
+                 const id = await onCreateInv(user.email, user.name); 
+                 if (id) navigate(`/editor/${id}`); 
+               }} 
+               className={`px-8 py-3.5 rounded-2xl font-black text-sm shadow-xl flex items-center gap-3 transition-transform active:scale-95 uppercase tracking-widest ${canCreate ? 'bg-violet-600 hover:bg-violet-700 text-white cursor-pointer' : 'bg-slate-300 text-slate-500 cursor-not-allowed'}`}
+             >
+               <Plus size={20}/> Nuevo Evento
+             </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
+          {filteredInvs.map(inv => {
+            const data = inv.internal_data || {};
+            const confGuests = data.guests?.reduce((acc, g) => acc + (Number(g.guests) || 1), 0) || 0;
+            return (
+              <div key={inv.id} className={`rounded-[2.5rem] border overflow-hidden shadow-sm hover:shadow-xl transition-all group flex flex-col h-full border-b-4 border-b-violet-500/30 ${themeCard}`}>
+                <div className="h-44 relative overflow-hidden">
+                  <img src={inv.config?.coverPhoto || "https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=800&q=80"} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" alt="" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/30 to-transparent" />
+                  <div className="absolute bottom-4 left-5 right-5 flex justify-between items-end">
+                    <div>
+                      <p className="text-white/70 text-[10px] font-black uppercase tracking-widest mb-1">{data.internalDate ? formatDateSpanish(data.internalDate) : 'Sin fecha'}</p>
+                      <h3 className="font-black text-xl text-white truncate max-w-[180px]">{inv.config?.honoreeName || inv.title}</h3>
+                    </div>
+                    <div className="text-right">
+                      <span className="block text-[10px] font-black uppercase text-violet-300">Confirmados</span>
+                      <span className="px-3 py-1 rounded-full text-xs font-black border border-white/20 backdrop-blur-md bg-black/40 text-white">{confGuests}</span>
+                    </div>
+                  </div>
+                  <button onClick={() => window.confirm("¿Borrar evento?") && onDeleteInv(inv.id)} className="absolute top-4 right-4 w-9 h-9 bg-red-500/90 text-white rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer"><Trash2 size={16}/></button>
+                </div>
+                <div className="p-6">
+                  <div className="flex gap-2 mb-3">
+                    <button onClick={() => navigate(`/editor/${inv.id}`)} className="flex-1 py-3 bg-violet-600 text-white rounded-2xl font-black text-[11px] tracking-widest flex items-center justify-center gap-2 cursor-pointer shadow-md"><Edit2 size={14}/> DISEÑAR</button>
+                    <button onClick={() => window.open(`${window.location.origin}/i/${slugify(user.name)}/${inv.id}`)} className="w-12 h-12 rounded-2xl flex items-center justify-center bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer"><Eye size={18}/></button>
+                    <button onClick={() => handleCopyLink(inv.id, `${window.location.origin}/i/${slugify(user.name)}/${inv.id}`)} className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all cursor-pointer ${copiedStates[inv.id] ? 'bg-green-100 text-green-600' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>{copiedStates[inv.id] ? <CheckCircle2 size={18}/> : <Copy size={18}/>}</button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button onClick={() => setActiveCrmId(inv.id)} className={`py-3 rounded-2xl font-black text-[10px] uppercase border cursor-pointer ${isDark ? 'bg-slate-800 border-slate-600 text-slate-300' : 'bg-white border-slate-200'}`}>FICHA CRM</button>
+                    <button onClick={() => setScanningEvent(inv)} className={`py-3 rounded-2xl font-black text-[10px] uppercase border text-violet-600 border-violet-200 cursor-pointer ${isDark ? 'bg-slate-800 border-slate-600' : 'bg-white'}`}>ESCANEAR</button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </main>
+
+      {/* 👉 MODAL DE SOPORTE TÉCNICO CHAT */}
+      {showSupportModal && (
+        <div className="fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+           <div className={`w-full max-w-md rounded-[2.5rem] p-6 shadow-2xl relative flex flex-col ${isDark ? 'bg-slate-800 text-white' : 'bg-white'}`} style={{ height: '70vh' }}>
+              <button onClick={() => setShowSupportModal(false)} className="absolute top-6 right-6 w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 cursor-pointer transition-colors"><X size={20}/></button>
+              
+              <div className="flex items-center gap-3 mb-6 border-b pb-4 border-slate-200 dark:border-slate-700">
+                <div className="w-12 h-12 bg-emerald-500/10 text-emerald-500 rounded-xl flex items-center justify-center"><MessageCircle size={24} /></div>
+                <div>
+                  <h2 className="text-xl font-black tracking-tight">Soporte Técnico</h2>
+                  <p className="text-[10px] uppercase tracking-widest opacity-60 font-bold">Chateá con un asesor</p>
+                </div>
+              </div>
+              
+              <div className={`flex-1 overflow-y-auto p-4 rounded-2xl border mb-4 space-y-4 fd-sb ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                {!(salonInfo?.support_chat?.length) && (
+                   <div className="text-center opacity-50 mt-10">
+                      <MessageCircle size={30} className="mx-auto mb-2" />
+                      <p className="text-xs font-bold">Aún no hay mensajes.</p>
+                      <p className="text-[10px]">Escribinos tus dudas o solicitá mejorar tu plan.</p>
+                   </div>
+                )}
+                {(salonInfo?.support_chat || []).map((msg, i) => (
+                  <div key={i} className={`p-3 rounded-2xl max-w-[85%] text-sm shadow-sm ${msg.sender === 'salon' ? 'bg-emerald-600 text-white self-end ml-auto rounded-tr-sm' : 'bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-800 dark:text-white rounded-tl-sm'}`}>
+                     <p className="whitespace-pre-wrap">{msg.text}</p>
+                     <span className={`text-[9px] block mt-1.5 opacity-70 ${msg.sender==='salon'?'text-right':''}`}>{new Date(msg.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                  </div>
+                ))}
+                <div ref={chatEndRef} />
+              </div>
+
+              <div className="flex gap-2 shrink-0">
+                <input type="text" value={supportMessage} onChange={e=>setSupportMessage(e.target.value)} onKeyDown={e=>{if(e.key==='Enter') handleSendSupportMessage();}} placeholder="Escribir mensaje..." className={`flex-1 p-3.5 rounded-xl border text-sm outline-none focus:border-emerald-500 ${isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-slate-200'}`} />
+                <button onClick={handleSendSupportMessage} disabled={!supportMessage.trim()} className="w-14 h-14 bg-emerald-600 text-white rounded-xl flex items-center justify-center shadow-lg hover:bg-emerald-700 disabled:opacity-50 cursor-pointer transition-colors"><Send size={20}/></button>
+              </div>
+           </div>
+        </div>
+      )}
+
+      {/* MODAL PAGOS */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+           <div className={`w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative text-center anim-pop ${isDark ? 'bg-slate-800 text-white' : 'bg-white'}`}>
+              <button onClick={() => { setShowPaymentModal(false); setReceiptFile(null); }} className="absolute top-6 right-6 w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 cursor-pointer transition-colors"><X size={20}/></button>
+              <div className="w-16 h-16 bg-amber-500/10 text-amber-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-amber-500/20"><CreditCard size={32} /></div>
+              <h2 className="text-2xl font-black mb-2 tracking-tight">Abonar Suscripción</h2>
+              <p className="text-sm opacity-70 mb-6 font-medium">Transferí tu cuota para mantener el panel activo.</p>
+              <div className={`p-5 rounded-2xl border mb-6 text-left shadow-inner ${isDark ? 'bg-slate-700/50 border-slate-600' : 'bg-slate-50 border-slate-200'}`}>
+                 <p className="text-[10px] font-black uppercase text-slate-400 mb-1 tracking-widest">Datos Bancarios</p>
+                 <p className="font-bold text-slate-700 dark:text-slate-300">Jonatán Rivas</p>
+                 <p className="font-mono text-xl mt-3 text-violet-600 dark:text-violet-400 font-bold tracking-wider text-center bg-white dark:bg-slate-800 py-3 rounded-xl border border-violet-200 dark:border-slate-600 shadow-sm">{salonInfo?.payment_clabe || "012345678901234567"}</p>
+              </div>
+              <div className="mb-6 relative"><input type="file" accept="image/*" onChange={(e) => setReceiptFile(e.target.files[0])} className="hidden" id="receipt-upload" disabled={sendingReceipt}/><label htmlFor="receipt-upload" className={`w-full py-4 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors ${receiptFile ? 'bg-violet-50 border-violet-300 text-violet-600' : (isDark ? 'bg-slate-700 border-slate-500 text-slate-300' : 'bg-slate-50 border-slate-300 text-slate-500')}`}>{receiptFile ? (<><CheckCircle2 size={24} className="text-violet-500" /><span className="font-bold text-sm truncate max-w-[200px]">{receiptFile.name}</span><span className="text-[10px] uppercase font-black opacity-60 mt-1 hover:underline">Cambiar foto</span></>) : (<><ImageIcon size={24} /><span className="font-bold text-sm">Cargar Comprobante</span><span className="text-[10px] uppercase font-black opacity-60 mt-1">Tap para subir foto</span></>)}</label></div>
+              <button onClick={handleSendReceipt} disabled={sendingReceipt || !receiptFile} className={`w-full py-4 rounded-xl font-black flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 uppercase tracking-widest text-sm ${(!receiptFile || sendingReceipt) ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-[#0088cc] text-white hover:bg-[#0077b5] cursor-pointer'}`}>{sendingReceipt ? <Loader2 size={18} className="animate-spin"/> : <Send size={18}/>} {sendingReceipt ? 'ENVIANDO...' : 'ENVIAR COMPROBANTE'}</button>
+           </div>
+        </div>
+      )}
+
+      {activeCrmId && <CrmModal activeInv={myInvs.find(i => i.id === activeCrmId)} onClose={() => setActiveCrmId(null)} user={user} salonInfo={salonInfo} onUpdateInternal={onUpdateInternal} isDark={isDark} />}
+      {scanningEvent && !validationResult && <QRScannerModal onClose={() => setScanningEvent(null)} onScan={processQRScan} />}
+      {validationResult && (
+        <div className="fixed inset-0 z-[130] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+           <div className="w-full max-w-sm bg-white rounded-[2rem] p-8 shadow-2xl relative text-center anim-pop border-4" style={{ borderColor: validationResult.status === 'success' ? '#22c55e' : (validationResult.status === 'error' ? '#ef4444' : '#f59e0b') }}>
+              <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 text-white" style={{ background: validationResult.status === 'success' ? '#22c55e' : (validationResult.status === 'error' ? '#ef4444' : '#f59e0b') }}>
+                 {validationResult.status === 'success' && <CheckCircle2 size={40}/>}{validationResult.status === 'error' && <Trash2 size={40}/>}{validationResult.status === 'warning' && <AlertTriangle size={40}/>}
+              </div>
+              <h2 className="text-2xl font-black mb-2 uppercase">{validationResult.title}</h2>
+              <p className="text-slate-600 mb-6">{validationResult.desc}</p>
+              {validationResult.status === 'success' && <button onClick={confirmAccess} className="w-full py-4 bg-green-500 text-white rounded-xl font-black shadow-lg mb-2">REGISTRAR INGRESO</button>}
+              <button onClick={() => setValidationResult(null)} className="w-full py-4 bg-slate-100 text-slate-700 rounded-xl font-black">CERRAR</button>
+           </div>
+        </div>
+      )}
+
+      {showSettings && (
+        <div className="fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+           <div className={`w-full max-w-sm rounded-[2rem] p-8 shadow-2xl relative text-center ${isDark ? 'bg-slate-800 text-white' : 'bg-white'}`}>
+              <h2 className="text-xl font-black mb-6">Ajustes del Salón</h2>
+              <div className="max-h-[60vh] overflow-y-auto px-2 fd-sb">
+                <FileUpload label="Logo" value={newLogo} onChange={setNewLogo} isDark={isDark} />
+                <Inp label="Teléfono (WhatsApp)" placeholder="Ej: +54 9 11 1234-5678" value={newPhone} onChange={setNewPhone} isDark={isDark} />
+                <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-700">
+                  <p className="text-[10px] font-black uppercase text-slate-400 mb-4 text-left">Redes Sociales</p>
+                  <Inp label="Instagram (URL completa)" placeholder="https://instagram.com/tusalon" value={newInstagram} onChange={setNewInstagram} isDark={isDark} />
+                  <Inp label="Facebook (URL completa)" placeholder="https://facebook.com/tusalon" value={newFacebook} onChange={setNewFacebook} isDark={isDark} />
+                  <Inp label="TikTok (URL completa)" placeholder="https://tiktok.com/@tusalon" value={newTiktok} onChange={setNewTiktok} isDark={isDark} />
+                </div>
+                <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-700">
+                  <Inp label="Nueva Clave de Acceso" type="password" value={newPassword} onChange={setNewPassword} isDark={isDark} />
+                </div>
+              </div>
+              <button onClick={() => { onUpdateUser(user.email, { logo: newLogo, phone: newPhone, instagram: newInstagram, facebook: newFacebook, tiktok: newTiktok, ...(newPassword ? {pass: newPassword} : {}) }); setShowSettings(false); notify("Ajustes guardados"); }} className="w-full py-4 mt-4 bg-violet-600 text-white rounded-xl font-black cursor-pointer shadow-lg active:scale-95 transition-transform">GUARDAR</button>
+              <button onClick={() => setShowSettings(false)} className="mt-4 text-xs font-bold opacity-50 cursor-pointer">CANCELAR</button>
+           </div>
+        </div>
+      )}
+
+      {toast && <Toast msg={toast} />}
+    </div>
   );
 }
