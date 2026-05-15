@@ -18,13 +18,19 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
   const [toast, setToast] = useState("");
   const notify = (m) => { setToast(m); setTimeout(() => setToast(""), 3000); };
 
-  const [masterAlertMsg, setMasterAlertMsg] = useState(globalAlert?.mensaje || "");
-  const [masterAlertActive, setMasterAlertActive] = useState(globalAlert?.activo || false);
+  const [masterAlertMsg, setMasterAlertMsg] = useState("");
+  const [masterAlertActive, setMasterAlertActive] = useState(false);
+  
+  // 👉 EL ESCUDO ANTI-RADAR: Solo cargamos la alerta la primera vez que entra
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   useEffect(() => {
-    setMasterAlertMsg(globalAlert?.mensaje || "");
-    setMasterAlertActive(globalAlert?.activo || false);
-  }, [globalAlert]);
+    if (isInitialLoad && globalAlert) {
+      setMasterAlertMsg(globalAlert.mensaje || "");
+      setMasterAlertActive(globalAlert.activo || false);
+      setIsInitialLoad(false); // Apagamos el escudo, ya no se sobreescribe más
+    }
+  }, [globalAlert, isInitialLoad]);
 
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState("create"); 
@@ -38,7 +44,6 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
   const [fAlert, setFAlert] = useState(false);
   const [fClabe, setFClabe] = useState(""); 
   const [fIsFree, setFIsFree] = useState(false);
-  // 👉 NUEVO ESTADO PARA DEMO Y CHAT
   const [fIsDemo, setFIsDemo] = useState(false);
   const [chatInput, setChatInput] = useState("");
   
@@ -56,7 +61,6 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
   const openEditModal = (salon) => { setModalMode("edit"); setEditingEmail(salon.email); setFName(salon.name); setFEmail(salon.email); setFPhone(salon.phone || ""); setFAddress(salon.address || ""); setFPayDate(salon.payment_date || ""); setFAlert(salon.payment_alert || false); setFClabe(salon.payment_clabe || ""); setFIsFree(salon.is_free || false); setFIsDemo(salon.is_demo || false); setShowModal(true); };
   const openPassModal = (salon) => { setModalMode("password"); setEditingEmail(salon.email); setFPass(""); setShowModal(true); };
   
-  // 👉 ABRIR MODAL DE CHAT SOPORTE
   const openSupportModal = (salon) => { setModalMode("support"); setEditingEmail(salon.email); setFName(salon.name); setChatInput(""); setShowModal(true); };
 
   const handleSaveModal = () => {
@@ -176,7 +180,6 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
                   <Inp label="Email" value={fEmail} onChange={setFEmail} className={modalMode === 'edit' ? 'opacity-50 pointer-events-none' : ''} />
                   {modalMode === 'create' && <Inp label="Contraseña" value={fPass} onChange={setFPass} type="password" />}
                   
-                  {/* 👉 TOGGLE DE SALÓN LIBRE Y DEMO */}
                   <div className="grid grid-cols-2 gap-3 mt-4 mb-2">
                      <div className="p-3 bg-violet-50 border border-violet-100 rounded-2xl flex flex-col items-center justify-center text-center">
                         <span className="text-[10px] font-black uppercase text-violet-700 mb-2">¿Salón Libre?</span>
