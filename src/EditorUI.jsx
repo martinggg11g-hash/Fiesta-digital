@@ -13,7 +13,6 @@ import {
 const gf = new GiphyFetch('32PbboqCveiWSlj9vROPmyjv8l8cuaj1');
 const IMGBB_API_KEY = "904f81caf05efe58a799abdb1fedc2ce";
 
-// 👉 NUEVO: COMPONENTE TOOLTIP
 export const Tooltip = ({ text }) => {
   const [show, setShow] = useState(false);
   const ref = useRef(null);
@@ -86,29 +85,43 @@ export const IconRenderer = ({ name, size = 24, color = "currentColor", classNam
   }
 };
 
+// 👉 ACÁ ESTÁ EL ARREGLO DE LA LISTA DESPLEGABLE
 export const FontSelector = ({ value, onChange }) => {
   const [open, setOpen] = useState(false);
   const [cat, setCat] = useState("Modernas");
   const ref = useRef(null);
-  useEffect(() => { const fn = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }; document.addEventListener("mousedown", fn); return () => document.removeEventListener("mousedown", fn); }, []);
+  
+  useEffect(() => { 
+    const fn = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }; 
+    document.addEventListener("mousedown", fn); 
+    return () => document.removeEventListener("mousedown", fn); 
+  }, []);
+  
   return (
-    <div className="relative w-full z-[10]" ref={ref}>
+    // position: static para romper el confinamiento de la tarjeta, y se ancla al body (el contenedor relativo más cercano debe volar)
+    <div className="" ref={ref}>
       <button type="button" onClick={() => setOpen(!open)} className="w-full px-4 py-3 rounded-xl text-slate-800 bg-white border border-gray-200 text-base flex justify-between items-center shadow-sm cursor-pointer" style={{ fontFamily: value }}>
         <span className="truncate">{value || "Seleccionar fuente..." }</span>
         <ChevronDown size={16} className={`text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        <div className="absolute top-14 left-0 right-0 bg-white border border-gray-200 rounded-2xl shadow-2xl p-2 z-[9999]">
-          <div className="flex gap-1 overflow-x-auto pb-2 mb-2 border-b border-gray-100 fd-sb">
-            {Object.keys(FONT_CATEGORIES).map(c => (
-              <button key={c} type="button" onClick={() => setCat(c)} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shrink-0 transition-colors cursor-pointer ${cat === c ? 'bg-violet-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>{c}</button>
-            ))}
-          </div>
-          <div className="max-h-60 overflow-y-auto fd-sb">
-            {FONT_CATEGORIES[cat].map(f => (
-              <button key={f} type="button" onClick={() => { onChange(f); setOpen(false); }} className={`w-full text-left px-4 py-3 hover:bg-violet-50 text-lg rounded-xl border-b border-gray-50 last:border-0 cursor-pointer ${value === f ? 'bg-violet-100 text-violet-700 font-bold' : 'text-slate-700'}`} style={{ fontFamily: f }}>{f}</button>
-            ))}
-          </div>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 99998, background: 'transparent' }} onClick={() => setOpen(false)}>
+            <div 
+              onClick={(e) => e.stopPropagation()}
+              className="absolute bg-white border border-gray-200 rounded-2xl shadow-2xl p-2 z-[99999]"
+              style={{ width: '300px', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }} // Lo centramos en pantalla para evitar cualquier choque
+            >
+              <div className="flex gap-1 overflow-x-auto pb-2 mb-2 border-b border-gray-100 fd-sb">
+                {Object.keys(FONT_CATEGORIES).map(c => (
+                  <button key={c} type="button" onClick={() => setCat(c)} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shrink-0 transition-colors cursor-pointer ${cat === c ? 'bg-violet-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>{c}</button>
+                ))}
+              </div>
+              <div className="max-h-[50vh] overflow-y-auto fd-sb">
+                {FONT_CATEGORIES[cat].map(f => (
+                  <button key={f} type="button" onClick={() => { onChange(f); setOpen(false); }} className={`w-full text-left px-4 py-3 hover:bg-violet-50 text-lg rounded-xl border-b border-gray-50 last:border-0 cursor-pointer ${value === f ? 'bg-violet-100 text-violet-700 font-bold' : 'text-slate-700'}`} style={{ fontFamily: f }}>{f}</button>
+                ))}
+              </div>
+            </div>
         </div>
       )}
     </div>
