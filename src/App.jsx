@@ -41,7 +41,7 @@ const GlobalStyles = () => {
   return null;
 };
 
-// 👉 PANTALLA INVITADO REAL (LINK CORTO /invite/:slug)
+// 👉 PANTALLA INVITADO REAL
 const LiveInviteScreen = () => {
   const { id: eventSlug } = useParams();
   const [searchParams] = useSearchParams();
@@ -92,11 +92,11 @@ const LiveInviteScreen = () => {
              }
           }} 
           onUploadLivePhoto={async (url) => {
-             // Subimos la foto directo a Supabase
              const currentPhotos = inv.internal_data?.live_photos || [];
              const updatedPhotos = [url, ...currentPhotos];
              const updatedInternal = { ...inv.internal_data, live_photos: updatedPhotos };
-             await supabase.from('invitaciones').update({ internal_data: updatedInternal }).eq('id', inv.id);
+             // 👉 ARREGLO DE BUG: Ahora guardamos la foto en la tabla 'eventos' correcta
+             await supabase.from('eventos').update({ internal_data: updatedInternal }).eq('id', inv.id);
              setInv({ ...inv, internal_data: updatedInternal });
           }}
         />
@@ -105,7 +105,7 @@ const LiveInviteScreen = () => {
   );
 };
 
-// 👉 PANTALLA INVITADO PÚBLICO (LISTA ABIERTA /i/:salon/:id)
+// 👉 PANTALLA INVITADO PÚBLICO
 const PublicInviteScreen = ({ invitations, onConfirmRSVP, onUpdateInternal }) => {
   const { invId } = useParams();
   const inv = invitations.find(i => i.id === invId);
@@ -172,28 +172,48 @@ export default function App() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data: salones } = await supabase.from('salones').select('*');
-      const { data: invs } = await supabase.from('invitaciones').select('*');
-      const { data: alertData } = await supabase.from('alertas').select('*').eq('id', 1).single();
-      
-      if (salones) setUsers(salones);
-      if (invs) setInvitations(invs.map(i => ({ ...i, salonId: i.salon_id, internal_data: i.internal_data || {} })));
-      if (alertData) setGlobalAlert(alertData);
-      setLoading(false);
+      try {
+        const { data: salones } = await supabase.from('salones').select('*');
+        const { data: invs } = await supabase.from('invitaciones').select('*');
+        const { data: alertData } = await supabase.from('alertas').select('*').eq('id', 1).single();
+        
+        if (salones) setUsers(salones);
+        if (invs) setInvitations(invs.map(i => ({ ...i, salonId: i.salon_id, internal_data: i.internal_data || {} })));
+        if (alertData) setGlobalAlert(alertData);
+      } catch (error) {
+        console.error("Error al cargar la base de datos:", error);
+      } finally {
+        setLoading(false); // 👉 ARREGLO DE UX: Siempre frenamos el loading, aunque falle la DB
+      }
     };
     fetchData();
 
+    // 👉 ARREGLO PERFORMANCE: Polling optimizado (solo pide lo necesario)
     const radar = setInterval(async () => {
+      // 1. Siempre buscamos las alertas
       const { data: alertData } = await supabase.from('alertas').select('*').eq('id', 1).single();
       if (alertData) {
         setGlobalAlert({ mensaje: alertData.mensaje, activo: alertData.activo });
       }
-      const { data: salones } = await supabase.from('salones').select('*');
-      if (salones) setUsers(salones);
+      
+      // 2. Si el usuario está logueado, solo buscamos actualizaciones de chat
+      if (user) {
+        if (user.role === 'owner') {
+          // El owner necesita ver todos los salones por si alguien escribe
+          const { data: salones } = await supabase.from('salones').select('*');
+          if (salones) setUsers(salones);
+        } else {
+          // El salón solo necesita descargar SU PROPIO registro (ahorramos 99% de recursos)
+          const { data: miSalon } = await supabase.from('salones').select('*').eq('email', user.email);
+          if (miSalon && miSalon.length > 0) {
+            setUsers(prev => prev.map(u => u.email === user.email ? miSalon[0] : u));
+          }
+        }
+      }
     }, 5000);
 
     return () => clearInterval(radar);
-  }, []);
+  }, [user]);
 
   const handleUpdateAlert = async (mensaje, activo) => {
     const { error } = await supabase.from('alertas').upsert({ id: 1, mensaje, activo });
@@ -238,7 +258,8 @@ export default function App() {
       return null;
     }
 
-    const nId = "evt-" + Math.random().toString(36).substr(2,6);
+    // 👉 ARREGLO DE IDs SEGÚN CLAUDE (Usamos un random más seguro)
+    const nId = "evt-" + Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
     
     const cfg = { 
       ...DEF_CONFIG, 
@@ -269,10 +290,19 @@ export default function App() {
   
   const handleSaveInv = async (uI) => { await supabase.from('invitaciones').update({ title: uI.title, config: uI.config, internal_data: uI.internal_data }).eq('id', uI.id); setInvitations(p => p.map(i => i.id === uI.id ? uI : i)); };
   const handleDeleteInv = async (id) => { await supabase.from('invitaciones').delete().eq('id', id); setInvitations(p => p.filter(i => i.id !== id)); };
+  
   const handleUpdateInternal = async (id, f, v) => {
-    setInvitations(p => p.map(i => i.id === id ? { ...i, internal_data: { ...i.internal_data, [f]: v } } : i));
-    const target = invitations.find(i => i.id === id);
-    if(target) await supabase.from('invitaciones').update({ internal_data: { ...target.internal_data, [f]: v } }).eq('id', id);
+    // 👉 ARREGLO BUG-1 (Race condition que detectó Claude)
+    setInvitations(prevInvs => {
+       const updatedInvs = prevInvs.map(i => i.id === id ? { ...i, internal_data: { ...i.internal_data, [f]: v } } : i);
+       const target = updatedInvs.find(i => i.id === id);
+       if(target) {
+          supabase.from('invitaciones').update({ internal_data: target.internal_data }).eq('id', id).then(({error}) => {
+             if(error) console.error("Error actualizando datos internos:", error);
+          });
+       }
+       return updatedInvs;
+    });
   };
 
   if (loading) return (
