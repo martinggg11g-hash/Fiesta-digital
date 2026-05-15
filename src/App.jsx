@@ -16,11 +16,6 @@ const slugify = (text) => text?.toLowerCase().replace(/ /g, '-').replace(/[^\w-]
 
 const GlobalStyles = () => {
   useEffect(() => {
-    if (!document.getElementById("tw-cdn")) {
-      const tw = document.createElement("script");
-      tw.id = "tw-cdn"; tw.src = "https://cdn.tailwindcss.com";
-      document.head.appendChild(tw);
-    }
     if (!document.getElementById("fd-global")) {
       const s = document.createElement("style");
       s.id = "fd-global";
