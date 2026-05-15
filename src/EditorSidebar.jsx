@@ -36,7 +36,6 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
     alert("Posiciones centradas correctamente.");
   };
 
-  // 👉 LÓGICA DEL BOTÓN MÁGICO DE IA
   const generateAIPhrase = () => {
     const phrases = [
       "¡Nos vamos de fiesta! Te esperamos...",
@@ -82,14 +81,44 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
             <div className="mt-4 pt-4 border-t border-pink-100">
               <BordersGallery value={cfg.selectedBorder} onChange={v => update("selectedBorder", v)} />
               <div className="mt-4"><SelectInp label="Posición" value={cfg.borderPosition || 'both'} options={[{label:'Arriba y Abajo', value:'both'}, {label:'Solo Arriba', value:'top'}, {label:'Solo Abajo', value:'bottom'}]} onChange={v => update('borderPosition', v)} /></div>
-              <div className="flex flex-col gap-1 mt-3"><label className="text-[9px] font-bold text-slate-400 uppercase">Color del Borde</label><input type="color" value={cfg.borderColor || cfg.primary} onChange={e => update('borderColor', e.target.value)} className="w-full h-9 rounded-xl border-none shadow-sm cursor-pointer" /></div>
+              
+              {/* 👉 ACÁ ESTÁ EL AGREGADO PARA ROTAR LOS BORDES */}
+              <div className="grid grid-cols-2 gap-2 mt-4">
+                 <div>
+                   <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Rotación Arriba</label>
+                   <select value={cfg.borderRotationTop || 0} onChange={e => update("borderRotationTop", Number(e.target.value))} className="w-full p-2 text-xs border rounded-lg cursor-pointer outline-none focus:border-pink-300 bg-white">
+                      <option value={0}>Normal (0°)</option>
+                      <option value={180}>Invertido (180°)</option>
+                   </select>
+                 </div>
+                 <div>
+                   <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Rotación Abajo</label>
+                   <select value={cfg.borderRotationBottom || 0} onChange={e => update("borderRotationBottom", Number(e.target.value))} className="w-full p-2 text-xs border rounded-lg cursor-pointer outline-none focus:border-pink-300 bg-white">
+                      <option value={0}>Normal (0°)</option>
+                      <option value={180}>Invertido (180°)</option>
+                   </select>
+                 </div>
+              </div>
+
+              <div className="flex flex-col gap-1 mt-4"><label className="text-[9px] font-bold text-slate-400 uppercase">Color del Borde</label><input type="color" value={cfg.borderColor || cfg.primary} onChange={e => update('borderColor', e.target.value)} className="w-full h-9 rounded-xl border-none shadow-sm cursor-pointer" /></div>
               <div className="mt-4"><label className="flex justify-between items-center text-[9px] font-black text-pink-600 uppercase mb-2"><span>Tamaño</span><span className="bg-pink-200 px-2 py-0.5 rounded-full">{cfg.ornamentSize || 150}px</span></label><input type="range" min={50} max={400} value={cfg.ornamentSize || 150} onChange={e => update("ornamentSize", Number(e.target.value))} className="w-full accent-pink-600 cursor-pointer" /></div>
             </div>
           )}
         </div>
 
         <label className="flex items-center text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Temas Sugeridos <Tooltip text="Paletas de color pre-armadas." /></label>
-        <div className="flex flex-wrap gap-2.5 mb-6">{THEMES.map(th => <button key={th.id} title={th.name} onClick={() => setInv({...inv, config: {...cfg, theme: th.id, ...th}})} className={`w-9 h-9 rounded-full border-2 transition-all hover:scale-110 cursor-pointer ${cfg.theme === th.id ? 'border-violet-600 ring-2 ring-violet-200' : 'border-transparent'}`} style={{ background: th.primary }} />)}</div>
+        {/* 👉 ACÁ HACEMOS QUE AL CAMBIAR EL TEMA TAMBIÉN CAMBIE EL COLOR DEL BORDE */}
+        <div className="flex flex-wrap gap-2.5 mb-6">
+            {THEMES.map(th => (
+              <button 
+                key={th.id} 
+                title={th.name} 
+                onClick={() => setInv({...inv, config: {...cfg, theme: th.id, borderColor: th.primary, ...th}})} 
+                className={`w-9 h-9 rounded-full border-2 transition-all hover:scale-110 cursor-pointer ${cfg.theme === th.id ? 'border-violet-600 ring-2 ring-violet-200' : 'border-transparent'}`} 
+                style={{ background: th.primary }} 
+              />
+            ))}
+        </div>
 
         <div className="mb-6 p-3 bg-violet-50 rounded-xl border border-violet-100 shadow-inner">
           <label className="flex justify-between items-center text-[9px] font-black text-violet-600 uppercase mb-2">
@@ -125,7 +154,6 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
           <EmojiPicker value={cfg.eventTypeEmoji || "✨"} onSelect={v => update("eventTypeEmoji", v)} />
           <div className="flex-1">
              <Inp label="Frase Superior" value={cfg.eventType} onChange={v => update("eventType", v)} placeholder="Estás invitado a..." className="!mb-1" />
-             {/* 👉 BOTÓN MAGICO DE IA ACÁ */}
              <button onClick={generateAIPhrase} className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-violet-600 bg-violet-100 hover:bg-violet-200 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer w-fit mt-1">
                 <Sparkles size={12} /> Auto-Completar con IA
              </button>
@@ -188,7 +216,31 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
       </Acc>
 
       <Acc title="6️⃣ Multimedia" icon={Video} iconColor="#8b5cf6"><div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500 flex items-center">Video YouTube</span><Toggle checked={cfg.showVideo || false} onChange={v => update("showVideo", v)} /></div>{cfg.showVideo && (<div className="mb-6 bg-gray-50 p-3 rounded-xl border border-gray-200"><Inp label="Título" value={cfg.videoTitle || ""} onChange={v => update("videoTitle", v)} /><Inp label="Link" value={cfg.videoUrl || ""} onChange={v => update("videoUrl", v)} /></div>)}<div className="flex items-center justify-between mb-4 pt-4 border-t border-gray-100"><span className="text-xs font-bold text-slate-500 flex items-center">Música Spotify</span><Toggle checked={cfg.showMusic || false} onChange={v => update("showMusic", v)} /></div>{cfg.showMusic && (<div className="bg-gray-50 p-3 rounded-xl border border-gray-200"><Inp label="Link" value={cfg.spotifyUrl || ""} onChange={v => update("spotifyUrl", v)} /></div>)}</Acc>
-      <Acc title="7️⃣ Programa" icon={List} iconColor="#0ea5e9"><div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500 flex items-center">Activar Cronograma</span><Toggle checked={cfg.showItinerary} onChange={v => update("showItinerary", v)} /></div>{cfg.showItinerary && (<><div className="mb-4"><Inp label="Título" value={cfg.itinerarySectionTitle || "¿Qué vamos a hacer?"} onChange={v => update("itinerarySectionTitle", v)} icon={Edit2} /></div><div className="space-y-4 mb-6">{cfg.itinerary?.map((item, i) => (<div key={i} className="flex flex-col gap-2 bg-white p-3 rounded-xl border shadow-sm relative"><button onClick={() => update("itinerary", cfg.itinerary.filter((_, idx) => idx !== i))} type="button" className="absolute top-2 right-2 text-red-400 cursor-pointer"><Trash2 size={14}/></button><div className="flex gap-2 pr-6"><MiniInp className="w-16 p-2 text-xs font-bold border rounded-lg" value={item.time} onChange={v => { const n = [...cfg.itinerary]; n[i].time = v; update("itinerary", n); }} /><MiniInp className="flex-1 p-2 text-xs border rounded-lg" value={item.title} onChange={v => { const n = [...cfg.itinerary]; n[i].title = v; update("itinerary", n); }} /></div><MiniInp className="w-full p-2 text-xs border rounded-lg" value={item.sub} placeholder="Aclaración" onChange={v => { const n = [...cfg.itinerary]; n[i].sub = v; update("itinerary", n); }} /></div>))}</div><button onClick={() => update("itinerary", [...(cfg.itinerary || []), { time: "16:00", title: "Nuevo Evento", sub: "" }])} type="button" className="w-full py-3 bg-white border-2 border-dashed rounded-xl text-xs font-bold text-slate-400 cursor-pointer"><Plus size={14} className="inline-block mr-2" /> AÑADIR EVENTO</button></>)}</Acc>
+      
+      {/* 👉 ACÁ AGREGAMOS LOS EMOJIS AL PROGRAMA */}
+      <Acc title="7️⃣ Programa" icon={List} iconColor="#0ea5e9">
+         <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500 flex items-center">Activar Cronograma</span><Toggle checked={cfg.showItinerary} onChange={v => update("showItinerary", v)} /></div>
+         {cfg.showItinerary && (
+            <>
+               <div className="mb-4"><Inp label="Título" value={cfg.itinerarySectionTitle || "¿Qué vamos a hacer?"} onChange={v => update("itinerarySectionTitle", v)} icon={Edit2} /></div>
+               <div className="space-y-4 mb-6 relative z-[70]">
+                  {cfg.itinerary?.map((item, i) => (
+                     <div key={i} className="flex flex-col gap-2 bg-white p-3 rounded-xl border shadow-sm relative" style={{ zIndex: 50 - i }}>
+                        <button onClick={() => update("itinerary", cfg.itinerary.filter((_, idx) => idx !== i))} type="button" className="absolute top-2 right-2 text-red-400 cursor-pointer"><Trash2 size={14}/></button>
+                        <div className="flex gap-2 pr-6">
+                           <EmojiPicker value={item.emoji || "✨"} onSelect={e => { const n = [...cfg.itinerary]; n[i].emoji = e; update("itinerary", n); }} />
+                           <MiniInp className="w-16 p-2 text-xs font-bold border rounded-lg" value={item.time} onChange={v => { const n = [...cfg.itinerary]; n[i].time = v; update("itinerary", n); }} />
+                           <MiniInp className="flex-1 p-2 text-xs border rounded-lg" value={item.title} onChange={v => { const n = [...cfg.itinerary]; n[i].title = v; update("itinerary", n); }} />
+                        </div>
+                        <MiniInp className="w-full p-2 text-xs border rounded-lg mt-1" value={item.sub} placeholder="Aclaración opcional..." onChange={v => { const n = [...cfg.itinerary]; n[i].sub = v; update("itinerary", n); }} />
+                     </div>
+                  ))}
+               </div>
+               <button onClick={() => update("itinerary", [...(cfg.itinerary || []), { emoji: "✨", time: "16:00", title: "Nuevo Evento", sub: "" }])} type="button" className="w-full py-3 bg-white border-2 border-dashed rounded-xl text-xs font-bold text-slate-400 cursor-pointer"><Plus size={14} className="inline-block mr-2" /> AÑADIR EVENTO</button>
+            </>
+         )}
+      </Acc>
+      
       <Acc title="8️⃣ Menú" icon={LayoutGrid} iconColor="#10b981"><div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Menú</span><Toggle checked={cfg.showMenu} onChange={v => update("showMenu", v)} /></div>{cfg.showMenu && (<><div className="mb-4"><Inp label="Título" value={cfg.menuSectionTitle || "¿Qué vamos a comer?"} onChange={v => update("menuSectionTitle", v)} icon={Edit2} /></div><div className="space-y-3 mb-6 relative z-[70]">{cfg.menuItems?.map((m, i) => (<div key={i} className="flex items-center gap-2 bg-white p-2 rounded-xl border shadow-sm relative" style={{ zIndex: 50 - i }}><EmojiPicker value={m.emoji} onSelect={e => { const n = [...cfg.menuItems]; n[i].emoji = e; update("menuItems", n); }} /><MiniInp className="flex-1 p-2 text-xs border rounded-lg" value={m.label} onChange={v => { const n = [...cfg.menuItems]; n[i].label = v; update("menuItems", n); }} /><button onClick={() => update("menuItems", cfg.menuItems.filter((_, idx) => idx !== i))} type="button" className="text-red-400 p-2 cursor-pointer"><Trash2 size={14}/></button></div>))}</div><button onClick={() => update("menuItems", [...(cfg.menuItems || []), { emoji: "🍕", label: "Nueva Opción" }])} type="button" className="w-full py-3 bg-white border-2 border-dashed rounded-xl text-xs font-bold text-slate-400 cursor-pointer"><Plus size={14} className="inline-block mr-2"/> AÑADIR COMIDA</button></>)}</Acc>
       
       <Acc title="9️⃣ Vestimenta y Regalos" icon={Layout} iconColor="#f43f5e">
@@ -211,7 +263,6 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
              <div className="flex items-center justify-between mt-4 mb-2"><span className="text-[10px] font-bold text-slate-500 uppercase flex items-center">Datos Transferencia</span><Toggle checked={cfg.showGiftNote} onChange={v => update("showGiftNote", v)} /></div>{cfg.showGiftNote && (<div className="mt-2 relative z-20"><Inp value={cfg.giftNoteText} onChange={v => update("giftNoteText", v)} multiline className="!mb-2" /><TypoControl label="Diseño Aclaración" colorVal={cfg.giftNoteColor || cfg.primary} onColor={v => update('giftNoteColor', v)} sizeVal={cfg.giftNoteSize || 11} onSize={v => update('giftNoteSize', v)} minSize={8} maxSize={24} /></div>)}<div className="flex items-center justify-between mt-6 mb-2 border-t pt-4"><span className="text-[10px] font-bold text-slate-500 uppercase">Links de Regalos</span></div><div className="space-y-3 mb-4">{cfg.giftLinks?.map((link, i) => (<div key={i} className="flex flex-col gap-2 bg-white p-3 rounded-xl border shadow-sm relative"><button onClick={() => update("giftLinks", cfg.giftLinks.filter((_, idx) => idx !== i))} type="button" className="absolute top-2 right-2 text-red-400 cursor-pointer"><Trash2 size={14}/></button><div className="pr-6"><MiniInp className="w-full p-2 mb-2 text-xs font-bold border rounded-lg" value={link.label} placeholder="Ej: Mesa en Amazon" onChange={v => { const n = [...cfg.giftLinks]; n[i].label = v; update("giftLinks", n); }} /><MiniInp className="w-full p-2 text-xs border rounded-lg" value={link.url} placeholder="https://..." onChange={v => { const n = [...cfg.giftLinks]; n[i].url = v; update("giftLinks", n); }} /></div></div>))}</div><button onClick={() => update("giftLinks", [...(cfg.giftLinks || []), { label: "Link", url: "" }])} type="button" className="w-full py-3 bg-white border-2 border-dashed rounded-xl text-xs font-bold text-slate-400 cursor-pointer"><Plus size={14} className="inline-block mr-2" /> AÑADIR LINK</button></>)}
       </Acc>
       
-      {/* 👉 NUEVA SECCIÓN: ÁLBUM EN VIVO */}
       <Acc title="📸 Álbum en Vivo" icon={Camera} iconColor="#0ea5e9">
         <div className="flex items-center justify-between mb-4">
           <span className="text-xs font-bold text-slate-500 flex items-center">Cámara Desechable <Tooltip text="Permite a los invitados subir fotos el día del evento. Se borrarán 24hs después por privacidad." /></span>
