@@ -54,6 +54,9 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
 
   const chatEndRef = useRef(null);
 
+  // 👉 LÓGICA PARA EL PUNTITO ROJO DE NOTIFICACIONES
+  const [lastSeenChat, setLastSeenChat] = useState(() => Number(localStorage.getItem(`fiesta_chat_seen_${user?.email}`)) || 0);
+
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem("fiesta_darkmode");
     return saved ? JSON.parse(saved) : false;
@@ -61,12 +64,18 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
 
   useEffect(() => { localStorage.setItem("fiesta_darkmode", JSON.stringify(isDark)); }, [isDark]);
   
-  // Auto-scroll del chat
+  // Auto-scroll del chat y marcar como leído
   useEffect(() => {
-    if (showSupportModal && chatEndRef.current) {
-      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+    if (showSupportModal) {
+      if (chatEndRef.current) {
+        chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+      }
+      // Marcar como leído actualizando la hora
+      const now = Date.now();
+      setLastSeenChat(now);
+      localStorage.setItem(`fiesta_chat_seen_${user?.email}`, now.toString());
     }
-  }, [showSupportModal, salonInfo?.support_chat]);
+  }, [showSupportModal, salonInfo?.support_chat, user?.email]);
 
   if (!user) return null;
 
@@ -129,7 +138,6 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
     setSendingReceipt(false);
   };
 
-  // 👉 ENVIAR MENSAJE DE SOPORTE Y NOTIFICAR A TELEGRAM
   const handleSendSupportMessage = async () => {
     if (!supportMessage.trim()) return;
     const newMsg = { sender: 'salon', text: supportMessage, date: new Date().toISOString() };
@@ -156,10 +164,14 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
   const themeText = isDark ? "text-white" : "text-slate-800";
   const themeCard = isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200/60";
 
-  // 👉 LÓGICA DE DEMO
   const isDemo = salonInfo?.is_demo;
   const invitesCreated = salonInfo?.invites_created || 0;
   const canCreate = !isDemo || invitesCreated < 3;
+
+  // VERIFICAMOS SI HAY MENSAJE NUEVO DEL MASTER
+  const chatArr = salonInfo?.support_chat || [];
+  const lastMsg = chatArr[chatArr.length - 1];
+  const hasUnreadChat = lastMsg && lastMsg.sender === 'master' && new Date(lastMsg.date).getTime() > lastSeenChat;
 
   return (
     <div className={`min-h-screen pb-20 text-left transition-colors duration-300 ${themeBg}`}>
@@ -184,7 +196,11 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
            <div className={`font-black text-xl tracking-tight ${themeText}`}>{user.name}</div>
         </div>
         <div className="flex items-center gap-3">
-           <button onClick={() => setShowSupportModal(true)} className={`w-10 h-10 rounded-xl flex items-center justify-center bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100 cursor-pointer relative transition-colors`}><MessageCircle size={18}/></button>
+           <button onClick={() => setShowSupportModal(true)} className={`w-10 h-10 rounded-xl flex items-center justify-center bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100 cursor-pointer relative transition-colors`}>
+             <MessageCircle size={18}/>
+             {/* 👉 EL PUNTITO ROJO */}
+             {hasUnreadChat && <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-white dark:border-slate-800 animate-pulse"></span>}
+           </button>
            <button onClick={() => setShowPaymentModal(true)} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all flex items-center gap-2 border cursor-pointer ${isDark ? 'border-amber-500/30 text-amber-400 bg-amber-500/10' : 'border-amber-200 text-amber-600 bg-amber-50'}`}><CreditCard size={16}/> Pagos</button>
            <button onClick={() => setIsDark(!isDark)} className="w-10 h-10 rounded-xl flex items-center justify-center bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-yellow-400 cursor-pointer">{isDark ? <Sun size={18}/> : <Moon size={18}/>}</button>
            <button onClick={() => setShowSettings(true)} className="w-10 h-10 rounded-xl flex items-center justify-center bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer"><Settings size={18}/></button>
@@ -194,7 +210,6 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
 
       <main className="max-w-7xl mx-auto p-6 md:p-12 no-print">
         
-        {/* 👉 BANNER AVISO DE DEMO */}
         {isDemo && (
            <div className={`mb-8 p-4 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 border ${invitesCreated >= 3 ? 'bg-red-50 border-red-200 text-red-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
               <div>
@@ -221,7 +236,6 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
                 <input className={`w-full md:w-64 pl-11 pr-4 py-3.5 border rounded-2xl text-sm font-medium outline-none ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white'}`} placeholder="Buscar..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
              </div>
              
-             {/* 👉 BOTÓN CREAR */}
              <button onClick={async () => { 
                  if (!canCreate) return alert("Has alcanzado el límite de 3 invitaciones en tu cuenta Demo. Por favor, contacta a soporte.");
                  const id = await onCreateInv(user.email, user.name); 
