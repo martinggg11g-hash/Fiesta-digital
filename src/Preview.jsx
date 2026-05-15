@@ -42,8 +42,11 @@ const DraggableItem = ({ id, cfg, update, children, className }) => {
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
     let x = dragRef.current.origX + (clientX - dragRef.current.startX);
     let y = dragRef.current.origY + (clientY - dragRef.current.startY);
-    x = Math.max(-200, Math.min(x, 200));
-    y = Math.max(-200, Math.min(y, 200));
+    
+    // 👉 ACÁ ESTÁ EL LÍMITE: No dejamos que se mueva más de 120px para que no salga de la pantalla
+    x = Math.max(-120, Math.min(x, 120));
+    y = Math.max(-120, Math.min(y, 120));
+    
     setLocalPos({ x, y });
   };
 
@@ -567,8 +570,9 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
   return (
     <div style={{ backgroundColor: bg1, backgroundImage: bg2.includes('gradient') ? bg2 : `linear-gradient(180deg, ${bg1} 0%, ${bg2} 100%)`, fontFamily: cfg.fontBody, minHeight: '100%' }} className="pb-12 relative overflow-x-hidden flex flex-col">
       
+      {/* 👉 ACÁ SUBIMOS EL Z-INDEX DE LOS BORDES A 60 PARA QUE SIEMPRE ESTÉN POR ENCIMA DEL TEXTO (z-30) */}
       {cfg.showCoverBorders && cfg.selectedBorder && (
-        <div className="absolute inset-0 pointer-events-none z-[25] overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none z-[60] overflow-hidden">
           {(cfg.borderPosition === 'both' || cfg.borderPosition === 'top') && (
             <>
               <DraggableItem id="topLeftBorder" cfg={cfg} update={update} className="top-0 left-0 pointer-events-auto">
@@ -735,7 +739,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
           </div>
         )}
 
-        {/* 👉 NUEVA SECCIÓN: ÁLBUM EN VIVO (CÁMARA DESECHABLE) */}
+        {/* 👉 ÁLBUM EN VIVO (CÁMARA DESECHABLE) */}
         {cfg.showLiveCamera && (
           <div className="pt-6">
             <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={cfg.fontBody}>{cfg.liveCameraTitle || "Álbum Colaborativo"}</SectionTitle>
