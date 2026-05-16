@@ -223,8 +223,6 @@ export const THEMES = [
     accent: "#fde68a",
     shine: "linear-gradient(135deg, rgba(245,197,24,0.22) 0%, rgba(255,255,255,0) 60%)",
   },
-  
-  // 👉 ACÁ ESTÁN LOS NUEVOS DE BODAS SÚPER ELEGANTES
   {
     id: "t13", name: "Ivory & Gold (Boda)",
     primary: "#d4af37",
@@ -252,6 +250,7 @@ export const THEMES = [
     shine: "linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 60%)",
   },
 ];
+
 export const FONTS = [
   { label: "Playfair Display", value: "Playfair Display" }, { label: "Bodoni Moda", value: "Bodoni Moda" },
   { label: "Abril Fatface", value: "Abril Fatface" }, { label: "Cinzel", value: "Cinzel" },
@@ -274,7 +273,6 @@ export const FONT_CATEGORIES = {
   "Serif": ["Merriweather", "Cormorant Garamond", "Libre Baskerville", "EB Garamond", "Radley", "Spectral"]
 };
 
-// 👉 ACÁ ESTÁ EL CAMBIO. AÑADÍ LOS NUEVOS DE COMIDA.
 export const ICON_CATEGORIES = {
   "Generales": ["icon-heart", "icon-crown", "icon-star", "icon-sparkles", "icon-gift", "icon-camera", "icon-church", "icon-rings", "icon-map-pin", "icon-calendar", "icon-clock"],
   "Comida": ["icon-beef", "icon-fish", "icon-ham", "icon-sandwich", "icon-pizza", "icon-burger", "icon-taco"],
@@ -342,7 +340,17 @@ export const PARTICLE_CATEGORIES = {
     { id: 'lottie_confeti', name: 'Confeti Pop', icon: '🎉', isLottie: true, url: 'https://lottie.host/0c7f0ad6-f5e9-4473-b606-8fe2ed1d10b1/QvafqoK8yh.lottie' },
     { id: 'lottie_estrellas', name: 'Estrellas', icon: '🌟', isLottie: true, url: 'https://lottie.host/d9fafde0-2c87-4458-a716-f68341282a91/prNFp1cX0s.lottie' },
     { id: 'lottie_nieve', name: 'Nieve/Polvo', icon: '❄️', isLottie: true, url: 'https://lottie.host/dc379347-ce11-49b0-8230-615f4eead16f/Ke19rkdxp8.lottie' },
-    { id: 'lottie_luces', name: 'Luces Cálidas', icon: '💡', isLottie: true, url: 'https://lottie.host/e3f319e3-fdc2-46ae-b485-69741b5b5c46/eeMH3uzxKU.lottie' }
+    { id: 'lottie_luces', name: 'Luces Cálidas', icon: '💡', isLottie: true, url: 'https://lottie.host/e3f319e3-fdc2-46ae-b485-69741b5b5c46/eeMH3uzxKU.lottie' },
+    // 👉 LOTTIES NUEVOS
+    { id: 'lottie_confeti_dorado', name: 'Confeti Dorado', icon: '✨', isLottie: true, url: 'https://lottie.host/b8e6dc94-3478-4211-8b6f-300e7e64ecd4/sB1AbsdZ31.lottie' },
+    { id: 'lottie_pastel', name: 'Pastel 3D', icon: '🎂', isLottie: true, url: 'https://lottie.host/bd7ab6be-cce2-49e0-a33b-40cda64bdb99/ILlXJL39Io.lottie' }
+  ],
+  // 👉 NUEVA CATEGORÍA GEEK & KIDS PARA POCHITA, SPIDERMAN Y LA PLAY
+  "Lotties Geek & Kids": [
+    { id: 'lottie_unicornio', name: 'Unicornio', icon: '🦄', isLottie: true, url: 'https://lottie.host/e80b8b77-6cad-4f94-8df0-088fd9768a76/nZfsnfpCoE.lottie' },
+    { id: 'lottie_spiderman', name: 'Spiderman', icon: '🕷️', isLottie: true, url: 'https://lottie.host/cbdc0f06-0f59-44d9-b118-05950de6b170/nXXbeT1fIz.lottie' },
+    { id: 'lottie_pochita', name: 'Pochita', icon: '🐕', isLottie: true, url: 'https://lottie.host/2ee2934a-8450-499d-8a55-e5e3772eb7a1/vwK3pAlnrE.lottie' },
+    { id: 'lottie_playstation', name: 'PlayStation', icon: '🎮', isLottie: true, url: 'https://lottie.host/41ab3ece-5bbd-448c-bc34-01484ce694b2/yLkQVXFWYO.lottie' }
   ]
 };
 
