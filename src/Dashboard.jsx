@@ -31,6 +31,10 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
   const [toast, setToast] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all"); 
+  
+  // 👉 ESTADO PARA CONTROLAR SI EL MENÚ DE CELULAR ESTÁ ABIERTO O CERRADO
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   const [activeCrmId, setActiveCrmId] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -190,15 +194,17 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
         </>
       )}
 
+      {/* 👉 ACÁ INCLUIMOS EL MENÚ HAMBURGUESA Y LA NAVEGACIÓN NUEVA */}
       <nav className={`h-20 border-b px-6 sm:px-8 flex items-center justify-between sticky ${globalAlert?.activo && globalAlert?.mensaje ? 'top-9' : 'top-0'} z-40 transition-colors duration-300 no-print ${themeNav}`}>
-        <div className="flex items-center gap-4">
-           {salonInfo?.logo ? <img src={salonInfo.logo} alt="Logo" className="h-10 object-contain" /> : <div className="w-10 h-10 bg-violet-600 rounded-xl flex items-center justify-center text-white shadow-lg"><Building size={20}/></div>}
-           <div className={`font-black text-xl tracking-tight ${themeText}`}>{user.name}</div>
+        <div className="flex items-center gap-4 overflow-hidden pr-2">
+           {salonInfo?.logo ? <img src={salonInfo.logo} alt="Logo" className="h-10 w-10 object-contain shrink-0" /> : <div className="w-10 h-10 bg-violet-600 rounded-xl flex items-center justify-center text-white shadow-lg shrink-0"><Building size={20}/></div>}
+           <div className={`font-black text-xl tracking-tight truncate ${themeText}`}>{user.name}</div>
         </div>
-        <div className="flex items-center gap-3">
-           <button onClick={() => setShowSupportModal(true)} className={`w-10 h-10 rounded-xl flex items-center justify-center bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100 cursor-pointer relative transition-colors`}>
+
+        {/* MODO PC: Se ven todos los botones */}
+        <div className="hidden md:flex items-center gap-3 shrink-0">
+           <button onClick={() => setShowSupportModal(true)} className="w-10 h-10 rounded-xl flex items-center justify-center bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100 cursor-pointer relative transition-colors">
              <MessageCircle size={18}/>
-             {/* 👉 EL PUNTITO ROJO */}
              {hasUnreadChat && <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-white dark:border-slate-800 animate-pulse"></span>}
            </button>
            <button onClick={() => setShowPaymentModal(true)} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all flex items-center gap-2 border cursor-pointer ${isDark ? 'border-amber-500/30 text-amber-400 bg-amber-500/10' : 'border-amber-200 text-amber-600 bg-amber-50'}`}><CreditCard size={16}/> Pagos</button>
@@ -206,7 +212,30 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
            <button onClick={() => setShowSettings(true)} className="w-10 h-10 rounded-xl flex items-center justify-center bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer"><Settings size={18}/></button>
            <button onClick={() => { onLogout(); navigate("/"); }} className="w-10 h-10 bg-red-500/10 text-red-500 rounded-xl flex items-center justify-center hover:bg-red-500/20 cursor-pointer"><LogOut size={18}/></button>
         </div>
+
+        {/* MODO CELULAR: Chat + Menú Hamburguesa */}
+        <div className="flex items-center gap-2 md:hidden shrink-0">
+           <button onClick={() => setShowSupportModal(true)} className="w-10 h-10 rounded-xl flex items-center justify-center bg-emerald-50 text-emerald-600 border border-emerald-200 cursor-pointer relative">
+             <MessageCircle size={18}/>
+             {hasUnreadChat && <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>}
+           </button>
+           <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className={`w-10 h-10 rounded-xl flex items-center justify-center border cursor-pointer transition-colors ${isDark ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-800'}`}>
+             {mobileMenuOpen ? <X size={20}/> : <Menu size={20}/>}
+           </button>
+        </div>
       </nav>
+
+      {/* DESPLEGABLE CELULAR */}
+      {mobileMenuOpen && (
+        <div className={`md:hidden absolute left-0 right-0 border-b shadow-2xl z-30 flex flex-col p-4 gap-3 anim-pop ${themeCard}`} style={{ top: globalAlert?.activo && globalAlert?.mensaje ? '7.25rem' : '5rem', transformOrigin: 'top' }}>
+           <button onClick={() => { setShowPaymentModal(true); setMobileMenuOpen(false); }} className={`w-full px-4 py-3.5 rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 border shadow-sm ${isDark ? 'border-amber-500/30 text-amber-400 bg-amber-500/10' : 'border-amber-200 text-amber-600 bg-amber-50'}`}><CreditCard size={18}/> Abonar Suscripción</button>
+           <div className="flex gap-3">
+              <button onClick={() => { setIsDark(!isDark); setMobileMenuOpen(false); }} className={`flex-1 py-3.5 rounded-xl flex items-center justify-center gap-2 text-xs font-bold border shadow-sm ${isDark ? 'bg-slate-700 border-slate-600 text-yellow-400' : 'bg-white border-slate-200 text-slate-600'}`}>{isDark ? <><Sun size={16}/> Claro</> : <><Moon size={16}/> Oscuro</>}</button>
+              <button onClick={() => { setShowSettings(true); setMobileMenuOpen(false); }} className={`flex-1 py-3.5 rounded-xl flex items-center justify-center gap-2 text-xs font-bold border shadow-sm ${isDark ? 'bg-slate-700 border-slate-600 text-slate-300' : 'bg-white border-slate-200 text-slate-600'}`}><Settings size={16}/> Ajustes</button>
+           </div>
+           <button onClick={() => { onLogout(); navigate("/"); }} className="w-full py-3.5 mt-1 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl flex items-center justify-center gap-2 text-xs font-bold"><LogOut size={16}/> Cerrar Sesión</button>
+        </div>
+      )}
 
       <main className="max-w-7xl mx-auto p-6 md:p-12 no-print">
         
