@@ -124,16 +124,17 @@ export const EditorScreen = () => {
           salonProfile={salonProfile} 
         />
 
-        <main className={`flex-1 overflow-hidden bg-[#0b0f19] flex items-center justify-center md:p-8 relative ${mobileView === 'preview' ? 'block' : 'hidden md:flex'}`} style={{ backgroundImage: 'radial-gradient(#1e293b 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
+        <main className={`flex-1 overflow-hidden bg-[#0b0f19] flex items-center justify-center p-0 md:p-6 lg:p-8 relative ${mobileView === 'preview' ? 'block' : 'hidden md:flex'}`} style={{ backgroundImage: 'radial-gradient(#1e293b 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
           
-          <div className={`bg-white shadow-2xl relative overflow-hidden transition-all duration-300 w-full h-full md:w-[375px] md:h-[812px] md:rounded-[3rem] md:border-[8px] md:border-[#1e293b] md:shrink-0`}>
+          {/* 👉 EL SECRETO ESTÁ ACÁ: Usamos "aspect-[375/812]" para que mantenga la proporción, y "max-h-full" para que nunca se pase del alto de tu monitor */}
+          <div className={`bg-white shadow-2xl relative overflow-hidden transition-all duration-300 w-full h-full md:w-auto md:h-[95%] md:max-h-[812px] md:aspect-[375/812] md:rounded-[2.5rem] lg:md:rounded-[3rem] md:border-[8px] md:border-[#1e293b] md:shrink-0`}>
             
-            {/* La "pestañita" negra del iPhone solo se ve en PC */}
-            <div className="absolute top-0 inset-x-0 h-6 bg-[#1e293b] rounded-b-3xl w-40 mx-auto z-50 hidden md:block"></div>
+            {/* La pestañita negra (Notch) ahora se ajusta al tamaño */}
+            <div className="absolute top-0 inset-x-0 h-5 lg:h-6 bg-[#1e293b] rounded-b-2xl lg:rounded-b-3xl w-[40%] mx-auto z-50 hidden md:block"></div>
             
             <div className="w-full h-full overflow-y-auto overflow-x-hidden relative pb-[80px] md:pb-0" id="preview-container">
               <InvitePreview 
-                cfg={inv.config} 
+                cfg={deferredCfg} 
                 update={updateConfig} 
               />
             </div>
