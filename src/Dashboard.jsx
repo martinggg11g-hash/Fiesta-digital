@@ -22,8 +22,8 @@ const formatDateSpanish = (dateStr) => {
 };
 
 // 👉 TUS DATOS DEL BOT DE TELEGRAM 
-const TELEGRAM_BOT_TOKEN = "ACA_VA_EL_TOKEN_DE_TU_BOT"; 
-const TELEGRAM_CHAT_ID = "ACA_VA_TU_CHAT_ID";
+const TELEGRAM_BOT_TOKEN = "8613978258:AAHC2F6xe9mwNxc3JFCBWWQen4CIGEqGvW8"; 
+const TELEGRAM_CHAT_ID = "5121261948";
 
 export default function DashboardScreen({ user, onLogout, users, onUpdateUser, onCreateSalon, onDeleteSalon, invitations, onCreateInv, onDeleteInv, onUpdateInternal, globalAlert, onUpdateAlert }) {
   const navigate = useNavigate();
