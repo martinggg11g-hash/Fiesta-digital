@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { MapPin, CheckCircle2, ChevronLeft, ChevronRight, Users, Loader2 } from "lucide-react";
+import { MapPin, CheckCircle2, ChevronLeft, ChevronRight, Users, Loader2, ExternalLink, Camera, Lock, Download } from "lucide-react";
 import { formatToDDMMYYYY } from "./config";
 import { IconRenderer } from "./EditorUI";
 
@@ -95,7 +95,7 @@ export const MapEmbed = ({ name, address, primary }) => {
   return (
     <div className="rounded-2xl overflow-hidden border border-white/10 relative" style={{ background: "#1a1a2e" }}>
       <iframe title="map" width="100%" height="200" style={{ border: 0, display: "block", filter: "invert(90%) hue-rotate(180deg)" }} loading="lazy" referrerPolicy="no-referrer-when-downgrade" src={embedUrl} />
-      <a href={`https://maps.google.com/?q=${encodeURIComponent(query)}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-3 text-xs font-black uppercase tracking-wider transition-colors" style={{ background: `${primary}22`, color: primary }}>
+      <a href={`https://maps.google.com/maps?q=${encodeURIComponent(query)}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 w-full py-3 text-xs font-black uppercase tracking-wider transition-colors" style={{ background: `${primary}22`, color: primary }}>
         <MapPin size={14} /> Abrir en Google Maps
       </a>
     </div>
