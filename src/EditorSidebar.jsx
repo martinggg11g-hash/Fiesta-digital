@@ -82,22 +82,18 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
               <BordersGallery value={cfg.selectedBorder} onChange={v => update("selectedBorder", v)} />
               <div className="mt-4"><SelectInp label="Posición" value={cfg.borderPosition || 'both'} options={[{label:'Arriba y Abajo', value:'both'}, {label:'Solo Arriba', value:'top'}, {label:'Solo Abajo', value:'bottom'}]} onChange={v => update('borderPosition', v)} /></div>
               
-              {/* 👉 ACÁ ESTÁ EL AGREGADO PARA ROTAR LOS BORDES */}
-              <div className="grid grid-cols-2 gap-2 mt-4">
-                 <div>
-                   <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Rotación Arriba</label>
-                   <select value={cfg.borderRotationTop || 0} onChange={e => update("borderRotationTop", Number(e.target.value))} className="w-full p-2 text-xs border rounded-lg cursor-pointer outline-none focus:border-pink-300 bg-white">
-                      <option value={0}>Normal (0°)</option>
-                      <option value={180}>Invertido (180°)</option>
-                   </select>
-                 </div>
-                 <div>
-                   <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1">Rotación Abajo</label>
-                   <select value={cfg.borderRotationBottom || 0} onChange={e => update("borderRotationBottom", Number(e.target.value))} className="w-full p-2 text-xs border rounded-lg cursor-pointer outline-none focus:border-pink-300 bg-white">
-                      <option value={0}>Normal (0°)</option>
-                      <option value={180}>Invertido (180°)</option>
-                   </select>
-                 </div>
+              <div className="mt-4 border-t border-pink-100 pt-4">
+                 <label className="flex justify-between items-center text-[9px] font-black text-pink-600 uppercase mb-2">
+                    <span>Rotación Arriba</span>
+                    <span className="bg-pink-200 px-2 py-0.5 rounded-full">{cfg.borderRotationTop || 0}°</span>
+                 </label>
+                 <input type="range" min={0} max={360} value={cfg.borderRotationTop || 0} onChange={e => update("borderRotationTop", Number(e.target.value))} className="w-full accent-pink-600 cursor-pointer mb-4" />
+
+                 <label className="flex justify-between items-center text-[9px] font-black text-pink-600 uppercase mb-2">
+                    <span>Rotación Abajo</span>
+                    <span className="bg-pink-200 px-2 py-0.5 rounded-full">{cfg.borderRotationBottom || 0}°</span>
+                 </label>
+                 <input type="range" min={0} max={360} value={cfg.borderRotationBottom || 0} onChange={e => update("borderRotationBottom", Number(e.target.value))} className="w-full accent-pink-600 cursor-pointer" />
               </div>
 
               <div className="flex flex-col gap-1 mt-4"><label className="text-[9px] font-bold text-slate-400 uppercase">Color del Borde</label><input type="color" value={cfg.borderColor || cfg.primary} onChange={e => update('borderColor', e.target.value)} className="w-full h-9 rounded-xl border-none shadow-sm cursor-pointer" /></div>
@@ -107,7 +103,6 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
         </div>
 
         <label className="flex items-center text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Temas Sugeridos <Tooltip text="Paletas de color pre-armadas." /></label>
-        {/* 👉 ACÁ HACEMOS QUE AL CAMBIAR EL TEMA TAMBIÉN CAMBIE EL COLOR DEL BORDE */}
         <div className="flex flex-wrap gap-2.5 mb-6">
             {THEMES.map(th => (
               <button 
@@ -155,7 +150,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
           <div className="flex-1">
              <Inp label="Frase Superior" value={cfg.eventType} onChange={v => update("eventType", v)} placeholder="Estás invitado a..." className="!mb-1" />
              <button onClick={generateAIPhrase} className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-violet-600 bg-violet-100 hover:bg-violet-200 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer w-fit mt-1">
-                <Sparkles size={12} /> Auto-Completar con IA
+                <span className="flex items-center gap-1"><Sparkles size={12} /> Auto-Completar con IA</span>
              </button>
           </div>
         </div>
@@ -217,7 +212,6 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
 
       <Acc title="6️⃣ Multimedia" icon={Video} iconColor="#8b5cf6"><div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500 flex items-center">Video YouTube</span><Toggle checked={cfg.showVideo || false} onChange={v => update("showVideo", v)} /></div>{cfg.showVideo && (<div className="mb-6 bg-gray-50 p-3 rounded-xl border border-gray-200"><Inp label="Título" value={cfg.videoTitle || ""} onChange={v => update("videoTitle", v)} /><Inp label="Link" value={cfg.videoUrl || ""} onChange={v => update("videoUrl", v)} /></div>)}<div className="flex items-center justify-between mb-4 pt-4 border-t border-gray-100"><span className="text-xs font-bold text-slate-500 flex items-center">Música Spotify</span><Toggle checked={cfg.showMusic || false} onChange={v => update("showMusic", v)} /></div>{cfg.showMusic && (<div className="bg-gray-50 p-3 rounded-xl border border-gray-200"><Inp label="Link" value={cfg.spotifyUrl || ""} onChange={v => update("spotifyUrl", v)} /></div>)}</Acc>
       
-      {/* 👉 ACÁ AGREGAMOS LOS EMOJIS AL PROGRAMA */}
       <Acc title="7️⃣ Programa" icon={List} iconColor="#0ea5e9">
          <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500 flex items-center">Activar Cronograma</span><Toggle checked={cfg.showItinerary} onChange={v => update("showItinerary", v)} /></div>
          {cfg.showItinerary && (
