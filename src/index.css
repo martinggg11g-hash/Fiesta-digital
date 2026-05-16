@@ -1,3 +1,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Le decimos a la página entera qué fuente usar de forma amigable */
+body {
+  font-family: 'Montserrat', system-ui, -apple-system, sans-serif;
+}
