@@ -124,16 +124,20 @@ export const EditorScreen = () => {
           salonProfile={salonProfile} 
         />
 
-        <main className={`flex-1 overflow-y-auto bg-[#0b0f19] flex items-center justify-center p-4 md:p-8 ${mobileView === 'preview' ? 'block' : 'hidden md:flex'}`} style={{ backgroundImage: 'radial-gradient(#1e293b 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
-          <div className="w-[375px] h-[812px] bg-white rounded-[3rem] overflow-hidden shadow-2xl relative border-[8px] border-[#1e293b] shrink-0 max-w-full">
-            <div className="absolute top-0 inset-x-0 h-6 bg-[#1e293b] rounded-b-3xl w-40 mx-auto z-50"></div>
+        <main className={`flex-1 overflow-hidden bg-[#0b0f19] flex items-center justify-center md:p-8 relative ${mobileView === 'preview' ? 'block' : 'hidden md:flex'}`} style={{ backgroundImage: 'radial-gradient(#1e293b 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
+          
+          <div className={`bg-white shadow-2xl relative overflow-hidden transition-all duration-300 w-full h-full md:w-[375px] md:h-[812px] md:rounded-[3rem] md:border-[8px] md:border-[#1e293b] md:shrink-0`}>
             
-            <div className="w-full h-full overflow-y-auto overflow-x-hidden relative" id="preview-container">
+            {/* La "pestañita" negra del iPhone solo se ve en PC */}
+            <div className="absolute top-0 inset-x-0 h-6 bg-[#1e293b] rounded-b-3xl w-40 mx-auto z-50 hidden md:block"></div>
+            
+            <div className="w-full h-full overflow-y-auto overflow-x-hidden relative pb-[80px] md:pb-0" id="preview-container">
               <InvitePreview 
                 cfg={inv.config} 
                 update={updateConfig} 
               />
             </div>
+            
           </div>
         </main>
       </div>
