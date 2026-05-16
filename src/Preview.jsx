@@ -3,7 +3,7 @@ import { OpeningAnimation, LottieOverlay } from "./Lotties";
 import { Calendar, Clock, MapPin, Loader2, Camera, Lock, CheckCircle2, Download, ExternalLink } from "lucide-react";
 import { DEF_CONFIG, getSpotifyEmbed, getYouTubeId, formatToDDMMYYYY, PARTICLE_CATEGORIES } from "./config";
 
-// 👉 IMPORTAMOS DESDE LOS NUEVOS ARCHIVOS DIVIDIDOS
+// IMPORTAMOS DESDE LOS NUEVOS ARCHIVOS DIVIDIDOS
 import { CornerOrnament, DraggableItem, ParticleCanvas } from "./PreviewEffects";
 import { InstagramIcon, FacebookIcon, TiktokIcon, RenderSymbol, Countdown, GalleryCarousel, MapEmbed, InfoCard, SectionTitle, RsvpWidget } from "./PreviewWidgets";
 
@@ -226,6 +226,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
           </div>
         )}
 
+        {/* 👉 FIX: SE AGREGA EL RENDER SYMBOL PARA QUE DIBUJE LOS EMOJIS EN EL PROGRAMA */}
         {cfg.showItinerary && cfg.itinerary?.length > 0 && (
           <div className="pt-4">
             <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={cfg.fontBody}>{cfg.itinerarySectionTitle || "Programa del evento"}</SectionTitle>
@@ -234,7 +235,10 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
               {cfg.itinerary.map((item, i) => (
                 <div key={i} className="relative text-left p-4 rounded-3xl" style={glassContainerStyle}>
                   {shineOverlay}
-                  <div className="absolute -left-[35px] top-[18px] w-4 h-4 rounded-full border-4 border-white z-20" style={{ background: cfg.accent || primary, boxShadow: `0 0 15px ${primary}` }} />
+                  {/* Se agregó el icono con fondo sólido */}
+                  <div className="absolute -left-[35px] top-[18px] w-8 h-8 rounded-full border-4 border-white z-20 flex items-center justify-center shadow-md bg-white">
+                     <RenderSymbol value={item.emoji || "✨"} size={16} color={primary} />
+                  </div>
                   <div className="relative z-10">
                     <p className="text-[10px] font-black mb-1 uppercase tracking-widest" style={{ color: primary }}>{item.time}</p>
                     <p className="font-bold text-sm" style={{ color: textC, fontFamily: cfg.fontBody }}>{item.title}</p>
@@ -263,7 +267,6 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
           </div>
         )}
 
-        {/* 👉 ÁLBUM EN VIVO */}
         {cfg.showLiveCamera && (
           <div className="pt-6">
             <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={cfg.fontBody}>{cfg.liveCameraTitle || "Álbum Colaborativo"}</SectionTitle>
