@@ -5,45 +5,32 @@ import { Loader2, Users, CheckCircle, Clock, Plus, Share2, Copy, Trash2, Lock, M
 // ==========================================
 // 📺 MODO PROYECTOR (Slideshow Automático)
 // ==========================================
-const ProjectorScreen = ({ eventId }) => {
+const ProjectorScreen = ({ eventSlug }) => {
   const [photos, setPhotos] = useState([]);
   const [idx, setIdx] = useState(0);
 
-  // Consulta inicial de fotos y suscripción en tiempo real (REALTIME)
+  // 👉 CORRECCIÓN: Volvemos a leer de 'eventos' y consultamos cada 5 segundos
   useEffect(() => {
     const fetchPhotos = async () => {
-      // 👉 CORRECCIÓN 1: Leemos de 'invitaciones' y buscamos por 'id'
-      const { data } = await supabase.from('invitaciones').select('internal_data').eq('id', eventId).single();
+      const { data } = await supabase.from('eventos').select('internal_data').eq('slug', eventSlug).single();
       if (data?.internal_data?.live_photos) {
-        setPhotos(data.internal_data.live_photos);
+        // Comprobamos si hay fotos nuevas para reiniciar el carrusel y mostrar la última
+        setPhotos(prevPhotos => {
+          if (prevPhotos.length !== data.internal_data.live_photos.length) {
+            setIdx(0); // Forzamos a que muestre la foto recién subida
+          }
+          return data.internal_data.live_photos;
+        });
       }
     };
     
-    fetchPhotos();
+    fetchPhotos(); // Primera carga
+    const radarDJ = setInterval(fetchPhotos, 5000); // Revisa cada 5 seg
+    
+    return () => clearInterval(radarDJ);
+  }, [eventSlug]);
 
-    // 👉 CORRECCIÓN 2: Escuchamos los cambios en la tabla 'invitaciones'
-    const subscription = supabase
-      .channel('public:invitaciones')
-      .on('postgres_changes', { 
-          event: 'UPDATE', 
-          schema: 'public', 
-          table: 'invitaciones',
-          filter: `id=eq.${eventId}` 
-        }, 
-        (payload) => {
-          if (payload.new?.internal_data?.live_photos) {
-            setPhotos(payload.new.internal_data.live_photos);
-            setIdx(0); 
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(subscription);
-    };
-  }, [eventId]);
-
+  // Cambia la foto que se ve en pantalla cada 5 segundos (Carrusel)
   useEffect(() => {
     if (photos.length <= 1) return;
     const interval = setInterval(() => {
@@ -77,9 +64,7 @@ const ProjectorScreen = ({ eventId }) => {
 // 👔 PANEL DE GESTIÓN PRINCIPAL
 // ==========================================
 export const ManageScreen = () => {
-  // El ID del evento ahora se saca de la URL correctamente
-  const eventId = window.location.pathname.split('/').pop();
-  
+  const eventSlug = window.location.pathname.split('/').pop();
   const isProjectorMode = new URLSearchParams(window.location.search).get('mode') === 'projector';
 
   const [loading, setLoading] = useState(true);
@@ -95,8 +80,8 @@ export const ManageScreen = () => {
 
   useEffect(() => {
     const fetchEvent = async () => {
-      // 👉 CORRECCIÓN 3: Buscamos en 'invitaciones' por 'id'
-      const { data } = await supabase.from('invitaciones').select('*').eq('id', eventId).single();
+      // 👉 CORRECCIÓN: Apuntamos a la tabla 'eventos' (la que ven los invitados)
+      const { data } = await supabase.from('eventos').select('*').eq('slug', eventSlug).single();
       if (data) {
          setEventData(data);
          if (!data.config?.clientPin || isProjectorMode) setIsAuthenticated(true);
@@ -104,7 +89,7 @@ export const ManageScreen = () => {
       setLoading(false);
     };
     fetchEvent();
-  }, [eventId, isProjectorMode]);
+  }, [eventSlug, isProjectorMode]);
 
   useEffect(() => {
     if (isAuthenticated && eventData && !isProjectorMode) {
@@ -172,12 +157,12 @@ export const ManageScreen = () => {
   };
 
   const copyLink = (id) => {
-     navigator.clipboard.writeText(`${window.location.origin}/invite/${eventId}?guest=${id}`);
+     navigator.clipboard.writeText(`${window.location.origin}/invite/${eventSlug}?guest=${id}`);
      alert("¡Link copiado al portapapeles!");
   };
 
   const sendWhatsApp = (invitado) => {
-     const link = `${window.location.origin}/invite/${eventId}?guest=${invitado.id}`;
+     const link = `${window.location.origin}/invite/${eventSlug}?guest=${invitado.id}`;
      const nombreAMostrar = invitado.apodo || invitado.nombre_completo;
      const text = `¡Hola ${nombreAMostrar}! Te comparto tu pase VIP para nuestro evento. Por favor confirmá tu asistencia acá: ${link}`;
      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
@@ -186,7 +171,7 @@ export const ManageScreen = () => {
   if (loading) return <div className="flex h-screen items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-violet-600" size={40} /></div>;
   if (!eventData) return <div className="flex h-screen items-center justify-center bg-slate-50 font-bold text-slate-500">Evento no encontrado.</div>;
   
-  if (isProjectorMode) return <ProjectorScreen eventId={eventId} />;
+  if (isProjectorMode) return <ProjectorScreen eventSlug={eventSlug} />;
 
   if (!isAuthenticated) {
      return (
