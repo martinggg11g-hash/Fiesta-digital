@@ -355,10 +355,37 @@ export const PARTICLE_CATEGORIES = {
 };
 
 export const ANIMATION_CATEGORIES = {
-  infantil: [ { id: 'mickey', emoji: '🕷️', name: 'Superhéroe' }, { id: 'minnie', emoji: '🎀', name: 'Princesa' }, { id: 'cars', emoji: '🚗', name: 'Autos' } ],
-  quince: [ { id: 'crown', emoji: '👑', name: 'Corona' }, { id: 'butterfly', emoji: '🦋', name: 'Mariposa' }, { id: 'stars', emoji: '✨', name: 'Brillos' } ],
-  bodas: [ { id: 'rings', emoji: '💍', name: 'Anillos' }, { id: 'dove', emoji: '🕊️', name: 'Paloma' }, { id: 'flower', emoji: '🌸', name: 'Flor' } ],
-  general: [ { id: 'envelope', emoji: '✉️', name: 'Sobre Mágico' }, { id: 'balloon', emoji: '🎈', name: 'Globo' }, { id: 'cake', emoji: '🎂', name: 'Torta' } ]
+  infantil: [ 
+    { id: 'mickey', emoji: '🕷️', name: 'Superhéroe' }, 
+    { id: 'minnie', emoji: '🎀', name: 'Princesa' }, 
+    { id: 'cars', emoji: '🚗', name: 'Autos' },
+    // 👉 LOTTIES INFANTILES EN LA ANIMACIÓN DE ENTRADA
+    { id: 'lottie_unicornio', emoji: '🦄', name: 'Unicornio', isLottie: true, url: 'https://lottie.host/e80b8b77-6cad-4f94-8df0-088fd9768a76/nZfsnfpCoE.lottie' },
+    { id: 'lottie_spiderman', emoji: '🕷️', name: 'Spiderman', isLottie: true, url: 'https://lottie.host/cbdc0f06-0f59-44d9-b118-05950de6b170/nXXbeT1fIz.lottie' }
+  ],
+  quince: [ 
+    { id: 'crown', emoji: '👑', name: 'Corona' }, 
+    { id: 'butterfly', emoji: '🦋', name: 'Mariposa' }, 
+    { id: 'stars', emoji: '✨', name: 'Brillos' } 
+  ],
+  bodas: [ 
+    { id: 'rings', emoji: '💍', name: 'Anillos' }, 
+    { id: 'dove', emoji: '🕊️', name: 'Paloma' }, 
+    { id: 'flower', emoji: '🌸', name: 'Flor' } 
+  ],
+  general: [ 
+    { id: 'envelope', emoji: '✉️', name: 'Sobre Mágico' }, 
+    { id: 'balloon', emoji: '🎈', name: 'Globo' }, 
+    { id: 'cake', emoji: '🎂', name: 'Torta' },
+    // 👉 LOTTIES PREMIUM EN LA ANIMACIÓN DE ENTRADA
+    { id: 'lottie_confeti_dorado', emoji: '✨', name: 'Confeti Oro', isLottie: true, url: 'https://lottie.host/b8e6dc94-3478-4211-8b6f-300e7e64ecd4/sB1AbsdZ31.lottie' },
+    { id: 'lottie_pastel', emoji: '🎂', name: 'Pastel 3D', isLottie: true, url: 'https://lottie.host/bd7ab6be-cce2-49e0-a33b-40cda64bdb99/ILlXJL39Io.lottie' }
+  ],
+  geek: [
+    // 👉 LOTTIES GEEK / ANIME EN LA ANIMACIÓN DE ENTRADA
+    { id: 'lottie_pochita', emoji: '🐕', name: 'Pochita', isLottie: true, url: 'https://lottie.host/2ee2934a-8450-499d-8a55-e5e3772eb7a1/vwK3pAlnrE.lottie' },
+    { id: 'lottie_playstation', emoji: '🎮', name: 'PlayStation', isLottie: true, url: 'https://lottie.host/41ab3ece-5bbd-448c-bc34-01484ce694b2/yLkQVXFWYO.lottie' }
+  ]
 };
 
 export const TRANSITION_OPTS = [
