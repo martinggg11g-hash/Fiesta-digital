@@ -1,311 +1,398 @@
-import React, { useState, useEffect, useRef } from "react";
-import { GiphyFetch } from '@giphy/js-fetch-api';
-import { Grid } from '@giphy/react-components';
-import { 
-  ChevronDown, Loader2, Trash2, Image as ImageIcon, Search, HelpCircle,
-  // Nuevos Íconos Lucide importados
-  Beef, Wine, Cake, CakeSlice, ChefHat, Coffee, CupSoda, Fish, Ham, Hamburger, IceCreamBowl, Martini, Pizza, Sandwich, Taco
-} from "lucide-react";
-import { 
-  FONTS, 
-  FONT_CATEGORIES, 
-  ICON_CATEGORIES, 
-  EMOJI_CATEGORIES,
-  BORDERS 
-} from "./config";
+export const DEF_CONFIG = {
+  theme: "default",
+  primary: "#8b5cf6",
+  bg1: "#f8f7ff",
+  bg2: "#e0dcfc",
+  text: "#1e1b4b",
+  muted: "#6b7280",
+  card: "#ffffff",
+  fontBody: "Montserrat",
+  fontTitle: "Playfair Display",
+  
+  coverPhoto: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=800&q=80",
+  eventTypeEmoji: "✨",
+  eventType: "Mis Dulces 15",
+  honoreeName: "Valentina",
+  showBadge: true,
+  badgeEmoji: "👑",
+  badgeText: "La gran noche",
+  badgeBgColor: "rgba(0,0,0,0.5)",
+  
+  showCountdown: true,
+  showBanner: false,
+  showDate: true,
+  showTime: true,
+  showLocation: true,
+  showParking: true,
+  showVenueLogo: true,
+  showVideo: false,
+  showMusic: true,
+  showItinerary: true,
+  showMenu: true,
+  showDressCode: true,
+  showGifts: true,
+  showGallery: true,
+  
+  dateText: "2026-12-15",
+  timeText: "21:00 a 05:00 hs",
+  parkingType: "Estacionamiento privado cubierto",
+  venueLinkType: "web",
+  venueLink: "https://defiesta.lat",
+  spotifyUrl: "https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT",
+  
+  showInstagram: false,
+  instagramUrl: "",
+  showFacebook: false,
+  facebookUrl: "",
+  showTiktok: false,
+  tiktokUrl: "",
 
-const gf = new GiphyFetch('32PbboqCveiWSlj9vROPmyjv8l8cuaj1');
-const IMGBB_API_KEY = "904f81caf05efe58a799abdb1fedc2ce";
+  // NUEVAS VARIABLES RSVP VIP Y ACCESOS
+  showRsvpDeadline: false,
+  rsvpDeadline: "",
+  isPrivateList: false,
+  clientPin: "", 
 
-export const Tooltip = ({ text }) => {
-  const [show, setShow] = useState(false);
-  const ref = useRef(null);
+  // CONFIGURACIÓN DE EFECTOS
+  effectOpacity: 100,
 
-  useEffect(() => { 
-    const fn = e => { if (ref.current && !ref.current.contains(e.target)) setShow(false); }; 
-    document.addEventListener("mousedown", fn); 
-    document.addEventListener("touchstart", fn);
-    return () => { document.removeEventListener("mousedown", fn); document.removeEventListener("touchstart", fn); }; 
-  }, []);
-
-  return (
-    <div className="relative inline-flex items-center ml-1.5" ref={ref}>
-      <button 
-        type="button" 
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShow(!show); }} 
-        onMouseEnter={() => setShow(true)}
-        onMouseLeave={() => setShow(false)}
-        className="text-slate-300 hover:text-violet-500 cursor-pointer transition-colors"
-      >
-        <HelpCircle size={14} />
-      </button>
-      {show && (
-        <div className="absolute z-[99999] bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2.5 bg-slate-800 text-white text-[10px] font-medium leading-tight rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.3)] text-center pointer-events-none normal-case tracking-normal">
-          {text}
-          <div className="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-slate-800" />
-        </div>
-      )}
-    </div>
-  );
+  // CONFIGURACIÓN DE BORDES (CORREGIDO PARA VISIBILIDAD INICIAL)
+  showCoverBorders: false,
+  selectedBorder: "/borders/1-Photoroom.png", // Ya dejamos uno cargado por defecto
+  borderPosition: "both",
+  borderColor: "#8b5cf6",
+  ornamentSize: 150,
+  borderRotationTop: 0,
+  borderRotationBottom: 0,
 };
 
-export const IconRenderer = ({ name, size = 24, color = "currentColor", className = "" }) => {
-  if (!name) return null;
-  const lp = { size, color, className, strokeWidth: 1.5 }; // Props para Lucide
-  const p = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: 1.5, strokeLinecap: "round", strokeLinejoin: "round", className }; // Props para SVG viejo
+export const THEMES = [
+  {
+    id: "t1", name: "Rose Gold",
+    primary: "#e8829a",
+    bg1: "#fdf0f3",
+    bg2: "linear-gradient(145deg, #fff5f7 0%, #fce4ea 25%, #f5c6d3 55%, #eea8bc 80%, #e690a8 100%)",
+    text: "#3d1e27",
+    card: "linear-gradient(160deg, rgba(255,255,255,0.92) 0%, rgba(252,228,234,0.75) 100%)",
+    muted: "#9b5f6e",
+    shadow: "0 8px 32px rgba(217,119,147,0.22), 0 2px 8px rgba(217,119,147,0.14)",
+    border: "rgba(232,130,154,0.25)",
+    accent: "#f0a0b8",
+    shine: "linear-gradient(135deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0) 60%)",
+  },
+  {
+    id: "t2", name: "Galaxia (Dark)",
+    primary: "#b97ef8",
+    bg1: "#07051a",
+    bg2: "linear-gradient(145deg, #07051a 0%, #110d35 20%, #1e1550 40%, #2d1f6e 60%, #1a1040 80%, #0d0924 100%)",
+    text: "#ede9ff",
+    card: "linear-gradient(160deg, rgba(35,28,75,0.72) 0%, rgba(55,40,110,0.55) 100%)",
+    muted: "#a78bfa",
+    shadow: "0 8px 40px rgba(139,92,246,0.35), 0 2px 12px rgba(80,50,180,0.25)",
+    border: "rgba(168,85,247,0.3)",
+    accent: "#7c3aed",
+    shine: "linear-gradient(135deg, rgba(168,85,247,0.18) 0%, rgba(255,255,255,0) 60%)",
+  },
+  {
+    id: "t3", name: "Esmeralda",
+    primary: "#0fba7e",
+    bg1: "#eafdf5",
+    bg2: "linear-gradient(145deg, #f0fefa 0%, #d6fbee 20%, #a7f3d8 45%, #6ee7be 70%, #34d399 90%, #10b981 100%)",
+    text: "#053729",
+    card: "linear-gradient(160deg, rgba(255,255,255,0.93) 0%, rgba(209,250,229,0.78) 100%)",
+    muted: "#047857",
+    shadow: "0 8px 36px rgba(16,185,129,0.22), 0 2px 10px rgba(16,185,129,0.14)",
+    border: "rgba(16,185,129,0.22)",
+    accent: "#34d399",
+    shine: "linear-gradient(135deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0) 60%)",
+  },
+  {
+    id: "t4", name: "Océano",
+    primary: "#0ea5e9",
+    bg1: "#eaf8ff",
+    bg2: "linear-gradient(145deg, #f0fbff 0%, #cceeff 22%, #99ddfa 45%, #5bc8f5 68%, #1faee3 88%, #0ea5e9 100%)",
+    text: "#082f49",
+    card: "linear-gradient(160deg, rgba(255,255,255,0.93) 0%, rgba(186,230,253,0.75) 100%)",
+    muted: "#0284c7",
+    shadow: "0 8px 36px rgba(14,165,233,0.24), 0 2px 10px rgba(14,165,233,0.14)",
+    border: "rgba(14,165,233,0.22)",
+    accent: "#38bdf8",
+    shine: "linear-gradient(135deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0) 60%)",
+  },
+  {
+    id: "t5", name: "Atardecer",
+    primary: "#f43f5e",
+    bg1: "#fff0f1",
+    bg2: "linear-gradient(145deg, #fff5f5 0%, #ffe0e3 18%, #fdb8be 38%, #fc8594 58%, #f95d74 78%, #f43f5e 100%)",
+    text: "#6d0e1f",
+    card: "linear-gradient(160deg, rgba(255,255,255,0.93) 0%, rgba(254,205,211,0.75) 100%)",
+    muted: "#be123c",
+    shadow: "0 8px 36px rgba(244,63,94,0.24), 0 2px 10px rgba(244,63,94,0.14)",
+    border: "rgba(244,63,94,0.22)",
+    accent: "#fb7185",
+    shine: "linear-gradient(135deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0) 60%)",
+  },
+  {
+    id: "t6", name: "Terciopelo (Dark)",
+    primary: "#9d6ef8",
+    bg1: "#160d38",
+    bg2: "linear-gradient(145deg, #160d38 0%, #200f50 18%, #32146a 36%, #48178e 55%, #2e1060 75%, #1a0b40 100%)",
+    text: "#f0ebff",
+    card: "linear-gradient(160deg, rgba(50,20,106,0.7) 0%, rgba(72,23,142,0.5) 100%)",
+    muted: "#c084fc",
+    shadow: "0 8px 40px rgba(139,92,246,0.38), 0 2px 14px rgba(109,40,217,0.28)",
+    border: "rgba(192,132,252,0.28)",
+    accent: "#a855f7",
+    shine: "linear-gradient(135deg, rgba(196,181,253,0.2) 0%, rgba(255,255,255,0) 60%)",
+  },
+  {
+    id: "t7", name: "Champagne",
+    primary: "#c9a227",
+    bg1: "#fefcf7",
+    bg2: "linear-gradient(145deg, #fffef9 0%, #fdf6e3 22%, #f7e9c0 45%, #f0d896 68%, #e8c96e 88%, #d4af37 100%)",
+    text: "#2e2208",
+    card: "linear-gradient(160deg, rgba(255,255,255,0.95) 0%, rgba(243,234,211,0.78) 100%)",
+    muted: "#8c6d1f",
+    shadow: "0 8px 36px rgba(212,175,55,0.28), 0 2px 10px rgba(212,175,55,0.16)",
+    border: "rgba(212,175,55,0.28)",
+    accent: "#e8c96e",
+    shine: "linear-gradient(135deg, rgba(255,248,200,0.55) 0%, rgba(255,255,255,0) 60%)",
+  },
+  {
+    id: "t8", name: "Cyberpunk (Dark)",
+    primary: "#f72585",
+    bg1: "#050507",
+    bg2: "linear-gradient(145deg, #050507 0%, #0d0d12 20%, #161220 40%, #0f0a1a 60%, #050510 80%, #000000 100%)",
+    text: "#fff0fa",
+    card: "linear-gradient(160deg, rgba(20,10,30,0.8) 0%, rgba(40,10,40,0.65) 100%)",
+    muted: "#f472b6",
+    shadow: "0 0 30px rgba(247,37,133,0.5), 0 0 8px rgba(247,37,133,0.4), 0 2px 10px rgba(0,0,0,0.6)",
+    border: "rgba(247,37,133,0.4)",
+    accent: "#7b2fff",
+    shine: "linear-gradient(135deg, rgba(247,37,133,0.2) 0%, rgba(123,47,255,0.1) 50%, rgba(255,255,255,0) 100%)",
+  },
+  {
+    id: "t9", name: "Durazno Suave",
+    primary: "#f97316",
+    bg1: "#fff8f0",
+    bg2: "linear-gradient(145deg, #fffaf5 0%, #ffe8cc 20%, #ffd0a0 40%, #ffb874 62%, #ffa050 82%, #f97316 100%)",
+    text: "#341005",
+    card: "linear-gradient(160deg, rgba(255,255,255,0.94) 0%, rgba(254,215,170,0.76) 100%)",
+    muted: "#9a3412",
+    shadow: "0 8px 36px rgba(249,115,22,0.24), 0 2px 10px rgba(249,115,22,0.14)",
+    border: "rgba(249,115,22,0.22)",
+    accent: "#fb923c",
+    shine: "linear-gradient(135deg, rgba(255,255,255,0.58) 0%, rgba(255,255,255,0) 60%)",
+  },
+  {
+    id: "t10", name: "Plata Glacial",
+    primary: "#5b7fa6",
+    bg1: "#f4f8fc",
+    bg2: "linear-gradient(145deg, #f8fbff 0%, #edf2f9 22%, #dde6f2 45%, #ccd8ea 68%, #b8c9e0 88%, #a4bad6 100%)",
+    text: "#0c1c2e",
+    card: "linear-gradient(160deg, rgba(255,255,255,0.97) 0%, rgba(220,232,248,0.72) 100%)",
+    muted: "#4a6480",
+    shadow: "0 8px 36px rgba(91,127,166,0.18), 0 2px 10px rgba(91,127,166,0.10)",
+    border: "rgba(100,116,139,0.18)",
+    accent: "#93b4d4",
+    shine: "linear-gradient(135deg, rgba(255,255,255,0.65) 0%, rgba(255,255,255,0) 60%)",
+  },
+  {
+    id: "t11", name: "Rubí Pasión",
+    primary: "#e11d48",
+    bg1: "#fff0f2",
+    bg2: "linear-gradient(145deg, #fff5f6 0%, #ffd6dc 20%, #ffaab7 40%, #ff7591 62%, #f04468 82%, #e11d48 100%)",
+    text: "#3a000e",
+    card: "linear-gradient(160deg, rgba(255,255,255,0.93) 0%, rgba(253,164,175,0.7) 100%)",
+    muted: "#9f1239",
+    shadow: "0 8px 36px rgba(225,29,72,0.28), 0 2px 10px rgba(225,29,72,0.16)",
+    border: "rgba(225,29,72,0.24)",
+    accent: "#fb4f6e",
+    shine: "linear-gradient(135deg, rgba(255,255,255,0.58) 0%, rgba(255,255,255,0) 60%)",
+  },
+  {
+    id: "t12", name: "Black & Gold",
+    primary: "#f5c518",
+    bg1: "#0a0800",
+    bg2: "linear-gradient(145deg, #0a0800 0%, #14100a 18%, #1e1806 35%, #120f00 55%, #0c0900 75%, #000000 100%)",
+    text: "#fef9e7",
+    card: "linear-gradient(160deg, rgba(30,24,6,0.85) 0%, rgba(50,38,8,0.65) 100%)",
+    muted: "#d4a017",
+    shadow: "0 0 28px rgba(245,197,24,0.36), 0 0 8px rgba(245,197,24,0.28), 0 2px 12px rgba(0,0,0,0.7)",
+    border: "rgba(245,197,24,0.3)",
+    accent: "#fde68a",
+    shine: "linear-gradient(135deg, rgba(245,197,24,0.22) 0%, rgba(255,255,255,0) 60%)",
+  },
+  
+  // 👉 ACÁ ESTÁN LOS NUEVOS DE BODAS SÚPER ELEGANTES
+  {
+    id: "t13", name: "Ivory & Gold (Boda)",
+    primary: "#d4af37",
+    bg1: "#ffffff",
+    bg2: "linear-gradient(145deg, #ffffff 0%, #fefcf9 30%, #f8f1df 70%, #eadcae 100%)",
+    text: "#3e3214",
+    card: "linear-gradient(160deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.85) 100%)",
+    muted: "#967f40",
+    shadow: "0 10px 40px rgba(212,175,55,0.15), 0 2px 8px rgba(0,0,0,0.02)",
+    border: "rgba(212,175,55,0.25)",
+    accent: "#e3cc7c",
+    shine: "linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 60%)",
+  },
+  {
+    id: "t14", name: "Perla Rosa (Boda)",
+    primary: "#d48b9c",
+    bg1: "#ffffff",
+    bg2: "linear-gradient(145deg, #ffffff 0%, #fffbfc 30%, #fbeff2 70%, #f0ced6 100%)",
+    text: "#4a2a32",
+    card: "linear-gradient(160deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.85) 100%)",
+    muted: "#ab6879",
+    shadow: "0 10px 40px rgba(212,139,156,0.15), 0 2px 8px rgba(0,0,0,0.02)",
+    border: "rgba(212,139,156,0.25)",
+    accent: "#e2afbd",
+    shine: "linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 60%)",
+  },
+];
+export const FONTS = [
+  { label: "Playfair Display", value: "Playfair Display" }, { label: "Bodoni Moda", value: "Bodoni Moda" },
+  { label: "Abril Fatface", value: "Abril Fatface" }, { label: "Cinzel", value: "Cinzel" },
+  { label: "Prata", value: "Prata" }, { label: "Lora", value: "Lora" },
+  { label: "Poppins", value: "Poppins" }, { label: "Montserrat", value: "Montserrat" },
+  { label: "Jost", value: "Jost" }, { label: "Figtree", value: "Figtree" },
+  { label: "Outfit", value: "Outfit" }, { label: "Roboto", value: "Roboto" },
+  { label: "Monsieur La Doulaise", value: "Monsieur La Doulaise" }, { label: "Pinyon Script", value: "Pinyon Script" },
+  { label: "Great Vibes", value: "Great Vibes" }, { label: "Alex Brush", value: "Alex Brush" },
+  { label: "Dancing Script", value: "Dancing Script" }, { label: "Pacifico", value: "Pacifico" },
+  { label: "Merriweather", value: "Merriweather" }, { label: "Cormorant Garamond", value: "Cormorant Garamond" },
+  { label: "Libre Baskerville", value: "Libre Baskerville" }, { label: "EB Garamond", value: "EB Garamond" },
+  { label: "Radley", value: "Radley" }, { label: "Spectral", value: "Spectral" }
+];
 
-  switch (name) {
-    // 👉 ÍCONOS LUCIDE MODERNOS (Nuevos y reemplazos de los "fuleros")
-    case 'icon-beef': return <Beef {...lp} />;
-    case 'icon-wine': return <Wine {...lp} />;
-    case 'icon-cake': return <Cake {...lp} />;
-    case 'icon-cake-slice': return <CakeSlice {...lp} />;
-    case 'icon-chef-hat': return <ChefHat {...lp} />;
-    case 'icon-coffee': return <Coffee {...lp} />;
-    case 'icon-cup-soda': return <CupSoda {...lp} />;
-    case 'icon-fish': return <Fish {...lp} />;
-    case 'icon-ham': return <Ham {...lp} />;
-    case 'icon-burger': return <Hamburger {...lp} />;
-    case 'icon-ice-cream-bowl': return <IceCreamBowl {...lp} />;
-    case 'icon-cocktail': return <Martini {...lp} />;
-    case 'icon-pizza': return <Pizza {...lp} />;
-    case 'icon-sandwich': return <Sandwich {...lp} />;
-    case 'icon-taco': return <Taco {...lp} />;
-
-    // 👉 ÍCONOS SVG ORIGINALES (Mantenemos los que no cambiamos por Lucide)
-    case 'icon-heart': return <svg {...p}><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>;
-    case 'icon-crown': return <svg {...p}><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>;
-    case 'icon-star': return <svg {...p}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
-    case 'icon-sparkles': return <svg {...p}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1-1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>;
-    case 'icon-gift': return <svg {...p}><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8a4.8 8 0 0 1 9 0 2.5 2.5 0 0 1 0 5"/></svg>;
-    case 'icon-camera': return <svg {...p}><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>;
-    case 'icon-church': return <svg {...p}><path d="M12 2v5"/><path d="M10 5h4"/><path d="M12 7l-6 5v10h12V12l-6-5Z"/><path d="M10 22v-4a2 2 0 0 1 4 0v4"/></svg>;
-    case 'icon-rings': return <svg {...p}><circle cx="9" cy="12" r="5"/><circle cx="15" cy="12" r="5"/></svg>;
-    case 'icon-map-pin': return <svg {...p}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>;
-    case 'icon-calendar': return <svg {...p}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
-    case 'icon-clock': return <svg {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
-    case 'icon-utensils': return <svg {...p}><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>;
-    case 'icon-dress': return <svg {...p}><path d="M9.5 2 6 7l1.5 5H6l-3 10h18l-3-10h-1.5L18 7l-3.5-5h-5Z"/><path d="M6 12h12"/></svg>;
-    case 'icon-suit': return <svg {...p}><path d="M4 2v20h16V2H4Zm4 0 4 4 4-4M12 6v16"/></svg>;
-    case 'icon-tie': return <svg {...p}><path d="m10 2 2 2 2-2-2 10 3 4-3 6-3-6 3-4-2-10Z"/></svg>;
-    case 'icon-hanger': return <svg {...p}><path d="M12 2a2 2 0 0 1 2 2c0 .5-.4 1-1 1.7L7 12h10l-6-6.3"/><path d="M2 12h20l-10 9Z"/></svg>;
-    case 'icon-ticket': return <svg {...p}><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>;
-    case 'icon-vip': return <svg {...p}><path d="M7 5 9 19"/><path d="M2 5 4 19"/><path d="M12 5h3"/><path d="M12 12h3"/><path d="M12 19h3"/><path d="M19 5v14h3V5Z"/></svg>;
-    case 'icon-music': return <svg {...p}><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>;
-    case 'icon-disco': return <svg {...p}><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/><path d="M7 5.5s2.5 2 2.5 6.5-2.5 6.5-2.5 6.5M17 5.5s-2.5 2-2.5 6.5 2.5 6.5 2.5 6.5"/></svg>;
-    case 'icon-speaker': return <svg {...p}><rect x="4" y="2" width="16" height="20" rx="2"/><circle cx="12" cy="14" r="4"/><circle cx="12" cy="6" r="1"/></svg>;
-    case 'icon-mic': return <svg {...p}><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="18" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>;
-    case 'icon-balloon': return <svg {...p}><path d="M12 2a7 7 0 0 0-7 7c0 4 7 11 7 11s7-7 7-11a7 7 0 0 0-7-7Z"/><path d="M12 20v3"/></svg>;
-    case 'icon-confetti': return <svg {...p}><path d="M13 2 3 14"/><path d="M18 9 8 21"/><path d="M5 2 2 5"/><path d="M22 19 19 22"/></svg>;
-    case 'icon-flower': return <svg {...p}><path d="M12 7.5a4.5 4.5 0 1 1 4.5 4.5M12 7.5A4.5 4.5 0 1 0 7.5 12M12 7.5V12m0 0a4.5 4.5 0 1 0 4.5 4.5M12 12a4.5 4.5 0 1 1-4.5 4.5M12 12v9"/></svg>;
-    default: return <svg {...p}><circle cx="12" cy="12" r="10"/></svg>;
-  }
+export const FONT_CATEGORIES = {
+  "Elegantes": ["Playfair Display", "Bodoni Moda", "Abril Fatface", "Cinzel", "Prata", "Lora"],
+  "Modernas": ["Poppins", "Montserrat", "Jost", "Figtree", "Outfit", "Roboto"],
+  "Manuscritas": ["Monsieur La Doulaise", "Pinyon Script", "Great Vibes", "Alex Brush", "Dancing Script", "Pacifico"],
+  "Serif": ["Merriweather", "Cormorant Garamond", "Libre Baskerville", "EB Garamond", "Radley", "Spectral"]
 };
 
-export const FontSelector = ({ value, onChange }) => {
-  const [open, setOpen] = useState(false);
-  const [cat, setCat] = useState("Modernas");
-  const ref = useRef(null);
-
-  useEffect(() => { 
-    const fn = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }; 
-    document.addEventListener("mousedown", fn); 
-    return () => document.removeEventListener("mousedown", fn); 
-  }, []);
-
-  return (
-    <div className="relative w-full z-[9999]" ref={ref}>
-      <button type="button" onClick={() => setOpen(!open)} className="w-full px-4 py-3 rounded-xl text-slate-800 bg-white border border-gray-200 text-base flex justify-between items-center shadow-sm cursor-pointer" style={{ fontFamily: value }}>
-        <span className="truncate">{value || "Seleccionar fuente..." }</span>
-        <ChevronDown size={16} className={`text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
-      </button>
-      {open && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-2xl p-2 z-[99999] origin-top anim-pop">
-          <div className="flex gap-1 overflow-x-auto pb-2 mb-2 border-b border-gray-100 fd-sb">
-            {Object.keys(FONT_CATEGORIES).map(c => (
-              <button key={c} type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCat(c); }} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shrink-0 transition-colors cursor-pointer ${cat === c ? 'bg-violet-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>{c}</button>
-            ))}
-          </div>
-          <div className="max-h-60 overflow-y-auto fd-sb">
-            {FONT_CATEGORIES[cat].map(f => (
-              <button key={f} type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onChange(f); setOpen(false); }} className={`w-full text-left px-4 py-3 hover:bg-violet-50 text-lg rounded-xl border-b border-gray-50 last:border-0 cursor-pointer ${value === f ? 'bg-violet-100 text-violet-700 font-bold' : 'text-slate-700'}`} style={{ fontFamily: f }}>{f}</button>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
+// 👉 ACÁ ESTÁ EL CAMBIO. AÑADÍ LOS NUEVOS DE COMIDA.
+export const ICON_CATEGORIES = {
+  "Generales": ["icon-heart", "icon-crown", "icon-star", "icon-sparkles", "icon-gift", "icon-camera", "icon-church", "icon-rings", "icon-map-pin", "icon-calendar", "icon-clock"],
+  "Comida": ["icon-beef", "icon-fish", "icon-ham", "icon-sandwich", "icon-pizza", "icon-burger", "icon-taco"],
+  "Dulces y Bebidas": ["icon-cake", "icon-cake-slice", "icon-ice-cream-bowl", "icon-wine", "icon-cocktail", "icon-coffee", "icon-cup-soda"],
+  "Fiesta": ["icon-music", "icon-disco", "icon-speaker", "icon-mic", "icon-balloon", "icon-confetti"],
+  "Ropa y Pases": ["icon-dress", "icon-suit", "icon-tie", "icon-hanger", "icon-ticket", "icon-vip", "icon-chef-hat"]
 };
 
-export const EmojiPicker = ({ value, onSelect }) => {
-  const [open, setOpen] = useState(false);
-  const [mainTab, setMainTab] = useState('emoji'); 
-  const [activeCat, setActiveCat] = useState("Magia");
-  const ref = useRef(null);
-
-  useEffect(() => { 
-    if (mainTab === 'emoji') setActiveCat(Object.keys(EMOJI_CATEGORIES)[0]); 
-    else setActiveCat(Object.keys(ICON_CATEGORIES)[0]); 
-  }, [mainTab]);
-
-  useEffect(() => { 
-    const fn = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }; 
-    document.addEventListener("mousedown", fn); 
-    return () => document.removeEventListener("mousedown", fn); 
-  }, []);
-
-  const isIcon = (val) => typeof val === 'string' && val.startsWith('icon-');
-
-  return (
-    <div ref={ref} className="relative z-[20]">
-      <button type="button" onClick={() => setOpen(!open)} className="w-12 h-12 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-2xl hover:border-violet-300 focus:ring-2 focus:ring-violet-200 outline-none transition-all shadow-sm cursor-pointer">
-        {isIcon(value) ? <IconRenderer name={value} size={24} color="#64748b" /> : (value || "✨")}
-      </button>
-
-      {open && (
-        <div className="absolute top-14 left-0 bg-white border border-gray-200 rounded-2xl p-3 w-72 shadow-[0_20px_50px_rgba(0,0,0,0.3)] z-[99999]" style={{ isolation: 'isolate' }}>
-          <div className="flex bg-slate-100 p-1 rounded-xl mb-3">
-            <button type="button" onClick={() => setMainTab('emoji')} className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all ${mainTab === 'emoji' ? 'bg-white shadow text-violet-600' : 'text-slate-500'}`}>😀 Emojis</button>
-            <button type="button" onClick={() => setMainTab('icon')} className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all ${mainTab === 'icon' ? 'bg-white shadow text-violet-600' : 'text-slate-500'}`}>✨ Íconos</button>
-          </div>
-
-          <div className="flex gap-1 overflow-x-auto pb-2 mb-2 border-b border-slate-100 fd-sb">
-            {Object.keys(mainTab === 'emoji' ? EMOJI_CATEGORIES : ICON_CATEGORIES).map(c => (
-              <button key={c} onClick={() => setActiveCat(c)} type="button" className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-tight shrink-0 transition-all ${activeCat === c ? 'bg-violet-100 text-violet-700' : 'bg-slate-50 text-slate-400'}`}>{c}</button>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-5 gap-1.5 max-h-56 overflow-y-auto fd-sb p-1 relative z-[99999]">
-            {mainTab === 'emoji' ? (
-              EMOJI_CATEGORIES[activeCat]?.map((e, i) => (
-                <button key={i} type="button" onClick={() => { onSelect(e); setOpen(false); }} className="p-2 text-xl hover:bg-violet-50 rounded-xl transition-colors cursor-pointer flex items-center justify-center">{e}</button>
-              ))
-            ) : (
-              ICON_CATEGORIES[activeCat]?.map((ic, i) => (
-                <button key={i} type="button" onClick={() => { onSelect(ic); setOpen(false); }} className="p-2 hover:bg-violet-50 text-slate-500 hover:text-violet-700 rounded-xl transition-colors cursor-pointer flex items-center justify-center">
-                  <IconRenderer name={ic} size={22} />
-                </button>
-              ))
-            )}
-          </div>
-          
-          {mainTab === 'emoji' && (
-            <div className="mt-2 pt-2 border-t border-slate-50">
-               <input type="text" placeholder="O pega un emoji aquí..." maxLength={2} className="w-full p-2 text-center bg-slate-50 rounded-lg text-sm border border-slate-100 outline-none focus:border-violet-300" onChange={e => { if(e.target.value) { onSelect(e.target.value); setOpen(false); } }} />
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
+export const EMOJI_CATEGORIES = {
+  "Magia": ["✨","👑","🎈","🎉","🎊","🥳","🎁","💝","🪄","🎇","🎆"],
+  "Bodas": ["💍","💒","👰","🤵","👼","❤️","💖","💕","💌","🥂"],
+  "Bebidas": ["🍾","🥂","🍷","🍸","🍹","🍺","🍻","☕","🧋"],
+  "Dulces": ["🎂","🍰","🧁","🍦","🍨","🍧","🍩","🍪","🍫","🍬","🍭"],
+  "Salados": ["🍕","🍔","🍟","🌭","🍿","🌮","🌯","🥙","🥗","🥪","🥘","🧆","🍲","🥣","🍗","🍖","🥩","🍤","🍣","🥓","🧀"],
+  "Ropa": ["👗","👔","👘","🥻","🩱","👖","🧥","🦺","👕","","🩲","👠","👡","👢","👞","👟","🥾","🧦","🧤","🧣","🎩","🧢","👒"]
 };
 
-export const BordersGallery = ({ value, onChange }) => (
-  <div className="grid grid-cols-3 gap-2">
-    {BORDERS.map(b => (
-      <button key={b.id} type="button" onClick={() => onChange(b.url)} className={`p-2 border rounded-xl flex flex-col items-center gap-2 transition-all cursor-pointer ${value === b.url ? 'border-violet-500 bg-violet-100 shadow-md' : 'border-slate-200 bg-white hover:bg-slate-50'}`}>
-        <div style={{ width: '40px', height: '40px', backgroundColor: value === b.url ? '#7c3aed' : '#94a3b8', WebkitMaskImage: `url("${b.url}")`, WebkitMaskSize: 'contain', WebkitMaskRepeat: 'no-repeat', maskImage: `url("${b.url}")`, maskSize: 'contain', maskRepeat: 'no-repeat' }} />
-        <span className={`text-[9px] font-bold ${value === b.url ? 'text-violet-700' : 'text-slate-500'}`}>{b.name}</span>
-      </button>
-    ))}
-  </div>
-);
-
-export const GiphySearch = ({ onSelect, placeholder = "Buscar GIF..." }) => {
-  const [term, setTerm] = useState("fiesta");
-  const [debouncedTerm, setDebouncedTerm] = useState("fiesta");
-  useEffect(() => { const t = setTimeout(() => setDebouncedTerm(term), 600); return () => clearTimeout(t); }, [term]);
-  const fetchGifs = (offset) => gf.search(debouncedTerm || "party", { offset, limit: 10, lang: 'es' });
-  return (
-    <div className="bg-slate-100 p-3 rounded-2xl border border-slate-200 mt-2 mb-4">
-      <div className="relative mb-3"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} /><input value={term} onChange={(e) => setTerm(e.target.value)} placeholder={placeholder} className="w-full pl-9 pr-4 py-2.5 rounded-xl text-xs border border-slate-200 focus:border-violet-400 outline-none shadow-sm" /></div>
-      <div className="h-48 overflow-y-auto rounded-xl bg-white border border-slate-100 relative z-50 fd-sb"><Grid width={300} columns={2} fetchGifs={fetchGifs} key={debouncedTerm} onGifClick={(gif, e) => { e.preventDefault(); onSelect(gif.images.original.url); }} /></div>
-    </div>
-  );
+export const PARTICLE_CATEGORIES = {
+  "Clásicos": [
+    { id: "none", name: "Ninguno", icon: "🚫" },
+    { id: "confetti-multi", name: "Confeti Multicolor", icon: "🎉" },
+    { id: "confetti-gold", name: "Confeti Dorado", icon: "✨" },
+    { id: "confetti-silver", name: "Confeti Plateado", icon: "💿" },
+    { id: "balloons", name: "Globos Subiendo", icon: "🎈" },
+  ],
+  "Estrellas y Magia": [
+    { id: "meteor-shower", name: "Lluvia de Estrellas", icon: "🌠" },
+    { id: "stars-gold", name: "Estrellas Doradas", icon: "⭐" },
+    { id: "stars-silver", name: "Estrellas Plateadas", icon: "✨" },
+    { id: "galaxy-dust", name: "Polvo Galáctico", icon: "🌌" },
+    { id: "fairy-dust", name: "Polvo de Hadas", icon: "🧚" },
+    { id: "glowing-orbs", name: "Orbes Luminosos", icon: "🔮" }
+  ],
+  "Romance": [
+    { id: "hearts-red", name: "Corazones Rojos", icon: "❤️" },
+    { id: "hearts-pink", name: "Corazones Rosas", icon: "💖" },
+    { id: "hearts-white", name: "Corazones Blancos", icon: "🤍" },
+    { id: "rose-petals", name: "Pétalos de Rosa", icon: "🌹" },
+    { id: "floating-kisses", name: "Besos", icon: "💋" }
+  ],
+  "Naturaleza": [
+    { id: "snowflakes", name: "Nevada Suave", icon: "❄️" },
+    { id: "snow-blizzard", name: "Tormenta de Nieve", icon: "🌨️" },
+    { id: "sakura", name: "Pétalos de Cerezo", icon: "🌸" },
+    { id: "autumn-leaves", name: "Hojas de Otoño", icon: "🍂" },
+    { id: "fireflies", name: "Luciérnagas", icon: "✨" },
+    { id: "butterflies", name: "Mariposas Flotantes", icon: "🦋" },
+    { id: "rain", name: "Lluvia Ligera", icon: "🌧️" }
+  ],
+  "Luces y Formas": [
+    { id: "glitter-gold", name: "Brillos Dorados", icon: "✨" },
+    { id: "glitter-color", name: "Brillos Multicolor", icon: "🌈" },
+    { id: "bokeh", name: "Luces Bokeh", icon: "🚥" },
+    { id: "bubbles", name: "Burbujas Flotantes", icon: "🫧" },
+    { id: "bubbles-color", name: "Burbujas de Colores", icon: "🔴" },
+    { id: "floating-diamonds", name: "Diamantes Flotantes", icon: "💎" }
+  ],
+  "Fiesta Temática": [
+    { id: "emojis-party", name: "Mix Emojis Fiesta", icon: "🥳" },
+    { id: "emojis-love", name: "Mix Emojis Amor", icon: "😍" },
+    { id: "emojis-music", name: "Mix Emojis Música", icon: "🎵" },
+    { id: "streamers", name: "Serpentinas", icon: "🎊" }
+  ],
+  "Lotties Premium": [
+    { id: 'lottie_confeti', name: 'Confeti Pop', icon: '🎉', isLottie: true, url: 'https://lottie.host/0c7f0ad6-f5e9-4473-b606-8fe2ed1d10b1/QvafqoK8yh.lottie' },
+    { id: 'lottie_estrellas', name: 'Estrellas', icon: '🌟', isLottie: true, url: 'https://lottie.host/d9fafde0-2c87-4458-a716-f68341282a91/prNFp1cX0s.lottie' },
+    { id: 'lottie_nieve', name: 'Nieve/Polvo', icon: '❄️', isLottie: true, url: 'https://lottie.host/dc379347-ce11-49b0-8230-615f4eead16f/Ke19rkdxp8.lottie' },
+    { id: 'lottie_luces', name: 'Luces Cálidas', icon: '💡', isLottie: true, url: 'https://lottie.host/e3f319e3-fdc2-46ae-b485-69741b5b5c46/eeMH3uzxKU.lottie' }
+  ]
 };
 
-export const Inp = ({ label, value, onChange, placeholder, type="text", multiline = false, className="", icon: Icon = null, tooltip = null }) => {
-  const [localVal, setLocalVal] = useState(value || "");
-  useEffect(() => { setLocalVal(value || ""); }, [value]);
-  useEffect(() => { const timeout = setTimeout(() => { if (localVal !== (value || "")) onChange(localVal); }, 300); return () => clearTimeout(timeout); }, [localVal, onChange, value]);
-  return (
-    <div className={`mb-2 text-left ${className}`}>
-      {label && (
-        <label className="flex items-center text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
-          {label}
-          {tooltip && <Tooltip text={tooltip} />}
-        </label>
-      )}
-      <div className="relative flex items-center">{Icon && <div className="absolute left-4 text-slate-400"><Icon size={16}/></div>}{multiline ? (<textarea value={localVal} onChange={e => setLocalVal(e.target.value)} placeholder={placeholder} rows={3} className={`w-full py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm resize-none focus:bg-white focus:border-violet-400 outline-none transition-all ${Icon ? 'pl-11 pr-4' : 'px-4'}`} />) : (<input type={type} value={localVal} onChange={e => setLocalVal(e.target.value)} placeholder={placeholder} className={`w-full py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all ${Icon ? 'pl-11 pr-4' : 'px-4'}`} />)}</div>
-    </div>
-  );
+export const ANIMATION_CATEGORIES = {
+  infantil: [ { id: 'mickey', emoji: '🕷️', name: 'Superhéroe' }, { id: 'minnie', emoji: '🎀', name: 'Princesa' }, { id: 'cars', emoji: '🚗', name: 'Autos' } ],
+  quince: [ { id: 'crown', emoji: '👑', name: 'Corona' }, { id: 'butterfly', emoji: '🦋', name: 'Mariposa' }, { id: 'stars', emoji: '✨', name: 'Brillos' } ],
+  bodas: [ { id: 'rings', emoji: '💍', name: 'Anillos' }, { id: 'dove', emoji: '🕊️', name: 'Paloma' }, { id: 'flower', emoji: '🌸', name: 'Flor' } ],
+  general: [ { id: 'envelope', emoji: '✉️', name: 'Sobre Mágico' }, { id: 'balloon', emoji: '🎈', name: 'Globo' }, { id: 'cake', emoji: '🎂', name: 'Torta' } ]
 };
 
-export const MiniInp = ({ value, onChange, placeholder, className, type="text" }) => {
-  const [localVal, setLocalVal] = useState(value || "");
-  useEffect(() => { setLocalVal(value || ""); }, [value]);
-  useEffect(() => { const timeout = setTimeout(() => { if (localVal !== (value || "")) onChange(localVal); }, 300); return () => clearTimeout(timeout); }, [localVal, onChange, value]);
-  return <input type={type} className={className} value={localVal} onChange={e => setLocalVal(e.target.value)} placeholder={placeholder} />;
+export const TRANSITION_OPTS = [
+  { label: "Desvanecer (Fade)", value: "fade" },
+  { label: "Subir (Slide Up)", value: "slideUp" },
+  { label: "Zoom (Scale)", value: "zoom" }
+];
+
+export const getYouTubeId = (url) => {
+  if (!url) return null;
+  const regExp = /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
 };
 
-export const SelectInp = ({ label, value, onChange, options, className="", tooltip = null }) => (
-  <div className={`mb-2 text-left ${className}`}>
-    {label && (
-      <label className="flex items-center text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
-        {label}
-        {tooltip && <Tooltip text={tooltip} />}
-      </label>
-    )}
-    <select value={value || ""} onChange={e => onChange(e.target.value)} className="w-full px-4 py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all cursor-pointer">
-      {options.map((opt, i) => <option key={i} value={opt.value}>{opt.label}</option>)}
-    </select>
-  </div>
-);
-
-// 👉 FIX Z-INDEX: Agregamos focus-within y hover z-[9999] para que no se superponga
-export const TypoControl = ({ label, fontVal, onFont, colorVal, onColor, sizeVal, onSize, minSize=10, maxSize=80, tooltip = null }) => (
-  <div className="bg-gray-50/70 p-3 rounded-xl border border-gray-100 shadow-sm mb-5 relative overflow-visible z-[10] hover:z-[9999] focus-within:z-[9999]">
-    <div className="absolute left-0 top-0 bottom-0 w-1 bg-violet-200 rounded-l-xl" />
-    <label className="flex justify-between items-center text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 pl-2">
-      <span className="flex items-center">{label} {tooltip && <Tooltip text={tooltip} />}</span>
-      {sizeVal && <span className="text-violet-500 bg-violet-100 px-2 py-0.5 rounded-full">{sizeVal}px</span>}
-    </label>
-    <div className="flex gap-2 pl-2 items-start">{onFont && <div className="flex-1"><FontSelector value={fontVal} onChange={onFont} /></div>}{onColor && <div className="shrink-0"><input type="color" value={colorVal} onChange={e => onColor(e.target.value)} className="w-10 h-11 rounded-lg cursor-pointer border border-gray-200 p-0 shadow-sm bg-white" /></div>}</div>
-    {onSize && (<div className="mt-4 pl-2"><input type="range" min={minSize} max={maxSize} value={sizeVal} onChange={e => onSize(Number(e.target.value))} className="w-full accent-violet-600 cursor-pointer" /></div>)}
-  </div>
-);
-
-export const FileUpload = ({ label, onChange, value, tooltip = null }) => {
-  const [uploading, setUploading] = useState(false);
-  const handleFile = async (e) => {
-    const file = e.target.files[0]; if (!file) return;
-    setUploading(true); const formData = new FormData(); formData.append("image", file);
-    try { const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: "POST", body: formData }); const data = await res.json(); if (data.success) onChange(data.data.url); } catch (err) { } 
-    finally { setUploading(false); }
-  };
-  return (
-    <div className="mb-4 text-left relative">
-      {label && (
-        <label className="flex items-center text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
-          {label}
-          {tooltip && <Tooltip text={tooltip} />}
-        </label>
-      )}
-      <div className="relative"><label className={`flex items-center justify-center w-full py-3 px-4 rounded-xl text-xs font-bold border transition-all cursor-pointer ${uploading ? 'bg-violet-100 border-violet-200 text-violet-400 cursor-not-allowed' : 'bg-white border-violet-200 text-violet-600 hover:bg-violet-50 hover:border-violet-300 shadow-sm'}`}><span className="flex items-center gap-2">{uploading ? <><Loader2 size={14} className="animate-spin" /> Subiendo...</> : <><ImageIcon size={16}/> Subir PNG/JPG</>}</span><input type="file" accept="image/*" onChange={handleFile} disabled={uploading} className="hidden" /></label></div>
-      {value && !uploading && (<div className="relative mt-3 group w-fit"><img src={value} alt="preview" className="h-20 w-auto object-cover rounded-xl border border-gray-200 shadow-sm" /><button type="button" onClick={() => onChange("")} className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg cursor-pointer"><Trash2 size={12} /></button></div>)}
-    </div>
-  );
+export const getSpotifyEmbed = (url) => {
+  if (!url) return null;
+  if (url.includes('spotify.link')) return null;
+  return url.replace('https://open.spotify.com/', 'https://open.spotify.com/embed/');
 };
 
-export const Toggle = ({ checked, onChange }) => (
-  <label className="relative w-11 h-6 flex-shrink-0 cursor-pointer inline-block"><input type="checkbox" className="sr-only peer" checked={checked || false} onChange={e => onChange(e.target.checked)} /><div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div></label>
-);
-
-// 👉 FIX Z-INDEX: Agregamos focus-within y hover para que los acordeones salten al frente
-export const Acc = ({ title, icon: Icon, children, defaultOpen = false, iconColor = "#7c3aed" }) => {
-  const [open, setOpen] = useState(defaultOpen); const [fullyOpen, setFullyOpen] = useState(defaultOpen);
-  useEffect(() => { let t; if (open) t = setTimeout(() => setFullyOpen(true), 300); else setFullyOpen(false); return () => clearTimeout(t); }, [open]);
-  return (
-    <div className={`mb-3 rounded-2xl border border-gray-100 bg-white shadow-sm relative transition-all ${open ? 'z-40' : 'z-10'} hover:z-50 focus-within:z-50`}><button onClick={() => setOpen(!open)} type="button" className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors text-left cursor-pointer"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${iconColor}15` }}><Icon size={18} style={{ color: iconColor }} /></div><span className="font-bold text-slate-800 text-sm">{title}</span></div><ChevronDown size={18} className={`text-slate-300 transition-transform ${open ? 'rotate-180' : ''}`} /></button><div className={`transition-all duration-300 ease-in-out overflow-visible`} style={{ maxHeight: open ? '5000px' : '0', opacity: open ? 1 : 0 }}><div className="p-4 pt-0 border-t border-gray-50">{children}</div></div></div>
-  );
+export const formatToDDMMYYYY = (dateString) => {
+  if (!dateString) return '';
+  const [year, month, day] = dateString.split('-');
+  return `${day}/${month}/${year}`;
 };
+
+// GALERÍA DE BORDES RENOMBRADOS Y SIN EL 5
+export const BORDERS = [
+  { id: 'b1', name: 'Love', url: '/borders/1-Photoroom.png' },
+  { id: 'b2', name: 'Único', url: '/borders/2-Photoroom.png' },
+  { id: 'b3', name: 'Cyrax', url: '/borders/3-Photoroom.png' },
+  { id: 'b4', name: 'Destellos', url: '/borders/4-Photoroom.png' },
+  { id: 'b6', name: 'Elegancia', url: '/borders/6-Photoroom.png' },
+  { id: 'b7', name: 'Vintage', url: '/borders/7-Photoroom.png' },
+  { id: 'b8', name: 'Minimal', url: '/borders/8-Photoroom.png' },
+  { id: 'b9', name: 'Curvas', url: '/borders/9-Photoroom.png' },
+  { id: 'b10', name: 'Tribal', url: '/borders/10-Photoroom.png' },
+  { id: 'b11', name: 'Floral', url: '/borders/11-Photoroom.png' },
+  { id: 'b12', name: 'Abstracto', url: '/borders/12-Photoroom.png' },
+  { id: 'b13', name: 'Real', url: '/borders/13-Photoroom.png' },
+  { id: 'b14', name: 'Magia', url: '/borders/14-Photoroom.png' },
+  { id: 'b15', name: 'Gala', url: '/borders/15-Photoroom.png' },
+  { id: 'b16', name: 'Fiesta', url: '/borders/16-Photoroom.png' },
+];
