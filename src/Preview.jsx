@@ -9,13 +9,11 @@ import { InstagramIcon, FacebookIcon, TiktokIcon, RenderSymbol, Countdown, Galle
 
 const IMGBB_API_KEY = "904f81caf05efe58a799abdb1fedc2ce";
 
-// 👇 ACÁ ESTÁ EL COMPONENTE NUEVO PARA AGENDAR EN CALENDARIO
 const AddToCalendarButton = ({ cfg, primary, cardC }) => {
   const titulo = `Fiesta de ${cfg?.honoreeName || 'DeFiesta'}`;
   const direccion = `${cfg?.locationName || ''} - ${cfg?.locationAddress || ''}`.trim() || 'Dirección del salón';
   const detalles = `¡Te espero para festejar juntos! Mirá la invitación completa acá: ${window.location.href}`;
   
-  // Formateamos las fechas de YYYY-MM-DD a YYYYMMDD y de HH:MM a HHMM00
   const fechaClean = cfg?.dateText ? cfg.dateText.replace(/-/g, '') : '20260516';
   const horaClean = cfg?.timeText ? cfg.timeText.replace(/:/g, '') + '00' : '210000';
   
@@ -59,13 +57,17 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
   const hexAlpha = Math.floor((glowValue / 100) * 255).toString(16).padStart(2, '0');
   const dynamicShadow = glowValue === 0 ? 'none' : `${cfg.shadow || '0 8px 30px rgba(0,0,0,0.05)'}, 0 0 ${glowValue}px ${primary}${hexAlpha}`;
 
+  // 👉 OPTIMIZACIÓN EXTREMA DEL VIDRIO (GPU + Menos Blur)
   const glassContainerStyle = {
     background: cardC,
     boxShadow: dynamicShadow,
     border: cfg.border ? `1px solid ${cfg.border}` : `1px solid ${primary}22`,
-    backdropFilter: glowValue === 0 ? 'none' : 'blur(16px)',
-    WebkitBackdropFilter: glowValue === 0 ? 'none' : 'blur(16px)'
+    backdropFilter: glowValue === 0 ? 'none' : 'blur(8px)',
+    WebkitBackdropFilter: glowValue === 0 ? 'none' : 'blur(8px)',
+    transform: 'translateZ(0)',
+    willChange: 'transform'
   };
+  
   const shineOverlay = cfg.shine && glowValue !== 0 ? <div className="absolute inset-0 pointer-events-none rounded-[inherit]" style={{ background: cfg.shine }}></div> : null;
 
   let isLottieEffect = false;
@@ -156,7 +158,8 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
       )}
 
       <div className="relative h-[450px] overflow-hidden shrink-0 rounded-b-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)]">
-        <img src={cfg.coverPhoto || DEF_CONFIG.coverPhoto} className="absolute inset-0 w-full h-full object-cover z-0" alt="" />
+        {/* La portada NO lleva lazy porque es lo primero que se ve */}
+        <img src={cfg.coverPhoto || DEF_CONFIG.coverPhoto} className="absolute inset-0 w-full h-full object-cover z-0" decoding="async" alt="" />
         <div className="absolute inset-0 z-10" style={{ background: `linear-gradient(to top, ${cfg.bg1} 5%, rgba(0,0,0,${gradOpacity}) 60%, transparent 100%)` }} />
         {!cfg.particlesFullscreen && <ParticleLayer />}
 
@@ -194,7 +197,8 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
 
         {cfg.showBanner && (
           <div className="relative h-48 rounded-[2rem] overflow-hidden border shadow-lg" style={{ borderColor: cfg.border || `${primary}44` }}>
-            <img src={cfg.bannerPhoto || DEF_CONFIG.bannerPhoto} className="w-full h-full object-cover" alt="Banner" />
+            {/* 👉 Optimizado: lazy + async */}
+            <img src={cfg.bannerPhoto || DEF_CONFIG.bannerPhoto} className="w-full h-full object-cover" loading="lazy" decoding="async" alt="Banner" />
             <div className="absolute inset-0 bg-black/40" />
             <div className="absolute top-4 left-4 px-4 py-1.5 bg-black/40 backdrop-blur-md border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest text-white shadow-md">{cfg.bannerTitle}</div>
           </div>
@@ -203,7 +207,6 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
         {cfg.showDate && <InfoCard icon={Calendar} label="¿Cuándo?" value={formatToDDMMYYYY(cfg.dateText)} fontSize={cfg.dateSize ?? 18} primary={primary} textC={textC} mutedC={mutedC} cardC={cardC} cfg={cfg} glassStyle={glassContainerStyle} shineOverlay={shineOverlay} />}
         {cfg.showTime && <InfoCard icon={Clock} label="Horario" value={cfg.timeText} fontSize={cfg.dateSize ?? 18} primary={primary} textC={textC} mutedC={mutedC} cardC={cardC} cfg={cfg} glassStyle={glassContainerStyle} shineOverlay={shineOverlay} />}
         
-        {/* 👇 ACÁ LLAMAMOS AL BOTÓN NUEVO SI HAY FECHA U HORA */}
         {(cfg.showDate || cfg.showTime) && (
            <AddToCalendarButton cfg={cfg} primary={primary} cardC={cardC} />
         )}
@@ -232,7 +235,8 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
           <div className="pt-4">
             <div className="p-6 rounded-[2rem] text-center relative overflow-hidden flex flex-col items-center" style={glassContainerStyle}>
               {shineOverlay}
-              {cfg.venueLogoUrl && <img src={cfg.venueLogoUrl} className="h-16 w-auto object-contain mb-4 relative z-10 drop-shadow-md" alt="Lugar" />}
+              {/* 👉 Optimizado: lazy + async */}
+              {cfg.venueLogoUrl && <img src={cfg.venueLogoUrl} loading="lazy" decoding="async" className="h-16 w-auto object-contain mb-4 relative z-10 drop-shadow-md" alt="Lugar" />}
               <p className="text-[9px] uppercase font-black tracking-widest mb-1 opacity-80 relative z-10" style={{ color: mutedC }}>Celebrado en</p>
               <h3 className="font-black text-xl mb-5 relative z-10" style={{ color: textC, fontFamily: cfg.fontBody }}>{cfg.venueName}</h3>
               {cfg.venueLink && (
@@ -250,7 +254,8 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
             <div className="rounded-[2rem] overflow-hidden border shadow-lg relative p-2" style={glassContainerStyle}>
               {shineOverlay}
               <div className="rounded-[1.5rem] overflow-hidden relative z-10" style={{ paddingTop: '56.25%' }}>
-                <iframe className="absolute inset-0 w-full h-full" src={`https://www.youtube.com/embed/${getYouTubeId(cfg.videoUrl)}`} title="YouTube" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen></iframe>
+                {/* 👉 Optimizado: lazy load YouTube */}
+                <iframe className="absolute inset-0 w-full h-full" src={`https://www.youtube.com/embed/${getYouTubeId(cfg.videoUrl)}`} title="YouTube" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen loading="lazy"></iframe>
               </div>
             </div>
           </div>
@@ -261,6 +266,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
             <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={cfg.fontBody}>Música para entrar en clima</SectionTitle>
             <div className="rounded-[2rem] p-2 relative overflow-hidden shadow-lg" style={glassContainerStyle}>
               {shineOverlay}
+              {/* 👉 Optimizado: lazy load Spotify */}
               <iframe className="relative z-10 rounded-[1.5rem]" src={getSpotifyEmbed(cfg.spotifyUrl)} width="100%" height="152" frameBorder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
             </div>
           </div>
@@ -339,7 +345,8 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
                        <div className="grid grid-cols-2 gap-2 mt-6">
                          {livePhotos.map((url, i) => (
                            <div key={i} className="aspect-square rounded-2xl overflow-hidden shadow-sm border border-white/10 relative group">
-                             <img src={url} alt={`Foto ${i}`} className="w-full h-full object-cover" />
+                             {/* 👉 Optimizado: lazy + async para no trabar scroll */}
+                             <img src={url} alt={`Foto ${i}`} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                              <a href={url} download target="_blank" rel="noreferrer" className="absolute bottom-2 right-2 p-2 bg-black/50 text-white rounded-xl backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity">
                                <Download size={14} />
                              </a>
@@ -415,7 +422,8 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
             <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={cfg.fontBody}>{cfg.galleryTitle}</SectionTitle>
             {cfg.galleryLayout === 'grid' ? (
               <div className="grid grid-cols-2 gap-3">
-                {cfg.galleryPhotos.map((p, i) => p && <div key={i} className="rounded-3xl p-1 relative overflow-hidden" style={glassContainerStyle}>{shineOverlay}<img src={p} className="w-full h-48 rounded-[1.2rem] object-cover relative z-10" alt={`Galeria ${i}`} /></div>)}
+                {/* 👉 Optimizado: lazy + async en la grilla */}
+                {cfg.galleryPhotos.map((p, i) => p && <div key={i} className="rounded-3xl p-1 relative overflow-hidden" style={glassContainerStyle}>{shineOverlay}<img src={p} loading="lazy" decoding="async" className="w-full h-48 rounded-[1.2rem] object-cover relative z-10" alt={`Galeria ${i}`} /></div>)}
               </div>
             ) : (
               <GalleryCarousel photos={cfg.galleryPhotos} />
