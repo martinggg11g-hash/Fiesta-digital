@@ -58,10 +58,9 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
   const dynamicShadow = glowValue === 0 ? 'none' : `${cfg.shadow || '0 8px 30px rgba(0,0,0,0.05)'}, 0 0 ${glowValue}px ${primary}${hexAlpha}`;
 
   const glassContainerStyle = {
-    background: cardC, 
+    background: cardC, // Con que este color tenga algo de transparencia, ya queda premium.
     boxShadow: dynamicShadow,
     border: cfg.border ? `1px solid ${cfg.border}` : `1px solid ${primary}22`,
-    // 👇 APAGAMOS EL VIDRIO PARA HACER LA PRUEBA DE FLUIDEZ
     backdropFilter: 'none',
     WebkitBackdropFilter: 'none'
   };
