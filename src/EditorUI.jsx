@@ -298,11 +298,44 @@ export const Toggle = ({ checked, onChange }) => (
   <label className="relative w-11 h-6 flex-shrink-0 cursor-pointer inline-block"><input type="checkbox" className="sr-only peer" checked={checked || false} onChange={e => onChange(e.target.checked)} /><div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div></label>
 );
 
-// 👉 FIX Z-INDEX: Agregamos focus-within y hover para que los acordeones salten al frente
+// 👉 FIX CLICS FANTASMAS: Agregamos pointerEvents y controlamos el overflow dinámicamente
 export const Acc = ({ title, icon: Icon, children, defaultOpen = false, iconColor = "#7c3aed" }) => {
-  const [open, setOpen] = useState(defaultOpen); const [fullyOpen, setFullyOpen] = useState(defaultOpen);
-  useEffect(() => { let t; if (open) t = setTimeout(() => setFullyOpen(true), 300); else setFullyOpen(false); return () => clearTimeout(t); }, [open]);
+  const [open, setOpen] = useState(defaultOpen); 
+  const [fullyOpen, setFullyOpen] = useState(defaultOpen);
+  
+  useEffect(() => { 
+    let t; 
+    if (open) {
+      t = setTimeout(() => setFullyOpen(true), 300); 
+    } else {
+      setFullyOpen(false); 
+    }
+    return () => clearTimeout(t); 
+  }, [open]);
+
   return (
-    <div className={`mb-3 rounded-2xl border border-gray-100 bg-white shadow-sm relative transition-all ${open ? 'z-40' : 'z-10'} hover:z-50 focus-within:z-50`}><button onClick={() => setOpen(!open)} type="button" className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors text-left cursor-pointer"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${iconColor}15` }}><Icon size={18} style={{ color: iconColor }} /></div><span className="font-bold text-slate-800 text-sm">{title}</span></div><ChevronDown size={18} className={`text-slate-300 transition-transform ${open ? 'rotate-180' : ''}`} /></button><div className={`transition-all duration-300 ease-in-out overflow-visible`} style={{ maxHeight: open ? '5000px' : '0', opacity: open ? 1 : 0 }}><div className="p-4 pt-0 border-t border-gray-50">{children}</div></div></div>
+    <div className={`mb-3 rounded-2xl border border-gray-100 bg-white shadow-sm relative transition-all ${open ? 'z-40' : 'z-10'} hover:z-50 focus-within:z-50`}>
+      <button onClick={() => setOpen(!open)} type="button" className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors text-left cursor-pointer">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${iconColor}15` }}>
+            <Icon size={18} style={{ color: iconColor }} />
+          </div>
+          <span className="font-bold text-slate-800 text-sm">{title}</span>
+        </div>
+        <ChevronDown size={18} className={`text-slate-300 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      <div 
+        className={`transition-all duration-300 ease-in-out ${fullyOpen ? 'overflow-visible' : 'overflow-hidden'}`} 
+        style={{ 
+          maxHeight: open ? '5000px' : '0', 
+          opacity: open ? 1 : 0,
+          pointerEvents: open ? 'auto' : 'none' // <-- Esto mata al escudo fantasma
+        }}
+      >
+        <div className="p-4 pt-0 border-t border-gray-50">
+          {children}
+        </div>
+      </div>
+    </div>
   );
 };
