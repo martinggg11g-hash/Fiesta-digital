@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { OpeningAnimation, LottieOverlay } from "./Lotties"; 
-import { Calendar, Clock, Download, ExternalLink, Loader2, Camera, Lock, CheckCircle2, MapPin } from "lucide-react";
+import { Calendar, Clock, MapPin, Loader2, Camera, Lock, CheckCircle2, Download, ExternalLink } from "lucide-react";
 import { DEF_CONFIG, getSpotifyEmbed, getYouTubeId, formatToDDMMYYYY, PARTICLE_CATEGORIES } from "./config";
 
 // 👉 IMPORTAMOS DESDE LOS NUEVOS ARCHIVOS DIVIDIDOS
