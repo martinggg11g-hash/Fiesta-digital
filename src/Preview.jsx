@@ -36,7 +36,7 @@ const AddToCalendarButton = ({ cfg, primary, cardC }) => {
   };
 
   return (
-    <button type="button" onClick={handleCalendarRedirect} className="w-full py-4 mt-1 rounded-[1.5rem] font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg cursor-pointer" style={{ background: cfg.accent || primary, color: cardC === '#000000' ? '#000' : '#fff' }}>
+    <button type="button" onClick={handleCalendarRedirect} className="w-full py-4 mt-1 rounded-[1.5rem] font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95 cursor-pointer relative overflow-hidden" style={{ background: cfg.accent || primary, color: cardC === '#000000' ? '#000' : '#fff' }}>
       <Calendar size={18} /> Agendar Evento
     </button>
   );
@@ -57,7 +57,6 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
   const hexAlpha = Math.floor((glowValue / 100) * 255).toString(16).padStart(2, '0');
   const dynamicShadow = glowValue === 0 ? 'none' : `${cfg.shadow || '0 8px 30px rgba(0,0,0,0.05)'}, 0 0 ${glowValue}px ${primary}${hexAlpha}`;
 
-  // 👉 TARJETAS ESTÁNDAR: Súper limpias de código experimental para máxima fluidez nativa
   const glassContainerStyle = {
     background: cardC,
     boxShadow: dynamicShadow,
@@ -82,16 +81,12 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
     }
   }
 
-  // 👉 AQUÍ ESTÁ EL MILAGRO: Aislamos el fondo pesado en su propia capa de GPU 
-  // usando translate3d y willChange para que no tape ni rompa el scroll de las tarjetas superiores
+  // 👉 EL CAMBIO CLAVE: Bajamos las partículas a z-10 para dejarlas de tapiz de fondo.
+  // Esto libera el hilos de renderizado de las tarjetas de arriba y elimina el efecto fantasma.
   const ParticleLayer = () => (
     <div 
-      className={`${cfg.particlesFullscreen ? 'fixed' : 'absolute'} inset-0 pointer-events-none ${cfg.particlesFullscreen ? 'z-[100]' : 'z-20'} overflow-hidden flex items-start justify-center transition-opacity duration-200`} 
-      style={{ 
-        opacity: (cfg.effectOpacity ?? 100) / 100,
-        transform: 'translate3d(0,0,0)',
-        willChange: 'transform'
-      }}
+      className={`${cfg.particlesFullscreen ? 'fixed' : 'absolute'} inset-0 pointer-events-none ${cfg.particlesFullscreen ? 'z-10' : 'z-20'} overflow-hidden flex items-start justify-center transition-opacity duration-200`} 
+      style={{ opacity: (cfg.effectOpacity ?? 100) / 100 }}
     >
        {isLottieEffect ? <LottieOverlay url={lottieUrl} /> : <ParticleCanvas effect={cfg.particleEffect || "none"} primary={primary} />}
     </div>
@@ -192,6 +187,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
         </div>
       </div>
 
+      {/* El contenedor de tarjetas tiene z-30, quedando perfectamente arriba del z-10 del fondo */}
       <div className="px-5 -mt-8 relative z-30 space-y-5 flex-1">
         
         {cfg.showCountdown && cfg.countdownDate && (
