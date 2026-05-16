@@ -9,6 +9,41 @@ import { InstagramIcon, FacebookIcon, TiktokIcon, RenderSymbol, Countdown, Galle
 
 const IMGBB_API_KEY = "904f81caf05efe58a799abdb1fedc2ce";
 
+// 👇 ACÁ ESTÁ EL COMPONENTE NUEVO PARA AGENDAR EN CALENDARIO
+const AddToCalendarButton = ({ cfg, primary, cardC }) => {
+  const titulo = `Fiesta de ${cfg?.honoreeName || 'DeFiesta'}`;
+  const direccion = `${cfg?.locationName || ''} - ${cfg?.locationAddress || ''}`.trim() || 'Dirección del salón';
+  const detalles = `¡Te espero para festejar juntos! Mirá la invitación completa acá: ${window.location.href}`;
+  
+  // Formateamos las fechas de YYYY-MM-DD a YYYYMMDD y de HH:MM a HHMM00
+  const fechaClean = cfg?.dateText ? cfg.dateText.replace(/-/g, '') : '20260516';
+  const horaClean = cfg?.timeText ? cfg.timeText.replace(/:/g, '') + '00' : '210000';
+  
+  const startDateTime = `${fechaClean}T${horaClean}`;
+  const endDateTime = `${fechaClean}T235900`;
+
+  const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(titulo)}&dates=${startDateTime}/${endDateTime}&details=${encodeURIComponent(detalles)}&location=${encodeURIComponent(direccion)}`;
+
+  const icsContent = ['BEGIN:VCALENDAR','VERSION:2.0','BEGIN:VEVENT',`DTSTART:${startDateTime}`,`DTEND:${endDateTime}`,`SUMMARY:${titulo}`,`DESCRIPTION:${detalles}`,`LOCATION:${direccion}`,'END:VEVENT','END:VCALENDAR'].join('\n');
+  const appleCalendarUrl = `data:text/calendar;charset=utf-8,${encodeURIComponent(icsContent)}`;
+
+  const handleCalendarRedirect = () => {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (isIOS) {
+      const link = document.createElement('a'); link.href = appleCalendarUrl; link.download = 'evento.ics';
+      document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    } else {
+      window.open(googleCalendarUrl, '_blank');
+    }
+  };
+
+  return (
+    <button type="button" onClick={handleCalendarRedirect} className="w-full py-4 mt-1 rounded-[1.5rem] font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95 cursor-pointer relative overflow-hidden" style={{ background: cfg.accent || primary, color: cardC === '#000000' ? '#000' : '#fff' }}>
+      <Calendar size={18} /> Agendar Evento
+    </button>
+  );
+};
+
 export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, internalData, onUploadLivePhoto }) => {
   if (!cfg) return null;
   const primary = cfg.primary || "#8b5cf6";
@@ -168,6 +203,11 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
         {cfg.showDate && <InfoCard icon={Calendar} label="¿Cuándo?" value={formatToDDMMYYYY(cfg.dateText)} fontSize={cfg.dateSize ?? 18} primary={primary} textC={textC} mutedC={mutedC} cardC={cardC} cfg={cfg} glassStyle={glassContainerStyle} shineOverlay={shineOverlay} />}
         {cfg.showTime && <InfoCard icon={Clock} label="Horario" value={cfg.timeText} fontSize={cfg.dateSize ?? 18} primary={primary} textC={textC} mutedC={mutedC} cardC={cardC} cfg={cfg} glassStyle={glassContainerStyle} shineOverlay={shineOverlay} />}
         
+        {/* 👇 ACÁ LLAMAMOS AL BOTÓN NUEVO SI HAY FECHA U HORA */}
+        {(cfg.showDate || cfg.showTime) && (
+           <AddToCalendarButton cfg={cfg} primary={primary} cardC={cardC} />
+        )}
+
         {cfg.showLocation && (
           <div className="rounded-[2rem] overflow-hidden relative" style={glassContainerStyle}>
             {shineOverlay}
