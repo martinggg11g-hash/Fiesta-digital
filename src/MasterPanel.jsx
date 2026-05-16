@@ -21,14 +21,13 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
   const [masterAlertMsg, setMasterAlertMsg] = useState("");
   const [masterAlertActive, setMasterAlertActive] = useState(false);
   
-  // 👉 EL ESCUDO ANTI-RADAR: Solo cargamos la alerta la primera vez que entra
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   useEffect(() => {
     if (isInitialLoad && globalAlert) {
       setMasterAlertMsg(globalAlert.mensaje || "");
       setMasterAlertActive(globalAlert.activo || false);
-      setIsInitialLoad(false); // Apagamos el escudo, ya no se sobreescribe más
+      setIsInitialLoad(false); 
     }
   }, [globalAlert, isInitialLoad]);
 
@@ -43,6 +42,7 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
   const [fPayDate, setFPayDate] = useState("");
   const [fAlert, setFAlert] = useState(false);
   const [fClabe, setFClabe] = useState(""); 
+  const [fTitular, setFTitular] = useState(""); // 👉 ESTADO DEL TITULAR
   const [fIsFree, setFIsFree] = useState(false);
   const [fIsDemo, setFIsDemo] = useState(false);
   const [chatInput, setChatInput] = useState("");
@@ -57,8 +57,8 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
     }
   }, [modalMode, activeSalonChat?.support_chat]);
 
-  const openCreateModal = () => { setModalMode("create"); setFName(""); setFEmail(""); setFPhone(""); setFPass(""); setFAddress(""); setFPayDate(""); setFAlert(false); setFClabe(""); setFIsFree(false); setFIsDemo(false); setShowModal(true); };
-  const openEditModal = (salon) => { setModalMode("edit"); setEditingEmail(salon.email); setFName(salon.name); setFEmail(salon.email); setFPhone(salon.phone || ""); setFAddress(salon.address || ""); setFPayDate(salon.payment_date || ""); setFAlert(salon.payment_alert || false); setFClabe(salon.payment_clabe || ""); setFIsFree(salon.is_free || false); setFIsDemo(salon.is_demo || false); setShowModal(true); };
+  const openCreateModal = () => { setModalMode("create"); setFName(""); setFEmail(""); setFPhone(""); setFPass(""); setFAddress(""); setFPayDate(""); setFAlert(false); setFClabe(""); setFTitular(""); setFIsFree(false); setFIsDemo(false); setShowModal(true); };
+  const openEditModal = (salon) => { setModalMode("edit"); setEditingEmail(salon.email); setFName(salon.name); setFEmail(salon.email); setFPhone(salon.phone || ""); setFAddress(salon.address || ""); setFPayDate(salon.payment_date || ""); setFAlert(salon.payment_alert || false); setFClabe(salon.payment_clabe || ""); setFTitular(salon.payment_titular || ""); setFIsFree(salon.is_free || false); setFIsDemo(salon.is_demo || false); setShowModal(true); };
   const openPassModal = (salon) => { setModalMode("password"); setEditingEmail(salon.email); setFPass(""); setShowModal(true); };
   
   const openSupportModal = (salon) => { setModalMode("support"); setEditingEmail(salon.email); setFName(salon.name); setChatInput(""); setShowModal(true); };
@@ -66,9 +66,9 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
   const handleSaveModal = () => {
     if (modalMode === "create") {
       if(!fName || !fEmail || !fPass) return alert("Faltan datos");
-      onCreateSalon({ name: fName, email: fEmail, pass: fPass, role: "salon", address: fAddress, phone: fPhone, payment_date: fPayDate, payment_alert: fAlert, payment_clabe: fClabe, is_free: fIsFree, is_demo: fIsDemo });
+      onCreateSalon({ name: fName, email: fEmail, pass: fPass, role: "salon", address: fAddress, phone: fPhone, payment_date: fPayDate, payment_alert: fAlert, payment_clabe: fClabe, payment_titular: fTitular, is_free: fIsFree, is_demo: fIsDemo });
     } else if (modalMode === "edit") {
-      onUpdateUser(editingEmail, { name: fName, phone: fPhone, address: fAddress, payment_date: fPayDate, payment_alert: fAlert, payment_clabe: fClabe, is_free: fIsFree, is_demo: fIsDemo });
+      onUpdateUser(editingEmail, { name: fName, phone: fPhone, address: fAddress, payment_date: fPayDate, payment_alert: fAlert, payment_clabe: fClabe, payment_titular: fTitular, is_free: fIsFree, is_demo: fIsDemo });
     } else if (modalMode === "password") {
       if(!fPass) return alert("Escribe una contraseña");
       onUpdateUser(editingEmail, { pass: fPass });
@@ -149,7 +149,6 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
                       <td className="p-5 font-black text-slate-700">{salon.payment_date ? formatDateSpanish(salon.payment_date) : '--/--/----'}</td>
                       <td className="p-5">{status}</td>
                       <td className="p-5 flex justify-end gap-2">
-                        {/* BOTÓN CHAT DE SOPORTE */}
                         <button onClick={() => openSupportModal(salon)} title="Chat de Soporte" className="relative w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center hover:bg-emerald-100 cursor-pointer transition-all shadow-sm">
                            <MessageCircle size={16}/>
                            {salon.support_chat?.length > 0 && <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white animate-pulse" />}
@@ -193,7 +192,12 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
                   
                   {!fIsFree && <Inp label="Ubicación Global (Google Maps)" value={fAddress} onChange={setFAddress} className="!mb-0" />}
 
-                  <Inp label="CLABE de Pago Asignada" placeholder="Ej: 012345678901234567" value={fClabe} onChange={setFClabe} />
+                  {/* 👉 ACÁ ESTÁ LA MAGIA VISUAL: LOS DOS CAMPOS */}
+                  <div className="grid grid-cols-1 gap-3 mt-4 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                    <Inp label="Titular de la Cuenta" placeholder="Ej: Juan Pérez" value={fTitular} onChange={setFTitular} className="!mb-0" />
+                    <Inp label="CLABE / CVU de Pago" placeholder="Ej: 012345678901234567" value={fClabe} onChange={setFClabe} className="!mb-0" />
+                  </div>
+                  
                   <div className="flex gap-4 items-center bg-slate-50 p-4 rounded-2xl border border-slate-200 mt-2">
                     <Inp label="Vencimiento Cuota" type="date" icon={CalendarClock} value={fPayDate} onChange={setFPayDate} className="flex-1 !mb-0" />
                     <div className="flex flex-col items-center justify-center shrink-0 border-l border-slate-200 pl-4">
