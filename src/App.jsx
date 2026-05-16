@@ -1,16 +1,20 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { Routes, Route, useParams, Navigate, useSearchParams } from "react-router-dom";
 import { Loader2, PartyPopper } from "lucide-react";
 
-import { EditorScreen } from "./Editor";
 import { InvitePreview } from "./Preview";
 import { DEF_CONFIG } from "./config";
 import { OpeningAnimation } from "./Lotties";
 import { supabase } from "./supabase"; 
-import LoginScreen from "./Login";
-import DashboardScreen from "./Dashboard";
-import PuertaScreen from "./Puerta";
-import { ManageScreen } from "./Manage"; 
+
+// 👉 ACÁ ESTÁ LA MAGIA DEL LAZY LOADING: 
+// Esto divide tu app en "pedacitos". Si el usuario no entra a esta ruta, este código NO se descarga.
+const LoginScreen = React.lazy(() => import("./Login"));
+const DashboardScreen = React.lazy(() => import("./Dashboard"));
+const PuertaScreen = React.lazy(() => import("./Puerta"));
+// Nota: Editor y Manage tienen "exportaciones nombradas", se importan un poquito distinto con lazy
+const EditorScreen = React.lazy(() => import("./Editor").then(module => ({ default: module.EditorScreen })));
+const ManageScreen = React.lazy(() => import("./Manage").then(module => ({ default: module.ManageScreen })));
 
 const slugify = (text) => text?.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') || 'salon';
 
@@ -35,6 +39,17 @@ const GlobalStyles = () => {
   }, []);
   return null;
 };
+
+// 👉 PANTALLA DE CARGA GLOBAL (Se usa mientras React descarga los archivos perezosos)
+const LoadingFallback = () => (
+  <div className="h-screen w-full bg-slate-950 flex flex-col items-center justify-center text-white relative overflow-hidden transition-opacity duration-1000 z-[9999]">
+     <div className="absolute inset-0 bg-[radial-gradient(#8b5cf6_1px,transparent_1px)] [background-size:20px_20px] opacity-10 animate-pulse"></div>
+     <div className="w-20 h-20 bg-violet-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-violet-600/50 mb-6 anim-pop">
+        <PartyPopper size={40} className="text-white animate-bounce" />
+     </div>
+     <h1 className="font-black text-2xl tracking-widest uppercase text-white/90">DeFiesta<span className="text-violet-400">.lat</span></h1>
+  </div>
+);
 
 // 👉 PANTALLA INVITADO REAL
 const LiveInviteScreen = () => {
@@ -287,7 +302,6 @@ export default function App() {
   const handleDeleteInv = async (id) => { await supabase.from('invitaciones').delete().eq('id', id); setInvitations(p => p.filter(i => i.id !== id)); };
   
   const handleUpdateInternal = async (id, f, v) => {
-    // 👉 ARREGLO BUG-1 (Race condition que detectó Claude)
     setInvitations(prevInvs => {
        const updatedInvs = prevInvs.map(i => i.id === id ? { ...i, internal_data: { ...i.internal_data, [f]: v } } : i);
        const target = updatedInvs.find(i => i.id === id);
@@ -300,29 +314,24 @@ export default function App() {
     });
   };
 
-  if (loading) return (
-    <div className="h-screen bg-slate-950 flex flex-col items-center justify-center text-white relative overflow-hidden transition-opacity duration-1000">
-       <div className="absolute inset-0 bg-[radial-gradient(#8b5cf6_1px,transparent_1px)] [background-size:20px_20px] opacity-10 animate-pulse"></div>
-       <div className="w-20 h-20 bg-violet-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-violet-600/50 mb-6 anim-pop">
-          <PartyPopper size={40} className="text-white animate-bounce" />
-       </div>
-       <h1 className="font-black text-2xl tracking-widest uppercase text-white/90">DeFiesta<span className="text-violet-400">.lat</span></h1>
-    </div>
-  );
+  if (loading) return <LoadingFallback />;
 
   return (
     <>
       <GlobalStyles />
-      <Routes>
-        <Route path="/" element={user ? <Navigate to="/dashboard" /> : <LoginScreen onLogin={handleLogin} users={users} />} />
-        <Route path="/master" element={user ? <Navigate to="/dashboard" /> : <LoginScreen isMaster={true} onLogin={handleLogin} users={users} />} />
-        <Route path="/dashboard" element={user ? <DashboardScreen user={user} users={users} invitations={invitations} onCreateSalon={handleCreateSalon} onDeleteSalon={handleDeleteSalon} onCreateInv={handleCreateInv} onDeleteInv={handleDeleteInv} onUpdateUser={handleUpdateUser} onUpdateInternal={handleUpdateInternal} onLogout={handleLogout} globalAlert={globalAlert} onUpdateAlert={handleUpdateAlert} /> : <Navigate to="/" />} />
-        <Route path="/editor/:id" element={<EditorScreen invitations={invitations} onSave={handleSaveInv} />} />
-        <Route path="/i/:salon/:invId" element={<PublicInviteScreen invitations={invitations} onConfirmRSVP={handleConfirmRSVP} onUpdateInternal={handleUpdateInternal} />} />
-        <Route path="/puerta/:id" element={<PuertaScreen invitations={invitations} onUpdateInternal={handleUpdateInternal} />} />
-        <Route path="/manage/:id" element={<ManageScreen />} />
-        <Route path="/invite/:id" element={<LiveInviteScreen />} />
-      </Routes>
+      {/* 👉 ACÁ ENVOLVEMOS LAS RUTAS CON SUSPENSE */}
+      <Suspense fallback={<LoadingFallback />}>
+        <Routes>
+          <Route path="/" element={user ? <Navigate to="/dashboard" /> : <LoginScreen onLogin={handleLogin} users={users} />} />
+          <Route path="/master" element={user ? <Navigate to="/dashboard" /> : <LoginScreen isMaster={true} onLogin={handleLogin} users={users} />} />
+          <Route path="/dashboard" element={user ? <DashboardScreen user={user} users={users} invitations={invitations} onCreateSalon={handleCreateSalon} onDeleteSalon={handleDeleteSalon} onCreateInv={handleCreateInv} onDeleteInv={handleDeleteInv} onUpdateUser={handleUpdateUser} onUpdateInternal={handleUpdateInternal} onLogout={handleLogout} globalAlert={globalAlert} onUpdateAlert={handleUpdateAlert} /> : <Navigate to="/" />} />
+          <Route path="/editor/:id" element={<EditorScreen invitations={invitations} onSave={handleSaveInv} />} />
+          <Route path="/i/:salon/:invId" element={<PublicInviteScreen invitations={invitations} onConfirmRSVP={handleConfirmRSVP} onUpdateInternal={handleUpdateInternal} />} />
+          <Route path="/puerta/:id" element={<PuertaScreen invitations={invitations} onUpdateInternal={handleUpdateInternal} />} />
+          <Route path="/manage/:id" element={<ManageScreen />} />
+          <Route path="/invite/:id" element={<LiveInviteScreen />} />
+        </Routes>
+      </Suspense>
     </>
   );
 }
