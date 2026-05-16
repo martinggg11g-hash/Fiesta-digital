@@ -333,11 +333,14 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
               <div className="w-16 h-16 bg-amber-500/10 text-amber-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-amber-500/20"><CreditCard size={32} /></div>
               <h2 className="text-2xl font-black mb-2 tracking-tight">Abonar Suscripción</h2>
               <p className="text-sm opacity-70 mb-6 font-medium">Transferí tu cuota para mantener el panel activo.</p>
+              
               <div className={`p-5 rounded-2xl border mb-6 text-left shadow-inner ${isDark ? 'bg-slate-700/50 border-slate-600' : 'bg-slate-50 border-slate-200'}`}>
                  <p className="text-[10px] font-black uppercase text-slate-400 mb-1 tracking-widest">Datos Bancarios</p>
-                 <p className="font-bold text-slate-700 dark:text-slate-300">Jonatán Rivas</p>
+                 {/* 👉 ACÁ CONECTAMOS EL NOMBRE DEL TITULAR A LA BASE DE DATOS */}
+                 <p className="font-bold text-slate-700 dark:text-slate-300">{salonInfo?.payment_titular || "A nombre del Titular"}</p>
                  <p className="font-mono text-xl mt-3 text-violet-600 dark:text-violet-400 font-bold tracking-wider text-center bg-white dark:bg-slate-800 py-3 rounded-xl border border-violet-200 dark:border-slate-600 shadow-sm">{salonInfo?.payment_clabe || "012345678901234567"}</p>
               </div>
+
               <div className="mb-6 relative"><input type="file" accept="image/*" onChange={(e) => setReceiptFile(e.target.files[0])} className="hidden" id="receipt-upload" disabled={sendingReceipt}/><label htmlFor="receipt-upload" className={`w-full py-4 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors ${receiptFile ? 'bg-violet-50 border-violet-300 text-violet-600' : (isDark ? 'bg-slate-700 border-slate-500 text-slate-300' : 'bg-slate-50 border-slate-300 text-slate-500')}`}>{receiptFile ? (<><CheckCircle2 size={24} className="text-violet-500" /><span className="font-bold text-sm truncate max-w-[200px]">{receiptFile.name}</span><span className="text-[10px] uppercase font-black opacity-60 mt-1 hover:underline">Cambiar foto</span></>) : (<><ImageIcon size={24} /><span className="font-bold text-sm">Cargar Comprobante</span><span className="text-[10px] uppercase font-black opacity-60 mt-1">Tap para subir foto</span></>)}</label></div>
               <button onClick={handleSendReceipt} disabled={sendingReceipt || !receiptFile} className={`w-full py-4 rounded-xl font-black flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 uppercase tracking-widest text-sm ${(!receiptFile || sendingReceipt) ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-[#0088cc] text-white hover:bg-[#0077b5] cursor-pointer'}`}>{sendingReceipt ? <Loader2 size={18} className="animate-spin"/> : <Send size={18}/>} {sendingReceipt ? 'ENVIANDO...' : 'ENVIAR COMPROBANTE'}</button>
            </div>
@@ -346,6 +349,7 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
 
       {activeCrmId && <CrmModal activeInv={myInvs.find(i => i.id === activeCrmId)} onClose={() => setActiveCrmId(null)} user={user} salonInfo={salonInfo} onUpdateInternal={onUpdateInternal} isDark={isDark} />}
       {scanningEvent && !validationResult && <QRScannerModal onClose={() => setScanningEvent(null)} onScan={processQRScan} />}
+      
       {validationResult && (
         <div className="fixed inset-0 z-[130] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
            <div className="w-full max-w-sm bg-white rounded-[2rem] p-8 shadow-2xl relative text-center anim-pop border-4" style={{ borderColor: validationResult.status === 'success' ? '#22c55e' : (validationResult.status === 'error' ? '#ef4444' : '#f59e0b') }}>
