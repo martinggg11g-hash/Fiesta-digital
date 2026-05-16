@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { GiphyFetch } from '@giphy/js-fetch-api';
 import { Grid } from '@giphy/react-components';
-import { ChevronDown, Loader2, Trash2, Image as ImageIcon, Search, HelpCircle } from "lucide-react";
+import { 
+  ChevronDown, Loader2, Trash2, Image as ImageIcon, Search, HelpCircle,
+  // Nuevos Íconos Lucide importados
+  Beef, Wine, Cake, CakeSlice, ChefHat, Coffee, CupSoda, Fish, Ham, Hamburger, IceCreamBowl, Martini, Pizza, Sandwich, Taco
+} from "lucide-react";
 import { 
   FONTS, 
   FONT_CATEGORIES, 
@@ -47,12 +51,32 @@ export const Tooltip = ({ text }) => {
 
 export const IconRenderer = ({ name, size = 24, color = "currentColor", className = "" }) => {
   if (!name) return null;
-  const p = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: 1.5, strokeLinecap: "round", strokeLinejoin: "round", className };
+  const lp = { size, color, className, strokeWidth: 1.5 }; // Props para Lucide
+  const p = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: 1.5, strokeLinecap: "round", strokeLinejoin: "round", className }; // Props para SVG viejo
+
   switch (name) {
+    // 👉 ÍCONOS LUCIDE MODERNOS (Nuevos y reemplazos de los "fuleros")
+    case 'icon-beef': return <Beef {...lp} />;
+    case 'icon-wine': return <Wine {...lp} />;
+    case 'icon-cake': return <Cake {...lp} />;
+    case 'icon-cake-slice': return <CakeSlice {...lp} />;
+    case 'icon-chef-hat': return <ChefHat {...lp} />;
+    case 'icon-coffee': return <Coffee {...lp} />;
+    case 'icon-cup-soda': return <CupSoda {...lp} />;
+    case 'icon-fish': return <Fish {...lp} />;
+    case 'icon-ham': return <Ham {...lp} />;
+    case 'icon-burger': return <Hamburger {...lp} />;
+    case 'icon-ice-cream-bowl': return <IceCreamBowl {...lp} />;
+    case 'icon-cocktail': return <Martini {...lp} />;
+    case 'icon-pizza': return <Pizza {...lp} />;
+    case 'icon-sandwich': return <Sandwich {...lp} />;
+    case 'icon-taco': return <Taco {...lp} />;
+
+    // 👉 ÍCONOS SVG ORIGINALES (Mantenemos los que no cambiamos por Lucide)
     case 'icon-heart': return <svg {...p}><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>;
     case 'icon-crown': return <svg {...p}><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>;
     case 'icon-star': return <svg {...p}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
-    case 'icon-sparkles': return <svg {...p}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>;
+    case 'icon-sparkles': return <svg {...p}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1-1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>;
     case 'icon-gift': return <svg {...p}><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8a4.8 8 0 0 1 9 0 2.5 2.5 0 0 1 0 5"/></svg>;
     case 'icon-camera': return <svg {...p}><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>;
     case 'icon-church': return <svg {...p}><path d="M12 2v5"/><path d="M10 5h4"/><path d="M12 7l-6 5v10h12V12l-6-5Z"/><path d="M10 22v-4a2 2 0 0 1 4 0v4"/></svg>;
@@ -61,13 +85,6 @@ export const IconRenderer = ({ name, size = 24, color = "currentColor", classNam
     case 'icon-calendar': return <svg {...p}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
     case 'icon-clock': return <svg {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
     case 'icon-utensils': return <svg {...p}><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>;
-    case 'icon-wine': return <svg {...p}><path d="M8 22h8"/><path d="M7 10h10"/><path d="M12 15v7"/><path d="M12 15a5 5 0 0 0 5-5c0-2-.5-4-2-8H9c-1.5 4-2 6-2 8a5 5 0 0 0 5 5Z"/></svg>;
-    case 'icon-cake': return <svg {...p}><path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8"/><path d="M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1"/><path d="M2 21h20"/><path d="M7 8v2"/><path d="M12 8v2"/><path d="M17 8v2"/></svg>;
-    case 'icon-pizza': return <svg {...p}><path d="M15 11l-5 5"/><path d="M11 11l-4 4"/><path d="M12 12l2 2"/><path d="M20 11a8.1 8.1 0 0 0-15.5-2"/><path d="M4 8l8 14 8-14"/></svg>;
-    case 'icon-burger': return <svg {...p}><path d="M2 18h20"/><path d="M21 14H3"/><path d="M12 2a9 9 0 0 0-9 9h18a9 9 0 0 0-9-9Z"/><path d="M22 18a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3"/></svg>;
-    case 'icon-coffee': return <svg {...p}><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></svg>;
-    case 'icon-beer': return <svg {...p}><path d="M17 11h1a3 3 0 0 1 0 6h-1"/><path d="M5 6h12v12a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3Z"/><path d="M5 10h12"/><path d="M12 6V2"/></svg>;
-    case 'icon-cocktail': return <svg {...p}><path d="m19 2-7 11-7-11h14Z"/><path d="M12 13v7"/><path d="M7 22h10"/></svg>;
     case 'icon-dress': return <svg {...p}><path d="M9.5 2 6 7l1.5 5H6l-3 10h18l-3-10h-1.5L18 7l-3.5-5h-5Z"/><path d="M6 12h12"/></svg>;
     case 'icon-suit': return <svg {...p}><path d="M4 2v20h16V2H4Zm4 0 4 4 4-4M12 6v16"/></svg>;
     case 'icon-tie': return <svg {...p}><path d="m10 2 2 2 2-2-2 10 3 4-3 6-3-6 3-4-2-10Z"/></svg>;
@@ -245,8 +262,9 @@ export const SelectInp = ({ label, value, onChange, options, className="", toolt
   </div>
 );
 
+// 👉 FIX Z-INDEX: Agregamos focus-within y hover z-[9999] para que no se superponga
 export const TypoControl = ({ label, fontVal, onFont, colorVal, onColor, sizeVal, onSize, minSize=10, maxSize=80, tooltip = null }) => (
-  <div className="bg-gray-50/70 p-3 rounded-xl border border-gray-100 shadow-sm mb-5 relative overflow-visible z-[10]">
+  <div className="bg-gray-50/70 p-3 rounded-xl border border-gray-100 shadow-sm mb-5 relative overflow-visible z-[10] hover:z-[9999] focus-within:z-[9999]">
     <div className="absolute left-0 top-0 bottom-0 w-1 bg-violet-200 rounded-l-xl" />
     <label className="flex justify-between items-center text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 pl-2">
       <span className="flex items-center">{label} {tooltip && <Tooltip text={tooltip} />}</span>
@@ -283,10 +301,11 @@ export const Toggle = ({ checked, onChange }) => (
   <label className="relative w-11 h-6 flex-shrink-0 cursor-pointer inline-block"><input type="checkbox" className="sr-only peer" checked={checked || false} onChange={e => onChange(e.target.checked)} /><div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div></label>
 );
 
+// 👉 FIX Z-INDEX: Agregamos focus-within y hover para que los acordeones salten al frente
 export const Acc = ({ title, icon: Icon, children, defaultOpen = false, iconColor = "#7c3aed" }) => {
   const [open, setOpen] = useState(defaultOpen); const [fullyOpen, setFullyOpen] = useState(defaultOpen);
   useEffect(() => { let t; if (open) t = setTimeout(() => setFullyOpen(true), 300); else setFullyOpen(false); return () => clearTimeout(t); }, [open]);
   return (
-    <div className={`mb-3 rounded-2xl border border-gray-100 bg-white shadow-sm relative transition-all ${open ? 'z-40' : 'z-10'}`}><button onClick={() => setOpen(!open)} type="button" className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors text-left cursor-pointer"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${iconColor}15` }}><Icon size={18} style={{ color: iconColor }} /></div><span className="font-bold text-slate-800 text-sm">{title}</span></div><ChevronDown size={18} className={`text-slate-300 transition-transform ${open ? 'rotate-180' : ''}`} /></button><div className={`transition-all duration-300 ease-in-out overflow-visible`} style={{ maxHeight: open ? '5000px' : '0', opacity: open ? 1 : 0 }}><div className="p-4 pt-0 border-t border-gray-50">{children}</div></div></div>
+    <div className={`mb-3 rounded-2xl border border-gray-100 bg-white shadow-sm relative transition-all ${open ? 'z-40' : 'z-10'} hover:z-50 focus-within:z-50`}><button onClick={() => setOpen(!open)} type="button" className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors text-left cursor-pointer"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${iconColor}15` }}><Icon size={18} style={{ color: iconColor }} /></div><span className="font-bold text-slate-800 text-sm">{title}</span></div><ChevronDown size={18} className={`text-slate-300 transition-transform ${open ? 'rotate-180' : ''}`} /></button><div className={`transition-all duration-300 ease-in-out overflow-visible`} style={{ maxHeight: open ? '5000px' : '0', opacity: open ? 1 : 0 }}><div className="p-4 pt-0 border-t border-gray-50">{children}</div></div></div>
   );
 };
