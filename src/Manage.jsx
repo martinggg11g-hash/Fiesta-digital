@@ -5,11 +5,11 @@ import { Loader2, Users, CheckCircle, Clock, Plus, Share2, Copy, Trash2, Lock, M
 // ==========================================
 // 📺 MODO PROYECTOR (Slideshow Automático)
 // ==========================================
-const ProjectorScreen = ({ eventSlug }) => {
+const ProjectorScreen = ({ eventSlug, eventId }) => {
   const [photos, setPhotos] = useState([]);
   const [idx, setIdx] = useState(0);
 
-  // Consulta nuevas fotos cada 10 segundos
+  // Consulta inicial de fotos y suscripción en tiempo real (REALTIME)
   useEffect(() => {
     const fetchPhotos = async () => {
       const { data } = await supabase.from('eventos').select('internal_data').eq('slug', eventSlug).single();
@@ -17,10 +17,35 @@ const ProjectorScreen = ({ eventSlug }) => {
         setPhotos(data.internal_data.live_photos);
       }
     };
+    
+    // Traemos las fotos la primera vez que carga
     fetchPhotos();
-    const interval = setInterval(fetchPhotos, 10000); 
-    return () => clearInterval(interval);
-  }, [eventSlug]);
+
+    // 👉 LA MAGIA: Nos suscribimos a Supabase Realtime para este evento específico
+    const subscription = supabase
+      .channel('public:eventos')
+      .on('postgres_changes', { 
+          event: 'UPDATE', 
+          schema: 'public', 
+          table: 'eventos',
+          filter: `id=eq.${eventId}` 
+        }, 
+        (payload) => {
+          // Si cambian los datos internos (como cuando alguien sube una foto)
+          if (payload.new?.internal_data?.live_photos) {
+            setPhotos(payload.new.internal_data.live_photos);
+            // Opcional: Podés forzar que el índice vuelva a 0 si querés que la nueva foto se vea ya mismo
+            setIdx(0); 
+          }
+        }
+      )
+      .subscribe();
+
+    // Limpieza de la suscripción al cerrar la pestaña
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, [eventSlug, eventId]);
 
   // Cambia la foto que se ve en pantalla cada 5 segundos
   useEffect(() => {
@@ -168,7 +193,8 @@ export const ManageScreen = () => {
   if (loading) return <div className="flex h-screen items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-violet-600" size={40} /></div>;
   if (!eventData) return <div className="flex h-screen items-center justify-center bg-slate-50 font-bold text-slate-500">Evento no encontrado.</div>;
   
-  if (isProjectorMode) return <ProjectorScreen eventSlug={eventSlug} />;
+  // 👉 Le pasamos el ID además del SLUG para que Supabase lo filtre más rápido por base de datos
+  if (isProjectorMode) return <ProjectorScreen eventSlug={eventSlug} eventId={eventData.id} />;
 
   if (!isAuthenticated) {
      return (
