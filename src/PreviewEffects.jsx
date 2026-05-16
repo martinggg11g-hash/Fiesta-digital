@@ -14,6 +14,7 @@ export const DraggableItem = ({ id, cfg, update, children, className }) => {
 
   const onPointerDown = (e) => {
     if (!update) return; 
+    e.stopPropagation(); // Evita conflictos con clics del fondo
     setIsDragging(true);
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -21,16 +22,13 @@ export const DraggableItem = ({ id, cfg, update, children, className }) => {
   };
 
   const onPointerMove = (e) => {
-    if (!isDragging) return;
+    if (!isDragging || !dragRef.current) return;
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
     let x = dragRef.current.origX + (clientX - dragRef.current.startX);
     let y = dragRef.current.origY + (clientY - dragRef.current.startY);
     
-    // Límite para que no se escape de la pantalla
-    x = Math.max(-120, Math.min(x, 120));
-    y = Math.max(-120, Math.min(y, 120));
-    
+    // 👉 Límite eliminado. Ahora fluyen libres y no saltan hacia arriba.
     setLocalPos({ x, y });
   };
 
