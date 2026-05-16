@@ -5,49 +5,45 @@ import { Loader2, Users, CheckCircle, Clock, Plus, Share2, Copy, Trash2, Lock, M
 // ==========================================
 // 📺 MODO PROYECTOR (Slideshow Automático)
 // ==========================================
-const ProjectorScreen = ({ eventSlug, eventId }) => {
+const ProjectorScreen = ({ eventId }) => {
   const [photos, setPhotos] = useState([]);
   const [idx, setIdx] = useState(0);
 
   // Consulta inicial de fotos y suscripción en tiempo real (REALTIME)
   useEffect(() => {
     const fetchPhotos = async () => {
-      const { data } = await supabase.from('eventos').select('internal_data').eq('slug', eventSlug).single();
+      // 👉 CORRECCIÓN 1: Leemos de 'invitaciones' y buscamos por 'id'
+      const { data } = await supabase.from('invitaciones').select('internal_data').eq('id', eventId).single();
       if (data?.internal_data?.live_photos) {
         setPhotos(data.internal_data.live_photos);
       }
     };
     
-    // Traemos las fotos la primera vez que carga
     fetchPhotos();
 
-    // 👉 LA MAGIA: Nos suscribimos a Supabase Realtime para este evento específico
+    // 👉 CORRECCIÓN 2: Escuchamos los cambios en la tabla 'invitaciones'
     const subscription = supabase
-      .channel('public:eventos')
+      .channel('public:invitaciones')
       .on('postgres_changes', { 
           event: 'UPDATE', 
           schema: 'public', 
-          table: 'eventos',
+          table: 'invitaciones',
           filter: `id=eq.${eventId}` 
         }, 
         (payload) => {
-          // Si cambian los datos internos (como cuando alguien sube una foto)
           if (payload.new?.internal_data?.live_photos) {
             setPhotos(payload.new.internal_data.live_photos);
-            // Opcional: Podés forzar que el índice vuelva a 0 si querés que la nueva foto se vea ya mismo
             setIdx(0); 
           }
         }
       )
       .subscribe();
 
-    // Limpieza de la suscripción al cerrar la pestaña
     return () => {
       supabase.removeChannel(subscription);
     };
-  }, [eventSlug, eventId]);
+  }, [eventId]);
 
-  // Cambia la foto que se ve en pantalla cada 5 segundos
   useEffect(() => {
     if (photos.length <= 1) return;
     const interval = setInterval(() => {
@@ -67,7 +63,6 @@ const ProjectorScreen = ({ eventSlug, eventId }) => {
 
   return (
     <div className="h-screen w-full bg-black flex items-center justify-center overflow-hidden">
-       {/* Truco: Key con ID fuerza a React a re-renderizar la animación de "Fade In" en cada cambio */}
        <img 
          key={photos[idx]} 
          src={photos[idx]} 
@@ -82,9 +77,9 @@ const ProjectorScreen = ({ eventSlug, eventId }) => {
 // 👔 PANEL DE GESTIÓN PRINCIPAL
 // ==========================================
 export const ManageScreen = () => {
-  const eventSlug = window.location.pathname.split('/').pop();
+  // El ID del evento ahora se saca de la URL correctamente
+  const eventId = window.location.pathname.split('/').pop();
   
-  // Detectamos si es el DJ abriendo el modo proyector
   const isProjectorMode = new URLSearchParams(window.location.search).get('mode') === 'projector';
 
   const [loading, setLoading] = useState(true);
@@ -93,23 +88,23 @@ export const ManageScreen = () => {
   const [pinInput, setPinInput] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   
-  const [activeTab, setActiveTab] = useState('lista'); // 'lista' | 'mesas'
+  const [activeTab, setActiveTab] = useState('lista');
   const [invitados, setInvitados] = useState([]);
   const [newGuest, setNewGuest] = useState({ nombre_completo: '', apodo: '', max_acompanantes: 0 });
   const [adding, setAdding] = useState(false);
 
   useEffect(() => {
     const fetchEvent = async () => {
-      const { data } = await supabase.from('eventos').select('*').eq('slug', eventSlug).single();
+      // 👉 CORRECCIÓN 3: Buscamos en 'invitaciones' por 'id'
+      const { data } = await supabase.from('invitaciones').select('*').eq('id', eventId).single();
       if (data) {
          setEventData(data);
-         // El modo proyector saltea el PIN para que el DJ entre directo
          if (!data.config?.clientPin || isProjectorMode) setIsAuthenticated(true);
       }
       setLoading(false);
     };
     fetchEvent();
-  }, [eventSlug, isProjectorMode]);
+  }, [eventId, isProjectorMode]);
 
   useEffect(() => {
     if (isAuthenticated && eventData && !isProjectorMode) {
@@ -160,10 +155,9 @@ export const ManageScreen = () => {
      setInvitados(invitados.filter(i => i.id !== id));
   };
 
-  // 👉 LÓGICA DRAG & DROP PARA MESAS
   const handleUpdateMesa = async (guestId, nuevaMesa) => {
     const updated = invitados.map(i => i.id === guestId ? { ...i, mesa: nuevaMesa } : i);
-    setInvitados(updated); // UI Optimista
+    setInvitados(updated);
     await supabase.from('invitados').update({ mesa: nuevaMesa }).eq('id', guestId);
   };
 
@@ -178,23 +172,21 @@ export const ManageScreen = () => {
   };
 
   const copyLink = (id) => {
-     navigator.clipboard.writeText(`${window.location.origin}/invite/${eventSlug}?guest=${id}`);
+     navigator.clipboard.writeText(`${window.location.origin}/invite/${eventId}?guest=${id}`);
      alert("¡Link copiado al portapapeles!");
   };
 
   const sendWhatsApp = (invitado) => {
-     const link = `${window.location.origin}/invite/${eventSlug}?guest=${invitado.id}`;
+     const link = `${window.location.origin}/invite/${eventId}?guest=${invitado.id}`;
      const nombreAMostrar = invitado.apodo || invitado.nombre_completo;
      const text = `¡Hola ${nombreAMostrar}! Te comparto tu pase VIP para nuestro evento. Por favor confirmá tu asistencia acá: ${link}`;
      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
 
-  // RENDERIZADOS
   if (loading) return <div className="flex h-screen items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-violet-600" size={40} /></div>;
   if (!eventData) return <div className="flex h-screen items-center justify-center bg-slate-50 font-bold text-slate-500">Evento no encontrado.</div>;
   
-  // 👉 Le pasamos el ID además del SLUG para que Supabase lo filtre más rápido por base de datos
-  if (isProjectorMode) return <ProjectorScreen eventSlug={eventSlug} eventId={eventData.id} />;
+  if (isProjectorMode) return <ProjectorScreen eventId={eventId} />;
 
   if (!isAuthenticated) {
      return (
@@ -232,7 +224,6 @@ export const ManageScreen = () => {
               </button>
            </header>
 
-           {/* TARJETAS ESTADÍSTICAS */}
            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
               <div className="bg-white p-4 md:p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col md:flex-row items-center md:items-start gap-4 text-center md:text-left">
                  <div className="w-10 h-10 md:w-14 md:h-14 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center shrink-0"><Users size={24}/></div>
@@ -252,13 +243,11 @@ export const ManageScreen = () => {
               </div>
            </div>
 
-           {/* PESTAÑAS */}
            <div className="flex bg-white p-2 rounded-2xl border border-slate-100 shadow-sm w-full max-w-sm mx-auto md:mx-0">
               <button onClick={() => setActiveTab('lista')} className={`flex-1 py-3 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'lista' ? 'bg-violet-50 text-violet-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>👥 Invitados</button>
               <button onClick={() => setActiveTab('mesas')} className={`flex-1 py-3 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'mesas' ? 'bg-violet-50 text-violet-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>🪑 Mesas</button>
            </div>
 
-           {/* CONTENIDO PESTAÑA: LISTA */}
            {activeTab === 'lista' && (
              <>
                <form onSubmit={handleAddGuest} className="bg-white p-6 md:p-8 rounded-3xl border border-slate-100 shadow-sm flex flex-col md:flex-row gap-4 items-end">
@@ -299,7 +288,6 @@ export const ManageScreen = () => {
              </>
            )}
 
-           {/* CONTENIDO PESTAÑA: MESAS */}
            {activeTab === 'mesas' && (
              <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
                 <div className="mb-6 border-b border-slate-100 pb-4">
@@ -311,7 +299,6 @@ export const ManageScreen = () => {
                   {['Sin Asignar', 'Mesa 1', 'Mesa 2', 'Mesa 3', 'Mesa 4', 'Mesa 5', 'Mesa 6', 'Mesa 7', 'Mesa 8', 'Mesa 9', 'Mesa 10'].map((mesaNombre) => {
                      const invitadosMesa = invitados.filter(i => i.asistencia_confirmada && (i.mesa === mesaNombre || (!i.mesa && mesaNombre === 'Sin Asignar')));
                      
-                     // Si la mesa no es la principal y está vacía, la opacamos un poco para no saturar la pantalla
                      if (mesaNombre !== 'Sin Asignar' && invitadosMesa.length === 0) {
                         return (
                            <div key={mesaNombre} onDragOver={e => e.preventDefault()} onDrop={e => handleDrop(e, mesaNombre)} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 border-dashed opacity-50 hover:opacity-100 transition-opacity min-h-[150px]">
