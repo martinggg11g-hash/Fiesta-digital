@@ -145,7 +145,6 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
       <Acc title="1️⃣ Portada Principal" icon={ImageIcon} defaultOpen iconColor="#ec4899">
         <div className="mb-6 bg-gray-50 p-3 rounded-xl border border-gray-200"><div className="flex items-center justify-between mb-2"><span className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center">¿Fondo GIF Animado?</span><Toggle checked={cfg.useGiphyCover || false} onChange={v => update("useGiphyCover", v)} /></div>{cfg.useGiphyCover ? (<GiphySearch onSelect={url => update("coverPhoto", url)} placeholder="Ej: brillos, spiderman..." />) : (<FileUpload value={cfg.coverPhoto} onChange={v => update("coverPhoto", v)} />)}</div>
         
-        {/* 👉 FIX: Z-INDEX AL MÁXIMO PARA QUE NO SE TAPE EL EMOJI */}
         <div className="flex gap-2 z-[9999] relative mt-2 pt-4 border-t border-gray-200 overflow-visible">
           <EmojiPicker value={cfg.eventTypeEmoji || "✨"} onSelect={v => update("eventTypeEmoji", v)} />
           <div className="flex-1">
@@ -231,7 +230,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
          <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500 flex items-center">Activar Cronograma</span><Toggle checked={cfg.showItinerary} onChange={v => update("showItinerary", v)} /></div>
          {cfg.showItinerary && (
             <>
-               <div className="mb-4"><Inp label="Título" value={cfg.itinerarySectionTitle || "¿Qué vamos a hacer?"} onChange={v => update("itinerarySectionTitle", v)} icon={Edit2} /></div>
+               <div className="mb-4"><Inp label="Título" value={cfg.itinerarySectionTitle ?? "¿Qué vamos a hacer?"} onChange={v => update("itinerarySectionTitle", v)} icon={Edit2} /></div>
                <div className="space-y-4 mb-6 relative z-[70]">
                   {cfg.itinerary?.map((item, i) => (
                      <div key={i} className="flex flex-col gap-2 bg-white p-3 rounded-xl border shadow-sm relative" style={{ zIndex: 50 - i }}>
@@ -250,10 +249,10 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
          )}
       </Acc>
       
-      <Acc title="8️⃣ Menú" icon={LayoutGrid} iconColor="#10b981"><div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Menú</span><Toggle checked={cfg.showMenu} onChange={v => update("showMenu", v)} /></div>{cfg.showMenu && (<><div className="mb-4"><Inp label="Título" value={cfg.menuSectionTitle || "¿Qué vamos a comer?"} onChange={v => update("menuSectionTitle", v)} icon={Edit2} /></div><div className="space-y-3 mb-6 relative z-[70]">{cfg.menuItems?.map((m, i) => (<div key={i} className="flex items-center gap-2 bg-white p-2 rounded-xl border shadow-sm relative" style={{ zIndex: 50 - i }}><EmojiPicker value={m.emoji} onSelect={e => { const n = [...cfg.menuItems]; n[i].emoji = e; update("menuItems", n); }} /><MiniInp className="flex-1 p-2 text-xs border rounded-lg" value={m.label} onChange={v => { const n = [...cfg.menuItems]; n[i].label = v; update("menuItems", n); }} /><button onClick={() => update("menuItems", cfg.menuItems.filter((_, idx) => idx !== i))} type="button" className="text-red-400 p-2 cursor-pointer"><Trash2 size={14}/></button></div>))}</div><button onClick={() => update("menuItems", [...(cfg.menuItems || []), { emoji: "🍕", label: "Nueva Opción" }])} type="button" className="w-full py-3 bg-white border-2 border-dashed rounded-xl text-xs font-bold text-slate-400 cursor-pointer"><Plus size={14} className="inline-block mr-2"/> AÑADIR COMIDA</button></>)}</Acc>
+      <Acc title="8️⃣ Menú" icon={LayoutGrid} iconColor="#10b981"><div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500">Activar Menú</span><Toggle checked={cfg.showMenu} onChange={v => update("showMenu", v)} /></div>{cfg.showMenu && (<><div className="mb-4"><Inp label="Título" value={cfg.menuSectionTitle ?? "¿Qué vamos a comer?"} onChange={v => update("menuSectionTitle", v)} icon={Edit2} /></div><div className="space-y-3 mb-6 relative z-[70]">{cfg.menuItems?.map((m, i) => (<div key={i} className="flex items-center gap-2 bg-white p-2 rounded-xl border shadow-sm relative" style={{ zIndex: 50 - i }}><EmojiPicker value={m.emoji} onSelect={e => { const n = [...cfg.menuItems]; n[i].emoji = e; update("menuItems", n); }} /><MiniInp className="flex-1 p-2 text-xs border rounded-lg" value={m.label} onChange={v => { const n = [...cfg.menuItems]; n[i].label = v; update("menuItems", n); }} /><button onClick={() => update("menuItems", cfg.menuItems.filter((_, idx) => idx !== i))} type="button" className="text-red-400 p-2 cursor-pointer"><Trash2 size={14}/></button></div>))}</div><button onClick={() => update("menuItems", [...(cfg.menuItems || []), { emoji: "🍕", label: "Nueva Opción" }])} type="button" className="w-full py-3 bg-white border-2 border-dashed rounded-xl text-xs font-bold text-slate-400 cursor-pointer"><Plus size={14} className="inline-block mr-2"/> AÑADIR COMIDA</button></>)}</Acc>
       
       <Acc title="9️⃣ Vestimenta y Regalos" icon={Layout} iconColor="#f43f5e">
-         <div className="mb-6 pb-6 border-b"><Inp label="Título" value={cfg.notesSectionTitle || "A tener en cuenta"} onChange={v => update("notesSectionTitle", v)} icon={Edit2} /></div>
+         <div className="mb-6 pb-6 border-b"><Inp label="Título" value={cfg.notesSectionTitle ?? "A tener en cuenta"} onChange={v => update("notesSectionTitle", v)} icon={Edit2} /></div>
          <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500 flex items-center">Activar Vestimenta</span><Toggle checked={cfg.showDressCode} onChange={v => update("showDressCode", v)} /></div>
          {cfg.showDressCode && (
            <div className="flex gap-2 mb-6 bg-gray-50 p-2 rounded-xl border relative z-[40]">
@@ -282,7 +281,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
         {cfg.showLiveCamera && (
            <div className="p-4 bg-sky-50 border border-sky-100 rounded-xl">
              <p className="text-[10px] font-bold text-sky-700 mb-3 leading-tight">La sección de fotos se desbloqueará automáticamente el día del evento fijado en la Cuenta Regresiva (o Fecha).</p>
-             <Inp label="Título de la Sección" value={cfg.liveCameraTitle || "Álbum Colaborativo"} onChange={v => update("liveCameraTitle", v)} placeholder="Ej: Compartí tu foto" className="!mb-0" />
+             <Inp label="Título de la Sección" value={cfg.liveCameraTitle ?? "Álbum Colaborativo"} onChange={v => update("liveCameraTitle", v)} placeholder="Ej: Compartí tu foto" className="!mb-0" />
            </div>
         )}
       </Acc>
