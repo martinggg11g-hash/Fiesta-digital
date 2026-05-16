@@ -58,14 +58,14 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
   const dynamicShadow = glowValue === 0 ? 'none' : `${cfg.shadow || '0 8px 30px rgba(0,0,0,0.05)'}, 0 0 ${glowValue}px ${primary}${hexAlpha}`;
 
   // 👉 OPTIMIZACIÓN EXTREMA DEL VIDRIO (GPU + Menos Blur)
+  // 👉 OPTIMIZACIÓN EQUILIBRADA (Acelera sin comerse la RAM)
   const glassContainerStyle = {
     background: cardC,
     boxShadow: dynamicShadow,
     border: cfg.border ? `1px solid ${cfg.border}` : `1px solid ${primary}22`,
     backdropFilter: glowValue === 0 ? 'none' : 'blur(8px)',
     WebkitBackdropFilter: glowValue === 0 ? 'none' : 'blur(8px)',
-    transform: 'translateZ(0)',
-    willChange: 'transform'
+    transform: 'translateZ(0)' // Dejamos esto, pero borramos el willChange
   };
   
   const shineOverlay = cfg.shine && glowValue !== 0 ? <div className="absolute inset-0 pointer-events-none rounded-[inherit]" style={{ background: cfg.shine }}></div> : null;
