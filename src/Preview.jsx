@@ -36,7 +36,7 @@ const AddToCalendarButton = ({ cfg, primary, cardC }) => {
   };
 
   return (
-    <button type="button" onClick={handleCalendarRedirect} className="w-full py-4 mt-1 rounded-[1.5rem] font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95 cursor-pointer relative overflow-hidden" style={{ background: cfg.accent || primary, color: cardC === '#000000' ? '#000' : '#fff' }}>
+    <button type="button" onClick={handleCalendarRedirect} className="w-full py-4 mt-1 rounded-[1.5rem] font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg cursor-pointer" style={{ background: cfg.accent || primary, color: cardC === '#000000' ? '#000' : '#fff' }}>
       <Calendar size={18} /> Agendar Evento
     </button>
   );
@@ -57,16 +57,13 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
   const hexAlpha = Math.floor((glowValue / 100) * 255).toString(16).padStart(2, '0');
   const dynamicShadow = glowValue === 0 ? 'none' : `${cfg.shadow || '0 8px 30px rgba(0,0,0,0.05)'}, 0 0 ${glowValue}px ${primary}${hexAlpha}`;
 
-  // 👉 OPTIMIZACIÓN MÁXIMA PREMIUM: GPU + Aislamiento + Anti-Flicker
+  // 👉 TARJETAS ESTÁNDAR: Súper limpias de código experimental para máxima fluidez nativa
   const glassContainerStyle = {
     background: cardC,
     boxShadow: dynamicShadow,
     border: cfg.border ? `1px solid ${cfg.border}` : `1px solid ${primary}22`,
     backdropFilter: glowValue === 0 ? 'none' : 'blur(8px)',
-    WebkitBackdropFilter: glowValue === 0 ? 'none' : 'blur(8px)',
-    transform: 'translate3d(0,0,0)',
-    WebkitBackfaceVisibility: 'hidden',
-    contain: 'paint'
+    WebkitBackdropFilter: glowValue === 0 ? 'none' : 'blur(8px)'
   };
   
   const shineOverlay = cfg.shine && glowValue !== 0 ? <div className="absolute inset-0 pointer-events-none rounded-[inherit]" style={{ background: cfg.shine }}></div> : null;
@@ -85,8 +82,17 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
     }
   }
 
+  // 👉 AQUÍ ESTÁ EL MILAGRO: Aislamos el fondo pesado en su propia capa de GPU 
+  // usando translate3d y willChange para que no tape ni rompa el scroll de las tarjetas superiores
   const ParticleLayer = () => (
-    <div className={`${cfg.particlesFullscreen ? 'fixed' : 'absolute'} inset-0 pointer-events-none ${cfg.particlesFullscreen ? 'z-[100]' : 'z-20'} overflow-hidden flex items-start justify-center transition-opacity duration-200`} style={{ opacity: (cfg.effectOpacity ?? 100) / 100 }}>
+    <div 
+      className={`${cfg.particlesFullscreen ? 'fixed' : 'absolute'} inset-0 pointer-events-none ${cfg.particlesFullscreen ? 'z-[100]' : 'z-20'} overflow-hidden flex items-start justify-center transition-opacity duration-200`} 
+      style={{ 
+        opacity: (cfg.effectOpacity ?? 100) / 100,
+        transform: 'translate3d(0,0,0)',
+        willChange: 'transform'
+      }}
+    >
        {isLottieEffect ? <LottieOverlay url={lottieUrl} /> : <ParticleCanvas effect={cfg.particleEffect || "none"} primary={primary} />}
     </div>
   );
@@ -197,7 +203,6 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
 
         {cfg.showBanner && (
           <div className="relative h-48 rounded-[2rem] overflow-hidden border shadow-lg" style={{ borderColor: cfg.border || `${primary}44` }}>
-            {/* 👉 Todo renderizado al instante, nada de pop-ins */}
             <img src={cfg.bannerPhoto || DEF_CONFIG.bannerPhoto} className="w-full h-full object-cover" alt="Banner" />
             <div className="absolute inset-0 bg-black/40" />
             <div className="absolute top-4 left-4 px-4 py-1.5 bg-black/40 backdrop-blur-md border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest text-white shadow-md">{cfg.bannerTitle}</div>
