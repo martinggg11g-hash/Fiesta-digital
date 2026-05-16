@@ -124,14 +124,15 @@ export const EditorScreen = () => {
           salonProfile={salonProfile} 
         />
 
-        <main className={`flex-1 overflow-hidden bg-[#0b0f19] flex items-center justify-center p-0 md:p-6 lg:p-8 relative ${mobileView === 'preview' ? 'block' : 'hidden md:flex'}`} style={{ backgroundImage: 'radial-gradient(#1e293b 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
+        {/* 👉 Dejamos que el fondo gris tenga scroll si tu pantalla es bajita */}
+        <main className={`flex-1 overflow-y-auto overflow-x-hidden bg-[#0b0f19] p-0 md:py-10 relative ${mobileView === 'preview' ? 'block' : 'hidden md:block'}`} style={{ backgroundImage: 'radial-gradient(#1e293b 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
           
-          <div className={`bg-white shadow-2xl relative overflow-hidden transition-all duration-300 w-full h-full md:w-auto md:h-[95%] md:max-h-[812px] md:aspect-[375/812] md:rounded-[2.5rem] lg:md:rounded-[3rem] md:border-[8px] md:border-[#1e293b] md:shrink-0`}>
+          {/* 👉 Le devolvemos sus medidas exactas de iPhone (375x812) y lo centramos con mx-auto */}
+          <div className={`bg-white shadow-2xl relative overflow-hidden w-full h-full md:w-[375px] md:h-[812px] md:rounded-[3rem] md:border-[8px] md:border-[#1e293b] shrink-0 mx-auto`}>
             
             <div className="absolute top-0 inset-x-0 h-5 lg:h-6 bg-[#1e293b] rounded-b-2xl lg:rounded-b-3xl w-[40%] mx-auto z-50 hidden md:block"></div>
             
             <div className="w-full h-full overflow-y-auto overflow-x-hidden relative pb-[80px] md:pb-0" id="preview-container">
-              {/* 👇 ACÁ VOLVEMOS A USAR inv.config PARA QUE NO EXPLOTE */}
               <InvitePreview 
                 cfg={inv.config} 
                 update={updateConfig} 
