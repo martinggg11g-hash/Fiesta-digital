@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Eye, Edit2 } from 'lucide-react'; // 👉 Importamos Eye y Edit2 para los botones móviles
 import EditorSidebar from './EditorSidebar';
 import { InvitePreview } from './Preview';
 import { DEF_CONFIG } from './config';
 import { supabase } from './supabase';
-import { OpeningAnimation } from './Lotties'; // 👉 IMPORTAMOS LA ANIMACIÓN DIRECTO ACÁ
+import { OpeningAnimation } from './Lotties'; 
 
 export const EditorScreen = () => {
   const [inv, setInv] = useState({ config: DEF_CONFIG });
   const [salonProfile, setSalonProfile] = useState(null); 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [previewAnim, setPreviewAnim] = useState(false); // 👉 ACÁ ESTÁ EL ESTADO TRABADO
-  const [mobileView, setMobileView] = useState('editor');
+  const [previewAnim, setPreviewAnim] = useState(false); 
+  const [mobileView, setMobileView] = useState('editor'); // 👉 Controla qué panel se ve en el celular
 
   const eventSlug = window.location.pathname.split('/').pop();
 
@@ -78,19 +78,20 @@ export const EditorScreen = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-[#0f172a]">
+    <div className="flex flex-col h-screen overflow-hidden bg-[#0f172a] relative">
       
-      {/* 👉 ACÁ RENDERIZAMOS LA ANIMACIÓN DIRECTAMENTE POR ENCIMA DE TODO CUANDO SE ACTIVA */}
+      {/* RENDER DE ANIMACIÓN DE ENTRADA */}
       {previewAnim && (
         <div className="fixed inset-0 z-[99999] pointer-events-none flex items-center justify-center">
            <OpeningAnimation 
               cfg={inv.config} 
-              onOpen={() => setPreviewAnim(false)} // DESTRABADOR: Se apaga sola cuando termina
+              onOpen={() => setPreviewAnim(false)} 
               isPreview={true} 
            />
         </div>
       )}
 
+      {/* HEADER DE CONTROL */}
       <header className="h-16 bg-[#0f172a] border-b border-white/10 flex items-center justify-between px-4 md:px-6 shrink-0 z-50">
         <div className="flex items-center gap-4 text-white">
           <button onClick={() => window.history.back()} className="p-2 hover:bg-white/10 rounded-xl transition-colors cursor-pointer">
@@ -111,6 +112,7 @@ export const EditorScreen = () => {
         </button>
       </header>
 
+      {/* CONTENEDOR PRINCIPAL DOS COLUMNAS */}
       <div className="flex-1 flex overflow-hidden relative">
         <EditorSidebar 
           inv={inv} 
@@ -123,7 +125,7 @@ export const EditorScreen = () => {
         />
 
         <main className={`flex-1 overflow-y-auto bg-[#0b0f19] flex items-center justify-center p-4 md:p-8 ${mobileView === 'preview' ? 'block' : 'hidden md:flex'}`} style={{ backgroundImage: 'radial-gradient(#1e293b 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
-          <div className="w-[375px] h-[812px] bg-white rounded-[3rem] overflow-hidden shadow-2xl relative border-[8px] border-[#1e293b] shrink-0">
+          <div className="w-[375px] h-[812px] bg-white rounded-[3rem] overflow-hidden shadow-2xl relative border-[8px] border-[#1e293b] shrink-0 max-w-full">
             <div className="absolute top-0 inset-x-0 h-6 bg-[#1e293b] rounded-b-3xl w-40 mx-auto z-50"></div>
             
             <div className="w-full h-full overflow-y-auto overflow-x-hidden relative" id="preview-container">
@@ -135,6 +137,25 @@ export const EditorScreen = () => {
           </div>
         </main>
       </div>
+
+      {/* 👉 BARRA DE NAVEGACIÓN FLOTANTE MÓVIL (Aparece solo en pantallas chicas) */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-md border border-white/10 p-1.5 rounded-2xl flex items-center gap-1 shadow-2xl md:hidden z-[9999]">
+        <button 
+          type="button"
+          onClick={() => setMobileView('editor')} 
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${mobileView === 'editor' ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30' : 'text-slate-400 hover:text-slate-200'}`}
+        >
+          <Edit2 size={14} /> Opciones
+        </button>
+        <button 
+          type="button"
+          onClick={() => setMobileView('preview')} 
+          className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer ${mobileView === 'preview' ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30' : 'text-slate-400 hover:text-slate-200'}`}
+        >
+          <Eye size={14} /> Vista Previa
+        </button>
+      </div>
+
     </div>
   );
 };
