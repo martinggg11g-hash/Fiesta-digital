@@ -9,28 +9,27 @@ const ProjectorScreen = ({ eventSlug }) => {
   const [photos, setPhotos] = useState([]);
   const [idx, setIdx] = useState(0);
 
-  // 👉 CORRECCIÓN: Volvemos a leer de 'eventos' y consultamos cada 5 segundos
+  // 👉 LÓGICA DEFINITIVA: Polling a prueba de balas en la tabla correcta
   useEffect(() => {
     const fetchPhotos = async () => {
-      const { data } = await supabase.from('eventos').select('internal_data').eq('slug', eventSlug).single();
+      // Leemos de 'invitaciones' usando el 'id'
+      const { data } = await supabase.from('invitaciones').select('internal_data').eq('id', eventSlug).single();
       if (data?.internal_data?.live_photos) {
-        // Comprobamos si hay fotos nuevas para reiniciar el carrusel y mostrar la última
-        setPhotos(prevPhotos => {
-          if (prevPhotos.length !== data.internal_data.live_photos.length) {
-            setIdx(0); // Forzamos a que muestre la foto recién subida
-          }
+        setPhotos(prev => {
+          // Si hay una foto nueva, volvemos a la foto 0 (la más reciente)
+          if (prev.length !== data.internal_data.live_photos.length) setIdx(0);
           return data.internal_data.live_photos;
         });
       }
     };
     
-    fetchPhotos(); // Primera carga
-    const radarDJ = setInterval(fetchPhotos, 5000); // Revisa cada 5 seg
+    fetchPhotos(); // Busca apenas entra
+    const radar = setInterval(fetchPhotos, 3000); // Busca cada 3 segundos en silencio
     
-    return () => clearInterval(radarDJ);
+    return () => clearInterval(radar);
   }, [eventSlug]);
 
-  // Cambia la foto que se ve en pantalla cada 5 segundos (Carrusel)
+  // Carrusel automático cada 5 segundos
   useEffect(() => {
     if (photos.length <= 1) return;
     const interval = setInterval(() => {
@@ -80,8 +79,8 @@ export const ManageScreen = () => {
 
   useEffect(() => {
     const fetchEvent = async () => {
-      // 👉 CORRECCIÓN: Apuntamos a la tabla 'eventos' (la que ven los invitados)
-      const { data } = await supabase.from('eventos').select('*').eq('slug', eventSlug).single();
+      // 👉 Buscamos en 'invitaciones' usando el 'id'
+      const { data } = await supabase.from('invitaciones').select('*').eq('id', eventSlug).single();
       if (data) {
          setEventData(data);
          if (!data.config?.clientPin || isProjectorMode) setIsAuthenticated(true);
