@@ -1,18 +1,16 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { Routes, Route, useParams, Navigate, useSearchParams } from "react-router-dom";
-import { Loader2, PartyPopper } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 import { InvitePreview } from "./Preview";
 import { DEF_CONFIG } from "./config";
 import { OpeningAnimation } from "./Lotties";
 import { supabase } from "./supabase"; 
 
-// 👉 ACÁ ESTÁ LA MAGIA DEL LAZY LOADING: 
-// Esto divide tu app en "pedacitos". Si el usuario no entra a esta ruta, este código NO se descarga.
+// LAZY LOADING: Divide la app en pedacitos para que cargue ultra rápido
 const LoginScreen = React.lazy(() => import("./Login"));
 const DashboardScreen = React.lazy(() => import("./Dashboard"));
 const PuertaScreen = React.lazy(() => import("./Puerta"));
-// Nota: Editor y Manage tienen "exportaciones nombradas", se importan un poquito distinto con lazy
 const EditorScreen = React.lazy(() => import("./Editor").then(module => ({ default: module.EditorScreen })));
 const ManageScreen = React.lazy(() => import("./Manage").then(module => ({ default: module.ManageScreen })));
 
@@ -40,18 +38,12 @@ const GlobalStyles = () => {
   return null;
 };
 
-// 👉 PANTALLA DE CARGA GLOBAL (Se usa mientras React descarga los archivos perezosos)
+// 👉 NUEVA PANTALLA DE CARGA INVISIBLE (Fondo negro liso, entra "de una")
 const LoadingFallback = () => (
-  <div className="h-screen w-full bg-slate-950 flex flex-col items-center justify-center text-white relative overflow-hidden transition-opacity duration-1000 z-[9999]">
-     <div className="absolute inset-0 bg-[radial-gradient(#8b5cf6_1px,transparent_1px)] [background-size:20px_20px] opacity-10 animate-pulse"></div>
-     <div className="w-20 h-20 bg-violet-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-violet-600/50 mb-6 anim-pop">
-        <PartyPopper size={40} className="text-white animate-bounce" />
-     </div>
-     <h1 className="font-black text-2xl tracking-widest uppercase text-white/90">DeFiesta<span className="text-violet-400">.lat</span></h1>
-  </div>
+  <div className="h-screen w-full bg-black absolute inset-0 z-[9999]"></div>
 );
 
-// 👉 PANTALLA INVITADO REAL
+// PANTALLA INVITADO REAL
 const LiveInviteScreen = () => {
   const { id: eventSlug } = useParams();
   const [searchParams] = useSearchParams();
@@ -78,12 +70,8 @@ const LiveInviteScreen = () => {
     fetchEventAndGuest();
   }, [eventSlug, guestId]);
 
-  if (loading) return (
-    <div className="h-screen bg-slate-950 flex flex-col items-center justify-center text-white relative overflow-hidden">
-       <Loader2 size={30} className="animate-spin text-violet-500 mb-4"/>
-       <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-50">Preparando Pase VIP...</p>
-    </div>
-  );
+  // Pantalla negra mientras carga para que sea instantáneo a la vista
+  if (loading) return <div className="h-screen bg-black"></div>;
 
   if (!inv) return <div className="h-screen bg-black text-white flex items-center justify-center font-black text-xl tracking-widest uppercase">Evento no encontrado 👻</div>;
 
@@ -105,7 +93,6 @@ const LiveInviteScreen = () => {
              const currentPhotos = inv.internal_data?.live_photos || [];
              const updatedPhotos = [url, ...currentPhotos];
              const updatedInternal = { ...inv.internal_data, live_photos: updatedPhotos };
-             // 👉 ARREGLO DE BUG: Ahora guardamos la foto en la tabla 'eventos' correcta
              await supabase.from('eventos').update({ internal_data: updatedInternal }).eq('id', inv.id);
              setInv({ ...inv, internal_data: updatedInternal });
           }}
@@ -115,21 +102,25 @@ const LiveInviteScreen = () => {
   );
 };
 
-// 👉 PANTALLA INVITADO PÚBLICO
-const PublicInviteScreen = ({ invitations, onConfirmRSVP, onUpdateInternal }) => {
+// 👉 PANTALLA INVITADO PÚBLICO (Refactorizada para ser auto-suficiente y ultra rápida)
+const PublicInviteScreen = ({ onConfirmRSVP, onUpdateInternal }) => {
   const { invId } = useParams();
-  const inv = invitations.find(i => i.id === invId);
+  const [inv, setInv] = useState(null);
   const [opened, setOpened] = useState(false);
   
   useEffect(() => {
-    if (inv) { document.title = inv.config?.honoreeName ? `${inv.config.honoreeName} | Invitación` : "Invitación"; }
-  }, [inv]);
+    const fetchInv = async () => {
+      const { data } = await supabase.from('invitaciones').select('*').eq('id', invId).single();
+      if (data) {
+        data.internal_data = data.internal_data || {};
+        setInv(data);
+        document.title = data.config?.honoreeName ? `${data.config.honoreeName} | Invitación` : "Invitación";
+      }
+    };
+    fetchInv();
+  }, [invId]);
 
-  if (!inv) return (
-    <div className="h-screen bg-slate-950 flex flex-col items-center justify-center text-white relative overflow-hidden">
-       <Loader2 size={30} className="animate-spin text-white opacity-50"/>
-    </div>
-  );
+  if (!inv) return <div className="h-screen bg-black"></div>;
   
   return (
     <div className="bg-black min-h-screen flex justify-center w-full relative overflow-hidden">
@@ -164,7 +155,6 @@ export default function App() {
 
   const [users, setUsers] = useState([]);
   const [invitations, setInvitations] = useState([]);
-  
   const [globalAlert, setGlobalAlert] = useState({ mensaje: "", activo: false });
   const [loading, setLoading] = useState(true);
 
@@ -181,7 +171,16 @@ export default function App() {
   };
 
   useEffect(() => {
+    const path = window.location.pathname;
+    const isGuestRoute = path.startsWith('/i/') || path.startsWith('/invite/');
+
     const fetchData = async () => {
+      // 👉 CORTAFUEGOS: Si es un invitado, no descargamos la mega-base de datos del panel maestro.
+      if (isGuestRoute) {
+         setLoading(false);
+         return; 
+      }
+
       try {
         const { data: salones } = await supabase.from('salones').select('*');
         const { data: invs } = await supabase.from('invitaciones').select('*');
@@ -193,27 +192,24 @@ export default function App() {
       } catch (error) {
         console.error("Error al cargar la base de datos:", error);
       } finally {
-        setLoading(false); // 👉 ARREGLO DE UX: Siempre frenamos el loading, aunque falle la DB
+        setLoading(false);
       }
     };
     fetchData();
 
-    // 👉 ARREGLO PERFORMANCE: Polling optimizado (solo pide lo necesario)
+    if (isGuestRoute) return; // No necesitamos el radar de alertas para los invitados
+
     const radar = setInterval(async () => {
-      // 1. Siempre buscamos las alertas
       const { data: alertData } = await supabase.from('alertas').select('*').eq('id', 1).single();
       if (alertData) {
         setGlobalAlert({ mensaje: alertData.mensaje, activo: alertData.activo });
       }
       
-      // 2. Si el usuario está logueado, solo buscamos actualizaciones de chat
       if (user) {
         if (user.role === 'owner') {
-          // El owner necesita ver todos los salones por si alguien escribe
           const { data: salones } = await supabase.from('salones').select('*');
           if (salones) setUsers(salones);
         } else {
-          // El salón solo necesita descargar SU PROPIO registro (ahorramos 99% de recursos)
           const { data: miSalon } = await supabase.from('salones').select('*').eq('email', user.email);
           if (miSalon && miSalon.length > 0) {
             setUsers(prev => prev.map(u => u.email === user.email ? miSalon[0] : u));
@@ -268,7 +264,6 @@ export default function App() {
       return null;
     }
 
-    // 👉 ARREGLO DE IDs SEGÚN CLAUDE (Usamos un random más seguro)
     const nId = "evt-" + Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
     
     const cfg = { 
@@ -314,12 +309,12 @@ export default function App() {
     });
   };
 
+  // Si entra al Dashboard y está cargando, mostramos la pantalla negra
   if (loading) return <LoadingFallback />;
 
   return (
     <>
       <GlobalStyles />
-      {/* 👉 ACÁ ENVOLVEMOS LAS RUTAS CON SUSPENSE */}
       <Suspense fallback={<LoadingFallback />}>
         <Routes>
           <Route path="/" element={user ? <Navigate to="/dashboard" /> : <LoginScreen onLogin={handleLogin} users={users} />} />
