@@ -4,18 +4,18 @@ import EditorSidebar from './EditorSidebar';
 import { InvitePreview } from './Preview';
 import { DEF_CONFIG } from './config';
 import { supabase } from './supabase';
+import { OpeningAnimation } from './Lotties'; // 👉 IMPORTAMOS LA ANIMACIÓN DIRECTO ACÁ
 
 export const EditorScreen = () => {
   const [inv, setInv] = useState({ config: DEF_CONFIG });
-  const [salonProfile, setSalonProfile] = useState(null); // 🔥 ESTADO PARA EL PERFIL DEL SALÓN
+  const [salonProfile, setSalonProfile] = useState(null); 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [previewAnim, setPreviewAnim] = useState(false);
+  const [previewAnim, setPreviewAnim] = useState(false); // 👉 ACÁ ESTÁ EL ESTADO TRABADO
   const [mobileView, setMobileView] = useState('editor');
 
   const eventSlug = window.location.pathname.split('/').pop();
 
-  // 1️⃣ CARGAR DATOS DESDE SUPABASE AL ABRIR EL EDITOR
   useEffect(() => {
     const loadData = async () => {
       if (!eventSlug || eventSlug === 'editor') {
@@ -24,22 +24,19 @@ export const EditorScreen = () => {
       }
       
       try {
-        // A. Buscamos si el evento ya existe en la tabla eventos
         const { data, error } = await supabase.from('eventos').select('*').eq('slug', eventSlug).single();
 
         if (data) {
           setInv({ ...data, config: { ...DEF_CONFIG, ...data.config } });
         } else {
-          // B. Si no existe, lo creamos
           const { data: newData } = await supabase.from('eventos').insert([{ slug: eventSlug, config: DEF_CONFIG }]).select().single();
           if (newData) setInv(newData);
         }
 
-        // 🔥 C. BUSCAMOS AL DUEÑO DE LA FIESTA Y SU PERFIL
         const { data: invData } = await supabase.from('invitaciones').select('salon_id').eq('id', eventSlug).single();
         if (invData?.salon_id) {
           const { data: sData } = await supabase.from('salones').select('*').eq('email', invData.salon_id).single();
-          if (sData) setSalonProfile(sData); // Guardamos el logo, nombre y redes
+          if (sData) setSalonProfile(sData); 
         }
 
       } catch (err) {
@@ -52,11 +49,9 @@ export const EditorScreen = () => {
     loadData();
   }, [eventSlug]);
 
-  // 2️⃣ GUARDAR DATOS EN SUPABASE AL TOCAR EL BOTÓN
   const handleSave = async () => {
     setSaving(true);
     try {
-      // 🔥 FIX CRÍTICO: Guardamos en AMBAS tablas para que el Dashboard actualice la miniatura
       await supabase.from('eventos').update({ config: inv.config }).eq('slug', eventSlug);
       await supabase.from('invitaciones').update({ config: inv.config }).eq('id', eventSlug);
       
@@ -84,6 +79,18 @@ export const EditorScreen = () => {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-[#0f172a]">
+      
+      {/* 👉 ACÁ RENDERIZAMOS LA ANIMACIÓN DIRECTAMENTE POR ENCIMA DE TODO CUANDO SE ACTIVA */}
+      {previewAnim && (
+        <div className="fixed inset-0 z-[99999] pointer-events-none flex items-center justify-center">
+           <OpeningAnimation 
+              cfg={inv.config} 
+              onOpen={() => setPreviewAnim(false)} // DESTRABADOR: Se apaga sola cuando termina
+              isPreview={true} 
+           />
+        </div>
+      )}
+
       <header className="h-16 bg-[#0f172a] border-b border-white/10 flex items-center justify-between px-4 md:px-6 shrink-0 z-50">
         <div className="flex items-center gap-4 text-white">
           <button onClick={() => window.history.back()} className="p-2 hover:bg-white/10 rounded-xl transition-colors cursor-pointer">
@@ -112,7 +119,7 @@ export const EditorScreen = () => {
           update={updateConfig} 
           setPreviewAnim={setPreviewAnim} 
           mobileView={mobileView} 
-          salonProfile={salonProfile} // 🔥 LE PASAMOS EL PERFIL COMPLETO
+          salonProfile={salonProfile} 
         />
 
         <main className={`flex-1 overflow-y-auto bg-[#0b0f19] flex items-center justify-center p-4 md:p-8 ${mobileView === 'preview' ? 'block' : 'hidden md:flex'}`} style={{ backgroundImage: 'radial-gradient(#1e293b 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
