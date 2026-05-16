@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
-import { ANIMATION_CATEGORIES } from "./config"; // 👉 Importamos la config para leer las nuevas URLs
+import { ANIMATION_CATEGORIES } from "./config"; 
 
 // URLS DE CADA ANIMACIÓN (Fallback para los viejos)
 export const LOTTIE_MAP = {
@@ -25,13 +25,20 @@ const TRANSITIONS = {
 
 export const OpeningAnimation = ({ cfg, onOpen, isPreview = false }) => {
   const [isExiting, setIsExiting] = useState(false);
+  // 👉 MAGIA 1: Forzamos la recarga con una key de tiempo
+  const [animKey, setAnimKey] = useState(Date.now());
+  
   const type = cfg?.openingAnimation || "envelope";
   
   useEffect(() => {
     if (type === "none") {
-      onOpen();
+      if (onOpen) onOpen();
       return;
     }
+
+    // 👉 MAGIA 2: Reseteamos el estado invisible cada vez que entra
+    setIsExiting(false);
+    setAnimKey(Date.now());
 
     const audio = new Audio("https://actions.google.com/sounds/v1/magic/magic_chimes.ogg");
     audio.volume = 0.4;
@@ -42,7 +49,7 @@ export const OpeningAnimation = ({ cfg, onOpen, isPreview = false }) => {
     const exitTimer = setTimeout(() => {
       setIsExiting(true);
       setTimeout(() => {
-        onOpen(); 
+        if (onOpen) onOpen(); 
       }, 800); 
     }, durationMs);
 
@@ -51,10 +58,9 @@ export const OpeningAnimation = ({ cfg, onOpen, isPreview = false }) => {
 
   if (type === "none") return null;
 
-  // 👉 MAGIA: Buscamos si la animación tiene una URL directamente en la configuración
+  // 👉 MAGIA 3: Búsqueda infalible de la URL
   let finalUrl = LOTTIE_MAP[type] || LOTTIE_MAP.envelope; 
-  
-  for (const cat in ANIMATION_CATEGORIES) {
+  for (const cat of Object.keys(ANIMATION_CATEGORIES)) {
     const found = ANIMATION_CATEGORIES[cat].find(a => a.id === type);
     if (found && found.url) {
       finalUrl = found.url;
@@ -62,10 +68,11 @@ export const OpeningAnimation = ({ cfg, onOpen, isPreview = false }) => {
     }
   }
 
-  const transitionClass = TRANSITIONS[cfg?.animationTransition || 'fade'];
+  const transitionClass = TRANSITIONS[cfg?.animationTransition || 'fade'] || "opacity-0";
 
   return (
     <div 
+      key={animKey}
       className={`
         ${isPreview ? 'absolute' : 'fixed'} inset-0 z-[100] 
         flex flex-col items-center justify-center 
@@ -76,14 +83,13 @@ export const OpeningAnimation = ({ cfg, onOpen, isPreview = false }) => {
       <div className="absolute inset-0 opacity-30" style={{ background: cfg?.primary || '#7c3aed' }} />
       <div className="relative z-10 w-full h-full flex flex-col items-center justify-center">
         <div className={`w-[320px] h-[320px] transition-transform duration-700 ${isExiting ? 'scale-110' : 'scale-100'}`}>
-          <DotLottieReact src={finalUrl} loop={true} autoplay />
+          <DotLottieReact key={finalUrl} src={finalUrl} loop={true} autoplay />
         </div>
       </div>
     </div>
   );
 };
 
-// 👉 COMPONENTE LOTTIE CORREGIDO: Anclado arriba y sin z-index forzado
 export const LottieOverlay = ({ url }) => {
   if (!url) return null;
 
