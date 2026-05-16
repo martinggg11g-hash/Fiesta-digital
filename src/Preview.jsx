@@ -226,16 +226,14 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
           </div>
         )}
 
-        {/* 👉 FIX: SE AGREGA EL RENDER SYMBOL PARA QUE DIBUJE LOS EMOJIS EN EL PROGRAMA */}
         {cfg.showItinerary && cfg.itinerary?.length > 0 && (
           <div className="pt-4">
-            <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={cfg.fontBody}>{cfg.itinerarySectionTitle || "Programa del evento"}</SectionTitle>
+            <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={cfg.fontBody}>{cfg.itinerarySectionTitle ?? "Programa del evento"}</SectionTitle>
             <div className="relative pl-6 space-y-8 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5" style={{ '--tw-before-bg': `${primary}33` }}>
               <div className="absolute left-[7px] top-2 bottom-2 w-[2px]" style={{ background: primary, opacity: 0.3 }} />
               {cfg.itinerary.map((item, i) => (
                 <div key={i} className="relative text-left p-4 rounded-3xl" style={glassContainerStyle}>
                   {shineOverlay}
-                  {/* Se agregó el icono con fondo sólido */}
                   <div className="absolute -left-[35px] top-[18px] w-8 h-8 rounded-full border-4 border-white z-20 flex items-center justify-center shadow-md bg-white">
                      <RenderSymbol value={item.emoji || "✨"} size={16} color={primary} />
                   </div>
@@ -252,7 +250,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
 
         {cfg.showMenu && cfg.menuItems?.length > 0 && (
           <div className="pt-4">
-            <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={cfg.fontBody}>{cfg.menuSectionTitle || "¿Qué vamos a comer?"}</SectionTitle>
+            <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={cfg.fontBody}>{cfg.menuSectionTitle ?? "¿Qué vamos a comer?"}</SectionTitle>
             <div className="grid grid-cols-2 gap-3">
               {cfg.menuItems.map((m, i) => (
                 <div key={i} className="p-5 rounded-[2rem] text-center relative overflow-hidden flex flex-col items-center" style={glassContainerStyle}>
@@ -269,7 +267,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
 
         {cfg.showLiveCamera && (
           <div className="pt-6">
-            <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={cfg.fontBody}>{cfg.liveCameraTitle || "Álbum Colaborativo"}</SectionTitle>
+            <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={cfg.fontBody}>{cfg.liveCameraTitle ?? "Álbum Colaborativo"}</SectionTitle>
             <div className="relative overflow-hidden rounded-[2rem] text-center p-6 border shadow-lg" style={glassContainerStyle}>
               {shineOverlay}
               <div className="relative z-10 flex flex-col items-center">
@@ -318,7 +316,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
 
         {(cfg.showDressCode || cfg.showGifts) && (
           <div className="pt-6">
-            <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={cfg.fontBody}>{cfg.notesSectionTitle || "A tener en cuenta"}</SectionTitle>
+            <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={cfg.fontBody}>{cfg.notesSectionTitle ?? "A tener en cuenta"}</SectionTitle>
             <div className="grid grid-cols-2 gap-3">
               {cfg.showDressCode && (
                 <div className="p-6 rounded-[2rem] text-center relative overflow-hidden flex flex-col items-center" style={glassContainerStyle}>
