@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+import { ANIMATION_CATEGORIES } from "./config"; // 👉 Importamos la config para leer las nuevas URLs
 
-// URLS DE CADA ANIMACIÓN
+// URLS DE CADA ANIMACIÓN (Fallback para los viejos)
 export const LOTTIE_MAP = {
   envelope: "https://lottie.host/79010496-e08b-4a5e-8557-0a4176378e90/4x9xLpSUnp.json", 
   chest: "https://lottie.host/2672eef6-88bc-4912-ab48-eb80aa0c1288/SPCECwdwgK.lottie", 
@@ -50,7 +51,17 @@ export const OpeningAnimation = ({ cfg, onOpen, isPreview = false }) => {
 
   if (type === "none") return null;
 
-  const url = LOTTIE_MAP[type] || LOTTIE_MAP.envelope;
+  // 👉 MAGIA: Buscamos si la animación tiene una URL directamente en la configuración
+  let finalUrl = LOTTIE_MAP[type] || LOTTIE_MAP.envelope; 
+  
+  for (const cat in ANIMATION_CATEGORIES) {
+    const found = ANIMATION_CATEGORIES[cat].find(a => a.id === type);
+    if (found && found.url) {
+      finalUrl = found.url;
+      break;
+    }
+  }
+
   const transitionClass = TRANSITIONS[cfg?.animationTransition || 'fade'];
 
   return (
@@ -65,7 +76,7 @@ export const OpeningAnimation = ({ cfg, onOpen, isPreview = false }) => {
       <div className="absolute inset-0 opacity-30" style={{ background: cfg?.primary || '#7c3aed' }} />
       <div className="relative z-10 w-full h-full flex flex-col items-center justify-center">
         <div className={`w-[320px] h-[320px] transition-transform duration-700 ${isExiting ? 'scale-110' : 'scale-100'}`}>
-          <DotLottieReact src={url} loop={true} autoplay />
+          <DotLottieReact src={finalUrl} loop={true} autoplay />
         </div>
       </div>
     </div>
