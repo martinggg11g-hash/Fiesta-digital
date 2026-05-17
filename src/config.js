@@ -56,7 +56,7 @@ export const DEF_CONFIG = {
   // CONFIGURACIÓN DE EFECTOS
   effectOpacity: 100,
 
-  // CONFIGURACIÓN DE BORDES (CORREGIDO PARA VISIBILIDAD INICIAL)
+  // CONFIGURACIÓN DE BORDES
   showCoverBorders: false,
   selectedBorder: "/borders/1-Photoroom.png", 
   borderPosition: "both",
@@ -337,7 +337,7 @@ export const PARTICLE_CATEGORIES = {
     { id: "streamers", name: "Serpentinas", icon: "🎊" }
   ],
   "Efectos 3D Premium": [
-    { id: "lottie_cerveza", name: "Chelas bien frías", icon: "🍺", isLottie: true, url: "https://lottie.host/544a0b9f-1434-4fc4-acc3-5cdf3771d459/ywFFhWvizZ.lottie" },
+    { id: "lottie_cerveza", name: "Brindis Cervecero", icon: "🍺", isLottie: true, url: "https://lottie.host/544a0b9f-1434-4fc4-acc3-5cdf3771d459/ywFFhWvizZ.lottie" },
     { id: "lottie_brindis", name: "¡Fondo, Fondo!", icon: "🍻", isLottie: true, url: "https://lottie.host/acee53c4-e205-4381-a8d6-6c81e546936e/FGryvHLT7G.lottie" },
     { id: "lottie_confeti_nuevo", name: "Lluvia de Confeti", icon: "🎉", isLottie: true, url: "https://lottie.host/d8112081-66aa-4001-9a22-c4e1fc0b5551/JOr2rqdpCv.lottie" },
     { id: "lottie_estrellas_nuevo", name: "Noche Estrellada", icon: "🌟", isLottie: true, url: "https://lottie.host/43af906f-7e7f-4f8c-b305-f86280e4f39a/oOwCUkBzz7.lottie" },
@@ -356,11 +356,13 @@ export const ANIMATION_CATEGORIES = {
   infantil: [ 
     { id: 'new_jirafa', emoji: '🎁', name: 'Regalo Explosivo', isLottie: true, url: 'https://lottie.host/da469562-9122-4062-a1c2-6fd71b51f250/TltkNEXlQE.lottie' },
     { id: 'new_nina', emoji: '👀', name: 'Asomando', isLottie: true, url: 'https://lottie.host/28a64e1d-7e11-43f8-b339-54bd7fa7562f/Ad6KGTk3EL.lottie' },
-    { id: 'lottie_castillo', emoji: '🏰', name: 'Castillo de Cuento', isLottie: true, url: 'https://lottie.host/fa7015b5-9673-4eaf-8636-7fb3e5e88773/o2tB6wYGiC.lottie' }
+    { id: 'lottie_castillo', emoji: '🏰', name: 'Castillo de Cuento', isLottie: true, url: 'https://lottie.host/fa7015b5-9673-4eaf-8636-7fb3e5e88773/o2tB6wYGiC.lottie' },
+    { id: 'lottie_auto', emoji: '🏎️', name: 'A toda velocidad', isLottie: true, url: 'https://lottie.host/d27e41e2-ebc9-4c56-9baf-6be124d2618e/3d4UlzGIRS.lottie' }
   ],
   bodas_y_quince: [ 
     { id: 'new_sobre_corazones', emoji: '💃', name: 'Jessica Rabbit', isLottie: true, url: 'https://lottie.host/76b80717-c64a-474b-b5dc-9853881dac0b/B0nOPSiMVc.lottie' },
-    { id: 'lottie_brindis', emoji: '🍻', name: '¡Fondo, Fondo!', isLottie: true, url: 'https://lottie.host/acee53c4-e205-4381-a8d6-6c81e546936e/FGryvHLT7G.lottie' }
+    { id: 'lottie_brindis', emoji: '🍻', name: '¡Fondo, Fondo!', isLottie: true, url: 'https://lottie.host/acee53c4-e205-4381-a8d6-6c81e546936e/FGryvHLT7G.lottie' },
+    { id: 'lottie_cerveza', emoji: '🍺', name: 'Brindis Cervecero', isLottie: true, url: 'https://lottie.host/544a0b9f-1434-4fc4-acc3-5cdf3771d459/ywFFhWvizZ.lottie' }
   ],
   general: [ 
     { id: 'new_torta', emoji: '🦒', name: 'Jirafa', isLottie: true, url: 'https://lottie.host/51744e8c-7aa8-4f52-b714-3e7ae7faaf53/NVYXsjwYDq.lottie' },
