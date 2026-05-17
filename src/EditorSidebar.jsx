@@ -1,46 +1,11 @@
 import React, { useState } from "react";
 import { Palette, Star, Image as ImageIcon, Layout, List, Trash2, Video, Link as LinkIcon, LayoutGrid, Smartphone, Calendar, Clock, CheckCircle2, MessageCircle, Plus, Edit2, RefreshCcw, Copy, ExternalLink, Sparkles, Camera } from "lucide-react";
-// 👉 ACÁ LIMPIAMOS LOS IMPORTS QUE ROMPÍAN VERCEL
-import { GiphySearch, Inp, MiniInp, SelectInp, TypoControl, FontSelector, FileUpload, Toggle, EmojiPicker } from "./EditorUI";
+import { GiphySearch, Inp, MiniInp, SelectInp, TypoControl, FontSelector, FileUpload, Toggle, EmojiPicker, Acc, BordersGallery, Tooltip } from "./EditorUI";
 import { ANIMATION_CATEGORIES, THEMES, TRANSITION_OPTS, PARTICLE_CATEGORIES, FONTS } from "./config";
 
 const InstagramIcon = ({ size = 20 }) => (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>);
 const FacebookIcon = ({ size = 20 }) => (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>);
 const TiktokIcon = ({ size = 20 }) => (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path></svg>);
-
-// 👉 ACÁ ESTÁN LOS COMPONENTES INYECTADOS PARA QUE FUNCIONE TODO HERMOSO
-const Tooltip = ({ text }) => (
-  <span className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full bg-slate-200 text-slate-600 text-[10px] font-bold cursor-help" title={text}>?</span>
-);
-
-const Acc = ({ title, icon: Icon, iconColor, defaultOpen, children }) => {
-  const [open, setOpen] = useState(defaultOpen || false);
-  return (
-    <div className="mb-4 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-      <button type="button" onClick={() => setOpen(!open)} className="w-full flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer">
-        <div className="flex items-center gap-3">
-          {Icon && <Icon size={18} color={iconColor || "#64748b"} />}
-          <span className="text-xs font-black text-slate-700 uppercase tracking-wide">{title}</span>
-        </div>
-        <span className="text-slate-400 font-bold">{open ? "−" : "+"}</span>
-      </button>
-      {open && <div className="p-4 border-t border-slate-100">{children}</div>}
-    </div>
-  );
-};
-
-const BordersGallery = ({ value, onChange }) => {
-  const borders = ["/borders/1-Photoroom.png", "/borders/2.png", "/borders/3.png"];
-  return (
-    <div className="flex gap-2 overflow-x-auto pb-2">
-       {borders.map(b => (
-         <button key={b} type="button" onClick={() => onChange(b)} className={`w-12 h-12 shrink-0 border-2 rounded-xl bg-slate-50 overflow-hidden cursor-pointer ${value === b ? 'border-pink-500 shadow-md' : 'border-transparent'}`}>
-            <img src={b} alt="borde" className="w-full h-full object-contain" onError={(e) => e.target.style.display='none'} />
-         </button>
-       ))}
-    </div>
-  );
-};
 
 export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim, mobileView }) {
   const [animCat, setAnimCategory] = useState("infantil");
@@ -178,7 +143,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
       </Acc>
 
       <Acc title="1️⃣ Portada Principal" icon={ImageIcon} defaultOpen iconColor="#ec4899">
-        <div className="mb-6 bg-gray-50 p-3 rounded-xl border border-gray-200"><div className="flex items-center justify-between mb-2"><span className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center">¿Fondo GIF Animado?</span><Toggle checked={cfg.useGiphyCover || false} onChange={v => update("useGiphyCover", v)} /></div>{cfg.useGiphyCover ? (<GiphySearch onSelect={url => update("coverPhoto", url)} placeholder="Ej: brillos, spiderman..." />) : (<FileUpload value={cfg.coverPhoto} onChange={v => update("coverPhoto", v)} />)}</div>
+        <div className="mb-6 bg-gray-50 p-3 rounded-xl border border-gray-200"><div className="flex items-center justify-between mb-2"><span className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center">¿Fondo GIF Animado?</span><Toggle checked={cfg.useGiphyCover || false} onChange={v => update("useGiphyCover", v)} /></div>{cfg.useGiphyCover ? (<GiphySearch value={cfg.coverPhoto} onSelect={url => update("coverPhoto", url)} placeholder="Ej: brillos, spiderman..." />) : (<FileUpload value={cfg.coverPhoto} onChange={v => update("coverPhoto", v)} />)}</div>
         
         <div className="flex gap-2 z-[9999] relative mt-2 pt-4 border-t border-gray-200 overflow-visible">
           <EmojiPicker value={cfg.eventTypeEmoji || "✨"} onSelect={v => update("eventTypeEmoji", v)} />
@@ -250,7 +215,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
               <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">¿Usar GIF?</span>
               <Toggle checked={cfg.useGiphyBanner || false} onChange={v => update("useGiphyBanner", v)} />
             </div>
-            {cfg.useGiphyBanner ? (<GiphySearch onSelect={url => update("bannerPhoto", url)} />) : (<FileUpload value={cfg.bannerPhoto} onChange={v => update("bannerPhoto", v)} />)}
+            {cfg.useGiphyBanner ? (<GiphySearch value={cfg.bannerPhoto} onSelect={url => update("bannerPhoto", url)} />) : (<FileUpload value={cfg.bannerPhoto} onChange={v => update("bannerPhoto", v)} />)}
           </>
         )}
       </Acc>
