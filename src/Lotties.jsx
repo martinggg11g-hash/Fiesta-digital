@@ -2,24 +2,22 @@ import React, { useState, useEffect } from "react";
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import { ANIMATION_CATEGORIES } from "./config"; 
 
-// URLS DE CADA ANIMACIÓN (Fallback inteligente para que las invitaciones viejas no se rompan)
+// URLS DE CADA ANIMACIÓN (Mapeo de fallbacks inteligentes para que nada viejo se rompa en producción)
 export const LOTTIE_MAP = {
-  // Los IDs viejos ahora apuntan a los nuevos Lotties súper optimizados
-  envelope: "https://lottie.host/76b80717-c64a-474b-b5dc-9853881dac0b/B0nOPSiMVc.lottie", // Sobre de corazones
-  cake: "https://lottie.host/51744e8c-7aa8-4f52-b714-3e7ae7faaf53/NVYXsjwYDq.lottie", // Pastelazo
-  chest: "https://lottie.host/c877566c-d995-4e34-bdee-30bbba4e2050/o2EYr8jyfa.lottie", // Regalo
-  gift: "https://lottie.host/dd720199-18c7-434b-93a5-bc8da9f299a1/z4TZTEwNbS.lottie", // Sorpresa
-  rings: "https://lottie.host/76b80717-c64a-474b-b5dc-9853881dac0b/B0nOPSiMVc.lottie", // Corazones
-  dove: "https://lottie.host/76b80717-c64a-474b-b5dc-9853881dac0b/B0nOPSiMVc.lottie", // Corazones
-  crown: "https://lottie.host/d8112081-66aa-4001-9a22-c4e1fc0b5551/JOr2rqdpCv.lottie", // Confeti
-  balloon: "https://lottie.host/8036e685-ae19-4783-870f-6a03f84113d4/C4CJJDF4zM.lottie", // Piñata
-  flower: "https://lottie.host/ff85d694-1d6e-4612-8140-083a44e8168b/ax5ULOaN66.lottie", // Mirada Coqueta
-  butterfly: "https://lottie.host/ff85d694-1d6e-4612-8140-083a44e8168b/ax5ULOaN66.lottie", // Mirada Coqueta
-  stars: "https://lottie.host/43af906f-7e7f-4f8c-b305-f86280e4f39a/oOwCUkBzz7.lottie", // Estrellas
-  mickey: "https://lottie.host/da469562-9122-4062-a1c2-6fd71b51f250/TltkNEXlQE.lottie", // Jirafa
-  minnie: "https://lottie.host/28a64e1d-7e11-43f8-b339-54bd7fa7562f/Ad6KGTk3EL.lottie", // Niña saludando
-  cars: "https://lottie.host/d27e41e2-ebc9-4c56-9baf-6be124d2618e/3d4UlzGIRS.lottie", // Auto
-  lottie_spidey: "https://lottie.host/9971f30a-4798-491f-b126-034fe54e33de/xXwhfr4Qmz.lottie",
+  envelope: "https://lottie.host/76b80717-c64a-474b-b5dc-9853881dac0b/B0nOPSiMVc.lottie", // Jessica Rabbit
+  cake: "https://lottie.host/4ca06831-d568-4cd6-9b2a-32ea586857f2/nec4jxiwSC.lottie", // Pastel
+  chest: "https://lottie.host/da469562-9122-4062-a1c2-6fd71b51f250/TltkNEXlQE.lottie", // Regalo explosivo
+  gift: "https://lottie.host/dd720199-18c7-434b-93a5-bc8da9f299a1/z4TZTEwNbS.lottie", // Ojos
+  rings: "https://lottie.host/76b80717-c64a-474b-b5dc-9853881dac0b/B0nOPSiMVc.lottie",
+  dove: "https://lottie.host/76b80717-c64a-474b-b5dc-9853881dac0b/B0nOPSiMVc.lottie",
+  crown: "https://lottie.host/d8112081-66aa-4001-9a22-c4e1fc0b5551/JOr2rqdpCv.lottie",
+  balloon: "https://lottie.host/8036e685-ae19-4783-870f-6a03f84113d4/C4CJJDF4zM.lottie",
+  flower: "https://lottie.host/dd720199-18c7-434b-93a5-bc8da9f299a1/z4TZTEwNbS.lottie",
+  butterfly: "https://lottie.host/dd720199-18c7-434b-93a5-bc8da9f299a1/z4TZTEwNbS.lottie",
+  stars: "https://lottie.host/43af906f-7e7f-4f8c-b305-f86280e4f39a/oOwCUkBzz7.lottie",
+  mickey: "https://lottie.host/da469562-9122-4062-a1c2-6fd71b51f250/TltkNEXlQE.lottie", // Regalo explosivo
+  minnie: "https://lottie.host/28a64e1d-7e11-43f8-b339-54bd7fa7562f/Ad6KGTk3EL.lottie", // Asomando
+  cars: "https://lottie.host/d27e41e2-ebc9-4c56-9baf-6be124d2618e/3d4UlzGIRS.lottie",
   cheers: "https://lottie.host/acee53c4-e205-4381-a8d6-6c81e546936e/FGryvHLT7G.lottie", 
   disco: "https://lottie.host/d8112081-66aa-4001-9a22-c4e1fc0b5551/JOr2rqdpCv.lottie"
 };
@@ -46,7 +44,6 @@ export const OpeningAnimation = ({ cfg, onOpen, isPreview = false }) => {
     setIsExiting(false);
     setAnimKey(Date.now());
 
-    // El sonidito mágico que a los clientes les encanta
     const audio = new Audio("https://actions.google.com/sounds/v1/magic/magic_chimes.ogg");
     audio.volume = 0.4;
     audio.play().catch(() => {});
@@ -65,7 +62,6 @@ export const OpeningAnimation = ({ cfg, onOpen, isPreview = false }) => {
 
   if (type === "none") return null;
 
-  // Busca el Lottie nuevo, y si el evento es viejo y no lo encuentra, usa el diccionario LOTTIE_MAP
   let finalUrl = LOTTIE_MAP[type] || LOTTIE_MAP.envelope; 
   for (const cat of Object.keys(ANIMATION_CATEGORIES)) {
     const found = ANIMATION_CATEGORIES[cat].find(a => a.id === type);
