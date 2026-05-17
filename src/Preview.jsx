@@ -52,7 +52,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
   const cardC  = cfg.card  || "#ffffff";
   const gradOpacity = cfg.showCoverGradient === false ? 0 : ((cfg.coverGradientIntensity ?? 50) / 100).toFixed(2);
   
-  // 👉 ACÁ ESTÁ LA MAGIA SEPARADA: Una sombra para la frase, otra para el nombre
+  // 👉 ACÁ ESTÁN LAS DOS SOMBRAS TRABAJANDO POR SEPARADO
   const eventTypeShadow = (cfg.eventTypeShadowSize > 0) 
     ? `0px 4px ${cfg.eventTypeShadowSize}px ${cfg.eventTypeShadowColor || '#000000'}` 
     : `0 2px 10px rgba(0,0,0,0.6), 0 0 20px rgba(255,255,255,0.4)`;
@@ -66,7 +66,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
   const dynamicShadow = glowValue === 0 ? 'none' : `${cfg.shadow || '0 8px 30px rgba(0,0,0,0.05)'}, 0 0 ${glowValue}px ${primary}${hexAlpha}`;
 
   const glassContainerStyle = {
-    background: cardC, // Con que este color tenga algo de transparencia, ya queda premium.
+    background: cardC,
     boxShadow: dynamicShadow,
     border: cfg.border ? `1px solid ${cfg.border}` : `1px solid ${primary}22`,
     backdropFilter: 'none',
@@ -89,8 +89,6 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
     }
   }
 
-  // 👉 EL CAMBIO CLAVE: Bajamos las partículas a z-10 para dejarlas de tapiz de fondo.
-  // Esto libera el hilos de renderizado de las tarjetas de arriba y elimina el efecto fantasma.
   const ParticleLayer = () => (
     <div 
       className={`${cfg.particlesFullscreen ? 'fixed' : 'absolute'} inset-0 pointer-events-none ${cfg.particlesFullscreen ? 'z-10' : 'z-20'} overflow-hidden flex items-start justify-center transition-opacity duration-200`} 
@@ -195,7 +193,6 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
         </div>
       </div>
 
-      {/* El contenedor de tarjetas tiene z-30, quedando perfectamente arriba del z-10 del fondo */}
       <div className="px-5 -mt-8 relative z-30 space-y-5 flex-1">
         
         {cfg.showCountdown && cfg.countdownDate && (
