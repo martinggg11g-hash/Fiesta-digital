@@ -51,7 +51,11 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
   const mutedC = cfg.muted || "#6b7280";
   const cardC  = cfg.card  || "#ffffff";
   const gradOpacity = cfg.showCoverGradient === false ? 0 : ((cfg.coverGradientIntensity ?? 50) / 100).toFixed(2);
-  const coverShadow = (cfg.coverTextShadowSize > 0) ? `0px 4px ${cfg.coverTextShadowSize}px ${cfg.coverTextShadowColor || '#000000'}` : 'none';
+  
+  // 👉 ACÁ ESTÁ LA MAGIA DEL BRILLO POR DEFECTO
+  const coverShadow = (cfg.coverTextShadowSize > 0) 
+    ? `0px 4px ${cfg.coverTextShadowSize}px ${cfg.coverTextShadowColor || '#000000'}` 
+    : `0 2px 10px rgba(0,0,0,0.6), 0 0 20px rgba(255,255,255,0.4)`;
 
   const glowValue = cfg.cardGlow !== undefined ? cfg.cardGlow : 0;
   const hexAlpha = Math.floor((glowValue / 100) * 255).toString(16).padStart(2, '0');
