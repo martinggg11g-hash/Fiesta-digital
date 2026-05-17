@@ -157,6 +157,20 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
         
         <div className="relative z-[100] mt-4">
           <TypoControl label="Diseño Frase Superior" fontVal={cfg.eventTypeFont || cfg.fontBody} onFont={v => update("eventTypeFont", v)} colorVal={cfg.eventTypeColor || cfg.primary} onColor={v => update('eventTypeColor', v)} sizeVal={cfg.eventTypeSize ?? 11} onSize={v => update("eventTypeSize", v)} minSize={8} maxSize={24} />
+          
+          {/* 👉 CONTROL DE SOMBRA: FRASE SUPERIOR */}
+          <div className="mt-2 mb-6 p-3 bg-slate-50/80 rounded-xl border border-slate-200 shadow-inner">
+            <label className="flex justify-between items-center text-[9px] font-black text-slate-500 uppercase mb-3">
+              <span className="flex items-center">Sombra / Resplandor (Frase)</span>
+              <span className={`px-2 py-0.5 rounded-full ${!cfg.eventTypeShadowSize ? 'bg-violet-100 text-violet-600' : 'bg-slate-200 text-slate-600'}`}>
+                {!cfg.eventTypeShadowSize ? "AUTO" : `${cfg.eventTypeShadowSize}px`}
+              </span>
+            </label>
+            <div className="flex gap-3 items-center">
+              <input type="color" value={cfg.eventTypeShadowColor || '#000000'} onChange={e => update('eventTypeShadowColor', e.target.value)} className="w-10 h-10 rounded-lg cursor-pointer border border-slate-200 p-0 shrink-0 bg-white shadow-sm hover:scale-105 transition-transform" title="Color de la sombra" />
+              <input type="range" min={0} max={40} step={1} value={cfg.eventTypeShadowSize || 0} onChange={e => update("eventTypeShadowSize", Number(e.target.value))} className="w-full accent-violet-600 cursor-pointer" />
+            </div>
+          </div>
         </div>
         
         <div className="relative mt-4 z-[90]"><Inp label="Nombre Principal" value={cfg.honoreeName} onChange={v => update("honoreeName", v)} /></div>
@@ -164,33 +178,18 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
         <div className="relative z-[80]">
           <TypoControl label="Diseño del Nombre" fontVal={cfg.honoreeFont || cfg.fontTitle} onFont={v => update("honoreeFont", v)} colorVal={cfg.honoreeColor || cfg.text} onColor={v => update('honoreeColor', v)} sizeVal={cfg.honoreeSize ?? 48} onSize={v => update("honoreeSize", v)} minSize={30} maxSize={80} />
           
-          {/* 👉 ACÁ ESTÁ EL PANEL DE SOMBRA INYECTADO */}
-          <div className="mt-2 mb-4 p-4 bg-slate-50/80 rounded-xl border border-slate-200 shadow-inner">
+          {/* 👉 CONTROL DE SOMBRA: NOMBRE PRINCIPAL */}
+          <div className="mt-2 mb-4 p-3 bg-slate-50/80 rounded-xl border border-slate-200 shadow-inner">
             <label className="flex justify-between items-center text-[9px] font-black text-slate-500 uppercase mb-3">
-              <span className="flex items-center">Sombra / Resplandor (Textos)</span>
-              <span className={`px-2 py-0.5 rounded-full ${!cfg.coverTextShadowSize ? 'bg-violet-100 text-violet-600' : 'bg-slate-200 text-slate-600'}`}>
-                {!cfg.coverTextShadowSize ? "AUTO (Glow)" : `${cfg.coverTextShadowSize}px`}
+              <span className="flex items-center">Sombra / Resplandor (Nombre)</span>
+              <span className={`px-2 py-0.5 rounded-full ${!cfg.honoreeShadowSize ? 'bg-violet-100 text-violet-600' : 'bg-slate-200 text-slate-600'}`}>
+                {!cfg.honoreeShadowSize ? "AUTO" : `${cfg.honoreeShadowSize}px`}
               </span>
             </label>
             <div className="flex gap-3 items-center">
-              <input 
-                type="color" 
-                value={cfg.coverTextShadowColor || '#000000'} 
-                onChange={e => update('coverTextShadowColor', e.target.value)} 
-                className="w-10 h-10 rounded-lg cursor-pointer border border-slate-200 p-0 shrink-0 bg-white shadow-sm hover:scale-105 transition-transform" 
-                title="Color de la sombra" 
-              />
-              <input 
-                type="range" 
-                min={0} max={40} step={1} 
-                value={cfg.coverTextShadowSize || 0} 
-                onChange={e => update("coverTextShadowSize", Number(e.target.value))} 
-                className="w-full accent-violet-600 cursor-pointer" 
-              />
+              <input type="color" value={cfg.honoreeShadowColor || '#000000'} onChange={e => update('honoreeShadowColor', e.target.value)} className="w-10 h-10 rounded-lg cursor-pointer border border-slate-200 p-0 shrink-0 bg-white shadow-sm hover:scale-105 transition-transform" title="Color de la sombra" />
+              <input type="range" min={0} max={40} step={1} value={cfg.honoreeShadowSize || 0} onChange={e => update("honoreeShadowSize", Number(e.target.value))} className="w-full accent-violet-600 cursor-pointer" />
             </div>
-            <p className="text-[9px] font-medium text-slate-400 mt-3 leading-tight">
-              Si está en AUTO aplica un brillo inteligente. Movelo para controlar la sombra.
-            </p>
           </div>
         </div>
         
