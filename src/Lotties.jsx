@@ -2,18 +2,26 @@ import React, { useState, useEffect } from "react";
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import { ANIMATION_CATEGORIES } from "./config"; 
 
-// URLS DE CADA ANIMACIÓN (Fallback para los viejos clientes + un par actualizados al nuevo estilo)
+// URLS DE CADA ANIMACIÓN (Fallback inteligente para que las invitaciones viejas no se rompan)
 export const LOTTIE_MAP = {
-  envelope: "https://lottie.host/79010496-e08b-4a5e-8557-0a4176378e90/4x9xLpSUnp.json", 
-  chest: "https://lottie.host/2672eef6-88bc-4912-ab48-eb80aa0c1288/SPCECwdwgK.lottie", 
-  soccer: "https://lottie.host/85002f23-389f-431a-8588-348128330f81/T6tU811z3I.lottie", 
-  musicbox: "https://lottie.host/62e08e61-9c6a-4933-911b-85e68379207e/t5vR0ZtI7V.json", 
-  gift: "https://lottie.host/93278564-96d5-45a7-96a8-f8648348630c/183xLpSUnp.json",
-  amongus: "https://lottie.host/4d6d5ca1-2c8b-443a-a3e8-add97bfa7007/KxUqcK88DH.lottie", 
-  tiger: "https://lottie.host/19d90dc5-4d0a-4693-af95-96f949c67386/iW4Roe7QD1.lottie",
-  rings: "https://lottie.host/79010496-e08b-4a5e-8557-0a4176378e90/4x9xLpSUnp.json", 
-  cheers: "https://lottie.host/acee53c4-e205-4381-a8d6-6c81e546936e/FGryvHLT7G.lottie", // 👉 Apuntado al nuevo brindis
-  disco: "https://lottie.host/62e08e61-9c6a-4933-911b-85e68379207e/t5vR0ZtI7V.json" 
+  // Los IDs viejos ahora apuntan a los nuevos Lotties súper optimizados
+  envelope: "https://lottie.host/76b80717-c64a-474b-b5dc-9853881dac0b/B0nOPSiMVc.lottie", // Sobre de corazones
+  cake: "https://lottie.host/51744e8c-7aa8-4f52-b714-3e7ae7faaf53/NVYXsjwYDq.lottie", // Pastelazo
+  chest: "https://lottie.host/c877566c-d995-4e34-bdee-30bbba4e2050/o2EYr8jyfa.lottie", // Regalo
+  gift: "https://lottie.host/dd720199-18c7-434b-93a5-bc8da9f299a1/z4TZTEwNbS.lottie", // Sorpresa
+  rings: "https://lottie.host/76b80717-c64a-474b-b5dc-9853881dac0b/B0nOPSiMVc.lottie", // Corazones
+  dove: "https://lottie.host/76b80717-c64a-474b-b5dc-9853881dac0b/B0nOPSiMVc.lottie", // Corazones
+  crown: "https://lottie.host/d8112081-66aa-4001-9a22-c4e1fc0b5551/JOr2rqdpCv.lottie", // Confeti
+  balloon: "https://lottie.host/8036e685-ae19-4783-870f-6a03f84113d4/C4CJJDF4zM.lottie", // Piñata
+  flower: "https://lottie.host/ff85d694-1d6e-4612-8140-083a44e8168b/ax5ULOaN66.lottie", // Mirada Coqueta
+  butterfly: "https://lottie.host/ff85d694-1d6e-4612-8140-083a44e8168b/ax5ULOaN66.lottie", // Mirada Coqueta
+  stars: "https://lottie.host/43af906f-7e7f-4f8c-b305-f86280e4f39a/oOwCUkBzz7.lottie", // Estrellas
+  mickey: "https://lottie.host/da469562-9122-4062-a1c2-6fd71b51f250/TltkNEXlQE.lottie", // Jirafa
+  minnie: "https://lottie.host/28a64e1d-7e11-43f8-b339-54bd7fa7562f/Ad6KGTk3EL.lottie", // Niña saludando
+  cars: "https://lottie.host/d27e41e2-ebc9-4c56-9baf-6be124d2618e/3d4UlzGIRS.lottie", // Auto
+  lottie_spidey: "https://lottie.host/9971f30a-4798-491f-b126-034fe54e33de/xXwhfr4Qmz.lottie",
+  cheers: "https://lottie.host/acee53c4-e205-4381-a8d6-6c81e546936e/FGryvHLT7G.lottie", 
+  disco: "https://lottie.host/d8112081-66aa-4001-9a22-c4e1fc0b5551/JOr2rqdpCv.lottie"
 };
 
 const TRANSITIONS = {
@@ -38,7 +46,7 @@ export const OpeningAnimation = ({ cfg, onOpen, isPreview = false }) => {
     setIsExiting(false);
     setAnimKey(Date.now());
 
-    // El sonidito mágico se queda igual
+    // El sonidito mágico que a los clientes les encanta
     const audio = new Audio("https://actions.google.com/sounds/v1/magic/magic_chimes.ogg");
     audio.volume = 0.4;
     audio.play().catch(() => {});
@@ -57,7 +65,7 @@ export const OpeningAnimation = ({ cfg, onOpen, isPreview = false }) => {
 
   if (type === "none") return null;
 
-  // Búsqueda del Lottie: Primero revisa si es uno nuevo de las categorías, si no, usa el fallback viejo.
+  // Busca el Lottie nuevo, y si el evento es viejo y no lo encuentra, usa el diccionario LOTTIE_MAP
   let finalUrl = LOTTIE_MAP[type] || LOTTIE_MAP.envelope; 
   for (const cat of Object.keys(ANIMATION_CATEGORIES)) {
     const found = ANIMATION_CATEGORIES[cat].find(a => a.id === type);
