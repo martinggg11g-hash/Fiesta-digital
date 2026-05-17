@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { GiphyFetch } from '@giphy/js-fetch-api';
-import { Grid } from '@giphy/react-components';
+import * as Icons from "lucide-react";
 import { ChevronDown, Loader2, Trash2, Image as ImageIcon, Search, HelpCircle, CheckCircle2 } from "lucide-react";
 import { 
   FONTS, 
@@ -10,7 +9,6 @@ import {
   BORDERS 
 } from "./config";
 
-const gf = new GiphyFetch('32PbboqCveiWSlj9vROPmyjv8l8cuaj1');
 const IMGBB_API_KEY = "904f81caf05efe58a799abdb1fedc2ce";
 
 export const Tooltip = ({ text }) => {
@@ -92,7 +90,10 @@ export const IconRenderer = ({ name, size = 24, color = "currentColor", classNam
     case 'icon-balloon': return <svg {...p}><path d="M12 2a7 7 0 0 0-7 7c0 4 7 11 7 11s7-7 7-11a7 7 0 0 0-7-7Z"/><path d="M12 20v3"/></svg>;
     case 'icon-confetti': return <svg {...p}><path d="M13 2 3 14"/><path d="M18 9 8 21"/><path d="M5 2 2 5"/><path d="M22 19 19 22"/></svg>;
     case 'icon-flower': return <svg {...p}><path d="M12 7.5a4.5 4.5 0 1 1 4.5 4.5M12 7.5A4.5 4.5 0 1 0 7.5 12M12 7.5V12m0 0a4.5 4.5 0 1 0 4.5 4.5M12 12a4.5 4.5 0 1 1-4.5 4.5M12 12v9"/></svg>;
-    default: return <svg {...p}><circle cx="12" cy="12" r="10"/></svg>;
+    default: 
+      const LucideIcon = Icons[name];
+      if (LucideIcon) return <LucideIcon {...p} />;
+      return <svg {...p}><circle cx="12" cy="12" r="10"/></svg>;
   }
 };
 
@@ -205,22 +206,76 @@ export const BordersGallery = ({ value, onChange }) => (
   </div>
 );
 
-// 👉 ACÁ ESTÁ EL AGREGADO DEL PREVIEW DEL GIF ABAJO
+// 👉 EL BUSCADOR DE GIPHY ARREGLADO CON VISTA PREVIA INCLUIDA
 export const GiphySearch = ({ onSelect, value, placeholder = "Buscar GIF..." }) => {
   const [term, setTerm] = useState("fiesta");
-  const [debouncedTerm, setDebouncedTerm] = useState("fiesta");
-  useEffect(() => { const t = setTimeout(() => setDebouncedTerm(term), 600); return () => clearTimeout(t); }, [term]);
-  const fetchGifs = (offset) => gf.search(debouncedTerm || "party", { offset, limit: 10, lang: 'es' });
+  const [gifs, setGifs] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedGifUrl, setSelectedGifUrl] = useState(value || null);
+
+  useEffect(() => { setSelectedGifUrl(value); }, [value]);
+
+  const searchGifs = async (query) => {
+    if (!query) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=gYn9E022kUa0Y0pS1lYq2h85d1H8M7Mh&q=${query}&limit=20&rating=g`);
+      const data = await res.json();
+      setGifs(data.data.map(g => g.images.original.url));
+    } catch (e) {
+      console.error("Error fetching Giphy:", e);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => searchGifs(term), 600);
+    return () => clearTimeout(timer);
+  }, [term]);
+
   return (
     <div className="bg-slate-100 p-3 rounded-2xl border border-slate-200 mt-2 mb-4">
-      <div className="relative mb-3"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} /><input value={term} onChange={(e) => setTerm(e.target.value)} placeholder={placeholder} className="w-full pl-9 pr-4 py-2.5 rounded-xl text-xs border border-slate-200 focus:border-violet-400 outline-none shadow-sm" /></div>
-      <div className="h-48 overflow-y-auto rounded-xl bg-white border border-slate-100 relative z-50 fd-sb"><Grid width={300} columns={2} fetchGifs={fetchGifs} key={debouncedTerm} onGifClick={(gif, e) => { e.preventDefault(); onSelect(gif.images.original.url); }} /></div>
-      {/* Vista Previa */}
-      {value && (
+      <div className="relative mb-3">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+        <input 
+          value={term} 
+          onChange={(e) => setTerm(e.target.value)} 
+          placeholder={placeholder} 
+          className="w-full pl-9 pr-4 py-2.5 rounded-xl text-xs border border-slate-200 focus:border-violet-400 outline-none shadow-sm" 
+        />
+      </div>
+
+      <div className="h-48 overflow-y-auto rounded-xl bg-white border border-slate-100 relative z-50 p-2">
+        {loading && gifs.length === 0 ? (
+          <div className="flex justify-center items-center h-full">
+             <span className="text-[10px] font-bold text-slate-400 animate-pulse">Cargando GIFs...</span>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2">
+            {gifs.map(g => (
+              <div 
+                key={g} 
+                className="relative aspect-square cursor-pointer group rounded-lg overflow-hidden border-2" 
+                onClick={(e) => { e.preventDefault(); setSelectedGifUrl(g); onSelect(g); }} 
+                style={{ borderColor: selectedGifUrl === g ? '#8b5cf6' : 'transparent' }}
+              >
+                 <img src={g} alt="gif" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                 {selectedGifUrl === g && (
+                   <div className="absolute inset-0 bg-violet-500/30 flex items-center justify-center backdrop-blur-[1px]">
+                      <CheckCircle2 className="text-white drop-shadow-md" size={24} />
+                   </div>
+                 )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {selectedGifUrl && (
         <div className="mt-3 pt-3 border-t border-slate-200 flex flex-col items-center">
-          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">GIF Seleccionado</span>
+          <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">GIF Seleccionado</span>
           <div className="relative w-full h-24 rounded-xl overflow-hidden border-2 border-violet-400 shadow-sm bg-white">
-            <img src={value} alt="GIF Seleccionado" className="w-full h-full object-cover" />
+            <img src={selectedGifUrl} alt="GIF Seleccionado" className="w-full h-full object-cover" />
             <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1 shadow-md flex items-center justify-center">
               <CheckCircle2 size={12} />
             </div>
