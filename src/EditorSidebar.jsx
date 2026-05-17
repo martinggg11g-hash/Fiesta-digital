@@ -1,11 +1,47 @@
 import React, { useState } from "react";
 import { Palette, Star, Image as ImageIcon, Layout, List, Trash2, Video, Link as LinkIcon, LayoutGrid, Smartphone, Calendar, Clock, CheckCircle2, MessageCircle, Plus, Edit2, RefreshCcw, Copy, ExternalLink, Sparkles, Camera } from "lucide-react";
-import { GiphySearch, Inp, MiniInp, SelectInp, TypoControl, FontSelector, FileUpload, Toggle, EmojiPicker, Acc, BordersGallery, Tooltip } from "./EditorUI";
+// 👉 ACÁ IMPORTAMOS SOLO LO BÁSICO, NO LE PEDIMOS LOS ACORDEONES A TU EDITOR_UI
+import { GiphySearch, Inp, MiniInp, SelectInp, TypoControl, FontSelector, FileUpload, Toggle, EmojiPicker } from "./EditorUI";
 import { ANIMATION_CATEGORIES, THEMES, TRANSITION_OPTS, PARTICLE_CATEGORIES, FONTS } from "./config";
 
 const InstagramIcon = ({ size = 20 }) => (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>);
 const FacebookIcon = ({ size = 20 }) => (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>);
 const TiktokIcon = ({ size = 20 }) => (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path></svg>);
+
+// 👉 COMPONENTES AISLADOS PARA NO ROMPER TU UI ORIGINAL
+const Tooltip = ({ text }) => (
+  <span className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full bg-slate-200 text-slate-600 text-[10px] font-bold cursor-help" title={text}>?</span>
+);
+
+const Acc = ({ title, icon: Icon, iconColor, defaultOpen, children }) => {
+  const [open, setOpen] = useState(defaultOpen || false);
+  return (
+    <div className="mb-4 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <button type="button" onClick={() => setOpen(!open)} className="w-full flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer">
+        <div className="flex items-center gap-3">
+          {Icon && <Icon size={18} color={iconColor || "#64748b"} />}
+          <span className="text-xs font-black text-slate-700 uppercase tracking-wide">{title}</span>
+        </div>
+        <span className="text-slate-400 font-bold">{open ? "−" : "+"}</span>
+      </button>
+      {open && <div className="p-4 border-t border-slate-100">{children}</div>}
+    </div>
+  );
+};
+
+const BordersGallery = ({ value, onChange }) => {
+  // Asegurate de tener estas imágenes en tu carpeta public/borders/
+  const borders = ["/borders/1-Photoroom.png", "/borders/2.png", "/borders/3.png", "/borders/4.png", "/borders/5.png", "/borders/6.png"];
+  return (
+    <div className="flex gap-2 overflow-x-auto pb-2">
+       {borders.map(b => (
+         <button key={b} type="button" onClick={() => onChange(b)} className={`w-12 h-12 shrink-0 border-2 rounded-xl bg-slate-50 overflow-hidden cursor-pointer ${value === b ? 'border-pink-500 shadow-md' : 'border-transparent'}`}>
+            <img src={b} alt="borde" className="w-full h-full object-contain" onError={(e) => e.target.style.display='none'} />
+         </button>
+       ))}
+    </div>
+  );
+};
 
 export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim, mobileView }) {
   const [animCat, setAnimCategory] = useState("infantil");
