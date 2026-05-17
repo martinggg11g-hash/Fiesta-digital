@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { GiphyFetch } from '@giphy/js-fetch-api';
 import { Grid } from '@giphy/react-components';
-import { ChevronDown, Loader2, Trash2, Image as ImageIcon, Search, HelpCircle } from "lucide-react";
+import { ChevronDown, Loader2, Trash2, Image as ImageIcon, Search, HelpCircle, CheckCircle2 } from "lucide-react";
 import { 
   FONTS, 
   FONT_CATEGORIES, 
@@ -59,6 +59,7 @@ export const IconRenderer = ({ name, size = 24, color = "currentColor", classNam
     case 'icon-ice-cream-bowl': return <svg {...p}><path d="M12 17v5"/><path d="M8 22h8"/><path d="M2 11a8 8 0 0 0 16 0"/><path d="M18 11H2"/></svg>;
     case 'icon-cup-soda': return <svg {...p}><path d="M6 8h12l-1.4 12H7.4Z"/><path d="M4 8h16"/><path d="M10 2l1 6"/><path d="M14 2l-1 6"/></svg>;
     case 'icon-chef-hat': return <svg {...p}><path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/><line x1="6" x2="18" y1="17" y2="17"/></svg>;
+
     case 'icon-heart': return <svg {...p}><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>;
     case 'icon-crown': return <svg {...p}><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>;
     case 'icon-star': return <svg {...p}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
@@ -204,7 +205,7 @@ export const BordersGallery = ({ value, onChange }) => (
   </div>
 );
 
-// 👉 ACÁ ESTÁ EL SEARCH MODIFICADO CON LA VISTA PREVIA
+// 👉 ACÁ ESTÁ EL AGREGADO DEL PREVIEW DEL GIF ABAJO
 export const GiphySearch = ({ onSelect, value, placeholder = "Buscar GIF..." }) => {
   const [term, setTerm] = useState("fiesta");
   const [debouncedTerm, setDebouncedTerm] = useState("fiesta");
@@ -214,13 +215,14 @@ export const GiphySearch = ({ onSelect, value, placeholder = "Buscar GIF..." }) 
     <div className="bg-slate-100 p-3 rounded-2xl border border-slate-200 mt-2 mb-4">
       <div className="relative mb-3"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} /><input value={term} onChange={(e) => setTerm(e.target.value)} placeholder={placeholder} className="w-full pl-9 pr-4 py-2.5 rounded-xl text-xs border border-slate-200 focus:border-violet-400 outline-none shadow-sm" /></div>
       <div className="h-48 overflow-y-auto rounded-xl bg-white border border-slate-100 relative z-50 fd-sb"><Grid width={300} columns={2} fetchGifs={fetchGifs} key={debouncedTerm} onGifClick={(gif, e) => { e.preventDefault(); onSelect(gif.images.original.url); }} /></div>
+      {/* Vista Previa */}
       {value && (
         <div className="mt-3 pt-3 border-t border-slate-200 flex flex-col items-center">
           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">GIF Seleccionado</span>
           <div className="relative w-full h-24 rounded-xl overflow-hidden border-2 border-violet-400 shadow-sm bg-white">
             <img src={value} alt="GIF Seleccionado" className="w-full h-full object-cover" />
             <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1 shadow-md flex items-center justify-center">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <CheckCircle2 size={12} />
             </div>
           </div>
         </div>
