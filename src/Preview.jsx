@@ -52,9 +52,13 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
   const cardC  = cfg.card  || "#ffffff";
   const gradOpacity = cfg.showCoverGradient === false ? 0 : ((cfg.coverGradientIntensity ?? 50) / 100).toFixed(2);
   
-  // 👉 ACÁ ESTÁ LA MAGIA DEL BRILLO POR DEFECTO
-  const coverShadow = (cfg.coverTextShadowSize > 0) 
-    ? `0px 4px ${cfg.coverTextShadowSize}px ${cfg.coverTextShadowColor || '#000000'}` 
+  // 👉 ACÁ ESTÁ LA MAGIA SEPARADA: Una sombra para la frase, otra para el nombre
+  const eventTypeShadow = (cfg.eventTypeShadowSize > 0) 
+    ? `0px 4px ${cfg.eventTypeShadowSize}px ${cfg.eventTypeShadowColor || '#000000'}` 
+    : `0 2px 10px rgba(0,0,0,0.6), 0 0 20px rgba(255,255,255,0.4)`;
+
+  const honoreeShadow = (cfg.honoreeShadowSize > 0) 
+    ? `0px 4px ${cfg.honoreeShadowSize}px ${cfg.honoreeShadowColor || '#000000'}` 
     : `0 2px 10px rgba(0,0,0,0.6), 0 0 20px rgba(255,255,255,0.4)`;
 
   const glowValue = cfg.cardGlow !== undefined ? cfg.cardGlow : 0;
@@ -170,14 +174,14 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
 
         <div className="absolute bottom-0 left-0 right-0 p-8 pb-12 flex flex-col items-center z-30">
           <DraggableItem id="eventType" cfg={cfg} update={update} className="relative !static flex justify-center w-full">
-            <p className="font-black uppercase tracking-[0.3em] mb-4 flex items-center justify-center gap-2 text-center" style={{ color: cfg.eventTypeColor || primary, fontSize: `${cfg.eventTypeSize ?? 11}px`, fontFamily: cfg.eventTypeFont || cfg.fontBody, textShadow: coverShadow }}>
+            <p className="font-black uppercase tracking-[0.3em] mb-4 flex items-center justify-center gap-2 text-center" style={{ color: cfg.eventTypeColor || primary, fontSize: `${cfg.eventTypeSize ?? 11}px`, fontFamily: cfg.eventTypeFont || cfg.fontBody, textShadow: eventTypeShadow }}>
               {cfg.eventTypeEmoji && <RenderSymbol value={cfg.eventTypeEmoji} size={cfg.eventTypeSize ?? 11} color={cfg.eventTypeColor || primary} />}
               {cfg.eventType}
             </p>
           </DraggableItem>
           
           <DraggableItem id="honoree" cfg={cfg} update={update} className="relative !static flex justify-center w-full">
-            <h1 style={{ fontFamily: cfg.honoreeFont || cfg.fontTitle, color: cfg.honoreeColor || textC, fontSize: `${cfg.honoreeSize ?? 48}px`, textShadow: coverShadow, textAlign: 'center', lineHeight: 1.1 }}>{cfg.honoreeName}</h1>
+            <h1 style={{ fontFamily: cfg.honoreeFont || cfg.fontTitle, color: cfg.honoreeColor || textC, fontSize: `${cfg.honoreeSize ?? 48}px`, textShadow: honoreeShadow, textAlign: 'center', lineHeight: 1.1 }}>{cfg.honoreeName}</h1>
           </DraggableItem>
 
           {(cfg.showBadge ?? true) && (
