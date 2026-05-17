@@ -168,14 +168,16 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
         {!cfg.particlesFullscreen && <ParticleLayer />}
 
         <div className="absolute bottom-0 left-0 right-0 p-8 pb-12 flex flex-col items-center z-30">
+          
+          {/* 👉 ACÁ SE ARREGLÓ EL ESPACIO DEL EMOJI CON EL TEXTO */}
           <DraggableItem id="eventType" cfg={cfg} update={update} className="relative !static flex justify-center w-full">
-            <p className="font-black uppercase tracking-[0.3em] mb-4 flex items-center justify-center gap-1 text-center" style={{ color: cfg.eventTypeColor || primary, fontSize: `${cfg.eventTypeSize ?? 11}px`, fontFamily: cfg.eventTypeFont || cfg.fontBody, textShadow: eventTypeShadow }}>
+            <p className="font-black uppercase tracking-[0.3em] mb-4 text-center px-2" style={{ color: cfg.eventTypeColor || primary, fontSize: `${cfg.eventTypeSize ?? 11}px`, fontFamily: cfg.eventTypeFont || cfg.fontBody, textShadow: eventTypeShadow, lineHeight: 1.4 }}>
               {cfg.eventTypeEmoji && (
-                 <span className="-mr-1 flex items-center justify-center">
+                 <span className="inline-flex items-center justify-center mr-2" style={{ verticalAlign: 'baseline', transform: 'translateY(-1px)' }}>
                     <RenderSymbol value={cfg.eventTypeEmoji} size={cfg.eventTypeSize ?? 11} color={cfg.eventTypeColor || primary} />
                  </span>
               )}
-              {cfg.eventType}
+              <span className="inline" style={{ verticalAlign: 'baseline' }}>{cfg.eventType}</span>
             </p>
           </DraggableItem>
           
