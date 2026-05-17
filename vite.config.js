@@ -8,7 +8,12 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      manifest: false 
+      manifest: false,
+      // 👉 ACÁ ESTÁ EL SALVAVIDAS PARA VERCEL
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,json,lottie}'],
+        maximumFileSizeToCacheInBytes: 8000000 // Subimos el límite a 8MB por las dudas
+      }
     })
   ],
 })
