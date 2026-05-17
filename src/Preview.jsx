@@ -2,8 +2,6 @@ import React, { useState } from "react";
 import { OpeningAnimation, LottieOverlay } from "./Lotties"; 
 import { Calendar, Clock, MapPin, Loader2, Camera, Lock, CheckCircle2, Download, ExternalLink } from "lucide-react";
 import { DEF_CONFIG, getSpotifyEmbed, getYouTubeId, formatToDDMMYYYY, PARTICLE_CATEGORIES } from "./config";
-
-// IMPORTAMOS DESDE LOS NUEVOS ARCHIVOS DIVIDIDOS
 import { CornerOrnament, DraggableItem, ParticleCanvas } from "./PreviewEffects";
 import { InstagramIcon, FacebookIcon, TiktokIcon, RenderSymbol, Countdown, GalleryCarousel, MapEmbed, InfoCard, SectionTitle, RsvpWidget } from "./PreviewWidgets";
 
@@ -52,7 +50,6 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
   const cardC  = cfg.card  || "#ffffff";
   const gradOpacity = cfg.showCoverGradient === false ? 0 : ((cfg.coverGradientIntensity ?? 50) / 100).toFixed(2);
   
-  // 👉 ASIGNACIÓN DE LAS DOS SOMBRAS TRABAJANDO INDEPENDIENTES
   const eventTypeShadow = (cfg.eventTypeShadowSize > 0) 
     ? `0px 4px ${cfg.eventTypeShadowSize}px ${cfg.eventTypeShadowColor || '#000000'}` 
     : `0 2px 10px rgba(0,0,0,0.6), 0 0 20px rgba(255,255,255,0.4)`;
@@ -172,16 +169,25 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
 
         <div className="absolute bottom-0 left-0 right-0 p-8 pb-12 flex flex-col items-center z-30">
           
-          {/* 👉 COMPONENTE ARREGLADO: EL ICONO QUEDA PEGADO EN LA LÍNEA DE TEXTO SIEMPRE CORRETO */}
-          <DraggableItem id="eventType" cfg={cfg} update={update} className="relative !static flex justify-center w-full">
-            <p className="font-black uppercase tracking-[0.3em] mb-4 text-center px-4" style={{ color: cfg.eventTypeColor || primary, fontSize: `${cfg.eventTypeSize ?? 11}px`, fontFamily: cfg.eventTypeFont || cfg.fontBody, textShadow: eventTypeShadow, lineHeight: 1.4 }}>
+          {/* 👉 ACÁ ARREGLAMOS EL EMOJI: Cambió a formato "inline" para que fluya con el texto */}
+          <DraggableItem id="eventType" cfg={cfg} update={update} className="relative !static flex justify-center w-full px-4">
+            <div 
+              className="font-black uppercase tracking-[0.3em] mb-4 text-center" 
+              style={{ 
+                color: cfg.eventTypeColor || primary, 
+                fontSize: `${cfg.eventTypeSize ?? 11}px`, 
+                fontFamily: cfg.eventTypeFont || cfg.fontBody, 
+                textShadow: eventTypeShadow, 
+                lineHeight: 1.4 
+              }}
+            >
               {cfg.eventTypeEmoji && (
-                 <span className="inline-block mr-1 align-middle" style={{ display: 'inline-block', verticalAlign: 'middle', transform: 'translateY(-1px)', tracking: 'normal' }}>
+                 <span className="inline-block align-middle mr-2 -mt-1">
                     <RenderSymbol value={cfg.eventTypeEmoji} size={cfg.eventTypeSize ?? 11} color={cfg.eventTypeColor || primary} />
                  </span>
               )}
-              {cfg.eventType}
-            </p>
+              <span className="align-middle">{cfg.eventType}</span>
+            </div>
           </DraggableItem>
           
           <DraggableItem id="honoree" cfg={cfg} update={update} className="relative !static flex justify-center w-full">
