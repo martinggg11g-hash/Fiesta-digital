@@ -143,7 +143,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
       </Acc>
 
       <Acc title="1️⃣ Portada Principal" icon={ImageIcon} defaultOpen iconColor="#ec4899">
-        <div className="mb-6 bg-gray-50 p-3 rounded-xl border border-gray-200"><div className="flex items-center justify-between mb-2"><span className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center">¿Fondo GIF Animado?</span><Toggle checked={cfg.useGiphyCover || false} onChange={v => update("useGiphyCover", v)} /></div>{cfg.useGiphyCover ? (<GiphySearch onSelect={url => update("coverPhoto", url)} placeholder="Ej: brillos, spiderman..." />) : (<FileUpload value={cfg.coverPhoto} onChange={v => update("coverPhoto", v)} />)}</div>
+        <div className="mb-6 bg-gray-50 p-3 rounded-xl border border-gray-200"><div className="flex items-center justify-between mb-2"><span className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center">¿Fondo GIF Animado?</span><Toggle checked={cfg.useGiphyCover || false} onChange={v => update("useGiphyCover", v)} /></div>{cfg.useGiphyCover ? (<GiphySearch value={cfg.coverPhoto} onSelect={url => update("coverPhoto", url)} placeholder="Ej: brillos, spiderman..." />) : (<FileUpload value={cfg.coverPhoto} onChange={v => update("coverPhoto", v)} />)}</div>
         
         <div className="flex gap-2 z-[9999] relative mt-2 pt-4 border-t border-gray-200 overflow-visible">
           <EmojiPicker value={cfg.eventTypeEmoji || "✨"} onSelect={v => update("eventTypeEmoji", v)} />
@@ -163,6 +163,35 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
         
         <div className="relative z-[80]">
           <TypoControl label="Diseño del Nombre" fontVal={cfg.honoreeFont || cfg.fontTitle} onFont={v => update("honoreeFont", v)} colorVal={cfg.honoreeColor || cfg.text} onColor={v => update('honoreeColor', v)} sizeVal={cfg.honoreeSize ?? 48} onSize={v => update("honoreeSize", v)} minSize={30} maxSize={80} />
+          
+          {/* 👉 ACÁ ESTÁ EL PANEL DE SOMBRA INYECTADO */}
+          <div className="mt-2 mb-4 p-4 bg-slate-50/80 rounded-xl border border-slate-200 shadow-inner">
+            <label className="flex justify-between items-center text-[9px] font-black text-slate-500 uppercase mb-3">
+              <span className="flex items-center">Sombra / Resplandor (Textos)</span>
+              <span className={`px-2 py-0.5 rounded-full ${!cfg.coverTextShadowSize ? 'bg-violet-100 text-violet-600' : 'bg-slate-200 text-slate-600'}`}>
+                {!cfg.coverTextShadowSize ? "AUTO (Glow)" : `${cfg.coverTextShadowSize}px`}
+              </span>
+            </label>
+            <div className="flex gap-3 items-center">
+              <input 
+                type="color" 
+                value={cfg.coverTextShadowColor || '#000000'} 
+                onChange={e => update('coverTextShadowColor', e.target.value)} 
+                className="w-10 h-10 rounded-lg cursor-pointer border border-slate-200 p-0 shrink-0 bg-white shadow-sm hover:scale-105 transition-transform" 
+                title="Color de la sombra" 
+              />
+              <input 
+                type="range" 
+                min={0} max={40} step={1} 
+                value={cfg.coverTextShadowSize || 0} 
+                onChange={e => update("coverTextShadowSize", Number(e.target.value))} 
+                className="w-full accent-violet-600 cursor-pointer" 
+              />
+            </div>
+            <p className="text-[9px] font-medium text-slate-400 mt-3 leading-tight">
+              Si está en AUTO aplica un brillo inteligente. Movelo para controlar la sombra.
+            </p>
+          </div>
         </div>
         
         <div className="flex items-center justify-between mb-4 border-t border-gray-100 pt-4 relative z-[70]"><span className="text-xs font-bold text-slate-500 flex items-center">Mostrar Medalla Flotante</span><Toggle checked={cfg.showBadge ?? true} onChange={v => update("showBadge", v)} /></div>
@@ -176,7 +205,20 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
       </Acc>
 
       <Acc title="2️⃣ Cuenta Regresiva" icon={Clock} iconColor="#f59e0b"><div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500 flex items-center">Activar Reloj</span><Toggle checked={cfg.showCountdown || false} onChange={v => update("showCountdown", v)} /></div>{cfg.showCountdown && (<Inp label="Fecha y Hora exacta" type="datetime-local" value={cfg.countdownDate || ""} onChange={v => update("countdownDate", v)} />)}</Acc>
-      <Acc title="3️⃣ Banner Central" icon={Star} iconColor="#d97706"><div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500 flex items-center">Activar Banner</span><Toggle checked={cfg.showBanner} onChange={v => update("showBanner", v)} /></div>{cfg.showBanner && (<><Inp label="Título del Banner" value={cfg.bannerTitle} onChange={v => update("bannerTitle", v)} /><div className="flex items-center justify-between mt-4 mb-2 bg-gray-50 p-2 rounded-xl"><span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">¿Usar GIF?</span><Toggle checked={cfg.useGiphyBanner || false} onChange={v => update("useGiphyBanner", v)} /></div>{cfg.useGiphyBanner ? (<GiphySearch onSelect={url => update("bannerPhoto", url)} />) : (<FileUpload value={cfg.bannerPhoto} onChange={v => update("bannerPhoto", v)} />)}</>)}</Acc>
+      
+      <Acc title="3️⃣ Banner Central" icon={Star} iconColor="#d97706">
+        <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500 flex items-center">Activar Banner</span><Toggle checked={cfg.showBanner} onChange={v => update("showBanner", v)} /></div>
+        {cfg.showBanner && (
+          <>
+            <Inp label="Título del Banner" value={cfg.bannerTitle} onChange={v => update("bannerTitle", v)} />
+            <div className="flex items-center justify-between mt-4 mb-2 bg-gray-50 p-2 rounded-xl">
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">¿Usar GIF?</span>
+              <Toggle checked={cfg.useGiphyBanner || false} onChange={v => update("useGiphyBanner", v)} />
+            </div>
+            {cfg.useGiphyBanner ? (<GiphySearch value={cfg.bannerPhoto} onSelect={url => update("bannerPhoto", url)} />) : (<FileUpload value={cfg.bannerPhoto} onChange={v => update("bannerPhoto", v)} />)}
+          </>
+        )}
+      </Acc>
       
       <Acc title="4️⃣ Cuándo y Dónde" icon={Calendar} iconColor="#e11d48">
          <div className="relative z-[50]">
@@ -229,23 +271,23 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
       <Acc title="7️⃣ Programa" icon={List} iconColor="#0ea5e9">
          <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500 flex items-center">Activar Cronograma</span><Toggle checked={cfg.showItinerary} onChange={v => update("showItinerary", v)} /></div>
          {cfg.showItinerary && (
-            <>
-               <div className="mb-4"><Inp label="Título" value={cfg.itinerarySectionTitle ?? "¿Qué vamos a hacer?"} onChange={v => update("itinerarySectionTitle", v)} icon={Edit2} /></div>
-               <div className="space-y-4 mb-6 relative z-[70]">
-                  {cfg.itinerary?.map((item, i) => (
-                     <div key={i} className="flex flex-col gap-2 bg-white p-3 rounded-xl border shadow-sm relative" style={{ zIndex: 50 - i }}>
-                        <button onClick={() => update("itinerary", cfg.itinerary.filter((_, idx) => idx !== i))} type="button" className="absolute top-2 right-2 text-red-400 cursor-pointer"><Trash2 size={14}/></button>
-                        <div className="flex gap-2 pr-6">
-                           <EmojiPicker value={item.emoji || "✨"} onSelect={e => { const n = [...cfg.itinerary]; n[i].emoji = e; update("itinerary", n); }} />
-                           <MiniInp className="w-16 p-2 text-xs font-bold border rounded-lg" value={item.time} onChange={v => { const n = [...cfg.itinerary]; n[i].time = v; update("itinerary", n); }} />
-                           <MiniInp className="flex-1 p-2 text-xs border rounded-lg" value={item.title} onChange={v => { const n = [...cfg.itinerary]; n[i].title = v; update("itinerary", n); }} />
-                        </div>
-                        <MiniInp className="w-full p-2 text-xs border rounded-lg mt-1" value={item.sub} placeholder="Aclaración opcional..." onChange={v => { const n = [...cfg.itinerary]; n[i].sub = v; update("itinerary", n); }} />
-                     </div>
-                  ))}
-               </div>
-               <button onClick={() => update("itinerary", [...(cfg.itinerary || []), { emoji: "✨", time: "16:00", title: "Nuevo Evento", sub: "" }])} type="button" className="w-full py-3 bg-white border-2 border-dashed rounded-xl text-xs font-bold text-slate-400 cursor-pointer"><Plus size={14} className="inline-block mr-2" /> AÑADIR EVENTO</button>
-            </>
+           <>
+              <div className="mb-4"><Inp label="Título" value={cfg.itinerarySectionTitle ?? "¿Qué vamos a hacer?"} onChange={v => update("itinerarySectionTitle", v)} icon={Edit2} /></div>
+              <div className="space-y-4 mb-6 relative z-[70]">
+                 {cfg.itinerary?.map((item, i) => (
+                    <div key={i} className="flex flex-col gap-2 bg-white p-3 rounded-xl border shadow-sm relative" style={{ zIndex: 50 - i }}>
+                       <button onClick={() => update("itinerary", cfg.itinerary.filter((_, idx) => idx !== i))} type="button" className="absolute top-2 right-2 text-red-400 cursor-pointer"><Trash2 size={14}/></button>
+                       <div className="flex gap-2 pr-6">
+                          <EmojiPicker value={item.emoji || "✨"} onSelect={e => { const n = [...cfg.itinerary]; n[i].emoji = e; update("itinerary", n); }} />
+                          <MiniInp className="w-16 p-2 text-xs font-bold border rounded-lg" value={item.time} onChange={v => { const n = [...cfg.itinerary]; n[i].time = v; update("itinerary", n); }} />
+                          <MiniInp className="flex-1 p-2 text-xs border rounded-lg" value={item.title} onChange={v => { const n = [...cfg.itinerary]; n[i].title = v; update("itinerary", n); }} />
+                       </div>
+                       <MiniInp className="w-full p-2 text-xs border rounded-lg mt-1" value={item.sub} placeholder="Aclaración opcional..." onChange={v => { const n = [...cfg.itinerary]; n[i].sub = v; update("itinerary", n); }} />
+                    </div>
+                 ))}
+              </div>
+              <button onClick={() => update("itinerary", [...(cfg.itinerary || []), { emoji: "✨", time: "16:00", title: "Nuevo Evento", sub: "" }])} type="button" className="w-full py-3 bg-white border-2 border-dashed rounded-xl text-xs font-bold text-slate-400 cursor-pointer"><Plus size={14} className="inline-block mr-2" /> AÑADIR EVENTO</button>
+           </>
          )}
       </Acc>
       
