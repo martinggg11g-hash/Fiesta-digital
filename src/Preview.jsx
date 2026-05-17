@@ -2,8 +2,6 @@ import React, { useState } from "react";
 import { OpeningAnimation, LottieOverlay } from "./Lotties"; 
 import { Calendar, Clock, MapPin, Loader2, Camera, Lock, CheckCircle2, Download, ExternalLink } from "lucide-react";
 import { DEF_CONFIG, getSpotifyEmbed, getYouTubeId, formatToDDMMYYYY, PARTICLE_CATEGORIES } from "./config";
-
-// IMPORTAMOS DESDE LOS NUEVOS ARCHIVOS DIVIDIDOS
 import { CornerOrnament, DraggableItem, ParticleCanvas } from "./PreviewEffects";
 import { InstagramIcon, FacebookIcon, TiktokIcon, RenderSymbol, Countdown, GalleryCarousel, MapEmbed, InfoCard, SectionTitle, RsvpWidget } from "./PreviewWidgets";
 
