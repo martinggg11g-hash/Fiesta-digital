@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import * as Icons from "lucide-react"; // 👉 Agregado para que funcione el IconRenderer
+import * as Icons from "lucide-react"; 
 
 // --- ICONOS Y COMPONENTES VISUALES ---
 export const Tooltip = ({ text }) => (
@@ -172,7 +172,7 @@ export const EmojiPicker = ({ value, onSelect }) => {
   );
 };
 
-// 👉 ACÁ ESTÁ EL COMPONENTE QUE TE HABÍA BORRADO POR ACCIDENTE
+// 👉 ESTE ES EL COMPONENTE QUE TE HABÍA BORRADO POR ERROR Y QUE HACE FUNCIONAR LOS WIDGETS
 export const IconRenderer = ({ icon, size = 18, color = "currentColor", className = "" }) => {
   if (!icon) return null;
   const IconCmp = typeof icon === 'string' ? Icons[icon] : icon;
