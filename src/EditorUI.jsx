@@ -206,7 +206,7 @@ export const BordersGallery = ({ value, onChange }) => (
   </div>
 );
 
-// 👉 EL BUSCADOR DE GIPHY ARREGLADO CON VISTA PREVIA INCLUIDA
+// 👉 EL BUSCADOR DE GIPHY CON FETCH PURO Y VISTA PREVIA
 export const GiphySearch = ({ onSelect, value, placeholder = "Buscar GIF..." }) => {
   const [term, setTerm] = useState("fiesta");
   const [gifs, setGifs] = useState([]);
@@ -219,7 +219,7 @@ export const GiphySearch = ({ onSelect, value, placeholder = "Buscar GIF..." }) 
     if (!query) return;
     setLoading(true);
     try {
-      const res = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=gYn9E022kUa0Y0pS1lYq2h85d1H8M7Mh&q=${query}&limit=20&rating=g`);
+      const res = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=32PbboqCveiWSlj9vROPmyjv8l8cuaj1&q=${query}&limit=20&rating=g`);
       const data = await res.json();
       setGifs(data.data.map(g => g.images.original.url));
     } catch (e) {
