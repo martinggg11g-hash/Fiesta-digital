@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { GiphyFetch } from '@giphy/js-fetch-api';
 import { Grid } from '@giphy/react-components';
-import { ChevronDown, Loader2, Trash2, Image as ImageIcon, Search, HelpCircle, CheckCircle2 } from "lucide-react"; // 👉 Agregamos CheckCircle2
+import { ChevronDown, Loader2, Trash2, Image as ImageIcon, Search, HelpCircle, CheckCircle2 } from "lucide-react"; 
 import { 
   FONTS, 
   FONT_CATEGORIES, 
@@ -204,11 +204,17 @@ export const BordersGallery = ({ value, onChange }) => (
   </div>
 );
 
-// 👉 EL COMPONENTE MAGICO CORREGIDO: Le agregamos estilos para que se resalte la selección
-export const GiphySearch = ({ onSelect, placeholder = "Buscar GIF..." }) => {
+// 👉 EL BUSCADOR DE GIFS MEJORADO
+export const GiphySearch = ({ value, onSelect, placeholder = "Buscar GIF..." }) => {
   const [term, setTerm] = useState("fiesta");
   const [debouncedTerm, setDebouncedTerm] = useState("fiesta");
-  const [selectedGifUrl, setSelectedGifUrl] = useState(null); // Guardamos cuál eligió el usuario
+  
+  // 👉 Usamos 'value' para recordar el GIF si el usuario cierra y vuelve a abrir el menú
+  const [selectedGifUrl, setSelectedGifUrl] = useState(value || null); 
+
+  useEffect(() => {
+    if (value) setSelectedGifUrl(value);
+  }, [value]);
 
   useEffect(() => { const t = setTimeout(() => setDebouncedTerm(term), 600); return () => clearTimeout(t); }, [term]);
   const fetchGifs = (offset) => gf.search(debouncedTerm || "party", { offset, limit: 10, lang: 'es' });
@@ -217,10 +223,6 @@ export const GiphySearch = ({ onSelect, placeholder = "Buscar GIF..." }) => {
     <div className="bg-slate-100 p-3 rounded-2xl border border-slate-200 mt-2 mb-4">
       <div className="relative mb-3"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} /><input value={term} onChange={(e) => setTerm(e.target.value)} placeholder={placeholder} className="w-full pl-9 pr-4 py-2.5 rounded-xl text-xs border border-slate-200 focus:border-violet-400 outline-none shadow-sm" /></div>
       
-      {/* 👉 Magia Giphy: El componente <Grid /> pinta la grilla nativa. 
-        Pero le vamos a inyectar lógica al click para que guarde la URL.
-        Y con CSS global (abajo de todo) hacemos que Giphy dibuje el borde. 
-      */}
       <div className="h-48 overflow-y-auto rounded-xl bg-white border border-slate-100 relative z-50 fd-sb gif-grid-container">
         <Grid 
           width={300} 
@@ -230,18 +232,23 @@ export const GiphySearch = ({ onSelect, placeholder = "Buscar GIF..." }) => {
           onGifClick={(gif, e) => { 
             e.preventDefault(); 
             const url = gif.images.original.url;
-            setSelectedGifUrl(url); // Lo guardamos en estado
-            onSelect(url); // Lo mandamos al panel
+            setSelectedGifUrl(url); // Lo guardamos en el estado local
+            onSelect(url); // Lo mandamos a la base de datos
           }} 
         />
-        
-        {/* Mostramos un cartel si hay un GIF seleccionado (opcional, por si el CSS se porta mal) */}
-        {selectedGifUrl && (
-          <div className="absolute top-2 right-2 bg-violet-600 text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-lg flex items-center gap-1 z-[60]">
-             <CheckCircle2 size={12} /> GIF Seleccionado
-          </div>
-        )}
       </div>
+
+      {/* 👉 ACÁ REPLICAMOS EL GIF SELECCIONADO PARA QUE EL CLIENTE LO VEA CLARÍSIMO */}
+      {selectedGifUrl && (
+        <div className="mt-3 pt-3 border-t border-slate-200 flex flex-col items-center">
+          <span className="text-[10px] font-black text-violet-600 uppercase mb-2 flex items-center gap-1">
+            <CheckCircle2 size={14} /> GIF Activo
+          </span>
+          <div className="relative w-full max-w-[150px] rounded-xl overflow-hidden shadow-md border-2 border-violet-400 bg-black/5">
+            <img src={selectedGifUrl} alt="GIF Seleccionado" className="w-full h-auto object-cover" />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
