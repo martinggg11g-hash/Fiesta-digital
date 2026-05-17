@@ -336,21 +336,19 @@ export const PARTICLE_CATEGORIES = {
     { id: "emojis-music", name: "Mix Emojis Música", icon: "🎵" },
     { id: "streamers", name: "Serpentinas", icon: "🎊" }
   ],
-  "Lotties Premium": [
-    { id: 'lottie_confeti', name: 'Confeti Pop', icon: '🎉', isLottie: true, url: 'https://lottie.host/0c7f0ad6-f5e9-4473-b606-8fe2ed1d10b1/QvafqoK8yh.lottie' },
-    { id: 'lottie_estrellas', name: 'Estrellas', icon: '🌟', isLottie: true, url: 'https://lottie.host/d9fafde0-2c87-4458-a716-f68341282a91/prNFp1cX0s.lottie' },
-    { id: 'lottie_nieve', name: 'Nieve/Polvo', icon: '❄️', isLottie: true, url: 'https://lottie.host/dc379347-ce11-49b0-8230-615f4eead16f/Ke19rkdxp8.lottie' },
-    { id: 'lottie_luces', name: 'Luces Cálidas', icon: '💡', isLottie: true, url: 'https://lottie.host/e3f319e3-fdc2-46ae-b485-69741b5b5c46/eeMH3uzxKU.lottie' },
-    // 👉 LOTTIES NUEVOS
-    { id: 'lottie_confeti_dorado', name: 'Confeti Dorado', icon: '✨', isLottie: true, url: 'https://lottie.host/b8e6dc94-3478-4211-8b6f-300e7e64ecd4/sB1AbsdZ31.lottie' },
-    { id: 'lottie_pastel', name: 'Pastel 3D', icon: '🎂', isLottie: true, url: 'https://lottie.host/bd7ab6be-cce2-49e0-a33b-40cda64bdb99/ILlXJL39Io.lottie' }
+  "Efectos 3D Premium": [
+    { id: "lottie_cerveza", name: "Chelas bien frías", icon: "🍺", isLottie: true, url: "https://lottie.host/544a0b9f-1434-4fc4-acc3-5cdf3771d459/ywFFhWvizZ.lottie" },
+    { id: "lottie_brindis", name: "¡Fondo, Fondo!", icon: "🍻", isLottie: true, url: "https://lottie.host/acee53c4-e205-4381-a8d6-6c81e546936e/FGryvHLT7G.lottie" },
+    { id: "lottie_confeti_nuevo", name: "Lluvia de Confeti", icon: "🎉", isLottie: true, url: "https://lottie.host/d8112081-66aa-4001-9a22-c4e1fc0b5551/JOr2rqdpCv.lottie" },
+    { id: "lottie_estrellas_nuevo", name: "Noche Estrellada", icon: "🌟", isLottie: true, url: "https://lottie.host/43af906f-7e7f-4f8c-b305-f86280e4f39a/oOwCUkBzz7.lottie" },
+    { id: "lottie_pinata", name: "Dale, dale, dale", icon: "🪅", isLottie: true, url: "https://lottie.host/8036e685-ae19-4783-870f-6a03f84113d4/C4CJJDF4zM.lottie" },
+    { id: "lottie_auto", name: "A toda velocidad", icon: "🏎️", isLottie: true, url: "https://lottie.host/d27e41e2-ebc9-4c56-9baf-6be124d2618e/3d4UlzGIRS.lottie" }
   ],
-  // 👉 NUEVA CATEGORÍA GEEK & KIDS PARA POCHITA, SPIDERMAN Y LA PLAY
-  "Lotties Geek & Kids": [
-    { id: 'lottie_unicornio', name: 'Unicornio', icon: '🦄', isLottie: true, url: 'https://lottie.host/e80b8b77-6cad-4f94-8df0-088fd9768a76/nZfsnfpCoE.lottie' },
-    { id: 'lottie_spiderman', name: 'Spiderman', icon: '🕷️', isLottie: true, url: 'https://lottie.host/cbdc0f06-0f59-44d9-b118-05950de6b170/nXXbeT1fIz.lottie' },
-    { id: 'lottie_pochita', name: 'Pochita', icon: '🐕', isLottie: true, url: 'https://lottie.host/2ee2934a-8450-499d-8a55-e5e3772eb7a1/vwK3pAlnrE.lottie' },
-    { id: 'lottie_playstation', name: 'PlayStation', icon: '🎮', isLottie: true, url: 'https://lottie.host/41ab3ece-5bbd-448c-bc34-01484ce694b2/yLkQVXFWYO.lottie' }
+  "Cultura Pop & Kids": [
+    { id: "lottie_castillo", name: "Castillo de Cuento", icon: "🏰", isLottie: true, url: "https://lottie.host/fa7015b5-9673-4eaf-8636-7fb3e5e88773/o2tB6wYGiC.lottie" },
+    { id: "lottie_spidey", name: "Sentido Arácnido", icon: "🕸️", isLottie: true, url: "https://lottie.host/9971f30a-4798-491f-b126-034fe54e33de/xXwhfr4Qmz.lottie" },
+    { id: "lottie_batman", name: "La Batiseñal", icon: "🦇", isLottie: true, url: "https://lottie.host/303a834d-613f-4c9d-a5ba-471a1a70f4bb/dZV37DgeR1.lottie" },
+    { id: "lottie_kpop", name: "Ídolos del K-Pop", icon: "🎤", isLottie: true, url: "https://lottie.host/6465eecf-fe18-4c19-8ce7-04f200f294ab/7d0BXAqjaq.lottie" }
   ]
 };
 
@@ -359,32 +357,31 @@ export const ANIMATION_CATEGORIES = {
     { id: 'mickey', emoji: '🕷️', name: 'Superhéroe' }, 
     { id: 'minnie', emoji: '🎀', name: 'Princesa' }, 
     { id: 'cars', emoji: '🚗', name: 'Autos' },
-    // 👉 LOTTIES INFANTILES EN LA ANIMACIÓN DE ENTRADA
-    { id: 'lottie_unicornio', emoji: '🦄', name: 'Unicornio', isLottie: true, url: 'https://lottie.host/e80b8b77-6cad-4f94-8df0-088fd9768a76/nZfsnfpCoE.lottie' },
-    { id: 'lottie_spiderman', emoji: '🕷️', name: 'Spiderman', isLottie: true, url: 'https://lottie.host/cbdc0f06-0f59-44d9-b118-05950de6b170/nXXbeT1fIz.lottie' }
+    { id: 'lottie_castillo', emoji: '🏰', name: 'Castillo de Cuento', isLottie: true, url: 'https://lottie.host/fa7015b5-9673-4eaf-8636-7fb3e5e88773/o2tB6wYGiC.lottie' },
+    { id: 'lottie_spidey', emoji: '🕸️', name: 'Sentido Arácnido', isLottie: true, url: 'https://lottie.host/9971f30a-4798-491f-b126-034fe54e33de/xXwhfr4Qmz.lottie' }
   ],
   quince: [ 
     { id: 'crown', emoji: '👑', name: 'Corona' }, 
     { id: 'butterfly', emoji: '🦋', name: 'Mariposa' }, 
-    { id: 'stars', emoji: '✨', name: 'Brillos' } 
+    { id: 'stars', emoji: '✨', name: 'Brillos' },
+    { id: 'lottie_estrellas_nuevo', emoji: '🌟', name: 'Noche Estrellada', isLottie: true, url: 'https://lottie.host/43af906f-7e7f-4f8c-b305-f86280e4f39a/oOwCUkBzz7.lottie' }
   ],
   bodas: [ 
     { id: 'rings', emoji: '💍', name: 'Anillos' }, 
     { id: 'dove', emoji: '🕊️', name: 'Paloma' }, 
-    { id: 'flower', emoji: '🌸', name: 'Flor' } 
+    { id: 'flower', emoji: '🌸', name: 'Flor' },
+    { id: 'lottie_brindis', emoji: '🍻', name: '¡Fondo, Fondo!', isLottie: true, url: 'https://lottie.host/acee53c4-e205-4381-a8d6-6c81e546936e/FGryvHLT7G.lottie' }
   ],
   general: [ 
     { id: 'envelope', emoji: '✉️', name: 'Sobre Mágico' }, 
     { id: 'balloon', emoji: '🎈', name: 'Globo' }, 
     { id: 'cake', emoji: '🎂', name: 'Torta' },
-    // 👉 LOTTIES PREMIUM EN LA ANIMACIÓN DE ENTRADA
-    { id: 'lottie_confeti_dorado', emoji: '✨', name: 'Confeti Oro', isLottie: true, url: 'https://lottie.host/b8e6dc94-3478-4211-8b6f-300e7e64ecd4/sB1AbsdZ31.lottie' },
-    { id: 'lottie_pastel', emoji: '🎂', name: 'Pastel 3D', isLottie: true, url: 'https://lottie.host/bd7ab6be-cce2-49e0-a33b-40cda64bdb99/ILlXJL39Io.lottie' }
+    { id: 'lottie_confeti_nuevo', emoji: '🎉', name: 'Lluvia de Confeti', isLottie: true, url: 'https://lottie.host/d8112081-66aa-4001-9a22-c4e1fc0b5551/JOr2rqdpCv.lottie' },
+    { id: 'lottie_pinata', emoji: '🪅', name: 'Dale, dale, dale', isLottie: true, url: 'https://lottie.host/8036e685-ae19-4783-870f-6a03f84113d4/C4CJJDF4zM.lottie' }
   ],
   geek: [
-    // 👉 LOTTIES GEEK / ANIME EN LA ANIMACIÓN DE ENTRADA
-    { id: 'lottie_pochita', emoji: '🐕', name: 'Pochita', isLottie: true, url: 'https://lottie.host/2ee2934a-8450-499d-8a55-e5e3772eb7a1/vwK3pAlnrE.lottie' },
-    { id: 'lottie_playstation', emoji: '🎮', name: 'PlayStation', isLottie: true, url: 'https://lottie.host/41ab3ece-5bbd-448c-bc34-01484ce694b2/yLkQVXFWYO.lottie' }
+    { id: 'lottie_batman', emoji: '🦇', name: 'La Batiseñal', isLottie: true, url: 'https://lottie.host/303a834d-613f-4c9d-a5ba-471a1a70f4bb/dZV37DgeR1.lottie' },
+    { id: 'lottie_kpop', emoji: '🎤', name: 'K-Pop Stars', isLottie: true, url: 'https://lottie.host/6465eecf-fe18-4c19-8ce7-04f200f294ab/7d0BXAqjaq.lottie' }
   ]
 };
 
