@@ -58,7 +58,7 @@ export const DEF_CONFIG = {
 
   // CONFIGURACIÓN DE BORDES (CORREGIDO PARA VISIBILIDAD INICIAL)
   showCoverBorders: false,
-  selectedBorder: "/borders/1-Photoroom.png", // Ya dejamos uno cargado por defecto
+  selectedBorder: "/borders/1-Photoroom.png", 
   borderPosition: "both",
   borderColor: "#8b5cf6",
   ornamentSize: 150,
@@ -287,7 +287,7 @@ export const EMOJI_CATEGORIES = {
   "Bebidas": ["🍾","🥂","🍷","🍸","🍹","🍺","🍻","☕","🧋"],
   "Dulces": ["🎂","🍰","🧁","🍦","🍨","🍧","🍩","🍪","🍫","🍬","🍭"],
   "Salados": ["🍕","🍔","🍟","🌭","🍿","🌮","🌯","EFISTA","🥗","🥪","🥘","🧆","🍲","🥣","🍗","🍖","🥩","🍤","🍣","🥓","🧀"],
-  "Ropa": ["👗","👔","👘","🥻","🩱","👖","🧥","🦺","👕","","🩲","👠","👡","👢","👞","👟","🥾","🧦","🧤","🧣","🎩","🧢","👒"]
+  "Ropa": ["GRID","👔","👘","🥻","🩱","👖","🧥","🦺","👕","","🩲","👠","👡","👢","👞","👟","🥾","🧦","🧤","🧣","🎩","🧢","👒"]
 };
 
 export const PARTICLE_CATEGORIES = {
@@ -354,25 +354,22 @@ export const PARTICLE_CATEGORIES = {
 
 export const ANIMATION_CATEGORIES = {
   infantil: [ 
-    { id: 'new_jirafa', emoji: '🦒', name: 'Jirafa Amiga', isLottie: true, url: 'https://lottie.host/da469562-9122-4062-a1c2-6fd71b51f250/TltkNEXlQE.lottie' },
-    { id: 'new_nina', emoji: '👋', name: 'Niña Saludando', isLottie: true, url: 'https://lottie.host/28a64e1d-7e11-43f8-b339-54bd7fa7562f/Ad6KGTk3EL.lottie' },
+    { id: 'new_jirafa', emoji: '🎁', name: 'Regalo Explosivo', isLottie: true, url: 'https://lottie.host/da469562-9122-4062-a1c2-6fd71b51f250/TltkNEXlQE.lottie' },
+    { id: 'new_nina', emoji: '👀', name: 'Asomando', isLottie: true, url: 'https://lottie.host/28a64e1d-7e11-43f8-b339-54bd7fa7562f/Ad6KGTk3EL.lottie' },
     { id: 'lottie_castillo', emoji: '🏰', name: 'Castillo de Cuento', isLottie: true, url: 'https://lottie.host/fa7015b5-9673-4eaf-8636-7fb3e5e88773/o2tB6wYGiC.lottie' }
   ],
   bodas_y_quince: [ 
-    { id: 'new_sobre_corazones', emoji: '💌', name: 'Carta de Amor', isLottie: true, url: 'https://lottie.host/76b80717-c64a-474b-b5dc-9853881dac0b/B0nOPSiMVc.lottie' },
-    { id: 'new_mirada_1', emoji: '👀', name: 'Mirada Coqueta', isLottie: true, url: 'https://lottie.host/ff85d694-1d6e-4612-8140-083a44e8168b/ax5ULOaN66.lottie' },
-    { id: 'new_mirada_2', emoji: '✨', name: 'Ojazos', isLottie: true, url: 'https://lottie.host/d42f8849-c4db-456b-bdae-6ef03e853896/Zz8LCMnVzQ.lottie' },
+    { id: 'new_sobre_corazones', emoji: '💃', name: 'Jessica Rabbit', isLottie: true, url: 'https://lottie.host/76b80717-c64a-474b-b5dc-9853881dac0b/B0nOPSiMVc.lottie' },
     { id: 'lottie_brindis', emoji: '🍻', name: '¡Fondo, Fondo!', isLottie: true, url: 'https://lottie.host/acee53c4-e205-4381-a8d6-6c81e546936e/FGryvHLT7G.lottie' }
   ],
   general: [ 
-    { id: 'new_torta', emoji: '🎂', name: 'El Pastelazo', isLottie: true, url: 'https://lottie.host/51744e8c-7aa8-4f52-b714-3e7ae7faaf53/NVYXsjwYDq.lottie' },
-    { id: 'new_regalo', emoji: '🎁', name: 'Regalote', isLottie: true, url: 'https://lottie.host/c877566c-d995-4e34-bdee-30bbba4e2050/o2EYr8jyfa.lottie' },
-    { id: 'new_sorpresa', emoji: '🎊', name: '¡Sorpresa!', isLottie: true, url: 'https://lottie.host/dd720199-18c7-434b-93a5-bc8da9f299a1/z4TZTEwNbS.lottie' },
+    { id: 'new_torta', emoji: '🦒', name: 'Jirafa', isLottie: true, url: 'https://lottie.host/51744e8c-7aa8-4f52-b714-3e7ae7faaf53/NVYXsjwYDq.lottie' },
+    { id: 'new_sorpresa', emoji: '👁️', name: 'Ojos', isLottie: true, url: 'https://lottie.host/dd720199-18c7-434b-93a5-bc8da9f299a1/z4TZTEwNbS.lottie' },
     { id: 'lottie_confeti_nuevo', emoji: '🎉', name: 'Lluvia de Confeti', isLottie: true, url: 'https://lottie.host/d8112081-66aa-4001-9a22-c4e1fc0b5551/JOr2rqdpCv.lottie' },
     { id: 'lottie_pinata', emoji: '🪅', name: 'Dale, dale, dale', isLottie: true, url: 'https://lottie.host/8036e685-ae19-4783-870f-6a03f84113d4/C4CJJDF4zM.lottie' }
   ],
   geek: [
-    { id: 'new_jesica', emoji: '💃', name: 'Jesica Rabbit', isLottie: true, url: 'https://lottie.host/4ca06831-d568-4cd6-9b2a-32ea586857f2/nec4jxiwSC.lottie' },
+    { id: 'new_jesica', emoji: '🎂', name: 'Pastel', isLottie: true, url: 'https://lottie.host/4ca06831-d568-4cd6-9b2a-32ea586857f2/nec4jxiwSC.lottie' },
     { id: 'lottie_batman', emoji: '🦇', name: 'La Batiseñal', isLottie: true, url: 'https://lottie.host/303a834d-613f-4c9d-a5ba-471a1a70f4bb/dZV37DgeR1.lottie' },
     { id: 'lottie_kpop', emoji: '🎤', name: 'K-Pop Stars', isLottie: true, url: 'https://lottie.host/6465eecf-fe18-4c19-8ce7-04f200f294ab/7d0BXAqjaq.lottie' },
     { id: 'lottie_pochita', emoji: '🐕', name: 'Pochita', isLottie: true, url: 'https://lottie.host/2ee2934a-8450-499d-8a55-e5e3772eb7a1/vwK3pAlnrE.lottie' },
