@@ -128,16 +128,34 @@ export const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP, 
   const [localConfirmed, setLocalConfirmed] = useState(false);
   const [companions, setCompanions] = useState(0);
 
-  // 👉 LA MAGIA ESTÁ ACÁ: Si hay guestData, forzamos Modo Privado automáticamente
+  const isEditor = window.location.pathname.includes('/editor');
+
+  // 👉 BARRERA DE PRODUCCIÓN: Si es lista privada, entran por link general y NO es el editor... CANDADO.
+  if (cfg.isPrivateList && !guestData && !isEditor) {
+    return (
+      <div className="pt-8 text-center">
+        <div className="p-8 rounded-[2rem] relative overflow-hidden flex flex-col items-center" style={glassStyle}>
+          {shineOverlay}
+          <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4 relative z-10 border" style={{ background: `${textC}10`, borderColor: `${textC}20` }}>
+             <Lock size={28} style={{ color: textC }} className="opacity-70" />
+          </div>
+          <h3 className="text-sm font-black uppercase tracking-widest mb-2 relative z-10" style={{ color: textC }}>Evento Privado</h3>
+          <p className="text-[11px] font-medium opacity-70 relative z-10 max-w-[250px] mx-auto" style={{ color: textC }}>
+            El acceso a esta invitación es únicamente por lista cerrada.<br/><br/>
+            Por favor, utilizá el <b>link personalizado</b> que te envió el organizador por WhatsApp.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const isPrivate = cfg.isPrivateList || !!guestData; 
-  
   const isConfirmed = localConfirmed || guestData?.asistencia_confirmada;
   const guestName = guestData?.nombre_completo || "Invitado de Prueba";
   const ticketId = guestData?.id || "VIP-MOCK-1234";
   const maxLimit = guestData ? guestData.max_acompanantes : (cfg.maxGuestsPerFamily || 5);
 
   if (isPrivate) {
-    // Codificamos el QR Perfecto
     const qrText = `${ticketId}|${guestName}||${maxLimit}`;
     const qrCodeUrl = `https://quickchart.io/qr?text=${encodeURIComponent(qrText)}&size=300`;
 
