@@ -130,11 +130,15 @@ export const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP, 
 
   const isPrivate = cfg.isPrivateList || false;
   const isConfirmed = localConfirmed || guestData?.asistencia_confirmada;
-  const guestName = guestData?.nombre_completo || "Nombre del Invitado";
+  const guestName = guestData?.nombre_completo || "Invitado de Prueba";
   const ticketId = guestData?.id || "VIP-MOCK-1234";
   const maxLimit = guestData ? guestData.max_acompanantes : (cfg.maxGuestsPerFamily || 5);
 
   if (isPrivate) {
+    // 👉 CODIFICAMOS EL QR PERFECTO PARA QUE EL ESCÁNER LO ENTIENDA
+    const qrText = `${ticketId}|${guestName}||${maxLimit}`;
+    const qrCodeUrl = `https://quickchart.io/qr?text=${encodeURIComponent(qrText)}&size=300`;
+
     return (
       <div className="pt-8 text-center">
         {cfg.showRsvpDeadline && cfg.rsvpDeadline && (
@@ -148,7 +152,7 @@ export const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP, 
              <p className="text-[9px] font-black uppercase tracking-[0.2em]" style={{ color: cardC === '#000000' ? '#000' : '#fff' }}>Tu Pase Nominal</p>
            </div>
            <div className="relative z-10 w-full flex flex-col items-center mt-6">
-             <img src={`https://quickchart.io/qr?text=${ticketId}&size=300`} className="w-full max-w-[160px] rounded-xl shadow-lg mb-3 border border-white/20" alt="QR VIP" />
+             <img src={qrCodeUrl} className="w-full max-w-[160px] rounded-xl shadow-lg mb-3 border border-white/20" alt="QR VIP" />
              <p className="text-sm font-black uppercase tracking-widest mt-2" style={{ color: textC }}>{guestName}</p>
              {guestData?.apodo && <p className="text-[10px] font-bold opacity-60 mt-1" style={{ color: textC }}>"{guestData.apodo}"</p>}
              <p className="text-[10px] font-bold opacity-40 mt-3" style={{ color: textC }}>Pase Intransferible</p>
@@ -184,8 +188,12 @@ export const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP, 
   const generateTicket = (e) => {
     e.preventDefault();
     setLoading(true);
-    const ticketId = `VIP-${Math.random().toString(36).substr(2,6).toUpperCase()}`;
-    const qrUrl = `https://quickchart.io/qr?text=${ticketId}&size=300`;
+    const newTicketId = `VIP-${Math.random().toString(36).substr(2,6).toUpperCase()}`;
+    
+    // 👉 CODIFICAMOS EL QR PERFECTO PARA LISTA ABIERTA
+    const qrText = `${newTicketId}|${formData.name}|${formData.lastname}|${formData.guests}`;
+    const qrUrl = `https://quickchart.io/qr?text=${encodeURIComponent(qrText)}&size=300`;
+    
     const img = new Image();
     img.crossOrigin = "Anonymous";
     img.onload = () => {
@@ -199,7 +207,7 @@ export const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP, 
       ctx.font = 'bold 40px sans-serif'; ctx.fillText(guestNameOpen, 300, 650);
       ctx.font = '30px sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.fillText(`Válido para: ${formData.guests} ${formData.guests === 1 ? 'persona' : 'personas'}`, 300, 710);
       setTicketImage(canvas.toDataURL('image/jpeg'));
-      if(onConfirmRSVP) onConfirmRSVP({...formData, isPrivate, id: ticketId});
+      if(onConfirmRSVP) onConfirmRSVP({...formData, isPrivate, id: newTicketId});
       setLoading(false); setStep('qr');
     };
     img.src = qrUrl;
