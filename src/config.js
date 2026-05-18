@@ -20,6 +20,8 @@ export const DEF_CONFIG = {
   
   showCountdown: true,
   showBanner: false,
+  bannerOffsetX: 50,
+  bannerOffsetY: 50,
   showDate: true,
   showTime: true,
   showLocation: true,
