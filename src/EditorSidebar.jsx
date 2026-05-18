@@ -168,7 +168,6 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
         <div className="relative z-[100] mt-4">
           <TypoControl label="Diseño Frase Superior" fontVal={cfg.eventTypeFont || cfg.fontBody} onFont={v => update("eventTypeFont", v)} colorVal={cfg.eventTypeColor || cfg.primary} onColor={v => update('eventTypeColor', v)} sizeVal={cfg.eventTypeSize ?? 11} onSize={v => update("eventTypeSize", v)} minSize={8} maxSize={24} />
           
-          {/* 👉 CONTROL DE SOMBRA: FRASE SUPERIOR */}
           <div className="mt-2 mb-6 p-3 bg-slate-50/80 rounded-xl border border-slate-200 shadow-inner">
             <label className="flex justify-between items-center text-[9px] font-black text-slate-500 uppercase mb-3">
               <span className="flex items-center">Sombra / Resplandor (Frase)</span>
@@ -188,7 +187,6 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
         <div className="relative z-[80]">
           <TypoControl label="Diseño del Nombre" fontVal={cfg.honoreeFont || cfg.fontTitle} onFont={v => update("honoreeFont", v)} colorVal={cfg.honoreeColor || cfg.text} onColor={v => update('honoreeColor', v)} sizeVal={cfg.honoreeSize ?? 48} onSize={v => update("honoreeSize", v)} minSize={30} maxSize={80} />
           
-          {/* 👉 CONTROL DE SOMBRA: NOMBRE PRINCIPAL */}
           <div className="mt-2 mb-4 p-3 bg-slate-50/80 rounded-xl border border-slate-200 shadow-inner">
             <label className="flex justify-between items-center text-[9px] font-black text-slate-500 uppercase mb-3">
               <span className="flex items-center">Sombra / Resplandor (Nombre)</span>
@@ -226,7 +224,6 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
             </div>
             {cfg.useGiphyBanner ? (<GiphySearch onSelect={url => update("bannerPhoto", url)} />) : (<FileUpload value={cfg.bannerPhoto} onChange={v => update("bannerPhoto", v)} />)}
             
-            {/* 👉 CONTROLES DE POSICIÓN DE LA IMAGEN DEL BANNER */}
             <div className="mt-6 p-4 bg-orange-50 border border-orange-100 rounded-xl shadow-inner">
                <label className="text-[10px] font-black text-orange-700 uppercase tracking-widest flex items-center gap-1 mb-4">
                   <LayoutGrid size={14}/> Ajustar Posición de Foto
