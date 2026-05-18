@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Html5Qrcode } from "html5-qrcode";
+import { supabase } from "./supabase"; // 👉 Conexión directa a tu Supabase
 import { CheckCircle2, X, AlertTriangle, ScanBarcode, Users, Loader2, Check } from "lucide-react";
 
 // ESCÁNER ULTRA RÁPIDO (Cámara trasera por defecto)
@@ -40,75 +40,112 @@ const FastScanner = ({ onClose, onScan }) => {
   );
 };
 
-export default function PuertaScreen({ invitations, onUpdateInternal }) {
-  const { id } = useParams();
-  const inv = invitations.find(i => i.id === id);
+export default function PuertaScreen() {
+  const { id } = useParams(); // id es el eventSlug (ej: evt-3j50vi)
+  const [eventTitle, setEventTitle] = useState("Cargando evento...");
+  const [invitados, setInvitados] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [scanning, setScanning] = useState(false);
   const [validationResult, setValidationResult] = useState(null);
 
-  if (!inv) return <div className="h-screen bg-slate-950 flex flex-col items-center justify-center text-white"><Loader2 className="animate-spin mb-4" size={40}/>Buscando evento...</div>;
+  // 👉 BUSCAMOS LOS INVITADOS DIRECTAMENTE DE LA TABLA REAL EN TIEMPO REAL
+  const fetchLiveGuests = async () => {
+    // 1. Buscamos primero el título del evento
+    const { data: eventData } = await supabase.from('invitaciones').select('title').eq('id', id).single();
+    if (eventData) setEventTitle(eventData.title);
 
-  const guestsList = inv.internal_data?.guests || [];
-  const ingresaron = guestsList.filter(g => g.status === 'Ingresó').reduce((acc, g) => acc + g.guests, 0);
-  const total = guestsList.reduce((acc, g) => acc + g.guests, 0);
+    // 2. Traemos todos los invitados asociados a este slug
+    const { data: guestsData } = await supabase.from('invitados').select('*').eq('evento_id', id).order('created_at', { ascending: false });
+    if (guestsData) setInvitados(guestsData);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchLiveGuests();
+  }, [id]);
+
+  const ingresaron = invitados.filter(g => g.status === 'Ingresó').reduce((acc, g) => acc + (1 + (g.acompanantes_confirmados || 0)), 0);
+  const total = invitados.reduce((acc, g) => acc + (1 + (g.max_acompanantes || 0)), 0);
 
   const processQRScan = (qrString) => {
+    if (!qrString || !qrString.includes('|')) {
+      setValidationResult({ status: 'error', title: 'QR Inválido', desc: 'Este código no pertenece a nuestra plataforma o está mal formateado.' });
+      return;
+    }
+
     const [tId, tName, tLast, tPax] = qrString.split('|');
 
-    // 👉 MAGIA PARA PRUEBAS DESDE EL EDITOR
     if (tId === "VIP-MOCK-1234") {
       setValidationResult({ 
         status: 'success', 
         title: '¡QR de Prueba OK!', 
         desc: 'El escáner lee perfecto. Este es un QR generado por el panel de edición.', 
-        data: { id: tId, name: 'Invitado', lastname: 'de Prueba', guests: 2 } 
+        data: { id: tId, nombre_completo: 'Invitado de Prueba', max_acompanantes: 1 } 
       });
       return;
     }
 
-    const guestDb = guestsList.find(g => g.id === tId);
+    // 1. Buscamos en la lista viva por ID
+    let guestDb = invitados.find(g => g.id === tId);
 
-    if (!guestDb) setValidationResult({ status: 'error', title: 'Pase Inválido', desc: 'Este QR es falso o de otra fiesta.' });
-    else if (guestDb.status === 'Ingresó') setValidationResult({ status: 'warning', title: 'Pase Usado', desc: `${guestDb.name} ya registró su ingreso.`, data: guestDb });
-    else setValidationResult({ status: 'success', title: 'Acceso Permitido', desc: 'Pase VIP verificado.', data: guestDb });
+    // 2. Si no coincide el ID (pases de lista abierta), buscamos por Nombre Completo armado
+    if (!guestDb && tName) {
+      const qrFullName = `${tName} ${tLast || ''}`.trim().toLowerCase();
+      guestDb = invitados.find(g => (g.nombre_completo || '').trim().toLowerCase() === qrFullName);
+    }
+
+    if (!guestDb) {
+      setValidationResult({ status: 'error', title: 'Pase Inválido', desc: 'Este pase no figura en la lista de invitados o pertenece a otra fiesta.' });
+    } else if (guestDb.status === 'Ingresó') {
+      setValidationResult({ status: 'warning', title: 'Pase Ya Usado', desc: `${guestDb.nombre_completo} ya registró su ingreso a la fiesta.`, data: guestDb });
+    } else {
+      setValidationResult({ status: 'success', title: 'Acceso Permitido', desc: 'Pase VIP verificado con éxito.', data: guestDb });
+    }
   };
 
-  const confirmAccess = () => {
-    // Si es el mock de prueba, no actualizamos la base de datos real
+  const confirmAccess = async () => {
     if (validationResult.data.id === "VIP-MOCK-1234") {
-      alert("¡Simulación de ingreso exitosa! (La base de datos real no fue alterada).");
       setValidationResult(null);
       return;
     }
 
-    const updatedGuests = guestsList.map(g => g.id === validationResult.data.id ? { ...g, status: 'Ingresó' } : g);
-    onUpdateInternal(inv.id, 'guests', updatedGuests);
-    setValidationResult(null);
-  };
-
-  const handleManualEntry = (guestId, guestName) => {
-    if (window.confirm(`¿Querés marcar el ingreso manual de ${guestName}?`)) {
-      const updatedGuests = guestsList.map(g => g.id === guestId ? { ...g, status: 'Ingresó' } : g);
-      onUpdateInternal(inv.id, 'guests', updatedGuests);
+    // 👉 ACTUALIZAMOS EL ESTADO DIRECTO EN LA BASE DE DATOS
+    const { error } = await supabase.from('invitados').update({ status: 'Ingresó' }).eq('id', validationResult.data.id);
+    
+    if (error) {
+      alert("Error al registrar ingreso en la BD: " + error.message);
+    } else {
+      setValidationResult(null);
+      fetchLiveGuests(); // Recargamos la lista al instante
     }
   };
+
+  const handleManualEntry = async (guestId, guestName) => {
+    if (window.confirm(`¿Querés marcar el ingreso manual de ${guestName}?`)) {
+      const { error } = await supabase.from('invitados').update({ status: 'Ingresó' }).eq('id', guestId);
+      if (error) alert("Error: " + error.message);
+      else fetchLiveGuests();
+    }
+  };
+
+  if (loading) return <div className="h-screen bg-slate-950 flex flex-col items-center justify-center text-white"><Loader2 className="animate-spin mb-4" size={40}/>Sincronizando lista con Supabase...</div>;
 
   return (
     <div className="min-h-screen bg-slate-950 text-white font-sans pb-10">
       <div className="p-6 max-w-md mx-auto">
         
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-black mb-1">{inv.title}</h1>
-          <p className="text-violet-400 font-bold text-sm">Panel de Recepción</p>
+          <h1 className="text-2xl font-black mb-1 truncate px-2">{eventTitle}</h1>
+          <p className="text-violet-400 font-bold text-sm">Panel de Recepción Real-Time</p>
         </div>
 
         <div className="grid grid-cols-2 gap-4 mb-8">
           <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl text-center">
-            <p className="text-[10px] uppercase font-black tracking-widest text-slate-500 mb-1">Confirmados</p>
+            <p className="text-[10px] uppercase font-black tracking-widest text-slate-500 mb-1">Invitados Lista</p>
             <p className="text-3xl font-black text-white">{total}</p>
           </div>
           <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl text-center">
-            <p className="text-[10px] uppercase font-black tracking-widest text-slate-500 mb-1">Ya Ingresaron</p>
+            <p className="text-[10px] uppercase font-black tracking-widest text-slate-500 mb-1">Adentro</p>
             <p className="text-3xl font-black text-green-400">{ingresaron}</p>
           </div>
         </div>
@@ -117,27 +154,31 @@ export default function PuertaScreen({ invitations, onUpdateInternal }) {
           <ScanBarcode size={24}/> ABRIR ESCÁNER QR
         </button>
 
-        <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-4 flex items-center gap-2"><Users size={16}/> Lista de Acceso</h3>
+        <h3 className="text-xs font-black uppercase tracking-widest text-slate-500 mb-4 flex items-center gap-2"><Users size={16}/> Lista de Acceso Oficial</h3>
         
         <div className="space-y-3">
-          {guestsList.slice().reverse().map((g, i) => (
-            <div key={i} className={`border p-4 rounded-2xl flex justify-between items-center gap-2 transition-colors ${g.status === 'Ingresó' ? 'bg-slate-900/50 border-green-500/20' : 'bg-slate-900 border-slate-700'}`}>
-              <div className="flex-1">
-                <p className={`font-bold text-sm ${g.status === 'Ingresó' ? 'text-slate-400' : 'text-white'}`}>{g.name} {g.lastname}</p>
-                <p className="text-xs text-slate-500 mt-0.5">{g.guests} pax • <span className="font-mono text-[10px]">{g.id}</span></p>
+          {invitados.length === 0 ? (
+            <p className="text-xs text-center text-slate-500 py-6">No hay invitados registrados en este evento aún.</p>
+          ) : (
+            invitados.map((g, i) => (
+              <div key={i} className={`border p-4 rounded-2xl flex justify-between items-center gap-2 transition-colors ${g.status === 'Ingresó' ? 'bg-slate-900/50 border-green-500/20' : 'bg-slate-900 border-slate-700'}`}>
+                <div className="flex-1 min-w-0">
+                  <p className={`font-bold text-sm truncate ${g.status === 'Ingresó' ? 'text-slate-400' : 'text-white'}`}>{g.nombre_completo}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{1 + (g.max_acompanantes || 0)} pases • <span className="font-mono text-[9px] opacity-60">{g.id.substring(0,8)}...</span></p>
+                </div>
+                
+                {g.status === 'Ingresó' ? (
+                  <span className="px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-green-500/10 text-green-400 border border-green-500/20 shrink-0 flex items-center gap-1">
+                    <Check size={12}/> ADENTRO
+                  </span>
+                ) : (
+                  <button onClick={() => handleManualEntry(g.id, g.nombre_completo)} className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest bg-amber-500 hover:bg-amber-400 text-amber-950 transition-transform active:scale-95 shrink-0 shadow-lg shadow-amber-500/20 cursor-pointer">
+                    INGRESAR
+                  </button>
+                )}
               </div>
-              
-              {g.status === 'Ingresó' ? (
-                <span className="px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-green-500/10 text-green-400 border border-green-500/20 shrink-0 flex items-center gap-1">
-                  <Check size={12}/> ADENTRO
-                </span>
-              ) : (
-                <button onClick={() => handleManualEntry(g.id, g.name)} className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest bg-amber-500 hover:bg-amber-400 text-amber-950 transition-transform active:scale-95 shrink-0 shadow-lg shadow-amber-500/20 cursor-pointer">
-                  MARCAR INGRESO
-                </button>
-              )}
-            </div>
-          ))}
+            ))
+          )}
         </div>
 
       </div>
@@ -158,9 +199,9 @@ export default function PuertaScreen({ invitations, onUpdateInternal }) {
               {validationResult.data && (
                 <div className="bg-slate-800 border border-slate-700 rounded-2xl p-4 mb-6 text-left">
                    <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-1">Invitado</p>
-                   <p className="font-bold text-lg text-white mb-3">{validationResult.data.name} {validationResult.data.lastname}</p>
-                   <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-1">Personas Totales</p>
-                   <p className="font-bold text-lg text-white">{validationResult.data.guests}</p>
+                   <p className="font-bold text-lg text-white mb-3 truncate">{validationResult.data.nombre_completo}</p>
+                   <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest mb-1">Pases Totales</p>
+                   <p className="font-bold text-lg text-white">{1 + (validationResult.data.max_acompanantes || 0)}</p>
                 </div>
               )}
 
