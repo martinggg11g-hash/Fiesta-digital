@@ -58,6 +58,9 @@ export const DEF_CONFIG = {
   // CONFIGURACIÓN DE EFECTOS
   effectOpacity: 100,
 
+  // DURACION ANIMACION INICIAL (Corregida su posición!)
+  animationDuration: 3,
+
   // CONFIGURACIÓN DE BORDES
   showCoverBorders: false,
   selectedBorder: "/borders/1-Photoroom.png", 
@@ -263,42 +266,42 @@ export const THEMES = [
   {
     id: "negro-blanco",
     name: "Negro y Blanco (Elegante)",
-    primary: "#ffffff",         // Acento blanco brillante
-    bg1: "#000000",             // Fondo negro puro
-    bg2: "#18181b",             // Degradé a gris oscuro
-    text: "#ffffff",            // Textos principales blancos
-    muted: "#a1a1aa",           // Subtítulos gris claro
-    card: "#27272a"             // Tarjetas gris oscuro para que resalten del fondo
+    primary: "#ffffff",         
+    bg1: "#000000",             
+    bg2: "#18181b",             
+    text: "#ffffff",            
+    muted: "#a1a1aa",           
+    card: "#27272a"             
   },
   {
     id: "blanco-negro",
     name: "Blanco y Negro (Minimalista)",
-    primary: "#000000",         // Acento negro
-    bg1: "#ffffff",             // Fondo blanco
-    bg2: "#f4f4f5",             // Degradé a gris muy tierno
-    text: "#000000",            // Textos negros
-    muted: "#71717a",           // Subtítulos gris oscuro
-    card: "#ffffff"             // Tarjetas blancas puras
+    primary: "#000000",         
+    bg1: "#ffffff",             
+    bg2: "#f4f4f5",             
+    text: "#000000",            
+    muted: "#71717a",           
+    card: "#ffffff"             
   },
   {
     id: "negro-violeta",
     name: "Negro y Violeta (Cyber)",
-    primary: "#a78bfa",         // Violeta neón/pastel para que brille
-    bg1: "#0b061f",             // Fondo negro con un tinte sutil de violeta profundo
-    bg2: "#1e0b36",             // Degradé a un morado oscuro
-    text: "#ffffff",            // Textos blancos
-    muted: "#c084fc",           // Subtítulos violetas claros
-    card: "#25143a"             // Tarjetas moradas oscuras
+    primary: "#a78bfa",         
+    bg1: "#0b061f",             
+    bg2: "#1e0b36",             
+    text: "#ffffff",            
+    muted: "#c084fc",           
+    card: "#25143a"             
   },
   {
     id: "rosa-negro",
     name: "Rosa y Negro (Glam)",
-    primary: "#f472b6",         // Rosa chicle/neón bien llamativo
-    bg1: "#000000",             // Fondo negro profundo
-    bg2: "#1c0512",             // Degradé a un borravino tirando a rosa oscuro
-    text: "#ffffff",            // Textos blancos
-    muted: "#f9a8d4",           // Subtítulos rosa pastel
-    card: "#2d0b1e"             // Tarjetas oscuras con tinte rosa
+    primary: "#f472b6",         
+    bg1: "#000000",             
+    bg2: "#1c0512",             
+    text: "#ffffff",            
+    muted: "#f9a8d4",           
+    card: "#2d0b1e"             
   }
 ];
 
@@ -460,7 +463,6 @@ export const ANIMATION_CATEGORIES = {
     { id: 'lottie_playstation', emoji: '🎮', name: 'PlayStation', isLottie: true, url: 'https://lottie.host/41ab3ece-5bbd-448c-bc34-01484ce694b2/yLkQVXFWYO.lottie' }
   ]
 };
-animationDuration: 3, // Duración en segundos por defecto
 
 export const TRANSITION_OPTS = [
   { label: "Desvanecer (Fade)", value: "fade" },
