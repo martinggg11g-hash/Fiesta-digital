@@ -215,6 +215,29 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
               <Toggle checked={cfg.useGiphyBanner || false} onChange={v => update("useGiphyBanner", v)} />
             </div>
             {cfg.useGiphyBanner ? (<GiphySearch onSelect={url => update("bannerPhoto", url)} />) : (<FileUpload value={cfg.bannerPhoto} onChange={v => update("bannerPhoto", v)} />)}
+            
+            {/* 👉 CONTROLES DE POSICIÓN DE LA IMAGEN DEL BANNER */}
+            <div className="mt-6 p-4 bg-orange-50 border border-orange-100 rounded-xl shadow-inner">
+               <label className="text-[10px] font-black text-orange-700 uppercase tracking-widest flex items-center gap-1 mb-4">
+                  <LayoutGrid size={14}/> Ajustar Posición de Foto
+               </label>
+               
+               <div className="mb-4">
+                 <label className="flex justify-between items-center text-[9px] font-bold text-orange-600 uppercase mb-2">
+                    <span>Horizontal (Izquierda/Derecha)</span>
+                    <span className="bg-orange-200 px-2 py-0.5 rounded-full">{cfg.bannerOffsetX ?? 50}%</span>
+                 </label>
+                 <input type="range" min={0} max={100} value={cfg.bannerOffsetX ?? 50} onChange={e => update("bannerOffsetX", Number(e.target.value))} className="w-full accent-orange-600 cursor-pointer" />
+               </div>
+
+               <div>
+                 <label className="flex justify-between items-center text-[9px] font-bold text-orange-600 uppercase mb-2">
+                    <span>Vertical (Arriba/Abajo)</span>
+                    <span className="bg-orange-200 px-2 py-0.5 rounded-full">{cfg.bannerOffsetY ?? 50}%</span>
+                 </label>
+                 <input type="range" min={0} max={100} value={cfg.bannerOffsetY ?? 50} onChange={e => update("bannerOffsetY", Number(e.target.value))} className="w-full accent-orange-600 cursor-pointer" />
+               </div>
+            </div>
           </>
         )}
       </Acc>
