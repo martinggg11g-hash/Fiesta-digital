@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { OpeningAnimation, LottieOverlay } from "./Lotties"; 
 import { Calendar, Clock, MapPin, Loader2, Camera, Lock, CheckCircle2, Download, ExternalLink } from "lucide-react";
 import { DEF_CONFIG, getSpotifyEmbed, getYouTubeId, formatToDDMMYYYY, PARTICLE_CATEGORIES } from "./config";
@@ -37,6 +37,87 @@ const AddToCalendarButton = ({ cfg, primary, cardC }) => {
     <button type="button" onClick={handleCalendarRedirect} className="w-full py-4 mt-1 rounded-[1.5rem] font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95 cursor-pointer relative overflow-hidden" style={{ background: cfg.accent || primary, color: cardC === '#000000' ? '#000' : '#fff' }}>
       <Calendar size={18} /> Agendar Evento
     </button>
+  );
+};
+
+// 👉 COMPONENTE BANNER ARRASTRABLE (¡La magia ocurre acá!)
+const DraggableBanner = ({ cfg, primary, update }) => {
+  const containerRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const posRef = useRef({ startX: 0, startY: 0, initialX: 50, initialY: 50 });
+
+  const handleStart = (e) => {
+    if (!update) return; // Si no hay update, es la vista pública. No se arrastra.
+    setIsDragging(true);
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    posRef.current = {
+      startX: clientX,
+      startY: clientY,
+      initialX: cfg.bannerOffsetX ?? 50,
+      initialY: cfg.bannerOffsetY ?? 50
+    };
+  };
+
+  const handleMove = (e) => {
+    if (!isDragging || !update || !containerRef.current) return;
+    
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+    const dx = clientX - posRef.current.startX;
+    const dy = clientY - posRef.current.startY;
+
+    const rect = containerRef.current.getBoundingClientRect();
+    
+    // Multiplicamos por 1.5 para que el dedo mueva la foto más rápido
+    const moveX = -(dx / rect.width) * 100 * 1.5;
+    const moveY = -(dy / rect.height) * 100 * 1.5;
+
+    let newX = posRef.current.initialX + moveX;
+    let newY = posRef.current.initialY + moveY;
+
+    // Ponemos topes para que no se escape de los bordes
+    newX = Math.max(0, Math.min(100, newX));
+    newY = Math.max(0, Math.min(100, newY));
+
+    update('bannerOffsetX', newX);
+    update('bannerOffsetY', newY);
+  };
+
+  const handleEnd = () => setIsDragging(false);
+
+  return (
+    <div
+      ref={containerRef}
+      className={`relative h-48 rounded-[2rem] overflow-hidden border shadow-lg ${update ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : ''}`}
+      style={{ borderColor: cfg.border || `${primary}44`, touchAction: update ? 'none' : 'auto' }}
+      onMouseDown={handleStart}
+      onMouseMove={handleMove}
+      onMouseUp={handleEnd}
+      onMouseLeave={handleEnd}
+      onTouchStart={handleStart}
+      onTouchMove={handleMove}
+      onTouchEnd={handleEnd}
+    >
+      <img 
+         src={cfg.bannerPhoto || DEF_CONFIG.bannerPhoto} 
+         className="w-full h-full object-cover pointer-events-none" 
+         style={{ objectPosition: `${cfg.bannerOffsetX ?? 50}% ${cfg.bannerOffsetY ?? 50}%` }} 
+         alt="Banner" 
+      />
+      <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+      <div className="absolute top-4 left-4 px-4 py-1.5 bg-black/40 backdrop-blur-md border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest text-white shadow-md pointer-events-none">
+         {cfg.bannerTitle}
+      </div>
+      
+      {/* Mensaje de ayuda (Solo visible en el editor) */}
+      {update && (
+        <div className="absolute bottom-3 right-3 bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-full text-[9px] font-black text-white uppercase tracking-widest pointer-events-none border border-white/20 shadow-lg">
+           🖐 Arrastrá la foto
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -238,17 +319,9 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
           </div>
         )}
 
+        {/* 👉 ACÁ INYECTAMOS EL NUEVO COMPONENTE ARRASTRABLE */}
         {cfg.showBanner && (
-          <div className="relative h-48 rounded-[2rem] overflow-hidden border shadow-lg" style={{ borderColor: cfg.border || `${primary}44` }}>
-            <img 
-              src={cfg.bannerPhoto || DEF_CONFIG.bannerPhoto} 
-              className="w-full h-full object-cover" 
-              style={{ objectPosition: `${cfg.bannerOffsetX ?? 50}% ${cfg.bannerOffsetY ?? 50}%` }}
-              alt="Banner" 
-            />
-            <div className="absolute inset-0 bg-black/40" />
-            <div className="absolute top-4 left-4 px-4 py-1.5 bg-black/40 backdrop-blur-md border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest text-white shadow-md">{cfg.bannerTitle}</div>
-          </div>
+          <DraggableBanner cfg={cfg} primary={primary} update={update} />
         )}
 
         {cfg.showDate && <InfoCard icon={Calendar} label="¿Cuándo?" value={formatToDDMMYYYY(cfg.dateText)} fontSize={cfg.dateSize ?? 18} primary={primary} textC={textC} mutedC={mutedC} cardC={cardC} cfg={cfg} glassStyle={glassContainerStyle} shineOverlay={shineOverlay} />}
