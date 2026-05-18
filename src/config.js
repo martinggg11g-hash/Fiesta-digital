@@ -252,25 +252,56 @@ export const THEMES = [
 ];
 
 export const FONTS = [
-  { label: "Playfair Display", value: "Playfair Display" }, { label: "Bodoni Moda", value: "Bodoni Moda" },
-  { label: "Abril Fatface", value: "Abril Fatface" }, { label: "Cinzel", value: "Cinzel" },
-  { label: "Prata", value: "Prata" }, { label: "Lora", value: "Lora" },
-  { label: "Poppins", value: "Poppins" }, { label: "Montserrat", value: "Montserrat" },
-  { label: "Jost", value: "Jost" }, { label: "Figtree", value: "Figtree" },
-  { label: "Outfit", value: "Outfit" }, { label: "Roboto", value: "Roboto" },
-  { label: "Monsieur La Doulaise", value: "Monsieur La Doulaise" }, { label: "Pinyon Script", value: "Pinyon Script" },
-  { label: "Great Vibes", value: "Great Vibes" }, { label: "Alex Brush", value: "Alex Brush" },
-  { label: "Dancing Script", value: "Dancing Script" }, { label: "Pacifico", value: "Pacifico" },
-  { label: "Merriweather", value: "Merriweather" }, { label: "Cormorant Garamond", value: "Cormorant Garamond" },
-  { label: "Libre Baskerville", value: "Libre Baskerville" }, { label: "EB Garamond", value: "EB Garamond" },
-  { label: "Radley", value: "Radley" }, { label: "Spectral", value: "Spectral" }
+  { label: "Instrument Serif", value: "Instrument Serif" },
+  { label: "Strichpunkt Sans", value: "Strichpunkt Sans" },
+  { label: "Roboto Mono", value: "Roboto Mono" },
+  { label: "Noto Sans", value: "Noto Sans" },
+  { label: "Playwrite MX", value: "Playwrite MX" },
+  { label: "PT Sans", value: "PT Sans" },
+  { label: "Bebas Neue", value: "Bebas Neue" },
+  { label: "Bricolage Grotesque", value: "Bricolage Grotesque" },
+  { label: "Lora", value: "Lora" },
+  { label: "Saira", value: "Saira" },
+  { label: "Barlow", value: "Barlow" },
+  { label: "Fira Sans", value: "Fira Sans" },
+  { label: "Smooch Sans", value: "Smooch Sans" },
+  { label: "Fjalla One", value: "Fjalla One" },
+  { label: "Playwrite GB S", value: "Playwrite GB S" },
+  { label: "Changa One", value: "Changa One" },
+  { label: "Dancing Script", value: "Dancing Script" },
+  { label: "Lobster Two", value: "Lobster Two" },
+  { label: "Pacifico", value: "Pacifico" },
+  { label: "Bungee", value: "Bungee" },
+  { label: "Lilita One", value: "Lilita One" },
+  { label: "Diplomata", value: "Diplomata" },
+  { label: "Caveat", value: "Caveat" },
+  { label: "Bodoni Moda", value: "Bodoni Moda" },
+  { label: "Indie Flower", value: "Indie Flower" },
+  { label: "Gravitas One", value: "Gravitas One" },
+  { label: "Goldman", value: "Goldman" },
+  { label: "Supermercado One", value: "Supermercado One" },
+  { label: "Zen Dots", value: "Zen Dots" },
+  { label: "Great Vibes", value: "Great Vibes" },
+  { label: "Satisfy", value: "Satisfy" },
+  { label: "Saira Stencil One", value: "Saira Stencil One" },
+  { label: "Press Start 2P", value: "Press Start 2P" },
+  { label: "Advent Pro", value: "Advent Pro" },
+  { label: "Creepster", value: "Creepster" },
+  { label: "VT323", value: "VT323" },
+  { label: "Berkshire Swash", value: "Berkshire Swash" },
+  { label: "Rock Salt", value: "Rock Salt" },
+  { label: "Kaushan Script", value: "Kaushan Script" },
+  { label: "Playfair Display", value: "Playfair Display" },
+  { label: "Montserrat", value: "Montserrat" },
+  { label: "Cinzel", value: "Cinzel" }
 ];
 
 export const FONT_CATEGORIES = {
-  "Elegantes": ["Playfair Display", "Bodoni Moda", "Abril Fatface", "Cinzel", "Prata", "Lora"],
-  "Modernas": ["Poppins", "Montserrat", "Jost", "Figtree", "Outfit", "Roboto"],
-  "Manuscritas": ["Monsieur La Doulaise", "Pinyon Script", "Great Vibes", "Alex Brush", "Dancing Script", "Pacifico"],
-  "Serif": ["Merriweather", "Cormorant Garamond", "Libre Baskerville", "EB Garamond", "Radley", "Spectral"]
+  "Elegantes": ["Playfair Display", "Bodoni Moda", "Lora", "Instrument Serif", "Cinzel", "Diplomata"],
+  "Modernas": ["Montserrat", "Noto Sans", "PT Sans", "Bricolage Grotesque", "Saira", "Barlow", "Fira Sans", "Advent Pro", "Smooch Sans", "Strichpunkt Sans"],
+  "Cursivas": ["Dancing Script", "Great Vibes", "Pacifico", "Caveat", "Satisfy", "Indie Flower", "Berkshire Swash", "Rock Salt", "Kaushan Script", "Playwrite MX", "Playwrite GB S"],
+  "Impacto": ["Bebas Neue", "Fjalla One", "Changa One", "Bungee", "Lilita One", "Gravitas One", "Saira Stencil One", "Goldman", "Supermercado One", "Lobster Two"],
+  "Retro & Gamer": ["Press Start 2P", "VT323", "Creepster", "Roboto Mono", "Zen Dots"]
 };
 
 export const ICON_CATEGORIES = {
