@@ -240,7 +240,12 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
 
         {cfg.showBanner && (
           <div className="relative h-48 rounded-[2rem] overflow-hidden border shadow-lg" style={{ borderColor: cfg.border || `${primary}44` }}>
-            <img src={cfg.bannerPhoto || DEF_CONFIG.bannerPhoto} className="w-full h-full object-cover" alt="Banner" />
+            <img 
+              src={cfg.bannerPhoto || DEF_CONFIG.bannerPhoto} 
+              className="w-full h-full object-cover" 
+              style={{ objectPosition: `${cfg.bannerOffsetX ?? 50}% ${cfg.bannerOffsetY ?? 50}%` }}
+              alt="Banner" 
+            />
             <div className="absolute inset-0 bg-black/40" />
             <div className="absolute top-4 left-4 px-4 py-1.5 bg-black/40 backdrop-blur-md border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest text-white shadow-md">{cfg.bannerTitle}</div>
           </div>
