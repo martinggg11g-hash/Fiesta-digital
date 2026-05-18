@@ -64,7 +64,6 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
              <div className="flex gap-2 overflow-x-auto fd-sb pb-2 mb-4">{Object.keys(ANIMATION_CATEGORIES).map(c => (<button key={c} onClick={() => setAnimCategory(c)} type="button" className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest shrink-0 transition-colors cursor-pointer ${animCat === c ? 'bg-violet-600 text-white shadow-md' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}>{c === 'quince' ? '15 Años' : c}</button>))}</div>
              <div className="grid grid-cols-2 gap-2 mb-4">{ANIMATION_CATEGORIES[animCat].map(anim => (<button key={anim.id} onClick={() => { update('openingAnimation', anim.id); setPreviewAnim(true); }} type="button" className={`p-2.5 border rounded-xl text-xs font-bold flex flex-col items-center gap-1 transition-all cursor-pointer ${cfg.openingAnimation === anim.id ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 bg-white text-slate-600 hover:bg-gray-50'}`}><span className="text-2xl mb-1">{anim.emoji}</span><span className="text-center text-[10px] leading-tight">{anim.name}</span></button>))}</div>
              
-             {/* 👉 NUEVO SLIDER DE DURACIÓN */}
              <div className="mb-4 p-3 bg-slate-50 rounded-xl border border-slate-200 shadow-inner">
                <label className="flex justify-between items-center text-[9px] font-black text-slate-500 uppercase mb-3">
                  <span>Duración del Efecto</span>
@@ -224,26 +223,11 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
             </div>
             {cfg.useGiphyBanner ? (<GiphySearch onSelect={url => update("bannerPhoto", url)} />) : (<FileUpload value={cfg.bannerPhoto} onChange={v => update("bannerPhoto", v)} />)}
             
-            <div className="mt-6 p-4 bg-orange-50 border border-orange-100 rounded-xl shadow-inner">
-               <label className="text-[10px] font-black text-orange-700 uppercase tracking-widest flex items-center gap-1 mb-4">
-                  <LayoutGrid size={14}/> Ajustar Posición de Foto
-               </label>
-               
-               <div className="mb-4">
-                 <label className="flex justify-between items-center text-[9px] font-bold text-orange-600 uppercase mb-2">
-                    <span>Horizontal (Izquierda/Derecha)</span>
-                    <span className="bg-orange-200 px-2 py-0.5 rounded-full">{cfg.bannerOffsetX ?? 50}%</span>
-                 </label>
-                 <input type="range" min={0} max={100} value={cfg.bannerOffsetX ?? 50} onChange={e => update("bannerOffsetX", Number(e.target.value))} className="w-full accent-orange-600 cursor-pointer" />
-               </div>
-
-               <div>
-                 <label className="flex justify-between items-center text-[9px] font-bold text-orange-600 uppercase mb-2">
-                    <span>Vertical (Arriba/Abajo)</span>
-                    <span className="bg-orange-200 px-2 py-0.5 rounded-full">{cfg.bannerOffsetY ?? 50}%</span>
-                 </label>
-                 <input type="range" min={0} max={100} value={cfg.bannerOffsetY ?? 50} onChange={e => update("bannerOffsetY", Number(e.target.value))} className="w-full accent-orange-600 cursor-pointer" />
-               </div>
+            <div className="mt-4 p-3 bg-orange-50 border border-orange-100 rounded-xl flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-orange-200 text-orange-600 flex items-center justify-center shrink-0">👆</div>
+              <p className="text-[9px] font-bold text-orange-700 leading-tight">
+                 Para ajustar la imagen del banner, <strong className="text-orange-900">arrastrala directamente en la vista previa</strong> (derecha).
+              </p>
             </div>
           </>
         )}
