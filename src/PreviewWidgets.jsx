@@ -128,14 +128,16 @@ export const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP, 
   const [localConfirmed, setLocalConfirmed] = useState(false);
   const [companions, setCompanions] = useState(0);
 
-  const isPrivate = cfg.isPrivateList || false;
+  // 👉 LA MAGIA ESTÁ ACÁ: Si hay guestData, forzamos Modo Privado automáticamente
+  const isPrivate = cfg.isPrivateList || !!guestData; 
+  
   const isConfirmed = localConfirmed || guestData?.asistencia_confirmada;
   const guestName = guestData?.nombre_completo || "Invitado de Prueba";
   const ticketId = guestData?.id || "VIP-MOCK-1234";
   const maxLimit = guestData ? guestData.max_acompanantes : (cfg.maxGuestsPerFamily || 5);
 
   if (isPrivate) {
-    // 👉 CODIFICAMOS EL QR PERFECTO PARA QUE EL ESCÁNER LO ENTIENDA
+    // Codificamos el QR Perfecto
     const qrText = `${ticketId}|${guestName}||${maxLimit}`;
     const qrCodeUrl = `https://quickchart.io/qr?text=${encodeURIComponent(qrText)}&size=300`;
 
@@ -190,7 +192,6 @@ export const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP, 
     setLoading(true);
     const newTicketId = `VIP-${Math.random().toString(36).substr(2,6).toUpperCase()}`;
     
-    // 👉 CODIFICAMOS EL QR PERFECTO PARA LISTA ABIERTA
     const qrText = `${newTicketId}|${formData.name}|${formData.lastname}|${formData.guests}`;
     const qrUrl = `https://quickchart.io/qr?text=${encodeURIComponent(qrText)}&size=300`;
     
