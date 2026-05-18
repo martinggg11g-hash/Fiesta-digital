@@ -68,8 +68,6 @@ export const DEF_CONFIG = {
   borderRotationBottom: 0,
 };
 
-// 👉 REEMPLAZAR TODA LA CONSTANTE THEMES EN src/config.js
-
 export const THEMES = [
   // --- LOS 14 ORIGINALES ---
   {
@@ -302,7 +300,6 @@ export const THEMES = [
     muted: "#f9a8d4",           // Subtítulos rosa pastel
     card: "#2d0b1e"             // Tarjetas oscuras con tinte rosa
   }
-];
 ];
 
 export const FONTS = [
