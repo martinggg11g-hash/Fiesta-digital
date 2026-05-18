@@ -43,7 +43,9 @@ const LoadingFallback = () => (
   <div className="h-screen w-full bg-black absolute inset-0 z-[9999]"></div>
 );
 
-// PANTALLA INVITADO REAL
+// ===============================================
+// 👉 PANTALLA INVITADO REAL (NOMINAL / PRIVADA)
+// ===============================================
 const LiveInviteScreen = () => {
   const { id: eventSlug } = useParams();
   const [searchParams] = useSearchParams();
@@ -56,11 +58,14 @@ const LiveInviteScreen = () => {
 
   useEffect(() => {
     const fetchEventAndGuest = async () => {
-      const { data: eventData } = await supabase.from('eventos').select('*').eq('slug', eventSlug).single();
+      // CORRECCIÓN: Buscamos en 'invitaciones', no en 'eventos'
+      const { data: eventData } = await supabase.from('invitaciones').select('*').eq('id', eventSlug).single();
       if (eventData) {
         setInv(eventData);
         document.title = eventData.config?.honoreeName ? `${eventData.config.honoreeName} | Invitación` : "Invitación";
       }
+      
+      // Traemos al invitado de la base de datos oficial
       if (guestId) {
         const { data: gData } = await supabase.from('invitados').select('*').eq('id', guestId).single();
         if (gData) setGuestData(gData);
@@ -70,9 +75,7 @@ const LiveInviteScreen = () => {
     fetchEventAndGuest();
   }, [eventSlug, guestId]);
 
-  // Pantalla negra mientras carga para que sea instantáneo a la vista
   if (loading) return <div className="h-screen bg-black"></div>;
-
   if (!inv) return <div className="h-screen bg-black text-white flex items-center justify-center font-black text-xl tracking-widest uppercase">Evento no encontrado 👻</div>;
 
   return (
@@ -86,14 +89,14 @@ const LiveInviteScreen = () => {
           onConfirmRSVP={async (formData) => {
              if (guestData) {
                 await supabase.from('invitados').update({ asistencia_confirmada: true, acompanantes_confirmados: formData.guests }).eq('id', guestData.id);
-                alert("¡Asistencia confirmada! Ya le avisamos a los organizadores.");
              }
           }} 
           onUploadLivePhoto={async (url) => {
              const currentPhotos = inv.internal_data?.live_photos || [];
              const updatedPhotos = [url, ...currentPhotos];
              const updatedInternal = { ...inv.internal_data, live_photos: updatedPhotos };
-             await supabase.from('eventos').update({ internal_data: updatedInternal }).eq('id', inv.id);
+             // CORRECCIÓN: Guardamos fotos en 'invitaciones', no en 'eventos'
+             await supabase.from('invitaciones').update({ internal_data: updatedInternal }).eq('id', inv.id);
              setInv({ ...inv, internal_data: updatedInternal });
           }}
         />
@@ -102,7 +105,9 @@ const LiveInviteScreen = () => {
   );
 };
 
-// 👉 PANTALLA INVITADO PÚBLICO (Refactorizada para ser auto-suficiente y ultra rápida)
+// ===============================================
+// 👉 PANTALLA INVITADO PÚBLICO (GENERAL)
+// ===============================================
 const PublicInviteScreen = ({ onConfirmRSVP, onUpdateInternal }) => {
   const { invId } = useParams();
   const [inv, setInv] = useState(null);
@@ -175,7 +180,6 @@ export default function App() {
     const isGuestRoute = path.startsWith('/i/') || path.startsWith('/invite/');
 
     const fetchData = async () => {
-      // 👉 CORTAFUEGOS: Si es un invitado, no descargamos la mega-base de datos del panel maestro.
       if (isGuestRoute) {
          setLoading(false);
          return; 
@@ -197,7 +201,7 @@ export default function App() {
     };
     fetchData();
 
-    if (isGuestRoute) return; // No necesitamos el radar de alertas para los invitados
+    if (isGuestRoute) return; 
 
     const radar = setInterval(async () => {
       const { data: alertData } = await supabase.from('alertas').select('*').eq('id', 1).single();
@@ -242,15 +246,31 @@ export default function App() {
     }
   };
 
+  // ===============================================
+  // 👉 CORRECCIÓN: GUARDADO DEL INVITADO PÚBLICO
+  // ===============================================
   const handleConfirmRSVP = async (invId, guestData) => {
     const inv = invitations.find(i => i.id === invId);
     if (!inv) return;
-    const currentGuests = inv.internal_data?.guests || [];
-    const updatedGuests = [...currentGuests, guestData];
-    const updatedInternal = { ...inv.internal_data, guests: updatedGuests };
+    
+    // Obtenemos el ID real para que no tire el error UUID de Supabase
+    const realEventId = inv.evento_id || inv.id;
+    const fullName = `${guestData.name} ${guestData.lastname}`.trim();
 
-    await supabase.from('invitaciones').update({ internal_data: updatedInternal }).eq('id', invId);
-    setInvitations(prev => prev.map(i => i.id === invId ? { ...i, internal_data: updatedInternal } : i));
+    // Guardamos directo en la tabla 'invitados' oficial
+    const { error } = await supabase.from('invitados').insert([{
+       evento_id: realEventId,
+       nombre_completo: fullName,
+       max_acompanantes: guestData.guests || 0,
+       asistencia_confirmada: true, // Ya entra confirmado automáticamente
+       acompanantes_confirmados: guestData.guests || 0,
+       mesa: 'Sin Asignar'
+    }]);
+
+    if (error) {
+       console.error("Error Supabase al guardar invitado público:", error);
+       alert("Error al registrar: " + error.message);
+    }
   };
 
   const handleCreateSalon = async (nU) => { const { error } = await supabase.from('salones').insert([nU]); if (!error) setUsers(p => [...p, nU]); };
@@ -309,7 +329,6 @@ export default function App() {
     });
   };
 
-  // Si entra al Dashboard y está cargando, mostramos la pantalla negra
   if (loading) return <LoadingFallback />;
 
   return (
