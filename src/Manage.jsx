@@ -93,7 +93,9 @@ export const ManageScreen = () => {
   }, [isAuthenticated, eventData, isProjectorMode]);
 
   const fetchInvitados = async () => {
-    const { data, error } = await supabase.from('invitados').select('*').eq('evento_id', eventData.id).order('created_at', { ascending: false });
+    // 👉 CORRECCIÓN 1: Usamos el evento_id real (UUID) para buscar
+    const realEventId = eventData.evento_id || eventData.id;
+    const { data, error } = await supabase.from('invitados').select('*').eq('evento_id', realEventId).order('created_at', { ascending: false });
     if (error) console.error("Error buscando invitados:", error);
     if (data) setInvitados(data);
   };
@@ -113,9 +115,11 @@ export const ManageScreen = () => {
      if (!newGuest.nombre_completo) return;
      setAdding(true);
      
-     // 👉 AGREGAMOS CAPTURA DE ERROR EXPLÍCITA
+     // 👉 CORRECCIÓN 2: Le pasamos el UUID real a Supabase, no el slug "evt-..."
+     const realEventId = eventData.evento_id || eventData.id;
+
      const { data, error } = await supabase.from('invitados').insert([{
-        evento_id: eventData.id,
+        evento_id: realEventId,
         nombre_completo: newGuest.nombre_completo,
         apodo: newGuest.apodo,
         max_acompanantes: newGuest.max_acompanantes,
@@ -124,7 +128,7 @@ export const ManageScreen = () => {
 
      if (error) {
         console.error("SUPABASE ERROR:", error);
-        alert(`Supabase bloqueó el guardado. Error: ${error.message}\n\nAsegurate de haber desactivado el RLS en la tabla 'invitados'.`);
+        alert(`Error al guardar: ${error.message}`);
      } else if (data) {
         setInvitados([data[0], ...invitados]);
         setNewGuest({ nombre_completo: '', apodo: '', max_acompanantes: 0 }); 
