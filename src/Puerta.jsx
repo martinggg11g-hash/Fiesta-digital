@@ -9,10 +9,9 @@ const FastScanner = ({ onClose, onScan }) => {
     const html5QrCode = new Html5Qrcode("reader");
     
     html5QrCode.start(
-      { facingMode: "environment" }, // Obliga a usar la cámara trasera
+      { facingMode: "environment" }, 
       { fps: 15, qrbox: { width: 250, height: 250 } },
       (decodedText) => {
-        // Cuando lee, apaga la cámara rápido y manda el dato
         html5QrCode.stop().then(() => onScan(decodedText));
       },
       (err) => { /* Ignoramos errores de enfoque de fondo */ }
@@ -55,6 +54,18 @@ export default function PuertaScreen({ invitations, onUpdateInternal }) {
 
   const processQRScan = (qrString) => {
     const [tId, tName, tLast, tPax] = qrString.split('|');
+
+    // 👉 MAGIA PARA PRUEBAS DESDE EL EDITOR
+    if (tId === "VIP-MOCK-1234") {
+      setValidationResult({ 
+        status: 'success', 
+        title: '¡QR de Prueba OK!', 
+        desc: 'El escáner lee perfecto. Este es un QR generado por el panel de edición.', 
+        data: { id: tId, name: 'Invitado', lastname: 'de Prueba', guests: 2 } 
+      });
+      return;
+    }
+
     const guestDb = guestsList.find(g => g.id === tId);
 
     if (!guestDb) setValidationResult({ status: 'error', title: 'Pase Inválido', desc: 'Este QR es falso o de otra fiesta.' });
@@ -63,12 +74,18 @@ export default function PuertaScreen({ invitations, onUpdateInternal }) {
   };
 
   const confirmAccess = () => {
+    // Si es el mock de prueba, no actualizamos la base de datos real
+    if (validationResult.data.id === "VIP-MOCK-1234") {
+      alert("¡Simulación de ingreso exitosa! (La base de datos real no fue alterada).");
+      setValidationResult(null);
+      return;
+    }
+
     const updatedGuests = guestsList.map(g => g.id === validationResult.data.id ? { ...g, status: 'Ingresó' } : g);
     onUpdateInternal(inv.id, 'guests', updatedGuests);
     setValidationResult(null);
   };
 
-  // NUEVA FUNCIÓN: Ingreso Manual
   const handleManualEntry = (guestId, guestName) => {
     if (window.confirm(`¿Querés marcar el ingreso manual de ${guestName}?`)) {
       const updatedGuests = guestsList.map(g => g.id === guestId ? { ...g, status: 'Ingresó' } : g);
