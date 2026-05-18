@@ -460,6 +460,7 @@ export const ANIMATION_CATEGORIES = {
     { id: 'lottie_playstation', emoji: '🎮', name: 'PlayStation', isLottie: true, url: 'https://lottie.host/41ab3ece-5bbd-448c-bc34-01484ce694b2/yLkQVXFWYO.lottie' }
   ]
 };
+animationDuration: 3, // Duración en segundos por defecto
 
 export const TRANSITION_OPTS = [
   { label: "Desvanecer (Fade)", value: "fade" },
