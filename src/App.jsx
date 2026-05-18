@@ -38,13 +38,12 @@ const GlobalStyles = () => {
   return null;
 };
 
-// 👉 NUEVA PANTALLA DE CARGA INVISIBLE (Fondo negro liso, entra "de una")
 const LoadingFallback = () => (
   <div className="h-screen w-full bg-black absolute inset-0 z-[9999]"></div>
 );
 
 // ===============================================
-// 👉 PANTALLA INVITADO REAL (NOMINAL / PRIVADA)
+// 📅 PANTALLA INVITADO REAL (NOMINAL / PRIVADA)
 // ===============================================
 const LiveInviteScreen = () => {
   const { id: eventSlug } = useParams();
@@ -58,14 +57,12 @@ const LiveInviteScreen = () => {
 
   useEffect(() => {
     const fetchEventAndGuest = async () => {
-      // CORRECCIÓN: Buscamos en 'invitaciones', no en 'eventos'
       const { data: eventData } = await supabase.from('invitaciones').select('*').eq('id', eventSlug).single();
       if (eventData) {
         setInv(eventData);
         document.title = eventData.config?.honoreeName ? `${eventData.config.honoreeName} | Invitación` : "Invitación";
       }
       
-      // Traemos al invitado de la base de datos oficial
       if (guestId) {
         const { data: gData } = await supabase.from('invitados').select('*').eq('id', guestId).single();
         if (gData) setGuestData(gData);
@@ -89,13 +86,13 @@ const LiveInviteScreen = () => {
           onConfirmRSVP={async (formData) => {
              if (guestData) {
                 await supabase.from('invitados').update({ asistencia_confirmada: true, acompanantes_confirmados: formData.guests }).eq('id', guestData.id);
+                alert("¡Asistencia confirmada exitosamente!");
              }
           }} 
           onUploadLivePhoto={async (url) => {
              const currentPhotos = inv.internal_data?.live_photos || [];
              const updatedPhotos = [url, ...currentPhotos];
              const updatedInternal = { ...inv.internal_data, live_photos: updatedPhotos };
-             // CORRECCIÓN: Guardamos fotos en 'invitaciones', no en 'eventos'
              await supabase.from('invitaciones').update({ internal_data: updatedInternal }).eq('id', inv.id);
              setInv({ ...inv, internal_data: updatedInternal });
           }}
@@ -106,7 +103,7 @@ const LiveInviteScreen = () => {
 };
 
 // ===============================================
-// 👉 PANTALLA INVITADO PÚBLICO (GENERAL)
+// 📣 PANTALLA INVITADO PÚBLICO (GENERAL)
 // ===============================================
 const PublicInviteScreen = ({ onConfirmRSVP, onUpdateInternal }) => {
   const { invId } = useParams();
@@ -135,7 +132,8 @@ const PublicInviteScreen = ({ onConfirmRSVP, onUpdateInternal }) => {
           cfg={inv.config} 
           internalData={inv.internal_data}
           status={inv.internal_data?.eventStatus} 
-          onConfirmRSVP={(guestData) => onConfirmRSVP(inv.id, guestData)} 
+          // 👉 PASAMOS EL REAL EVENT ID DIRECTO DESDE EL OBJETO INVITACIÓN LOCAL
+          onConfirmRSVP={(guestData) => onConfirmRSVP(inv.id, guestData, inv.evento_id || inv.id)} 
           onUploadLivePhoto={async (url) => {
              const currentPhotos = inv.internal_data?.live_photos || [];
              const updatedPhotos = [url, ...currentPhotos];
@@ -247,29 +245,32 @@ export default function App() {
   };
 
   // ===============================================
-  // 👉 CORRECCIÓN: GUARDADO DEL INVITADO PÚBLICO
+  // 👉 REFACTORIZACIÓN COMPLETA: GUARDADO REAL
   // ===============================================
-  const handleConfirmRSVP = async (invId, guestData) => {
-    const inv = invitations.find(i => i.id === invId);
-    if (!inv) return;
-    
-    // Obtenemos el ID real para que no tire el error UUID de Supabase
-    const realEventId = inv.evento_id || inv.id;
+  const handleConfirmRSVP = async (invId, guestData, realEventIdFromChild = null) => {
+    // Si viene de la ruta pública, usamos el id real inyectado por el hijo
+    const realEventId = realEventIdFromChild || invId;
     const fullName = `${guestData.name} ${guestData.lastname}`.trim();
+    
+    // Calculamos pases extras (Total de personas menos el titular)
+    const totalPax = guestData.guests || 1;
+    const extraPax = totalPax - 1 >= 0 ? totalPax - 1 : 0;
 
-    // Guardamos directo en la tabla 'invitados' oficial
     const { error } = await supabase.from('invitados').insert([{
        evento_id: realEventId,
        nombre_completo: fullName,
-       max_acompanantes: guestData.guests || 0,
-       asistencia_confirmada: true, // Ya entra confirmado automáticamente
-       acompanantes_confirmados: guestData.guests || 0,
+       max_acompanantes: extraPax,
+       asistencia_confirmada: true, 
+       acompanantes_confirmados: extraPax,
+       status: 'Pendiente',
        mesa: 'Sin Asignar'
     }]);
 
     if (error) {
        console.error("Error Supabase al guardar invitado público:", error);
-       alert("Error al registrar: " + error.message);
+       alert("Error al confirmar: " + error.message);
+    } else {
+       alert("¡Asistencia confirmada! Tu pase VIP fue generado correctamente.");
     }
   };
 
