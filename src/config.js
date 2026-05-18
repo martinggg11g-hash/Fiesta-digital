@@ -232,8 +232,6 @@ export const THEMES = [
     text: "#3f6212", card: "linear-gradient(160deg, rgba(255,255,255,0.95) 0%, rgba(217,249,157,0.7) 100%)", muted: "#65a30d",
     shadow: "0 8px 32px rgba(163,230,53,0.25), 0 2px 10px rgba(163,230,53,0.15)", border: "rgba(163,230,53,0.3)", accent: "#bef264", shine: "linear-gradient(135deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 60%)",
   },
-
-  // --- LOS 5 TEMAS NUEVOS DE BODA Y 15 AÑOS ---
   {
     id: "t27", name: "Plata Elegante (Dark)",
     primary: "#94a3b8", bg1: "#0f172a", bg2: "linear-gradient(145deg, #020617 0%, #0f172a 40%, #1e293b 80%, #334155 100%)",
@@ -263,7 +261,48 @@ export const THEMES = [
     primary: "#c05621", bg1: "#fff8f6", bg2: "linear-gradient(145deg, #fff3ec 0%, #feebd1 40%, #fcd4a6 80%, #fbd1a0 100%)",
     text: "#431407", card: "linear-gradient(160deg, rgba(255,255,255,0.95) 0%, rgba(252,212,166,0.8) 100%)", muted: "#9a3412",
     shadow: "0 10px 40px rgba(192,86,33,0.15), 0 2px 10px rgba(192,86,33,0.1)", border: "rgba(192,86,33,0.25)", accent: "#ed8936", shine: "linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 60%)",
+  },
+  {
+    id: "negro-blanco",
+    name: "Negro y Blanco (Elegante)",
+    primary: "#ffffff",         // Acento blanco brillante
+    bg1: "#000000",             // Fondo negro puro
+    bg2: "#18181b",             // Degradé a gris oscuro
+    text: "#ffffff",            // Textos principales blancos
+    muted: "#a1a1aa",           // Subtítulos gris claro
+    card: "#27272a"             // Tarjetas gris oscuro para que resalten del fondo
+  },
+  {
+    id: "blanco-negro",
+    name: "Blanco y Negro (Minimalista)",
+    primary: "#000000",         // Acento negro
+    bg1: "#ffffff",             // Fondo blanco
+    bg2: "#f4f4f5",             // Degradé a gris muy tierno
+    text: "#000000",            // Textos negros
+    muted: "#71717a",           // Subtítulos gris oscuro
+    card: "#ffffff"             // Tarjetas blancas puras
+  },
+  {
+    id: "negro-violeta",
+    name: "Negro y Violeta (Cyber)",
+    primary: "#a78bfa",         // Violeta neón/pastel para que brille
+    bg1: "#0b061f",             // Fondo negro con un tinte sutil de violeta profundo
+    bg2: "#1e0b36",             // Degradé a un morado oscuro
+    text: "#ffffff",            // Textos blancos
+    muted: "#c084fc",           // Subtítulos violetas claros
+    card: "#25143a"             // Tarjetas moradas oscuras
+  },
+  {
+    id: "rosa-negro",
+    name: "Rosa y Negro (Glam)",
+    primary: "#f472b6",         // Rosa chicle/neón bien llamativo
+    bg1: "#000000",             // Fondo negro profundo
+    bg2: "#1c0512",             // Degradé a un borravino tirando a rosa oscuro
+    text: "#ffffff",            // Textos blancos
+    muted: "#f9a8d4",           // Subtítulos rosa pastel
+    card: "#2d0b1e"             // Tarjetas oscuras con tinte rosa
   }
+];
 ];
 
 export const FONTS = [
