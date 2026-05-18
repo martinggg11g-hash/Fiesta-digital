@@ -1,36 +1,52 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { supabase } from "./supabase"; // 👉 Conexión directa a tu Supabase
+import { supabase } from "./supabase"; 
+import { Html5Qrcode } from "html5-qrcode";
 import { CheckCircle2, X, AlertTriangle, ScanBarcode, Users, Loader2, Check } from "lucide-react";
 
-// ESCÁNER ULTRA RÁPIDO (Cámara trasera por defecto)
+// ESCÁNER ULTRA RÁPIDO Y ESTABLE (Anti-Pantalla Blanca)
 const FastScanner = ({ onClose, onScan }) => {
+  // Anclamos la función de escaneo para que no reinicie la cámara
+  const onScanRef = useRef(onScan);
+
   useEffect(() => {
-    const html5QrCode = new Html5Qrcode("reader");
-    
-    html5QrCode.start(
+    onScanRef.current = onScan;
+  }, [onScan]);
+
+  useEffect(() => {
+    const scanner = new Html5Qrcode("reader");
+    let isStarting = true;
+
+    scanner.start(
       { facingMode: "environment" }, 
-      { fps: 15, qrbox: { width: 250, height: 250 } },
+      { fps: 10, qrbox: { width: 250, height: 250 } },
       (decodedText) => {
-        html5QrCode.stop().then(() => onScan(decodedText));
+        // Cuando lee, apaga seguro y llama a la función anclada
+        scanner.stop().then(() => {
+          if (onScanRef.current) onScanRef.current(decodedText);
+        }).catch(console.error);
       },
-      (err) => { /* Ignoramos errores de enfoque de fondo */ }
-    ).catch(err => {
-      console.error(err);
-      alert("Por favor, dale permisos a la cámara para poder escanear.");
+      (err) => { /* Ignoramos errores de enfoque de luz */ }
+    ).then(() => {
+      isStarting = false;
+    }).catch(err => {
+      console.error("Error iniciando cámara:", err);
+      isStarting = false;
+      alert("No se pudo iniciar la cámara. Verificá los permisos del navegador.");
     });
 
+    // Limpieza segura al desmontar (cuando cerrás el escáner)
     return () => {
-      if (html5QrCode.isScanning) {
-        html5QrCode.stop().catch(console.error);
+      if (!isStarting && scanner.isScanning) {
+        scanner.stop().catch(console.error);
       }
     };
-  }, [onScan]);
+  }, []); // El array vacío es la clave: asegura que la cámara prenda 1 sola vez
 
   return (
     <div className="fixed inset-0 z-[120] bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4">
        <div className="w-full max-w-md bg-slate-900 border border-slate-700 rounded-[2rem] p-6 shadow-2xl relative text-center anim-pop">
-          <button onClick={onClose} className="absolute top-4 right-4 w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-slate-400 hover:text-white cursor-pointer"><X size={20}/></button>
+          <button onClick={onClose} className="absolute top-4 right-4 w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-slate-400 hover:text-white cursor-pointer transition-colors"><X size={20}/></button>
           <div className="w-16 h-16 bg-violet-600 text-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl"><ScanBarcode size={30}/></div>
           <h2 className="text-xl font-black text-white mb-2">Escáner de Recepción</h2>
           <p className="text-slate-400 text-xs mb-6">Apunta al QR del invitado.</p>
@@ -41,20 +57,17 @@ const FastScanner = ({ onClose, onScan }) => {
 };
 
 export default function PuertaScreen() {
-  const { id } = useParams(); // id es el eventSlug (ej: evt-3j50vi)
+  const { id } = useParams(); 
   const [eventTitle, setEventTitle] = useState("Cargando evento...");
   const [invitados, setInvitados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [scanning, setScanning] = useState(false);
   const [validationResult, setValidationResult] = useState(null);
 
-  // 👉 BUSCAMOS LOS INVITADOS DIRECTAMENTE DE LA TABLA REAL EN TIEMPO REAL
   const fetchLiveGuests = async () => {
-    // 1. Buscamos primero el título del evento
     const { data: eventData } = await supabase.from('invitaciones').select('title').eq('id', id).single();
     if (eventData) setEventTitle(eventData.title);
 
-    // 2. Traemos todos los invitados asociados a este slug
     const { data: guestsData } = await supabase.from('invitados').select('*').eq('evento_id', id).order('created_at', { ascending: false });
     if (guestsData) setInvitados(guestsData);
     setLoading(false);
@@ -68,6 +81,8 @@ export default function PuertaScreen() {
   const total = invitados.reduce((acc, g) => acc + (1 + (g.max_acompanantes || 0)), 0);
 
   const processQRScan = (qrString) => {
+    setScanning(false); // Escondemos la cámara apenas lee
+
     if (!qrString || !qrString.includes('|')) {
       setValidationResult({ status: 'error', title: 'QR Inválido', desc: 'Este código no pertenece a nuestra plataforma o está mal formateado.' });
       return;
@@ -85,10 +100,8 @@ export default function PuertaScreen() {
       return;
     }
 
-    // 1. Buscamos en la lista viva por ID
     let guestDb = invitados.find(g => g.id === tId);
 
-    // 2. Si no coincide el ID (pases de lista abierta), buscamos por Nombre Completo armado
     if (!guestDb && tName) {
       const qrFullName = `${tName} ${tLast || ''}`.trim().toLowerCase();
       guestDb = invitados.find(g => (g.nombre_completo || '').trim().toLowerCase() === qrFullName);
@@ -109,14 +122,13 @@ export default function PuertaScreen() {
       return;
     }
 
-    // 👉 ACTUALIZAMOS EL ESTADO DIRECTO EN LA BASE DE DATOS
     const { error } = await supabase.from('invitados').update({ status: 'Ingresó' }).eq('id', validationResult.data.id);
     
     if (error) {
       alert("Error al registrar ingreso en la BD: " + error.message);
     } else {
       setValidationResult(null);
-      fetchLiveGuests(); // Recargamos la lista al instante
+      fetchLiveGuests(); 
     }
   };
 
