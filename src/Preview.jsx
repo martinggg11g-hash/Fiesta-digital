@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { OpeningAnimation, LottieOverlay } from "./Lotties"; 
 import { Calendar, Clock, MapPin, Loader2, Camera, Lock, CheckCircle2, Download, ExternalLink } from "lucide-react";
 import { DEF_CONFIG, getSpotifyEmbed, getYouTubeId, formatToDDMMYYYY, PARTICLE_CATEGORIES } from "./config";
@@ -42,6 +42,31 @@ const AddToCalendarButton = ({ cfg, primary, cardC }) => {
 
 export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, internalData, onUploadLivePhoto }) => {
   if (!cfg) return null;
+
+  // 👉 MOTOR INYECTOR DE GOOGLE FONTS (Precarga las letras mágicamente)
+  useEffect(() => {
+    const fontsToLoad = [
+      cfg.fontBody, cfg.fontTitle, cfg.eventTypeFont, 
+      cfg.honoreeFont, cfg.badgeFont
+    ].filter(Boolean);
+    
+    const uniqueFonts = [...new Set(fontsToLoad)];
+    
+    uniqueFonts.forEach(font => {
+      const fontId = `gfont-${font.replace(/\s+/g, '-')}`;
+      if (!document.getElementById(fontId)) {
+        const link = document.createElement("link");
+        link.id = fontId;
+        link.rel = "stylesheet";
+        link.href = `https://fonts.googleapis.com/css2?family=${font.replace(/\s+/g, '+')}&display=swap`;
+        document.head.appendChild(link);
+      }
+    });
+  }, [cfg.fontBody, cfg.fontTitle, cfg.eventTypeFont, cfg.honoreeFont, cfg.badgeFont]);
+
+  // 👉 CINTURÓN DE SEGURIDAD PARA NOMBRES COMPUESTOS (Les pone comillas)
+  const safeFont = (f) => f ? `"${f}", sans-serif` : "inherit";
+
   const primary = cfg.primary || "#8b5cf6";
   const bg1 = cfg.bg1 || "#f8f7ff";
   const bg2 = cfg.bg2 || "#e0dcfc";
@@ -135,7 +160,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
   };
 
   return (
-    <div style={{ backgroundColor: bg1, backgroundImage: bg2.includes('gradient') ? bg2 : `linear-gradient(180deg, ${bg1} 0%, ${bg2} 100%)`, fontFamily: cfg.fontBody, minHeight: '100%' }} className="pb-12 relative overflow-x-hidden flex flex-col">
+    <div style={{ backgroundColor: bg1, backgroundImage: bg2.includes('gradient') ? bg2 : `linear-gradient(180deg, ${bg1} 0%, ${bg2} 100%)`, fontFamily: safeFont(cfg.fontBody), minHeight: '100%' }} className="pb-12 relative overflow-x-hidden flex flex-col">
       
       {cfg.showCoverBorders && cfg.selectedBorder && (
         <div className="absolute inset-0 pointer-events-none z-[60] overflow-hidden">
@@ -169,14 +194,13 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
 
         <div className="absolute bottom-0 left-0 right-0 p-8 pb-12 flex flex-col items-center z-30">
           
-          {/* 👉 ACÁ ARREGLAMOS EL EMOJI: Cambió a formato "inline" para que fluya con el texto */}
           <DraggableItem id="eventType" cfg={cfg} update={update} className="relative !static flex justify-center w-full px-4">
             <div 
               className="font-black uppercase tracking-[0.3em] mb-4 text-center" 
               style={{ 
                 color: cfg.eventTypeColor || primary, 
                 fontSize: `${cfg.eventTypeSize ?? 11}px`, 
-                fontFamily: cfg.eventTypeFont || cfg.fontBody, 
+                fontFamily: safeFont(cfg.eventTypeFont || cfg.fontBody), 
                 textShadow: eventTypeShadow, 
                 lineHeight: 1.4 
               }}
@@ -191,12 +215,12 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
           </DraggableItem>
           
           <DraggableItem id="honoree" cfg={cfg} update={update} className="relative !static flex justify-center w-full">
-            <h1 style={{ fontFamily: cfg.honoreeFont || cfg.fontTitle, color: cfg.honoreeColor || textC, fontSize: `${cfg.honoreeSize ?? 48}px`, textShadow: honoreeShadow, textAlign: 'center', lineHeight: 1.1 }}>{cfg.honoreeName}</h1>
+            <h1 style={{ fontFamily: safeFont(cfg.honoreeFont || cfg.fontTitle), color: cfg.honoreeColor || textC, fontSize: `${cfg.honoreeSize ?? 48}px`, textShadow: honoreeShadow, textAlign: 'center', lineHeight: 1.1 }}>{cfg.honoreeName}</h1>
           </DraggableItem>
 
           {(cfg.showBadge ?? true) && (
             <DraggableItem id="badge" cfg={cfg} update={update} className="relative !static flex justify-center mt-4 w-full">
-              <span className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full border border-white/20 backdrop-blur-md font-black shadow-lg" style={{ background: cfg.badgeBgColor || 'rgba(0,0,0,0.5)', color: textC, fontSize: `${cfg.badgeSize ?? 12}px`, fontFamily: cfg.badgeFont || cfg.fontBody, textTransform: 'uppercase', tracking: 'widest' }}>
+              <span className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full border border-white/20 backdrop-blur-md font-black shadow-lg" style={{ background: cfg.badgeBgColor || 'rgba(0,0,0,0.5)', color: textC, fontSize: `${cfg.badgeSize ?? 12}px`, fontFamily: safeFont(cfg.badgeFont || cfg.fontBody), textTransform: 'uppercase', tracking: 'widest' }}>
                 <RenderSymbol value={cfg.badgeEmoji || "👑"} size={cfg.badgeSize ?? 14} color={textC} />
                 {cfg.badgeText}
               </span>
@@ -236,14 +260,14 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
               <div className="w-14 h-14 rounded-[1.2rem] flex items-center justify-center shrink-0 border border-white/20 shadow-sm" style={{ background: cfg.accent || primary }}><MapPin size={24} color={cardC === '#000000' ? '#000' : '#fff'} /></div>
               <div className="text-left">
                 <p className="text-[9px] uppercase font-black tracking-widest mb-0.5 opacity-80" style={{ color: mutedC }}>¿Dónde?</p>
-                <p className="font-bold" style={{ color: textC, fontFamily: cfg.fontBody, fontSize: `${cfg.locationSize ?? 18}px` }}>{cfg.locationName}</p>
-                <p className="text-[11px] font-medium opacity-70 mt-0.5" style={{ color: mutedC, fontFamily: cfg.fontBody }}>{cfg.locationAddress}</p>
+                <p className="font-bold" style={{ color: textC, fontFamily: safeFont(cfg.fontBody), fontSize: `${cfg.locationSize ?? 18}px` }}>{cfg.locationName}</p>
+                <p className="text-[11px] font-medium opacity-70 mt-0.5" style={{ color: mutedC, fontFamily: safeFont(cfg.fontBody) }}>{cfg.locationAddress}</p>
               </div>
             </div>
             <div className="px-4 pb-2 relative z-10"><MapEmbed name={cfg.locationName} address={cfg.locationAddress} primary={primary} /></div>
             {cfg.showParking && (
               <div className="p-4 text-center border-t relative z-10" style={{ borderColor: `${primary}22` }}>
-                <span className="text-[10px] font-black uppercase tracking-widest py-2 px-5 rounded-full inline-block border shadow-sm" style={{ background: `${primary}15`, color: primary, borderColor: `${primary}33`, fontFamily: cfg.fontBody }}>🚗 {cfg.parkingType === 'otro' ? cfg.customParking : cfg.parkingType}</span>
+                <span className="text-[10px] font-black uppercase tracking-widest py-2 px-5 rounded-full inline-block border shadow-sm" style={{ background: `${primary}15`, color: primary, borderColor: `${primary}33`, fontFamily: safeFont(cfg.fontBody) }}>🚗 {cfg.parkingType === 'otro' ? cfg.customParking : cfg.parkingType}</span>
               </div>
             )}
           </div>
@@ -255,7 +279,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
               {shineOverlay}
               {cfg.venueLogoUrl && <img src={cfg.venueLogoUrl} className="h-16 w-auto object-contain mb-4 relative z-10 drop-shadow-md" alt="Lugar" />}
               <p className="text-[9px] uppercase font-black tracking-widest mb-1 opacity-80 relative z-10" style={{ color: mutedC }}>Celebrado en</p>
-              <h3 className="font-black text-xl mb-5 relative z-10" style={{ color: textC, fontFamily: cfg.fontBody }}>{cfg.venueName}</h3>
+              <h3 className="font-black text-xl mb-5 relative z-10" style={{ color: textC, fontFamily: safeFont(cfg.fontBody) }}>{cfg.venueName}</h3>
               {cfg.venueLink && (
                 <a href={cfg.venueLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-6 py-3 rounded-[1rem] font-black text-xs shadow-md transition-transform active:scale-95 uppercase tracking-widest relative z-10 border border-white/20" style={{ background: cfg.accent || primary, color: cardC === '#000000' ? '#000' : '#fff' }}>
                   {cfg.venueLinkType === 'whatsapp' ? 'Hablar por WhatsApp' : 'Visitar Sitio Web'}
@@ -267,7 +291,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
         
         {cfg.showVideo && cfg.videoUrl && (
           <div className="pt-4">
-            {cfg.videoTitle && <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={cfg.fontBody}>{cfg.videoTitle}</SectionTitle>}
+            {cfg.videoTitle && <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={safeFont(cfg.fontBody)}>{cfg.videoTitle}</SectionTitle>}
             <div className="rounded-[2rem] overflow-hidden border shadow-lg relative p-2" style={glassContainerStyle}>
               {shineOverlay}
               <div className="rounded-[1.5rem] overflow-hidden relative z-10" style={{ paddingTop: '56.25%' }}>
@@ -279,7 +303,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
 
         {cfg.showMusic && cfg.spotifyUrl && (
           <div className="pt-4">
-            <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={cfg.fontBody}>Música para entrar en clima</SectionTitle>
+            <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={safeFont(cfg.fontBody)}>Música para entrar en clima</SectionTitle>
             <div className="rounded-[2rem] p-2 relative overflow-hidden shadow-lg" style={glassContainerStyle}>
               {shineOverlay}
               <iframe className="relative z-10 rounded-[1.5rem]" src={getSpotifyEmbed(cfg.spotifyUrl)} width="100%" height="152" frameBorder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
@@ -289,7 +313,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
 
         {cfg.showItinerary && cfg.itinerary?.length > 0 && (
           <div className="pt-4">
-            <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={cfg.fontBody}>{cfg.itinerarySectionTitle ?? "Programa del evento"}</SectionTitle>
+            <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={safeFont(cfg.fontBody)}>{cfg.itinerarySectionTitle ?? "Programa del evento"}</SectionTitle>
             <div className="relative pl-6 space-y-8 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5" style={{ '--tw-before-bg': `${primary}33` }}>
               <div className="absolute left-[7px] top-2 bottom-2 w-[2px]" style={{ background: primary, opacity: 0.3 }} />
               {cfg.itinerary.map((item, i) => (
@@ -300,8 +324,8 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
                   </div>
                   <div className="relative z-10">
                     <p className="text-[10px] font-black mb-1 uppercase tracking-widest" style={{ color: primary }}>{item.time}</p>
-                    <p className="font-bold text-sm" style={{ color: textC, fontFamily: cfg.fontBody }}>{item.title}</p>
-                    {item.sub && <p className="text-xs font-medium opacity-70 mt-1" style={{ color: mutedC, fontFamily: cfg.fontBody }}>{item.sub}</p>}
+                    <p className="font-bold text-sm" style={{ color: textC, fontFamily: safeFont(cfg.fontBody) }}>{item.title}</p>
+                    {item.sub && <p className="text-xs font-medium opacity-70 mt-1" style={{ color: mutedC, fontFamily: safeFont(cfg.fontBody) }}>{item.sub}</p>}
                   </div>
                 </div>
               ))}
@@ -311,7 +335,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
 
         {cfg.showMenu && cfg.menuItems?.length > 0 && (
           <div className="pt-4">
-            <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={cfg.fontBody}>{cfg.menuSectionTitle ?? "¿Qué vamos a comer?"}</SectionTitle>
+            <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={safeFont(cfg.fontBody)}>{cfg.menuSectionTitle ?? "¿Qué vamos a comer?"}</SectionTitle>
             <div className="grid grid-cols-2 gap-3">
               {cfg.menuItems.map((m, i) => (
                 <div key={i} className="p-5 rounded-[2rem] text-center relative overflow-hidden flex flex-col items-center" style={glassContainerStyle}>
@@ -319,7 +343,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
                   <span className="mb-3 flex justify-center items-center h-12 w-12 rounded-2xl relative z-10 border shadow-sm" style={{ background: `${primary}15`, borderColor: `${primary}22` }}>
                      <RenderSymbol value={m.emoji} size={24} color={primary} />
                   </span>
-                  <span className="text-xs font-bold relative z-10" style={{ color: textC, fontFamily: cfg.fontBody }}>{m.label}</span>
+                  <span className="text-xs font-bold relative z-10" style={{ color: textC, fontFamily: safeFont(cfg.fontBody) }}>{m.label}</span>
                 </div>
               ))}
             </div>
@@ -328,7 +352,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
 
         {cfg.showLiveCamera && (
           <div className="pt-6">
-            <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={cfg.fontBody}>{cfg.liveCameraTitle ?? "Álbum Colaborativo"}</SectionTitle>
+            <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={safeFont(cfg.fontBody)}>{cfg.liveCameraTitle ?? "Álbum Colaborativo"}</SectionTitle>
             <div className="relative overflow-hidden rounded-[2rem] text-center p-6 border shadow-lg" style={glassContainerStyle}>
               {shineOverlay}
               <div className="relative z-10 flex flex-col items-center">
@@ -377,7 +401,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
 
         {(cfg.showDressCode || cfg.showGifts) && (
           <div className="pt-6">
-            <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={cfg.fontBody}>{cfg.notesSectionTitle ?? "A tener en cuenta"}</SectionTitle>
+            <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={safeFont(cfg.fontBody)}>{cfg.notesSectionTitle ?? "A tener en cuenta"}</SectionTitle>
             <div className="grid grid-cols-2 gap-3">
               {cfg.showDressCode && (
                 <div className="p-6 rounded-[2rem] text-center relative overflow-hidden flex flex-col items-center" style={glassContainerStyle}>
@@ -386,7 +410,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
                     <RenderSymbol value={cfg.dressCodeIcon || "👔"} size={26} color={cardC === '#000000' ? '#000' : '#fff'} />
                   </span>
                   <p className="text-[9px] font-black uppercase tracking-[0.2em] mb-1.5 opacity-80 relative z-10" style={{ color: mutedC }}>Vestimenta</p>
-                  <p className="font-bold text-xs relative z-10" style={{ color: textC, fontFamily: cfg.fontBody }}>{cfg.dressCodeText}</p>
+                  <p className="font-bold text-xs relative z-10" style={{ color: textC, fontFamily: safeFont(cfg.fontBody) }}>{cfg.dressCodeText}</p>
                 </div>
               )}
               {cfg.showGifts && (
@@ -396,7 +420,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
                     <RenderSymbol value={cfg.giftIcon || "🎁"} size={26} color={cardC === '#000000' ? '#000' : '#fff'} />
                   </span>
                   <p className="text-[9px] font-black uppercase tracking-[0.2em] mb-1.5 opacity-80 relative z-10" style={{ color: mutedC }}>{cfg.giftLabel}</p>
-                  <p className="font-bold text-xs relative z-10" style={{ color: textC, fontFamily: cfg.fontBody }}>{cfg.giftText}</p>
+                  <p className="font-bold text-xs relative z-10" style={{ color: textC, fontFamily: safeFont(cfg.fontBody) }}>{cfg.giftText}</p>
                 </div>
               )}
             </div>
@@ -409,7 +433,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
               <div className="text-center mb-5 relative overflow-hidden rounded-[2rem]" style={glassContainerStyle}>
                 {shineOverlay}
                 <div className="p-6 relative z-10">
-                  <span className="block font-bold whitespace-pre-wrap leading-relaxed" style={{ color: cfg.giftNoteColor || primary, fontSize: `${cfg.giftNoteSize || 12}px`, fontFamily: cfg.fontBody }}>
+                  <span className="block font-bold whitespace-pre-wrap leading-relaxed" style={{ color: cfg.giftNoteColor || primary, fontSize: `${cfg.giftNoteSize || 12}px`, fontFamily: safeFont(cfg.fontBody) }}>
                     {cfg.giftNoteText}
                   </span>
                 </div>
@@ -433,7 +457,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
 
         {cfg.showGallery && cfg.galleryPhotos?.length > 0 && (
           <div className="pt-4">
-            <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={cfg.fontBody}>{cfg.galleryTitle}</SectionTitle>
+            <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={safeFont(cfg.fontBody)}>{cfg.galleryTitle}</SectionTitle>
             {cfg.galleryLayout === 'grid' ? (
               <div className="grid grid-cols-2 gap-3">
                 {cfg.galleryPhotos.map((p, i) => p && <div key={i} className="rounded-3xl p-1 relative overflow-hidden" style={glassContainerStyle}>{shineOverlay}<img src={p} className="w-full h-48 rounded-[1.2rem] object-cover relative z-10" alt={`Galeria ${i}`} /></div>)}
