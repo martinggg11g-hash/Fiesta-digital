@@ -9,27 +9,22 @@ const ProjectorScreen = ({ eventSlug }) => {
   const [photos, setPhotos] = useState([]);
   const [idx, setIdx] = useState(0);
 
-  // 👉 LÓGICA DEFINITIVA: Polling a prueba de balas en la tabla correcta
   useEffect(() => {
     const fetchPhotos = async () => {
-      // Leemos de 'invitaciones' usando el 'id'
       const { data } = await supabase.from('invitaciones').select('internal_data').eq('id', eventSlug).single();
       if (data?.internal_data?.live_photos) {
         setPhotos(prev => {
-          // Si hay una foto nueva, volvemos a la foto 0 (la más reciente)
           if (prev.length !== data.internal_data.live_photos.length) setIdx(0);
           return data.internal_data.live_photos;
         });
       }
     };
     
-    fetchPhotos(); // Busca apenas entra
-    const radar = setInterval(fetchPhotos, 3000); // Busca cada 3 segundos en silencio
-    
+    fetchPhotos(); 
+    const radar = setInterval(fetchPhotos, 3000); 
     return () => clearInterval(radar);
   }, [eventSlug]);
 
-  // Carrusel automático cada 5 segundos
   useEffect(() => {
     if (photos.length <= 1) return;
     const interval = setInterval(() => {
@@ -79,8 +74,9 @@ export const ManageScreen = () => {
 
   useEffect(() => {
     const fetchEvent = async () => {
-      // 👉 Buscamos en 'invitaciones' usando el 'id'
-      const { data } = await supabase.from('invitaciones').select('*').eq('id', eventSlug).single();
+      const { data, error } = await supabase.from('invitaciones').select('*').eq('id', eventSlug).single();
+      if (error) console.error("Error buscando evento:", error);
+      
       if (data) {
          setEventData(data);
          if (!data.config?.clientPin || isProjectorMode) setIsAuthenticated(true);
@@ -97,7 +93,8 @@ export const ManageScreen = () => {
   }, [isAuthenticated, eventData, isProjectorMode]);
 
   const fetchInvitados = async () => {
-    const { data } = await supabase.from('invitados').select('*').eq('evento_id', eventData.id).order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('invitados').select('*').eq('evento_id', eventData.id).order('created_at', { ascending: false });
+    if (error) console.error("Error buscando invitados:", error);
     if (data) setInvitados(data);
   };
 
@@ -116,7 +113,8 @@ export const ManageScreen = () => {
      if (!newGuest.nombre_completo) return;
      setAdding(true);
      
-     const { data } = await supabase.from('invitados').insert([{
+     // 👉 AGREGAMOS CAPTURA DE ERROR EXPLÍCITA
+     const { data, error } = await supabase.from('invitados').insert([{
         evento_id: eventData.id,
         nombre_completo: newGuest.nombre_completo,
         apodo: newGuest.apodo,
@@ -124,25 +122,31 @@ export const ManageScreen = () => {
         mesa: 'Sin Asignar'
      }]).select();
 
-     if (data) {
+     if (error) {
+        console.error("SUPABASE ERROR:", error);
+        alert(`Supabase bloqueó el guardado. Error: ${error.message}\n\nAsegurate de haber desactivado el RLS en la tabla 'invitados'.`);
+     } else if (data) {
         setInvitados([data[0], ...invitados]);
         setNewGuest({ nombre_completo: '', apodo: '', max_acompanantes: 0 }); 
-     } else {
-        alert("Error al guardar invitado.");
      }
      setAdding(false);
   };
 
   const handleDelete = async (id) => {
      if(!window.confirm("¿Seguro que querés borrar a este invitado? Su pase dejará de funcionar.")) return;
-     await supabase.from('invitados').delete().eq('id', id);
+     const { error } = await supabase.from('invitados').delete().eq('id', id);
+     if (error) {
+       alert("Error al borrar: " + error.message);
+       return;
+     }
      setInvitados(invitados.filter(i => i.id !== id));
   };
 
   const handleUpdateMesa = async (guestId, nuevaMesa) => {
     const updated = invitados.map(i => i.id === guestId ? { ...i, mesa: nuevaMesa } : i);
     setInvitados(updated);
-    await supabase.from('invitados').update({ mesa: nuevaMesa }).eq('id', guestId);
+    const { error } = await supabase.from('invitados').update({ mesa: nuevaMesa }).eq('id', guestId);
+    if (error) alert("Error guardando mesa: " + error.message);
   };
 
   const handleDragStart = (e, guestId) => {
