@@ -63,6 +63,16 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
            <div className="mb-6 border-b border-gray-100 pb-4">
              <div className="flex gap-2 overflow-x-auto fd-sb pb-2 mb-4">{Object.keys(ANIMATION_CATEGORIES).map(c => (<button key={c} onClick={() => setAnimCategory(c)} type="button" className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest shrink-0 transition-colors cursor-pointer ${animCat === c ? 'bg-violet-600 text-white shadow-md' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}>{c === 'quince' ? '15 Años' : c}</button>))}</div>
              <div className="grid grid-cols-2 gap-2 mb-4">{ANIMATION_CATEGORIES[animCat].map(anim => (<button key={anim.id} onClick={() => { update('openingAnimation', anim.id); setPreviewAnim(true); }} type="button" className={`p-2.5 border rounded-xl text-xs font-bold flex flex-col items-center gap-1 transition-all cursor-pointer ${cfg.openingAnimation === anim.id ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 bg-white text-slate-600 hover:bg-gray-50'}`}><span className="text-2xl mb-1">{anim.emoji}</span><span className="text-center text-[10px] leading-tight">{anim.name}</span></button>))}</div>
+             
+             {/* 👉 NUEVO SLIDER DE DURACIÓN */}
+             <div className="mb-4 p-3 bg-slate-50 rounded-xl border border-slate-200 shadow-inner">
+               <label className="flex justify-between items-center text-[9px] font-black text-slate-500 uppercase mb-3">
+                 <span>Duración del Efecto</span>
+                 <span className="bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full">{cfg.animationDuration || 3} seg</span>
+               </label>
+               <input type="range" min={1} max={5} step={1} value={cfg.animationDuration || 3} onChange={e => update("animationDuration", Number(e.target.value))} className="w-full accent-violet-600 cursor-pointer" />
+             </div>
+
              <SelectInp label="Efecto de Salida" value={cfg.animationTransition || 'fade'} options={TRANSITION_OPTS} onChange={v => update("animationTransition", v)} />
              <button type="button" onClick={() => setPreviewAnim(true)} className="w-full mt-2 py-3 bg-amber-50 text-amber-600 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-amber-100 border border-amber-200 cursor-pointer">▶ PROBAR ANIMACIÓN</button>
            </div>
