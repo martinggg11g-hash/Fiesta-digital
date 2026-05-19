@@ -234,35 +234,50 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
       </Acc>
       
       <Acc title="4️⃣ Cuándo y Dónde" icon={Calendar} iconColor="#e11d48">
-         <div className="relative z-[50]">
-            <TypoControl label="Tamaño Textos" sizeVal={cfg.dateSize ?? 18} onSize={v => update("dateSize", v)} minSize={12} maxSize={30} />
-         </div>
-         <div className="flex items-center justify-between mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Día</span><Toggle checked={cfg.showDate} onChange={v => update("showDate", v)} /></div>
-         {cfg.showDate && <Inp type="date" value={cfg.dateText} onChange={v => update("dateText", v)} />}
-         <div className="flex items-center justify-between mt-4 mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500">Horario</span><Toggle checked={cfg.showTime} onChange={v => update("showTime", v)} /></div>
-         {cfg.showTime && <Inp placeholder="16:00 a 20:00 hs" value={cfg.timeText} onChange={v => update("timeText", v)} />}
-         <div className="flex items-center justify-between mt-4 mb-2 border-t border-gray-100 pt-4"><span className="text-xs font-bold text-slate-500 flex items-center">Ubicación</span><Toggle checked={cfg.showLocation} onChange={v => update("showLocation", v)} /></div>
-         {cfg.showLocation && (
-           <>
-             {salonProfile?.is_free ? (
-               <div className="bg-violet-50 p-3 rounded-xl border border-violet-100 mb-4">
-                 <p className="text-[10px] text-violet-700 font-bold mb-3 flex items-center gap-1">✨ SALÓN LIBRE ACTIVO</p>
-                 <Inp label="Nombre del Lugar" value={cfg.locationName || ""} onChange={v => update("locationName", v)} placeholder="Ej: Quinta Los Pinos" />
-                 <Inp label="Dirección / Google Maps" value={cfg.locationAddress || ""} onChange={v => update("locationAddress", v)} placeholder="Ej: Calle Falsa 123, Ciudad" />
-               </div>
-             ) : (
-               <div className="p-3 bg-violet-50 rounded-xl border border-violet-100 mb-4 opacity-80">
-                 <p className="text-[10px] font-black text-violet-800 uppercase tracking-widest mb-1 flex items-center gap-1">📍 Dirección Global</p>
-                 <p className="text-xs font-bold text-violet-900">{cfg.locationName || "Nombre del Salón"}</p>
-                 <p className="text-[10px] text-violet-700 mt-1">{salonProfile?.address || ""}</p>
-               </div>
-             )}
-             <div className="flex items-center justify-between mt-2 mb-2"><span className="text-xs font-bold text-slate-500 flex items-center">Aclarar Parking</span><Toggle checked={cfg.showParking} onChange={v => update("showParking", v)} /></div>
-             {cfg.showParking && <SelectInp label="Tipo" value={cfg.parkingType} options={[{label:"Público", value:"Estacionamiento público"}, {label:"Privado", value:"Estacionamiento privado"}, {label:"Personalizado...", value:"otro"}]} onChange={v => update("parkingType", v)} />}
-             {cfg.showParking && cfg.parkingType === 'otro' && <Inp placeholder="Escribe aquí..." value={cfg.customParking || ""} onChange={v => update("customParking", v)} />}
-           </>
-         )}
-      </Acc>
+  <div className="relative z-[50]">
+    <TypoControl label="Tamaño Textos" sizeVal={cfg.dateSize ?? 18} onSize={v => update("dateSize", v)} minSize={12} maxSize={30} />
+  </div>
+
+  <div className="flex items-center justify-between mb-2 border-t border-gray-100 pt-4">
+    <span className="text-xs font-bold text-slate-500">Día</span>
+    <Toggle checked={cfg.showDate} onChange={v => update("showDate", v)} />
+  </div>
+  {/* 👇 CAMBIO: usamos cfg.date */}
+  {cfg.showDate && <Inp type="date" value={cfg.date || ""} onChange={v => update("date", v)} />}
+
+  <div className="flex items-center justify-center mt-4 mb-2 border-t border-gray-100 pt-4">
+    <span className="text-xs font-bold text-slate-500">Horario</span>
+    <Toggle checked={cfg.showTime} onChange={v => update("showTime", v)} />
+  </div>
+  {/* 👇 CAMBIO: usamos cfg.time */}
+  {cfg.showTime && <Inp placeholder="16:00 a 20:00 hs" value={cfg.time || ""} onChange={v => update("time", v)} />}
+
+  <div className="flex items-center justify-between mt-4 mb-2 border-t border-gray-100 pt-4">
+    <span className="text-xs font-bold text-slate-500 flex items-center">Ubicación</span>
+    <Toggle checked={cfg.showLocation} onChange={v => update("showLocation", v)} />
+  </div>
+  
+  {cfg.showLocation && (
+    <>
+      {salonProfile?.is_free ? (
+        <div className="bg-violet-50 p-3 rounded-xl border border-violet-100 mb-4">
+          <p className="text-[10px] text-violet-700 font-bold mb-3 flex items-center gap-1">✨ SALÓN LIBRE ACTIVO</p>
+          <Inp label="Nombre del Lugar" value={cfg.locationName || ""} onChange={v => update("locationName", v)} placeholder="Ej: Quinta Los Pinos" />
+          <Inp label="Dirección / Google Maps" value={cfg.locationAddress || ""} onChange={v => update("locationAddress", v)} placeholder="Ej: Calle Falsa 123, Ciudad" />
+        </div>
+      ) : (
+        <div className="p-3 bg-violet-50 rounded-xl border border-violet-100 mb-4 opacity-80">
+          <p className="text-[10px] font-black text-violet-800 uppercase tracking-widest mb-1 flex items-center gap-1">📍 Dirección Global</p>
+          <p className="text-xs font-bold text-violet-900">{cfg.locationName || "Nombre del Salón"}</p>
+          <p className="text-[10px] text-violet-700 mt-1">{salonProfile?.address || ""}</p>
+        </div>
+      )}
+      <div className="flex items-center justify-between mt-2 mb-2"><span className="text-xs font-bold text-slate-500 flex items-center">Aclarar Parking</span><Toggle checked={cfg.showParking} onChange={v => update("showParking", v)} /></div>
+      {cfg.showParking && <SelectInp label="Tipo" value={cfg.parkingType} options={[{label:"Público", value:"Estacionamiento público"}, {label:"Privado", value:"Estacionamiento privado"}, {label:"Personalizado...", value:"otro"}]} onChange={v => update("parkingType", v)} />}
+      {cfg.showParking && cfg.parkingType === 'otro' && <Inp placeholder="Escribe aquí..." value={cfg.customParking || ""} onChange={v => update("customParking", v)} />}
+    </>
+  )}
+</Acc>
       
       <Acc title="5️⃣ Tarjeta del Salón" icon={LinkIcon} iconColor="#6366f1">
         <div className="flex items-center justify-between mb-4">
