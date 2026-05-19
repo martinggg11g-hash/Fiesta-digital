@@ -24,7 +24,7 @@ const getTodaySpanish = () => {
   return `${today.getDate()} de ${months[today.getMonth()]} de ${today.getFullYear()}`;
 };
 
-export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal, isDark }) => {
+export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal, onUpdateConfig, isDark }) => {
   const [activeTab, setActiveTab] = useState("info");
   const [printMode, setPrintMode] = useState("ficha");
   
@@ -45,15 +45,11 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
 
   useEffect(() => {
     const fetchVipGuests = async () => {
-      // 1. Buscamos el ID real consultando la tabla 'invitaciones' por el slug
       const { data: eventData } = await supabase.from('invitaciones').select('id').eq('slug', activeInv.id).single();
-      
-      // 2. Si lo encuentra, traemos los invitados usando ese ID
       if (eventData) {
         const { data: guestsData } = await supabase.from('invitados').select('*').eq('evento_id', eventData.id).order('created_at', { ascending: false });
         if (guestsData) setVipGuests(guestsData);
       } else {
-        // Fallback: Por si activeInv.id ya estuviera enviando el UUID directamente en vez del slug
         const { data: guestsDataAlt } = await supabase.from('invitados').select('*').eq('evento_id', activeInv.id).order('created_at', { ascending: false });
         if (guestsDataAlt) setVipGuests(guestsDataAlt);
       }
@@ -100,13 +96,10 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
 
   const saveGuest = async () => {
     if(!gName && !editingGuest?.isVip) return alert("Falta nombre");
-    
-    // MAGIA DEL FORMATO MESA
     let finalTable = gTable.trim();
     if (finalTable && !finalTable.toLowerCase().startsWith('mesa')) {
         finalTable = `Mesa ${finalTable}`;
     }
-    
     if (editingGuest?.isVip) {
       await supabase.from('invitados').update({ mesa: finalTable }).eq('id', editingGuest.id);
       setVipGuests(vipGuests.map(v => v.id === editingGuest.id ? { ...v, mesa: finalTable } : v));
@@ -167,7 +160,6 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
         const lastname = cols[1]?.replace(/['"]/g, '').trim() || "";
         const pax = cols[2]?.replace(/['"]/g, '').trim() || "1";
         const table = cols[3]?.replace(/['"]/g, '').trim() || "";
-        
         if(name) {
           newGuests.push({
             id: `MANUAL-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
@@ -194,31 +186,14 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
           @page { margin: 0.5cm; }
           body { background: white !important; -webkit-print-color-adjust: exact; }
           body * { visibility: hidden; }
-          .crm-modal-wrapper {
-             position: absolute !important;
-             left: 0 !important;
-             top: 0 !important;
-             background: white !important;
-             backdrop-filter: none !important;
-             padding: 0 !important;
-          }
+          .crm-modal-wrapper { position: absolute !important; left: 0 !important; top: 0 !important; background: white !important; backdrop-filter: none !important; padding: 0 !important; }
           .no-print { display: none !important; }
           .only-print, .only-print * { visibility: visible; }
-          .only-print { 
-             display: block !important;
-             position: absolute !important; 
-             left: 0 !important; 
-             top: 0 !important; 
-             width: 100% !important; 
-             margin: 0 !important; 
-             padding: 20px !important; 
-             background: white !important; 
-          }
+          .only-print { display: block !important; position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; margin: 0 !important; padding: 20px !important; background: white !important; }
         }
       `}</style>
       
       <div className={`w-full max-w-5xl max-h-[95vh] h-full sm:h-auto rounded-[2rem] overflow-hidden flex flex-col shadow-2xl anim-pop no-print ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
-        
         <div className={`px-6 py-4 border-b flex justify-between items-center shrink-0 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
            <div className="flex gap-4 border border-slate-300 rounded-xl p-1 bg-slate-100 flex-wrap">
              <button onClick={() => setActiveTab('info')} className={`px-4 py-2 rounded-lg text-xs font-black transition-colors cursor-pointer ${activeTab === 'info' ? 'bg-white shadow-sm text-violet-600' : 'text-slate-500 hover:text-slate-700'}`}><ClipboardList size={14} className="inline-block mr-1"/> Ficha Interna</button>
@@ -229,8 +204,6 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
         </div>
 
         <div className="p-6 sm:p-8 overflow-y-auto fd-sb flex-1 relative">
-          
-          {/* PESTAÑA FICHA INTERNA */}
           {activeTab === 'info' && (
             <div className="animate-in fade-in duration-300">
               <div className="flex justify-end gap-2 mb-6">
@@ -250,9 +223,9 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                  </div>
                  <div>
                     <h3 className="text-xs font-black text-violet-500 uppercase tracking-widest mb-4 border-b border-slate-200/20 pb-2 flex items-center gap-2"><PartyPopper size={14}/> Detalles del Evento</h3>
-                    <Inp label="Nombre del Agasajado/s" value={activeInv.internal_data.internalHonoree || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalHonoree', v)} isDark={isDark} />
+                    {/* 👇 CAMBIO: Usamos activeInv.config */}
+                    <Inp label="Nombre del Agasajado/s" value={activeInv.config?.honoreeName || ''} onChange={v => onUpdateConfig(activeInv.id, 'honoreeName', v)} isDark={isDark} />
                     <div className="grid grid-cols-2 gap-4 mb-4">
-                      
                       <div>
                         <label className={`block text-[10px] font-black uppercase mb-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Tipo de Evento</label>
                         <select className={`w-full py-3 px-4 rounded-xl text-sm font-bold outline-none cursor-pointer border ${isDark ? 'bg-slate-800 text-white border-slate-700' : 'bg-white text-slate-800 border-slate-200'}`} value={activeInv.internal_data.eventType || ''} onChange={e => onUpdateInternal(activeInv.id, 'eventType', e.target.value)}>
@@ -266,7 +239,6 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                            <option value="Otro">Otro</option>
                         </select>
                       </div>
-
                       <div>
                         <label className={`block text-[10px] font-black uppercase mb-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Estado</label>
                         <select className={`w-full py-3 px-4 rounded-xl text-sm font-bold outline-none cursor-pointer border ${isDark ? 'bg-slate-800 text-white border-slate-700' : 'bg-white text-slate-800 border-slate-200'}`} value={activeInv.internal_data.eventStatus || 'Nuevo'} onChange={e => onUpdateInternal(activeInv.id, 'eventStatus', e.target.value)}>
@@ -277,9 +249,10 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                         </select>
                       </div>
                     </div>
+                    {/* 👇 CAMBIO: Usamos activeInv.config */}
                     <div className="grid grid-cols-2 gap-4">
-                       <Inp label="Fecha" type="date" icon={CalendarClock} value={activeInv.internal_data.internalDate || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalDate', v)} isDark={isDark} />
-                       <Inp label="Horario" type="text" placeholder="Ej: 14:00 a 20:00" icon={Clock} value={activeInv.internal_data.internalTime || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalTime', v)} isDark={isDark} />
+                       <Inp label="Fecha" type="date" icon={CalendarClock} value={activeInv.config?.date || ''} onChange={v => onUpdateConfig(activeInv.id, 'date', v)} isDark={isDark} />
+                       <Inp label="Horario" type="text" placeholder="Ej: 14:00 a 20:00" icon={Clock} value={activeInv.config?.time || ''} onChange={v => onUpdateConfig(activeInv.id, 'time', v)} isDark={isDark} />
                     </div>
                  </div>
               </div>
@@ -317,10 +290,8 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
             </div>
           )}
 
-          {/* PESTAÑA LISTA DE INVITADOS */}
           {activeTab === 'guests' && (
             <div className="animate-in fade-in duration-300">
-              
               <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 md:p-5 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                   <h4 className="text-blue-800 font-black text-base mb-1 flex items-center gap-2"><Smartphone size={18}/> App de Recepción (Puerta)</h4>
@@ -330,7 +301,6 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                   {copiedStates[`puerta-${activeInv.id}`] ? "¡COPIADO! ✅" : <><Copy size={16}/> COPIAR LINK</>}
                 </button>
               </div>
-
               <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4 border-t border-slate-200/50 pt-6">
                 <div>
                   <h3 className={`font-black text-xl flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-800'}`}><Users className="text-violet-500" size={24}/> Control de Accesos</h3>
@@ -350,7 +320,6 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                    <button onClick={handleExportCSV} className="px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-black text-[11px] flex items-center gap-2 shadow-md transition-transform active:scale-95 cursor-pointer"><FileDown size={16}/> EXCEL</button>
                 </div>
               </div>
-
               {allGuests.length === 0 ? (
                 <div className="text-center py-20 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
                   <p className="text-slate-400 font-bold">Todavía no hay invitados registrados.</p>
@@ -385,7 +354,6 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
             </div>
           )}
 
-          {/* PESTAÑA PROYECTOR */}
           {activeTab === 'projector' && (
             <div className="animate-in fade-in duration-300 flex flex-col items-center justify-center text-center py-20 px-4">
               <div className="w-24 h-24 bg-violet-100 text-violet-600 rounded-full flex items-center justify-center mb-6 shadow-sm border-4 border-white">
@@ -404,7 +372,6 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
             </div>
           )}
 
-          {/* MODAL CREAR/EDITAR INVITADO MANUAL */}
           {showGuestModal && (
             <div className="absolute inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
                <div className={`w-full max-w-sm rounded-[2rem] p-6 shadow-2xl relative text-center anim-pop ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
@@ -441,7 +408,6 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
         </div>
       </div>
 
-      {/* ---------------- LA HOJA A4 PARA IMPRIMIR (DOBLE PLANTILLA) ---------------- */}
       <div className="only-print">
          {printMode !== 'invitados' ? (
            <>
@@ -464,10 +430,10 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                 <div>
                   <h3 style={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '2px', color: '#94a3b8', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px', marginBottom: '12px' }}>1. Detalles del Evento</h3>
                   <div style={{ fontSize: '14px', lineHeight: '1.6' }}>
-                    <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Agasajado:</span> <span style={{ fontWeight: '900', fontSize: '18px' }}>{activeInv.internal_data.internalHonoree || activeInv.config?.honoreeName || activeInv.title}</span></p>
+                    <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Agasajado:</span> <span style={{ fontWeight: '900', fontSize: '18px' }}>{activeInv.config?.honoreeName || activeInv.title}</span></p>
                     <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Tipo:</span> {activeInv.internal_data.eventType || '---'}</p>
-                    <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Fecha:</span> {formatDateSpanish(activeInv.internal_data.internalDate)}</p>
-                    <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Horario:</span> {activeInv.internal_data.internalTime || '---'} hs</p>
+                    <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Fecha:</span> {formatDateSpanish(activeInv.config?.date)}</p>
+                    <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Horario:</span> {activeInv.config?.time || '---'} hs</p>
                   </div>
                 </div>
                 <div>
@@ -506,9 +472,9 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                 <div>
                   <h2 style={{ fontSize: '24px', fontWeight: '900', color: '#1e293b', letterSpacing: '2px', margin: '0 0 4px 0', textTransform: 'uppercase' }}>LISTA DE ACCESOS</h2>
                   <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#475569', margin: '0 0 4px 0' }}>
-                    Evento: {activeInv.internal_data.internalHonoree || activeInv.config?.honoreeName || activeInv.title}
+                    Evento: {activeInv.config?.honoreeName || activeInv.title}
                   </p>
-                  <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>Fecha: {formatDateSpanish(activeInv.internal_data.internalDate)}</p>
+                  <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>Fecha: {formatDateSpanish(activeInv.config?.date)}</p>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <p style={{ fontSize: '30px', fontWeight: '900', color: '#7c3aed', margin: '0 0 4px 0' }}>{allGuests.reduce((acc, g) => acc + Number(g.guests || 0), 0)}</p>
