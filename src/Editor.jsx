@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Loader2, Eye, Edit2 } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, Eye, Edit2, CheckCircle2 } from 'lucide-react';
 import EditorSidebar from './EditorSidebar';
 import { InvitePreview } from './Preview';
 import { DEF_CONFIG } from './config';
@@ -10,52 +10,56 @@ export const EditorScreen = ({ invitations, onSave }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   
-  // 👉 Usamos la prop 'invitations' que viene de App.jsx en lugar de hacer fetch
-  const initialInv = invitations.find(i => i.id === id) || { config: DEF_CONFIG, internal_data: {} };
+  // Buscamos la invitación global o inicializamos un estado vacío seguro
+  const initialInv = invitations.find(i => i.id === id) || null;
   
   const [inv, setInv] = useState(initialInv);
-  const [loading, setLoading] = useState(false); // Ya no necesitamos loading de fetch
   const [saveStatus, setSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved'
   const [previewAnim, setPreviewAnim] = useState(false); 
   const [mobileView, setMobileView] = useState('editor');
 
-  // Si las invitaciones globales cambian, actualizamos el estado local del editor
+  // Sincronizamos cuando las invitaciones globales llegan
   useEffect(() => {
-    const currentInv = invitations.find(i => i.id === id);
-    if (currentInv) setInv(currentInv);
+    if (invitations && id) {
+      const currentInv = invitations.find(i => i.id === id);
+      if (currentInv) setInv(currentInv);
+    }
   }, [invitations, id]);
 
   const handleSave = async () => {
-  setSaveStatus('saving');
-  try {
-    // onSave es la función que viene de App.jsx (que ya sincroniza todo)
-    await onSave(inv); 
-    
-    setSaveStatus('saved');
-    
-    // Volver al estado original después de 2 segundos
-    setTimeout(() => {
+    if (!inv) return;
+    setSaveStatus('saving');
+    try {
+      await onSave(inv); 
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    } catch (err) {
+      console.error("Error guardando:", err);
+      alert("Hubo un error al guardar. Intentá de nuevo.");
       setSaveStatus('idle');
-    }, 2000);
-    
-  } catch (err) {
-    console.error("Error guardando:", err);
-    alert("Hubo un error al guardar. Intentá de nuevo.");
-    setSaveStatus('idle');
-  }
-};
+    }
+  };
 
   const updateConfig = (key, val) => {
     setInv(prev => ({ 
         ...prev, 
-        config: { ...prev.config, [key]: val } 
+        config: { ...(prev?.config || DEF_CONFIG), [key]: val } 
     }));
   };
+
+  // 👉 SEGURIDAD: Si no hay invitación aún, mostramos cargando en lugar de romper
+  if (!inv) {
+    return (
+      <div className="w-screen h-screen flex flex-col items-center justify-center bg-[#0f172a] text-white">
+        <Loader2 size={48} className="animate-spin text-violet-500 mb-4" />
+        <p className="font-bold tracking-widest uppercase text-xs">Cargando editor...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-[#0f172a] relative">
       
-      {/* ANIMACIÓN DE ENTRADA */}
       {previewAnim && (
         <div className="fixed inset-0 z-[99999] pointer-events-none flex items-center justify-center">
            <OpeningAnimation cfg={inv.config} onOpen={() => setPreviewAnim(false)} isPreview={true} />
@@ -69,34 +73,34 @@ export const EditorScreen = ({ invitations, onSave }) => {
             <ArrowLeft size={20} />
           </button>
           <h1 className="font-black text-sm uppercase tracking-widest hidden md:block">
-            Editando: <span className="text-violet-400">{inv.title}</span>
+            Editando: <span className="text-violet-400">{inv.title || "Evento"}</span>
           </h1>
         </div>
         
         <button 
-  onClick={handleSave} 
-  disabled={saveStatus !== 'idle'}
-  className={`flex items-center gap-2 px-6 py-2.5 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all active:scale-95 shadow-lg cursor-pointer
-    ${saveStatus === 'saving' ? 'bg-violet-700 opacity-80' : 
-      saveStatus === 'saved' ? 'bg-green-600 shadow-green-500/20' : 
-      'bg-violet-600 hover:bg-violet-700 shadow-violet-600/30'}`}
->
-  {saveStatus === 'saving' && <Loader2 size={16} className="animate-spin" />}
-  {saveStatus === 'saved' && <CheckCircle2 size={16} />}
-  {saveStatus === 'idle' && <Save size={16} />}
-  
-  {saveStatus === 'saving' ? "GUARDANDO..." : 
-   saveStatus === 'saved' ? "¡CAMBIOS GUARDADOS!" : 
-   "GUARDAR CAMBIOS"}
-</button>
+          onClick={handleSave} 
+          disabled={saveStatus !== 'idle'}
+          className={`flex items-center gap-2 px-6 py-2.5 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all active:scale-95 shadow-lg cursor-pointer
+            ${saveStatus === 'saving' ? 'bg-violet-700 opacity-80' : 
+              saveStatus === 'saved' ? 'bg-green-600 shadow-green-500/20' : 
+              'bg-violet-600 hover:bg-violet-700 shadow-violet-600/30'}`}
+        >
+          {saveStatus === 'saving' && <Loader2 size={16} className="animate-spin" />}
+          {saveStatus === 'saved' && <CheckCircle2 size={16} />}
+          {saveStatus === 'idle' && <Save size={16} />}
+          
+          {saveStatus === 'saving' ? "GUARDANDO..." : 
+           saveStatus === 'saved' ? "¡CAMBIOS GUARDADOS!" : 
+           "GUARDAR CAMBIOS"}
+        </button>
       </header>
 
-      {/* CUERPO */}
+      {/* CONTENEDOR PRINCIPAL */}
       <div className="flex-1 flex overflow-hidden relative">
         <EditorSidebar 
           inv={inv} 
           setInv={setInv} 
-          cfg={inv.config} 
+          cfg={inv.config || DEF_CONFIG} 
           update={updateConfig} 
           setPreviewAnim={setPreviewAnim} 
           mobileView={mobileView} 
@@ -107,9 +111,9 @@ export const EditorScreen = ({ invitations, onSave }) => {
             <div className="absolute top-0 inset-x-0 h-5 bg-[#1e293b] rounded-b-2xl w-[40%] mx-auto z-50 hidden md:block"></div>
             <div className="w-full h-full overflow-y-auto overflow-x-hidden relative pb-[80px] md:pb-0" id="preview-container">
               <InvitePreview 
-                cfg={inv.config} 
+                cfg={inv.config || DEF_CONFIG} 
                 update={updateConfig}
-                internalData={inv.internal_data}
+                internalData={inv.internal_data || {}}
               />
             </div>
           </div>
