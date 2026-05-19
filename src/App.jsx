@@ -7,7 +7,7 @@ import { DEF_CONFIG } from "./config";
 import { OpeningAnimation } from "./Lotties";
 import { supabase } from "./supabase"; 
 
-// LAZY LOADING: Divide la app en pedacitos para que cargue ultra rápido
+// LAZY LOADING
 const LoginScreen = React.lazy(() => import("./Login"));
 const DashboardScreen = React.lazy(() => import("./Dashboard"));
 const PuertaScreen = React.lazy(() => import("./Puerta"));
@@ -42,9 +42,6 @@ const LoadingFallback = () => (
   <div className="h-screen w-full bg-black absolute inset-0 z-[9999]"></div>
 );
 
-// ===============================================
-// 📅 PANTALLA INVITADO REAL (NOMINAL / PRIVADA)
-// ===============================================
 const LiveInviteScreen = () => {
   const { id: eventSlug } = useParams();
   const [searchParams] = useSearchParams();
@@ -102,9 +99,6 @@ const LiveInviteScreen = () => {
   );
 };
 
-// ===============================================
-// 📣 PANTALLA INVITADO PÚBLICO (GENERAL)
-// ===============================================
 const PublicInviteScreen = ({ onConfirmRSVP, onUpdateInternal }) => {
   const { invId } = useParams();
   const [inv, setInv] = useState(null);
@@ -132,7 +126,6 @@ const PublicInviteScreen = ({ onConfirmRSVP, onUpdateInternal }) => {
           cfg={inv.config} 
           internalData={inv.internal_data}
           status={inv.internal_data?.eventStatus} 
-          // 👉 PASAMOS EL REAL EVENT ID DIRECTO DESDE EL OBJETO INVITACIÓN LOCAL
           onConfirmRSVP={(guestData) => onConfirmRSVP(inv.id, guestData, inv.evento_id || inv.id)} 
           onUploadLivePhoto={async (url) => {
              const currentPhotos = inv.internal_data?.live_photos || [];
@@ -179,8 +172,8 @@ export default function App() {
 
     const fetchData = async () => {
       if (isGuestRoute) {
-         setLoading(false);
-         return; 
+          setLoading(false);
+          return; 
       }
 
       try {
@@ -189,7 +182,7 @@ export default function App() {
         const { data: alertData } = await supabase.from('alertas').select('*').eq('id', 1).single();
         
         if (salones) setUsers(salones);
-        if (invs) setInvitations(invs.map(i => ({ ...i, salonId: i.salon_id, internal_data: i.internal_data || {} })));
+        if (invs) setInvitations(invs.map(i => ({ ...i, salonId: i.salon_id, internal_data: i.internal_data || {}, config: i.config || {} })));
         if (alertData) setGlobalAlert(alertData);
       } catch (error) {
         console.error("Error al cargar la base de datos:", error);
@@ -244,15 +237,9 @@ export default function App() {
     }
   };
 
-  // ===============================================
-  // 👉 REFACTORIZACIÓN COMPLETA: GUARDADO REAL
-  // ===============================================
   const handleConfirmRSVP = async (invId, guestData, realEventIdFromChild = null) => {
-    // Si viene de la ruta pública, usamos el id real inyectado por el hijo
     const realEventId = realEventIdFromChild || invId;
     const fullName = `${guestData.name} ${guestData.lastname}`.trim();
-    
-    // Calculamos pases extras (Total de personas menos el titular)
     const totalPax = guestData.guests || 1;
     const extraPax = totalPax - 1 >= 0 ? totalPax - 1 : 0;
 
@@ -317,6 +304,7 @@ export default function App() {
   const handleSaveInv = async (uI) => { await supabase.from('invitaciones').update({ title: uI.title, config: uI.config, internal_data: uI.internal_data }).eq('id', uI.id); setInvitations(p => p.map(i => i.id === uI.id ? uI : i)); };
   const handleDeleteInv = async (id) => { await supabase.from('invitaciones').delete().eq('id', id); setInvitations(p => p.filter(i => i.id !== id)); };
   
+  // 👉 REFACTORIZACIÓN: Lógica de actualización para campos internos
   const handleUpdateInternal = async (id, f, v) => {
     setInvitations(prevInvs => {
        const updatedInvs = prevInvs.map(i => i.id === id ? { ...i, internal_data: { ...i.internal_data, [f]: v } } : i);
@@ -324,6 +312,20 @@ export default function App() {
        if(target) {
           supabase.from('invitaciones').update({ internal_data: target.internal_data }).eq('id', id).then(({error}) => {
              if(error) console.error("Error actualizando datos internos:", error);
+          });
+       }
+       return updatedInvs;
+    });
+  };
+
+  // 👉 NUEVA LÓGICA: Sincronización de Configuración Pública
+  const handleUpdateConfig = async (id, key, value) => {
+    setInvitations(prevInvs => {
+       const updatedInvs = prevInvs.map(i => i.id === id ? { ...i, config: { ...i.config, [key]: value } } : i);
+       const target = updatedInvs.find(i => i.id === id);
+       if(target) {
+          supabase.from('invitaciones').update({ config: target.config }).eq('id', id).then(({error}) => {
+             if(error) console.error("Error actualizando config pública:", error);
           });
        }
        return updatedInvs;
@@ -339,7 +341,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={user ? <Navigate to="/dashboard" /> : <LoginScreen onLogin={handleLogin} users={users} />} />
           <Route path="/master" element={user ? <Navigate to="/dashboard" /> : <LoginScreen isMaster={true} onLogin={handleLogin} users={users} />} />
-          <Route path="/dashboard" element={user ? <DashboardScreen user={user} users={users} invitations={invitations} onCreateSalon={handleCreateSalon} onDeleteSalon={handleDeleteSalon} onCreateInv={handleCreateInv} onDeleteInv={handleDeleteInv} onUpdateUser={handleUpdateUser} onUpdateInternal={handleUpdateInternal} onLogout={handleLogout} globalAlert={globalAlert} onUpdateAlert={handleUpdateAlert} /> : <Navigate to="/" />} />
+          <Route path="/dashboard" element={user ? <DashboardScreen user={user} users={users} invitations={invitations} onCreateSalon={handleCreateSalon} onDeleteSalon={handleDeleteSalon} onCreateInv={handleCreateInv} onDeleteInv={handleDeleteInv} onUpdateUser={handleUpdateUser} onUpdateInternal={handleUpdateInternal} onUpdateConfig={handleUpdateConfig} onLogout={handleLogout} globalAlert={globalAlert} onUpdateAlert={handleUpdateAlert} /> : <Navigate to="/" />} />
           <Route path="/editor/:id" element={<EditorScreen invitations={invitations} onSave={handleSaveInv} />} />
           <Route path="/i/:salon/:invId" element={<PublicInviteScreen invitations={invitations} onConfirmRSVP={handleConfirmRSVP} onUpdateInternal={handleUpdateInternal} />} />
           <Route path="/puerta/:id" element={<PuertaScreen invitations={invitations} onUpdateInternal={handleUpdateInternal} />} />
