@@ -127,6 +127,7 @@ export default function App() {
 
   const handleLogout = () => { setUser(null); localStorage.removeItem("fiesta_user"); sessionStorage.removeItem("fiesta_user"); };
 
+  // 👉 AHORA CON REALTIME INTEGRADO 👈
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -140,7 +141,46 @@ export default function App() {
       finally { setLoading(false); }
     };
     fetchData();
-  }, []);
+
+    // SUSCRIPCIÓN A SUPABASE REALTIME (Magia entre pestañas)
+    const channel = supabase
+      .channel('invitaciones-changes')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'invitaciones' },
+        (payload) => {
+          const updatedInv = payload.new;
+          // Actualizamos la invitación en la memoria de todas las pestañas abiertas
+          setInvitations(prevInvs => prevInvs.map(inv => 
+            inv.id === updatedInv.id ? { 
+              ...updatedInv, 
+              salonId: updatedInv.salon_id, 
+              internal_data: updatedInv.internal_data || {}, 
+              config: updatedInv.config || {} 
+            } : inv
+          ));
+        }
+      )
+      .subscribe();
+
+    // RADAR DE SALONES (Se mantiene igual)
+    const radar = setInterval(async () => {
+      if (user) {
+        if (user.role === 'owner') {
+          const { data: salones } = await supabase.from('salones').select('*');
+          if (salones) setUsers(salones);
+        } else {
+          const { data: miSalon } = await supabase.from('salones').select('*').eq('email', user.email);
+          if (miSalon && miSalon.length > 0) setUsers(prev => prev.map(u => u.email === user.email ? miSalon[0] : u));
+        }
+      }
+    }, 15000); // Lo subí a 15s para no saturar Supabase con consultas ahora que tenemos Realtime
+
+    return () => {
+       clearInterval(radar);
+       supabase.removeChannel(channel); // Apaga el canal al cerrar
+    };
+  }, [user]);
 
   const handleUpdateInternal = async (id, f, v) => {
     setInvitations(prevInvs => {
