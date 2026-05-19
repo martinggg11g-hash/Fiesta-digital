@@ -7,6 +7,17 @@ import { InstagramIcon, FacebookIcon, TiktokIcon, RenderSymbol, Countdown, Galle
 
 const IMGBB_API_KEY = "904f81caf05efe58a799abdb1fedc2ce";
 
+// Función de formateo integrada para asegurar compatibilidad
+const formatDateSpanish = (dateStr) => {
+  if (!dateStr) return 'Sin fecha';
+  if (dateStr.includes('-')) {
+    const [y, m, d] = dateStr.split('-');
+    const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    return `${parseInt(d, 10)} de ${months[parseInt(m, 10) - 1]} de ${y}`;
+  }
+  return dateStr;
+};
+
 // 👉 COMPONENTE MÁGICO DE TRANSICIÓN (Aparecen al scrollear)
 const ScrollReveal = ({ children }) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -17,10 +28,10 @@ const ScrollReveal = ({ children }) => {
       ([entry]) => {
         if (entry.isIntersecting) {
           setIsVisible(true);
-          observer.disconnect(); // Una vez que aparece, dejamos de observarlo para ahorrar memoria
+          observer.disconnect(); 
         }
       },
-      { threshold: 0.1, rootMargin: "0px 0px -50px 0px" } // Se dispara un poquito antes de llegar
+      { threshold: 0.1, rootMargin: "0px 0px -50px 0px" } 
     );
     
     if (domRef.current) observer.observe(domRef.current);
@@ -44,8 +55,9 @@ const AddToCalendarButton = ({ cfg, primary, cardC }) => {
   const direccion = `${cfg?.locationName || ''} - ${cfg?.locationAddress || ''}`.trim() || 'Dirección del salón';
   const detalles = `¡Te espero para festejar juntos! Mirá la invitación completa acá: ${window.location.href}`;
   
-  const fechaClean = cfg?.dateText ? cfg.dateText.replace(/-/g, '') : '20260516';
-  const horaClean = cfg?.timeText ? cfg.timeText.replace(/:/g, '') + '00' : '210000';
+  // Usamos los campos sincronizados cfg.date y cfg.time para el calendario
+  const fechaClean = cfg?.date ? cfg.date.replace(/-/g, '') : '20260516';
+  const horaClean = cfg?.time ? cfg.time.replace(/:/g, '') + '00' : '210000';
   
   const startDateTime = `${fechaClean}T${horaClean}`;
   const endDateTime = `${fechaClean}T235900`;
@@ -137,7 +149,7 @@ const DraggableBanner = ({ cfg, primary, update }) => {
       />
       <div className="absolute inset-0 bg-black/40 pointer-events-none" />
       <div className="absolute top-4 left-4 px-4 py-1.5 bg-black/40 backdrop-blur-md border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest text-white shadow-md pointer-events-none">
-         {cfg.bannerTitle}
+          {cfg.bannerTitle}
       </div>
       
       {update && (
@@ -228,7 +240,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
   );
 
   let cameraStatus = 'active'; 
-  const eventDateStr = cfg.countdownDate || (cfg.dateText ? `${cfg.dateText}T00:00:00` : null);
+  const eventDateStr = cfg.date; // Usamos el campo sincronizado
   
   if (eventDateStr) {
     const evDate = new Date(eventDateStr);
@@ -294,7 +306,6 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
         </div>
       )}
 
-      {/* La foto de portada entra normal, sin scroll reveal porque ya está arriba */}
       <div className="relative h-[450px] overflow-hidden shrink-0 rounded-b-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)]">
         <img src={cfg.coverPhoto || DEF_CONFIG.coverPhoto} className="absolute inset-0 w-full h-full object-cover z-0" alt="" />
         <div className="absolute inset-0 z-10" style={{ background: `linear-gradient(to top, ${cfg.bg1} 5%, rgba(0,0,0,${gradOpacity}) 60%, transparent 100%)` }} />
@@ -315,9 +326,9 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
               }}
             >
               {cfg.eventTypeEmoji && (
-                 <span className="inline-block align-middle mr-2 -mt-1">
-                    <RenderSymbol value={cfg.eventTypeEmoji} size={cfg.eventTypeSize ?? 11} color={cfg.eventTypeColor || primary} />
-                 </span>
+                  <span className="inline-block align-middle mr-2 -mt-1">
+                     <RenderSymbol value={cfg.eventTypeEmoji} size={cfg.eventTypeSize ?? 11} color={cfg.eventTypeColor || primary} />
+                  </span>
               )}
               <span className="align-middle">{cfg.eventType}</span>
             </div>
@@ -340,11 +351,11 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
 
       <div className="px-5 -mt-8 relative z-30 space-y-5 flex-1">
         
-        {cfg.showCountdown && cfg.countdownDate && (
+        {cfg.showCountdown && cfg.date && (
           <ScrollReveal>
             <div className="rounded-[2rem] relative overflow-hidden" style={glassContainerStyle}>
               {shineOverlay}
-              <Countdown targetDate={cfg.countdownDate} primary={primary} text="Falta para el gran día" cfg={cfg} cardC={cardC} />
+              <Countdown targetDate={cfg.date} primary={primary} text="Falta para el gran día" cfg={cfg} cardC={cardC} />
             </div>
           </ScrollReveal>
         )}
@@ -357,13 +368,37 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
 
         {cfg.showDate && (
           <ScrollReveal>
-             <InfoCard icon={Calendar} label="¿Cuándo?" value={formatToDDMMYYYY(cfg.dateText)} fontSize={cfg.dateSize ?? 18} primary={primary} textC={textC} mutedC={mutedC} cardC={cardC} cfg={cfg} glassStyle={glassContainerStyle} shineOverlay={shineOverlay} />
+             <InfoCard 
+                icon={Calendar} 
+                label="¿Cuándo?" 
+                value={formatDateSpanish(cfg.date)} 
+                fontSize={cfg.dateSize ?? 18} 
+                primary={primary} 
+                textC={textC} 
+                mutedC={mutedC} 
+                cardC={cardC} 
+                cfg={cfg} 
+                glassStyle={glassContainerStyle} 
+                shineOverlay={shineOverlay} 
+             />
           </ScrollReveal>
         )}
         
         {cfg.showTime && (
           <ScrollReveal>
-             <InfoCard icon={Clock} label="Horario" value={cfg.timeText} fontSize={cfg.dateSize ?? 18} primary={primary} textC={textC} mutedC={mutedC} cardC={cardC} cfg={cfg} glassStyle={glassContainerStyle} shineOverlay={shineOverlay} />
+             <InfoCard 
+                icon={Clock} 
+                label="Horario" 
+                value={cfg.time} 
+                fontSize={cfg.dateSize ?? 18} 
+                primary={primary} 
+                textC={textC} 
+                mutedC={mutedC} 
+                cardC={cardC} 
+                cfg={cfg} 
+                glassStyle={glassContainerStyle} 
+                shineOverlay={shineOverlay} 
+             />
           </ScrollReveal>
         )}
         
@@ -507,9 +542,9 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
                      <div className="w-full">
                        <p className="text-[10px] font-black uppercase tracking-widest mb-4 opacity-80" style={{ color: mutedC }}>Capturá el momento</p>
                        <label className={`w-full py-5 rounded-[1.5rem] flex items-center justify-center gap-2 font-black shadow-lg text-white uppercase tracking-widest transition-transform ${uploadingLive ? 'opacity-50 cursor-not-allowed' : 'active:scale-95 cursor-pointer hover:brightness-110'}`} style={{ background: cfg.accent || primary }}>
-                          {uploadingLive ? <Loader2 size={20} className="animate-spin" /> : <Camera size={20} />}
-                          {uploadingLive ? "SUBIENDO..." : "SUBIR FOTO"}
-                          <input type="file" accept="image/*" capture="environment" onChange={handleLivePhotoUpload} disabled={uploadingLive} className="hidden" />
+                         {uploadingLive ? <Loader2 size={20} className="animate-spin" /> : <Camera size={20} />}
+                         {uploadingLive ? "SUBIENDO..." : "SUBIR FOTO"}
+                         <input type="file" accept="image/*" capture="environment" onChange={handleLivePhotoUpload} disabled={uploadingLive} className="hidden" />
                        </label>
                        <p className="text-[9px] font-bold mt-3 opacity-60" style={{ color: textC }}>Las fotos se borrarán 24hs después del evento.</p>
                        
@@ -542,7 +577,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
                   <div className="p-6 rounded-[2rem] text-center relative overflow-hidden flex flex-col items-center" style={glassContainerStyle}>
                     {shineOverlay}
                     <span className="mb-3 flex justify-center items-center h-14 w-14 rounded-[1.2rem] relative z-10 border shadow-sm" style={{ background: cfg.accent || primary, borderColor: 'rgba(255,255,255,0.2)' }}>
-                      <RenderSymbol value={cfg.dressCodeIcon || "👔"} size={26} color={cardC === '#000000' ? '#000' : '#fff'} />
+                       <RenderSymbol value={cfg.dressCodeIcon || "👔"} size={26} color={cardC === '#000000' ? '#000' : '#fff'} />
                     </span>
                     <p className="text-[9px] font-black uppercase tracking-[0.2em] mb-1.5 opacity-80 relative z-10" style={{ color: mutedC }}>Vestimenta</p>
                     <p className="font-bold text-xs relative z-10" style={{ color: textC, fontFamily: safeFont(cfg.fontBody) }}>{cfg.dressCodeText}</p>
@@ -552,7 +587,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
                   <div className="p-6 rounded-[2rem] text-center relative overflow-hidden flex flex-col items-center" style={glassContainerStyle}>
                     {shineOverlay}
                     <span className="mb-3 flex justify-center items-center h-14 w-14 rounded-[1.2rem] relative z-10 border shadow-sm" style={{ background: cfg.accent || primary, borderColor: 'rgba(255,255,255,0.2)' }}>
-                      <RenderSymbol value={cfg.giftIcon || "🎁"} size={26} color={cardC === '#000000' ? '#000' : '#fff'} />
+                       <RenderSymbol value={cfg.giftIcon || "🎁"} size={26} color={cardC === '#000000' ? '#000' : '#fff'} />
                     </span>
                     <p className="text-[9px] font-black uppercase tracking-[0.2em] mb-1.5 opacity-80 relative z-10" style={{ color: mutedC }}>{cfg.giftLabel}</p>
                     <p className="font-bold text-xs relative z-10" style={{ color: textC, fontFamily: safeFont(cfg.fontBody) }}>{cfg.giftText}</p>
