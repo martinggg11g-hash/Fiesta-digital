@@ -245,10 +245,13 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
   {/* 👇 CAMBIO: usamos cfg.date */}
   {cfg.showDate && <Inp type="date" value={cfg.date || ""} onChange={v => update("date", v)} />}
 
-  <div className="flex items-center justify-center mt-4 mb-2 border-t border-gray-100 pt-4">
-    <span className="text-xs font-bold text-slate-500">Horario</span>
-    <Toggle checked={cfg.showTime} onChange={v => update("showTime", v)} />
-  </div>
+  {/* Busca la sección de Horario en src/EditorSidebar.jsx y ponla así: */}
+
+<div className="flex items-center justify-between mt-4 mb-2 border-t border-gray-100 pt-4">
+  <span className="text-xs font-bold text-slate-500">Horario</span>
+  <Toggle checked={cfg.showTime} onChange={v => update("showTime", v)} />
+</div>
+{cfg.showTime && <Inp placeholder="16:00 a 20:00 hs" value={cfg.time || ""} onChange={v => update("time", v)} />}
   {/* 👇 CAMBIO: usamos cfg.time */}
   {cfg.showTime && <Inp placeholder="16:00 a 20:00 hs" value={cfg.time || ""} onChange={v => update("time", v)} />}
 
