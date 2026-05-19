@@ -253,7 +253,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
 </div>
 {cfg.showTime && <Inp placeholder="16:00 a 20:00 hs" value={cfg.time || ""} onChange={v => update("time", v)} />}
   {/* 👇 CAMBIO: usamos cfg.time */}
-  {cfg.showTime && <Inp placeholder="16:00 a 20:00 hs" value={cfg.time || ""} onChange={v => update("time", v)} />}
+  
 
   <div className="flex items-center justify-between mt-4 mb-2 border-t border-gray-100 pt-4">
     <span className="text-xs font-bold text-slate-500 flex items-center">Ubicación</span>
