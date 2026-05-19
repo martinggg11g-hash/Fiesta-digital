@@ -26,7 +26,7 @@ const LoadingFallback = () => (
 const PublicInviteScreen = ({ invitations, onConfirmRSVP, onUpdateInternal }) => {
   const { invId } = useParams();
   
-  // 👉 BUSCAMOS EN EL ESTADO GLOBAL Y NO HACEMOS FETCH MANUAL
+  // 👉 BUSCAMOS EN EL ESTADO GLOBAL (invitations) Y NO HACEMOS FETCH MANUAL
   const inv = invitations.find(i => i.id === invId);
   const [opened, setOpened] = useState(false);
   
@@ -136,12 +136,15 @@ export default function App() {
     });
   };
 
+  // 👉 LÓGICA DE SINCRONIZACIÓN DE CONFIGURACIÓN PÚBLICA
   const handleUpdateConfig = async (id, key, value) => {
     setInvitations(prevInvs => {
        const updatedInvs = prevInvs.map(i => i.id === id ? { ...i, config: { ...i.config, [key]: value } } : i);
        const target = updatedInvs.find(i => i.id === id);
        if(target) {
-          supabase.from('invitaciones').update({ config: target.config }).eq('id', id);
+          supabase.from('invitaciones').update({ config: target.config }).eq('id', id).then(({error}) => {
+             if(error) console.error("Error al actualizar Config en Supabase:", error);
+          });
        }
        return updatedInvs;
     });
@@ -201,7 +204,9 @@ export default function App() {
         <Route path="/dashboard" element={user ? <DashboardScreen user={user} users={users} invitations={invitations} onCreateInv={handleCreateInv} onDeleteInv={handleDeleteInv} onUpdateInternal={handleUpdateInternal} onUpdateConfig={handleUpdateConfig} onLogout={handleLogout} /> : <Navigate to="/" />} />
         <Route path="/editor/:id" element={<EditorScreen invitations={invitations} onSave={handleSaveInv} />} />
         <Route path="/i/:salon/:invId" element={<PublicInviteScreen invitations={invitations} onConfirmRSVP={handleConfirmRSVP} onUpdateInternal={handleUpdateInternal} />} />
-        {/* ... el resto de tus rutas */}
+        <Route path="/puerta/:id" element={<PuertaScreen invitations={invitations} onUpdateInternal={handleUpdateInternal} />} />
+        <Route path="/manage/:id" element={<ManageScreen />} />
+        <Route path="/invite/:id" element={<LiveInviteScreen />} />
       </Routes>
     </Suspense>
   );
