@@ -87,7 +87,6 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
 
   const isOwner = user.role === "owner";
   
-  // 👉 ORDENAMIENTO POR FECHA DE CREACIÓN (DESCENDENTE: NUEVOS ARRIBA)
   const myInvs = (isOwner ? invitations : invitations.filter(i => i.salonId === user.email))
     .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
 
@@ -222,8 +221,8 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
         <div className={`md:hidden absolute left-0 right-0 border-b shadow-2xl z-30 flex flex-col p-4 gap-3 anim-pop ${themeCard}`} style={{ top: globalAlert?.activo && globalAlert?.mensaje ? '7.25rem' : '5rem', transformOrigin: 'top' }}>
            <button onClick={() => { setShowPaymentModal(true); setMobileMenuOpen(false); }} className={`w-full px-4 py-3.5 rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 border shadow-sm ${isDark ? 'border-amber-500/30 text-amber-400 bg-amber-500/10' : 'border-amber-200 text-amber-600 bg-amber-50'}`}><CreditCard size={18}/> Abonar Suscripción</button>
            <div className="flex gap-3">
-              <button onClick={() => { setIsDark(!isDark); setMobileMenuOpen(false); }} className={`flex-1 py-3.5 rounded-xl flex items-center justify-center gap-2 text-xs font-bold border shadow-sm ${isDark ? 'bg-slate-700 border-slate-600 text-yellow-400' : 'bg-white border-slate-200 text-slate-600'}`}>{isDark ? <><Sun size={16}/> Claro</> : <><Moon size={16}/> Oscuro</>}</button>
-              <button onClick={() => { setShowSettings(true); setMobileMenuOpen(false); }} className={`flex-1 py-3.5 rounded-xl flex items-center justify-center gap-2 text-xs font-bold border shadow-sm ${isDark ? 'bg-slate-700 border-slate-600 text-slate-300' : 'bg-white border-slate-200 text-slate-600'}`}><Settings size={16}/> Ajustes</button>
+             <button onClick={() => { setIsDark(!isDark); setMobileMenuOpen(false); }} className={`flex-1 py-3.5 rounded-xl flex items-center justify-center gap-2 text-xs font-bold border shadow-sm ${isDark ? 'bg-slate-700 border-slate-600 text-yellow-400' : 'bg-white border-slate-200 text-slate-600'}`}>{isDark ? <><Sun size={16}/> Claro</> : <><Moon size={16}/> Oscuro</>}</button>
+             <button onClick={() => { setShowSettings(true); setMobileMenuOpen(false); }} className={`flex-1 py-3.5 rounded-xl flex items-center justify-center gap-2 text-xs font-bold border shadow-sm ${isDark ? 'bg-slate-700 border-slate-600 text-slate-300' : 'bg-white border-slate-200 text-slate-600'}`}><Settings size={16}/> Ajustes</button>
            </div>
            <button onClick={() => { onLogout(); navigate("/"); }} className="w-full py-3.5 mt-1 bg-red-500/10 text-red-500 border border-red-500/20 rounded-xl flex items-center justify-center gap-2 text-xs font-bold"><LogOut size={16}/> Cerrar Sesión</button>
         </div>
@@ -234,8 +233,8 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
         {isDemo && (
            <div className={`mb-8 p-4 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 border ${invitesCreated >= 3 ? 'bg-red-50 border-red-200 text-red-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
              <div>
-                <p className="font-black flex items-center gap-2 uppercase tracking-widest text-sm mb-1"><AlertTriangle size={18}/> Cuenta Demo Activa</p>
-                <p className="text-xs font-medium">Has creado {invitesCreated} de 3 invitaciones permitidas. {invitesCreated >= 3 && 'Límite alcanzado.'}</p>
+              <p className="font-black flex items-center gap-2 uppercase tracking-widest text-sm mb-1"><AlertTriangle size={18}/> Cuenta Demo Activa</p>
+              <p className="text-xs font-medium">Has creado {invitesCreated} de 3 invitaciones permitidas. {invitesCreated >= 3 && 'Límite alcanzado.'}</p>
              </div>
              <button onClick={() => setShowSupportModal(true)} className={`px-6 py-2.5 rounded-xl font-black text-xs text-white uppercase tracking-widest cursor-pointer shadow-md transition-transform active:scale-95 ${invitesCreated >= 3 ? 'bg-red-600 hover:bg-red-700' : 'bg-amber-500 hover:bg-amber-600'}`}>Mejorar Plan</button>
            </div>
@@ -310,37 +309,37 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
       {showSupportModal && (
         <div className="fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
            <div className={`w-full max-w-md rounded-[2.5rem] p-6 shadow-2xl relative flex flex-col ${isDark ? 'bg-slate-800 text-white' : 'bg-white'}`} style={{ height: '70vh' }}>
-              <button onClick={() => setShowSupportModal(false)} className="absolute top-6 right-6 w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 cursor-pointer transition-colors"><X size={20}/></button>
-              
-              <div className="flex items-center gap-3 mb-6 border-b pb-4 border-slate-200 dark:border-slate-700">
-                <div className="w-12 h-12 bg-emerald-500/10 text-emerald-500 rounded-xl flex items-center justify-center"><MessageCircle size={24} /></div>
-                <div>
-                  <h2 className="text-xl font-black tracking-tight">Soporte Técnico</h2>
-                  <p className="text-[10px] uppercase tracking-widest opacity-60 font-bold">Chateá con un asesor</p>
-                </div>
-              </div>
-              
-              <div className={`flex-1 overflow-y-auto p-4 rounded-2xl border mb-4 space-y-4 fd-sb ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                {!(salonInfo?.support_chat?.length) && (
+             <button onClick={() => setShowSupportModal(false)} className="absolute top-6 right-6 w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 cursor-pointer transition-colors"><X size={20}/></button>
+             
+             <div className="flex items-center gap-3 mb-6 border-b pb-4 border-slate-200 dark:border-slate-700">
+               <div className="w-12 h-12 bg-emerald-500/10 text-emerald-500 rounded-xl flex items-center justify-center"><MessageCircle size={24} /></div>
+               <div>
+                 <h2 className="text-xl font-black tracking-tight">Soporte Técnico</h2>
+                 <p className="text-[10px] uppercase tracking-widest opacity-60 font-bold">Chateá con un asesor</p>
+               </div>
+             </div>
+             
+             <div className={`flex-1 overflow-y-auto p-4 rounded-2xl border mb-4 space-y-4 fd-sb ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+               {!(salonInfo?.support_chat?.length) && (
                    <div className="text-center opacity-50 mt-10">
                       <MessageCircle size={30} className="mx-auto mb-2" />
                       <p className="text-xs font-bold">Aún no hay mensajes.</p>
                       <p className="text-[10px]">Escribinos tus dudas o solicitá mejorar tu plan.</p>
                    </div>
-                )}
-                {(salonInfo?.support_chat || []).map((msg, i) => (
-                  <div key={i} className={`p-3 rounded-2xl max-w-[85%] text-sm shadow-sm ${msg.sender === 'salon' ? 'bg-emerald-600 text-white self-end ml-auto rounded-tr-sm' : 'bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-800 dark:text-white rounded-tl-sm'}`}>
+               )}
+               {(salonInfo?.support_chat || []).map((msg, i) => (
+                 <div key={i} className={`p-3 rounded-2xl max-w-[85%] text-sm shadow-sm ${msg.sender === 'salon' ? 'bg-emerald-600 text-white self-end ml-auto rounded-tr-sm' : 'bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-800 dark:text-white rounded-tl-sm'}`}>
                      <p className="whitespace-pre-wrap">{msg.text}</p>
                      <span className={`text-[9px] block mt-1.5 opacity-70 ${msg.sender==='salon'?'text-right':''}`}>{new Date(msg.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                  </div>
-                ))}
-                <div ref={chatEndRef} />
-              </div>
+                 </div>
+               ))}
+               <div ref={chatEndRef} />
+             </div>
 
-              <div className="flex gap-2 shrink-0">
-                <input type="text" value={supportMessage} onChange={e=>setSupportMessage(e.target.value)} onKeyDown={e=>{if(e.key==='Enter') handleSendSupportMessage();}} placeholder="Escribir mensaje..." className={`flex-1 p-3.5 rounded-xl border text-sm outline-none focus:border-emerald-500 ${isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-slate-200'}`} />
-                <button onClick={handleSendSupportMessage} disabled={!supportMessage.trim()} className="w-14 h-14 bg-emerald-600 text-white rounded-xl flex items-center justify-center shadow-lg hover:bg-emerald-700 disabled:opacity-50 cursor-pointer transition-colors"><Send size={20}/></button>
-              </div>
+             <div className="flex gap-2 shrink-0">
+               <input type="text" value={supportMessage} onChange={e=>setSupportMessage(e.target.value)} onKeyDown={e=>{if(e.key==='Enter') handleSendSupportMessage();}} placeholder="Escribir mensaje..." className={`flex-1 p-3.5 rounded-xl border text-sm outline-none focus:border-emerald-500 ${isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-white border-slate-200'}`} />
+               <button onClick={handleSendSupportMessage} disabled={!supportMessage.trim()} className="w-14 h-14 bg-emerald-600 text-white rounded-xl flex items-center justify-center shadow-lg hover:bg-emerald-700 disabled:opacity-50 cursor-pointer transition-colors"><Send size={20}/></button>
+             </div>
            </div>
         </div>
       )}
@@ -348,36 +347,35 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
       {showPaymentModal && (
         <div className="fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
            <div className={`w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative text-center anim-pop ${isDark ? 'bg-slate-800 text-white' : 'bg-white'}`}>
-              <button onClick={() => { setShowPaymentModal(false); setReceiptFile(null); }} className="absolute top-6 right-6 w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 cursor-pointer transition-colors"><X size={20}/></button>
-              <div className="w-16 h-16 bg-amber-500/10 text-amber-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-amber-500/20"><CreditCard size={32} /></div>
-              <h2 className="text-2xl font-black mb-2 tracking-tight">Abonar Suscripción</h2>
-              <p className="text-sm opacity-70 mb-6 font-medium">Transferí tu cuota para mantener el panel activo.</p>
-              
-              <div className={`p-5 rounded-2xl border mb-6 text-left shadow-inner ${isDark ? 'bg-slate-700/50 border-slate-600' : 'bg-slate-50 border-slate-200'}`}>
-                 <p className="text-[10px] font-black uppercase text-slate-400 mb-1 tracking-widest">Datos Bancarios</p>
-                 <p className="font-bold text-slate-700 dark:text-slate-300">{salonInfo?.payment_titular || "A nombre del Titular"}</p>
-                 <p className="font-mono text-xl mt-3 text-violet-600 dark:text-violet-400 font-bold tracking-wider text-center bg-white dark:bg-slate-800 py-3 rounded-xl border border-violet-200 dark:border-slate-600 shadow-sm">{salonInfo?.payment_clabe || "012345678901234567"}</p>
-              </div>
+             <button onClick={() => { setShowPaymentModal(false); setReceiptFile(null); }} className="absolute top-6 right-6 w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 cursor-pointer transition-colors"><X size={20}/></button>
+             <div className="w-16 h-16 bg-amber-500/10 text-amber-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-amber-500/20"><CreditCard size={32} /></div>
+             <h2 className="text-2xl font-black mb-2 tracking-tight">Abonar Suscripción</h2>
+             <p className="text-sm opacity-70 mb-6 font-medium">Transferí tu cuota para mantener el panel activo.</p>
+             
+             <div className={`p-5 rounded-2xl border mb-6 text-left shadow-inner ${isDark ? 'bg-slate-700/50 border-slate-600' : 'bg-slate-50 border-slate-200'}`}>
+                <p className="text-[10px] font-black uppercase text-slate-400 mb-1 tracking-widest">Datos Bancarios</p>
+                <p className="font-bold text-slate-700 dark:text-slate-300">{salonInfo?.payment_titular || "A nombre del Titular"}</p>
+                <p className="font-mono text-xl mt-3 text-violet-600 dark:text-violet-400 font-bold tracking-wider text-center bg-white dark:bg-slate-800 py-3 rounded-xl border border-violet-200 dark:border-slate-600 shadow-sm">{salonInfo?.payment_clabe || "012345678901234567"}</p>
+             </div>
 
-              <div className="mb-6 relative"><input type="file" accept="image/*" onChange={(e) => setReceiptFile(e.target.files[0])} className="hidden" id="receipt-upload" disabled={sendingReceipt}/><label htmlFor="receipt-upload" className={`w-full py-4 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors ${receiptFile ? 'bg-violet-50 border-violet-300 text-violet-600' : (isDark ? 'bg-slate-700 border-slate-500 text-slate-300' : 'bg-slate-50 border-slate-300 text-slate-500')}`}>{receiptFile ? (<><CheckCircle2 size={24} className="text-violet-500" /><span className="font-bold text-sm truncate max-w-[200px]">{receiptFile.name}</span><span className="text-[10px] uppercase font-black opacity-60 mt-1 hover:underline">Cambiar foto</span></>) : (<><ImageIcon size={24} /><span className="font-bold text-sm">Cargar Comprobante</span><span className="text-[10px] uppercase font-black opacity-60 mt-1">Tap para subir foto</span></>)}</label></div>
-              <button onClick={handleSendReceipt} disabled={sendingReceipt || !receiptFile} className={`w-full py-4 rounded-xl font-black flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 uppercase tracking-widest text-sm ${(!receiptFile || sendingReceipt) ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-[#0088cc] text-white hover:bg-[#0077b5] cursor-pointer'}`}>{sendingReceipt ? <Loader2 size={18} className="animate-spin"/> : <Send size={18}/>} {sendingReceipt ? 'ENVIANDO...' : 'ENVIAR COMPROBANTE'}</button>
+             <div className="mb-6 relative"><input type="file" accept="image/*" onChange={(e) => setReceiptFile(e.target.files[0])} className="hidden" id="receipt-upload" disabled={sendingReceipt}/><label htmlFor="receipt-upload" className={`w-full py-4 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors ${receiptFile ? 'bg-violet-50 border-violet-300 text-violet-600' : (isDark ? 'bg-slate-700 border-slate-500 text-slate-300' : 'bg-slate-50 border-slate-300 text-slate-500')}`}>{receiptFile ? (<><CheckCircle2 size={24} className="text-violet-500" /><span className="font-bold text-sm truncate max-w-[200px]">{receiptFile.name}</span><span className="text-[10px] uppercase font-black opacity-60 mt-1 hover:underline">Cambiar foto</span></>) : (<><ImageIcon size={24} /><span className="font-bold text-sm">Cargar Comprobante</span><span className="text-[10px] uppercase font-black opacity-60 mt-1">Tap para subir foto</span></>)}</label></div>
+             <button onClick={handleSendReceipt} disabled={sendingReceipt || !receiptFile} className={`w-full py-4 rounded-xl font-black flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 uppercase tracking-widest text-sm ${(!receiptFile || sendingReceipt) ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-[#0088cc] text-white hover:bg-[#0077b5] cursor-pointer'}`}>{sendingReceipt ? <Loader2 size={18} className="animate-spin"/> : <Send size={18}/>} {sendingReceipt ? 'ENVIANDO...' : 'ENVIAR COMPROBANTE'}</button>
            </div>
         </div>
       )}
 
-      {/* Dashboard.jsx - Buscamos esta parte */}
-{activeCrmId && (
-  <CrmModal 
-    key={activeCrmId + JSON.stringify(myInvs.find(i => i.id === activeCrmId))} // 👉 ESTO ES LA MAGIA
-    activeInv={myInvs.find(i => i.id === activeCrmId)} 
-    onClose={() => setActiveCrmId(null)} 
-    user={user} 
-    salonInfo={salonInfo} 
-    onUpdateInternal={onUpdateInternal} 
-    onUpdateConfig={onUpdateConfig} 
-    isDark={isDark} 
-  />
-)}}
+      {activeCrmId && (
+        <CrmModal 
+          key={activeCrmId + JSON.stringify(myInvs.find(i => i.id === activeCrmId))}
+          activeInv={myInvs.find(i => i.id === activeCrmId)} 
+          onClose={() => setActiveCrmId(null)} 
+          user={user} 
+          salonInfo={salonInfo} 
+          onUpdateInternal={onUpdateInternal} 
+          onUpdateConfig={onUpdateConfig} 
+          isDark={isDark} 
+        />
+      )}
 
       {scanningEvent && !validationResult && <QRScannerModal onClose={() => setScanningEvent(null)} onScan={processQRScan} />}
       
