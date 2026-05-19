@@ -365,17 +365,19 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
         </div>
       )}
 
-      {activeCrmId && (
-        <CrmModal 
-          activeInv={myInvs.find(i => i.id === activeCrmId)} 
-          onClose={() => setActiveCrmId(null)} 
-          user={user} 
-          salonInfo={salonInfo} 
-          onUpdateInternal={onUpdateInternal} 
-          onUpdateConfig={onUpdateConfig} 
-          isDark={isDark} 
-        />
-      )}
+      {/* Dashboard.jsx - Buscamos esta parte */}
+{activeCrmId && (
+  <CrmModal 
+    key={activeCrmId + JSON.stringify(myInvs.find(i => i.id === activeCrmId))} // 👉 ESTO ES LA MAGIA
+    activeInv={myInvs.find(i => i.id === activeCrmId)} 
+    onClose={() => setActiveCrmId(null)} 
+    user={user} 
+    salonInfo={salonInfo} 
+    onUpdateInternal={onUpdateInternal} 
+    onUpdateConfig={onUpdateConfig} 
+    isDark={isDark} 
+  />
+)}}
 
       {scanningEvent && !validationResult && <QRScannerModal onClose={() => setScanningEvent(null)} onScan={processQRScan} />}
       
