@@ -355,7 +355,13 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
           <ScrollReveal>
             <div className="rounded-[2rem] relative overflow-hidden" style={glassContainerStyle}>
               {shineOverlay}
-              <Countdown targetDate={cfg.date && cfg.time ? `${cfg.date}T${cfg.time}:00` : cfg.date} ... />
+              <Countdown
+  targetDate={cfg.date && cfg.time ? `${cfg.date}T${cfg.time.split(/[\s,aáa-]/i)[0].trim()}:00` : cfg.date}
+  primary={primary}
+  text="Falta para el gran día"
+  cfg={cfg}
+  cardC={cardC}
+/>
             </div>
           </ScrollReveal>
         )}
