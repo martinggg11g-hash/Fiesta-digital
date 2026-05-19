@@ -11,6 +11,7 @@ const ProjectorScreen = ({ eventSlug }) => {
 
   useEffect(() => {
     const fetchPhotos = async () => {
+      // BUSCAMOS POR ID CORTO ("evt-...") QUE ES EL SLUG EN ESTA TABLA
       const { data } = await supabase.from('invitaciones').select('internal_data').eq('id', eventSlug).single();
       if (data?.internal_data?.live_photos) {
         setPhotos(prev => {
@@ -63,6 +64,7 @@ export const ManageScreen = () => {
 
   const [loading, setLoading] = useState(true);
   const [eventData, setEventData] = useState(null);
+  const [realDbId, setRealDbId] = useState(null); // 👉 ACÁ GUARDAMOS EL ID VERDADERO
   
   const [pinInput, setPinInput] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -74,11 +76,21 @@ export const ManageScreen = () => {
 
   useEffect(() => {
     const fetchEvent = async () => {
+      // BUSCAMOS LA INVITACIÓN USANDO EL SLUG CORTO ("evt-...")
       const { data, error } = await supabase.from('invitaciones').select('*').eq('id', eventSlug).single();
-      if (error) console.error("Error buscando evento:", error);
+      if (error) {
+         console.error("Error buscando evento:", error);
+         setLoading(false);
+         return;
+      }
       
       if (data) {
          setEventData(data);
+         // 👉 EL SECRETO: El verdadero UUID está escondido en la columna evento_id (o es el ID interno si migraste distinto)
+         // Supabase usa UUID, así que debemos asegurarnos de obtener ese identificador largo para buscar invitados.
+         const verifiedRealId = data.evento_id || data.id; 
+         setRealDbId(verifiedRealId);
+
          if (!data.config?.clientPin || isProjectorMode) setIsAuthenticated(true);
       }
       setLoading(false);
@@ -87,15 +99,15 @@ export const ManageScreen = () => {
   }, [eventSlug, isProjectorMode]);
 
   useEffect(() => {
-    if (isAuthenticated && eventData && !isProjectorMode) {
+    // Si estamos autenticados y YA TENEMOS EL ID REAL, buscamos los invitados
+    if (isAuthenticated && realDbId && !isProjectorMode) {
       fetchInvitados();
     }
-  }, [isAuthenticated, eventData, isProjectorMode]);
+  }, [isAuthenticated, realDbId, isProjectorMode]);
 
   const fetchInvitados = async () => {
-    // 👉 CORRECCIÓN 1: Usamos el evento_id real (UUID) para buscar
-    const realEventId = eventData.evento_id || eventData.id;
-    const { data, error } = await supabase.from('invitados').select('*').eq('evento_id', realEventId).order('created_at', { ascending: false });
+    // 👉 BUSCAMOS USANDO EL UUID REAL
+    const { data, error } = await supabase.from('invitados').select('*').eq('evento_id', realDbId).order('created_at', { ascending: false });
     if (error) console.error("Error buscando invitados:", error);
     if (data) setInvitados(data);
   };
@@ -112,14 +124,12 @@ export const ManageScreen = () => {
 
   const handleAddGuest = async (e) => {
      e.preventDefault();
-     if (!newGuest.nombre_completo) return;
+     if (!newGuest.nombre_completo || !realDbId) return;
      setAdding(true);
      
-     // 👉 CORRECCIÓN 2: Le pasamos el UUID real a Supabase, no el slug "evt-..."
-     const realEventId = eventData.evento_id || eventData.id;
-
+     // 👉 INSERTAMOS USANDO EL UUID REAL
      const { data, error } = await supabase.from('invitados').insert([{
-        evento_id: realEventId,
+        evento_id: realDbId,
         nombre_completo: newGuest.nombre_completo,
         apodo: newGuest.apodo,
         max_acompanantes: newGuest.max_acompanantes,
