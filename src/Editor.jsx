@@ -74,13 +74,21 @@ export const EditorScreen = ({ invitations, onSave }) => {
         </div>
         
         <button 
-          onClick={handleSave} 
-          disabled={saving}
-          className="flex items-center gap-2 px-6 py-2.5 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all active:scale-95 shadow-[0_0_20px_rgba(124,58,246,0.3)] cursor-pointer"
-        >
-          {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-          {saving ? "Guardando..." : "GUARDAR CAMBIOS"}
-        </button>
+  onClick={handleSave} 
+  disabled={saveStatus !== 'idle'}
+  className={`flex items-center gap-2 px-6 py-2.5 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all active:scale-95 shadow-lg cursor-pointer
+    ${saveStatus === 'saving' ? 'bg-violet-700 opacity-80' : 
+      saveStatus === 'saved' ? 'bg-green-600 shadow-green-500/20' : 
+      'bg-violet-600 hover:bg-violet-700 shadow-violet-600/30'}`}
+>
+  {saveStatus === 'saving' && <Loader2 size={16} className="animate-spin" />}
+  {saveStatus === 'saved' && <CheckCircle2 size={16} />}
+  {saveStatus === 'idle' && <Save size={16} />}
+  
+  {saveStatus === 'saving' ? "GUARDANDO..." : 
+   saveStatus === 'saved' ? "¡CAMBIOS GUARDADOS!" : 
+   "GUARDAR CAMBIOS"}
+</button>
       </header>
 
       {/* CUERPO */}
