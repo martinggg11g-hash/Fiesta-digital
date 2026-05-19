@@ -118,30 +118,6 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
     notify("Ingreso registrado");
   };
 
-  const handleSendReceipt = async () => {
-    if (!receiptFile) return alert("Por favor, seleccioná una foto del comprobante primero.");
-    setSendingReceipt(true);
-    try {
-      const formData = new FormData();
-      formData.append("chat_id", TELEGRAM_CHAT_ID);
-      formData.append("photo", receiptFile);
-      formData.append("caption", `💰 Nuevo Comprobante de Pago\n🏢 Salón: ${user.name}\n📧 Email: ${user.email}`);
-
-      const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, { method: "POST", body: formData });
-      if (res.ok) { notify("¡Comprobante enviado con éxito!"); setShowPaymentModal(false); setReceiptFile(null); } 
-      else { alert("No se pudo enviar el comprobante."); }
-    } catch (e) { alert("Error de red."); }
-    setSendingReceipt(false);
-  };
-
-  const handleSendSupportMessage = async () => {
-    if (!supportMessage.trim()) return;
-    const newMsg = { sender: 'salon', text: supportMessage, date: new Date().toISOString() };
-    const chatArray = [...(salonInfo?.support_chat || []), newMsg];
-    setSupportMessage(""); 
-    await onUpdateUser(user.email, { support_chat: chatArray });
-  };
-
   if (isOwner) {
     return <MasterPanel mySalons={users.filter(u => u.role === "salon")} onLogout={onLogout} onCreateSalon={onCreateSalon} onUpdateUser={onUpdateUser} onDeleteSalon={onDeleteSalon} globalAlert={globalAlert} onUpdateAlert={onUpdateAlert} />;
   }
@@ -176,7 +152,6 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/30 to-transparent" />
                   <div className="absolute bottom-4 left-5 right-5 flex justify-between items-end">
                     <div>
-                      {/* 👉 CORRECCIÓN: Ahora leemos inv.config.date */}
                       <p className="text-white/70 text-[10px] font-black uppercase tracking-widest mb-1">
                         {inv.config?.date ? formatDateSpanish(inv.config.date) : 'Sin fecha'}
                       </p>
@@ -188,7 +163,13 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
                     </div>
                   </div>
                 </div>
+                
                 <div className="p-6">
+                  <div className="flex gap-2 mb-3">
+                    <button onClick={() => navigate(`/editor/${inv.id}`)} className="flex-1 py-3 bg-violet-600 text-white rounded-2xl font-black text-[11px] tracking-widest flex items-center justify-center gap-2 cursor-pointer shadow-md"><Edit2 size={14}/> DISEÑAR</button>
+                    <button onClick={() => window.open(`${window.location.origin}/i/${slugify(user.name)}/${inv.id}`)} className="w-12 h-12 rounded-2xl flex items-center justify-center bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer"><Eye size={18}/></button>
+                    <button onClick={() => handleCopyLink(inv.id, `${window.location.origin}/i/${slugify(user.name)}/${inv.id}`)} className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all cursor-pointer ${copiedStates[inv.id] ? 'bg-green-100 text-green-600' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>{copiedStates[inv.id] ? <CheckCircle2 size={18}/> : <Copy size={18}/>}</button>
+                  </div>
                   <div className="grid grid-cols-2 gap-2">
                     <button onClick={() => setActiveCrmId(inv.id)} className={`py-3 rounded-2xl font-black text-[10px] uppercase border cursor-pointer ${isDark ? 'bg-slate-800 border-slate-600 text-slate-300' : 'bg-white border-slate-200'}`}>FICHA CRM</button>
                     <button onClick={() => setScanningEvent(inv)} className={`py-3 rounded-2xl font-black text-[10px] uppercase border text-violet-600 border-violet-200 cursor-pointer ${isDark ? 'bg-slate-800 border-slate-600' : 'bg-white'}`}>ESCANEAR</button>
