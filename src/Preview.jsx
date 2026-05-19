@@ -18,6 +18,22 @@ const formatDateSpanish = (dateStr) => {
   return dateStr;
 };
 
+// Función para extraer la hora exacta del input
+const extractStartTime = (timeStr) => {
+  if (!timeStr) return "00:00";
+  // 1. Busca si hay un formato exacto HH:MM (ej: "21:30")
+  const match = timeStr.match(/\d{1,2}:\d{2}/);
+  if (match) {
+    let [h, m] = match[0].split(':');
+    return `${h.padStart(2, '0')}:${m}`;
+  }
+  // 2. Si solo pusieron la hora suelta (ej: "14 hs" o "14 a 20")
+  const hourMatch = timeStr.match(/\d{1,2}/);
+  if (hourMatch) return `${hourMatch[0].padStart(2, '0')}:00`;
+  
+  return "00:00"; // Fallback por defecto
+};
+
 // 👉 COMPONENTE MÁGICO DE TRANSICIÓN (Aparecen al scrollear)
 const ScrollReveal = ({ children }) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -55,9 +71,9 @@ const AddToCalendarButton = ({ cfg, primary, cardC }) => {
   const direccion = `${cfg?.locationName || ''} - ${cfg?.locationAddress || ''}`.trim() || 'Dirección del salón';
   const detalles = `¡Te espero para festejar juntos! Mirá la invitación completa acá: ${window.location.href}`;
   
-  // Usamos los campos sincronizados cfg.date y cfg.time para el calendario
   const fechaClean = cfg?.date ? cfg.date.replace(/-/g, '') : '20260516';
-  const horaClean = cfg?.time ? cfg.time.replace(/:/g, '') + '00' : '210000';
+  const startTime = extractStartTime(cfg?.time);
+  const horaClean = startTime.replace(':', '') + '00'; 
   
   const startDateTime = `${fechaClean}T${horaClean}`;
   const endDateTime = `${fechaClean}T235900`;
@@ -240,7 +256,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
   );
 
   let cameraStatus = 'active'; 
-  const eventDateStr = cfg.date; // Usamos el campo sincronizado
+  const eventDateStr = cfg.date; 
   
   if (eventDateStr) {
     const evDate = new Date(eventDateStr);
@@ -356,12 +372,12 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
             <div className="rounded-[2rem] relative overflow-hidden" style={glassContainerStyle}>
               {shineOverlay}
               <Countdown
-  targetDate={cfg.date && cfg.time ? `${cfg.date}T${cfg.time.split(/[\s,aáa-]/i)[0].trim()}:00` : cfg.date}
-  primary={primary}
-  text="Falta para el gran día"
-  cfg={cfg}
-  cardC={cardC}
-/>
+                targetDate={cfg.date ? `${cfg.date}T${extractStartTime(cfg.time)}:00` : null}
+                primary={primary}
+                text="Falta para el gran día"
+                cfg={cfg}
+                cardC={cardC}
+              />
             </div>
           </ScrollReveal>
         )}
