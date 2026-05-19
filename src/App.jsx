@@ -127,7 +127,6 @@ export default function App() {
 
   const handleLogout = () => { setUser(null); localStorage.removeItem("fiesta_user"); sessionStorage.removeItem("fiesta_user"); };
 
-  // 👉 AHORA CON REALTIME INTEGRADO 👈
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -142,60 +141,76 @@ export default function App() {
     };
     fetchData();
 
-    // SUSCRIPCIÓN A SUPABASE REALTIME (Magia entre pestañas)
+    // 👉 CANAL REALTIME A PRUEBA DE BALAS
     const channel = supabase
-      .channel('invitaciones-changes')
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'invitaciones' },
-        (payload) => {
-          const updatedInv = payload.new;
-          // Actualizamos la invitación en la memoria de todas las pestañas abiertas
+      .channel('fiesta-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'invitaciones' }, (payload) => {
+        console.log("🔥 SUPABASE AVISÓ DE UN CAMBIO:", payload);
+        if (payload.new && payload.new.id) {
           setInvitations(prevInvs => prevInvs.map(inv => 
-            inv.id === updatedInv.id ? { 
-              ...updatedInv, 
-              salonId: updatedInv.salon_id, 
-              internal_data: updatedInv.internal_data || {}, 
-              config: updatedInv.config || {} 
+            inv.id === payload.new.id ? { 
+              ...inv, // Conservamos local
+              ...payload.new, // Sobrescribimos con BD
+              salonId: payload.new.salon_id, 
+              internal_data: payload.new.internal_data || {}, 
+              config: payload.new.config || {} 
             } : inv
           ));
         }
-      )
-      .subscribe();
+      })
+      .subscribe((status) => {
+        console.log("📡 ESTADO REALTIME:", status);
+      });
 
-    // RADAR DE SALONES (Se mantiene igual)
     const radar = setInterval(async () => {
-      if (user) {
-        if (user.role === 'owner') {
-          const { data: salones } = await supabase.from('salones').select('*');
-          if (salones) setUsers(salones);
-        } else {
-          const { data: miSalon } = await supabase.from('salones').select('*').eq('email', user.email);
-          if (miSalon && miSalon.length > 0) setUsers(prev => prev.map(u => u.email === user.email ? miSalon[0] : u));
-        }
-      }
-    }, 15000); // Lo subí a 15s para no saturar Supabase con consultas ahora que tenemos Realtime
+      const { data: alertData } = await supabase.from('alertas').select('*').eq('id', 1).single();
+      if (alertData) setGlobalAlert({ mensaje: alertData.mensaje, activo: alertData.activo });
+      // Removemos el recargo de salones tan frecuente para no saturar
+    }, 30000);
 
-    return () => {
-       clearInterval(radar);
-       supabase.removeChannel(channel); // Apaga el canal al cerrar
+    return () => { 
+      clearInterval(radar); 
+      supabase.removeChannel(channel); 
     };
   }, [user]);
 
+  // 👉 CORRECCIÓN DEL ANTI-PATRÓN DE ESTADO (Separamos UI de Base de Datos)
   const handleUpdateInternal = async (id, f, v) => {
-    setInvitations(prevInvs => {
-       const updatedInvs = prevInvs.map(i => i.id === id ? { ...i, internal_data: { ...i.internal_data, [f]: v } } : i);
-       supabase.from('invitaciones').update({ internal_data: updatedInvs.find(i=>i.id===id).internal_data }).eq('id', id);
-       return updatedInvs;
-    });
+    let targetData = null;
+    
+    // 1. Actualizamos la UI al instante (Memoria local)
+    setInvitations(prevInvs => prevInvs.map(i => {
+      if (i.id === id) {
+        targetData = { ...i.internal_data, [f]: v };
+        return { ...i, internal_data: targetData };
+      }
+      return i;
+    }));
+
+    // 2. Guardamos en Base de Datos por fuera
+    if (targetData) {
+      const { error } = await supabase.from('invitaciones').update({ internal_data: targetData }).eq('id', id);
+      if (error) console.error("Error al guardar internal_data:", error);
+    }
   };
 
   const handleUpdateConfig = async (id, key, value) => {
-    setInvitations(prevInvs => {
-       const updatedInvs = prevInvs.map(i => i.id === id ? { ...i, config: { ...i.config, [key]: value } } : i);
-       supabase.from('invitaciones').update({ config: updatedInvs.find(i=>i.id===id).config }).eq('id', id);
-       return updatedInvs;
-    });
+    let targetConfig = null;
+
+    // 1. Actualizamos la UI al instante
+    setInvitations(prevInvs => prevInvs.map(i => {
+      if (i.id === id) {
+        targetConfig = { ...i.config, [key]: value };
+        return { ...i, config: targetConfig };
+      }
+      return i;
+    }));
+
+    // 2. Guardamos en BD por fuera
+    if (targetConfig) {
+      const { error } = await supabase.from('invitaciones').update({ config: targetConfig }).eq('id', id);
+      if (error) console.error("Error al guardar config:", error);
+    }
   };
 
   const handleConfirmRSVP = async (invId, guestData, realId = null) => {
