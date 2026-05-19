@@ -210,26 +210,17 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
         )}
       </Acc>
 
-      <Acc title="2️⃣ Cuenta Regresiva" icon={Clock} iconColor="#f59e0b"><div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500 flex items-center">Activar Reloj</span><Toggle checked={cfg.showCountdown || false} onChange={v => update("showCountdown", v)} /></div>{cfg.showCountdown && (<Inp label="Fecha y Hora exacta" type="datetime-local" value={cfg.countdownDate || ""} onChange={v => update("countdownDate", v)} />)}</Acc>
-      
-      <Acc title="3️⃣ Banner Central" icon={Star} iconColor="#d97706">
-        <div className="flex items-center justify-between mb-4"><span className="text-xs font-bold text-slate-500 flex items-center">Activar Banner</span><Toggle checked={cfg.showBanner} onChange={v => update("showBanner", v)} /></div>
-        {cfg.showBanner && (
-          <>
-            <Inp label="Título del Banner" value={cfg.bannerTitle} onChange={v => update("bannerTitle", v)} />
-            <div className="flex items-center justify-between mt-4 mb-2 bg-gray-50 p-2 rounded-xl">
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">¿Usar GIF?</span>
-              <Toggle checked={cfg.useGiphyBanner || false} onChange={v => update("useGiphyBanner", v)} />
-            </div>
-            {cfg.useGiphyBanner ? (<GiphySearch onSelect={url => update("bannerPhoto", url)} />) : (<FileUpload value={cfg.bannerPhoto} onChange={v => update("bannerPhoto", v)} />)}
-            
-            <div className="mt-4 p-3 bg-orange-50 border border-orange-100 rounded-xl flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-orange-200 text-orange-600 flex items-center justify-center shrink-0">👆</div>
-              <p className="text-[9px] font-bold text-orange-700 leading-tight">
-                 Para ajustar la imagen del banner, <strong className="text-orange-900">arrastrala directamente en la vista previa</strong> (derecha).
-              </p>
-            </div>
-          </>
+      <Acc title="2️⃣ Cuenta Regresiva" icon={Clock} iconColor="#f59e0b">
+        <div className="flex items-center justify-between mb-4">
+          <span className="text-xs font-bold text-slate-500 flex items-center">Activar Reloj</span>
+          <Toggle checked={cfg.showCountdown || false} onChange={v => update("showCountdown", v)} />
+        </div>
+        {cfg.showCountdown && (
+          <div className="p-3 bg-orange-50 border border-orange-100 rounded-xl mt-2">
+            <p className="text-[10px] font-bold text-orange-700 leading-tight">
+              ⏱️ El reloj tomará automáticamente la <strong>Fecha y Horario</strong> configurados en la sección "Cuándo y Dónde" (o desde la ficha del CRM).
+            </p>
+          </div>
         )}
       </Acc>
       
