@@ -9,6 +9,10 @@ export const DEF_CONFIG = {
   fontBody: "Montserrat",
   fontTitle: "Playfair Display",
   
+  // 👉 CAMPOS NUEVOS PARA SINCRONIZACIÓN
+  date: "",
+  time: "",
+  
   coverPhoto: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=800&q=80",
   eventTypeEmoji: "✨",
   eventType: "Mis Dulces 15",
@@ -49,19 +53,14 @@ export const DEF_CONFIG = {
   showTiktok: false,
   tiktokUrl: "",
 
-  // NUEVAS VARIABLES RSVP VIP Y ACCESOS
   showRsvpDeadline: false,
   rsvpDeadline: "",
   isPrivateList: false,
   clientPin: "", 
 
-  // CONFIGURACIÓN DE EFECTOS
   effectOpacity: 100,
-
-  // DURACION ANIMACION INICIAL (Corregida su posición!)
   animationDuration: 3,
 
-  // CONFIGURACIÓN DE BORDES
   showCoverBorders: false,
   selectedBorder: "/borders/1-Photoroom.png", 
   borderPosition: "both",
@@ -72,7 +71,6 @@ export const DEF_CONFIG = {
 };
 
 export const THEMES = [
-  // --- LOS 14 ORIGINALES ---
   {
     id: "t1", name: "Rose Gold",
     primary: "#e8829a", bg1: "#fdf0f3", bg2: "linear-gradient(145deg, #fff5f7 0%, #fce4ea 25%, #f5c6d3 55%, #eea8bc 80%, #e690a8 100%)",
@@ -157,8 +155,6 @@ export const THEMES = [
     text: "#4a2a32", card: "linear-gradient(160deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.85) 100%)", muted: "#ab6879",
     shadow: "0 10px 40px rgba(212,139,156,0.15), 0 2px 8px rgba(0,0,0,0.02)", border: "rgba(212,139,156,0.25)", accent: "#e2afbd", shine: "linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 60%)",
   },
-
-  // --- LOS 8 TEMAS NUEVOS DE NIÑO ---
   {
     id: "t15", name: "Superhéroe (Rojo/Azul)",
     primary: "#dc2626", bg1: "#eff6ff", bg2: "linear-gradient(145deg, #eff6ff 0%, #dbeafe 30%, #bfdbfe 60%, #93c5fd 85%, #60a5fa 100%)",
@@ -207,8 +203,6 @@ export const THEMES = [
     text: "#0c4a6e", card: "linear-gradient(160deg, rgba(255,255,255,0.95) 0%, rgba(186,230,253,0.8) 100%)", muted: "#0369a1",
     shadow: "0 8px 32px rgba(2,132,199,0.2), 0 2px 10px rgba(2,132,199,0.1)", border: "rgba(2,132,199,0.3)", accent: "#38bdf8", shine: "linear-gradient(135deg, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0) 60%)",
   },
-
-  // --- LOS 4 TEMAS NUEVOS DE NIÑA ---
   {
     id: "t23", name: "Princesa Mágica",
     primary: "#c084fc", bg1: "#faf5ff", bg2: "linear-gradient(145deg, #faf5ff 0%, #f3e8ff 30%, #e9d5ff 70%, #d8b4fe 100%)",
@@ -266,42 +260,42 @@ export const THEMES = [
   {
     id: "negro-blanco",
     name: "Negro y Blanco (Elegante)",
-    primary: "#ffffff",         
-    bg1: "#000000",             
-    bg2: "#18181b",             
-    text: "#ffffff",            
-    muted: "#a1a1aa",           
-    card: "#27272a"             
+    primary: "#ffffff",           
+    bg1: "#000000",               
+    bg2: "#18181b",               
+    text: "#ffffff",              
+    muted: "#a1a1aa",             
+    card: "#27272a"               
   },
   {
     id: "blanco-negro",
     name: "Blanco y Negro (Minimalista)",
-    primary: "#000000",         
-    bg1: "#ffffff",             
-    bg2: "#f4f4f5",             
-    text: "#000000",            
-    muted: "#71717a",           
-    card: "#ffffff"             
+    primary: "#000000",           
+    bg1: "#ffffff",               
+    bg2: "#f4f4f5",               
+    text: "#000000",              
+    muted: "#71717a",             
+    card: "#ffffff"               
   },
   {
     id: "negro-violeta",
     name: "Negro y Violeta (Cyber)",
-    primary: "#a78bfa",         
-    bg1: "#0b061f",             
-    bg2: "#1e0b36",             
-    text: "#ffffff",            
-    muted: "#c084fc",           
-    card: "#25143a"             
+    primary: "#a78bfa",           
+    bg1: "#0b061f",               
+    bg2: "#1e0b36",               
+    text: "#ffffff",              
+    muted: "#c084fc",             
+    card: "#25143a"               
   },
   {
     id: "rosa-negro",
     name: "Rosa y Negro (Glam)",
-    primary: "#f472b6",         
-    bg1: "#000000",             
-    bg2: "#1c0512",             
-    text: "#ffffff",            
-    muted: "#f9a8d4",           
-    card: "#2d0b1e"             
+    primary: "#f472b6",           
+    bg1: "#000000",               
+    bg2: "#1c0512",               
+    text: "#ffffff",              
+    muted: "#f9a8d4",             
+    card: "#2d0b1e"               
   }
 ];
 
@@ -487,6 +481,16 @@ export const formatToDDMMYYYY = (dateString) => {
   if (!dateString) return '';
   const [year, month, day] = dateString.split('-');
   return `${day}/${month}/${year}`;
+};
+
+export const formatDateSpanish = (dateStr) => {
+  if (!dateStr) return 'Sin fecha';
+  if (dateStr.includes('-')) {
+    const [y, m, d] = dateStr.split('-');
+    const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    return `${parseInt(d, 10)} de ${months[parseInt(m, 10) - 1]} de ${y}`;
+  }
+  return dateStr;
 };
 
 export const BORDERS = [
