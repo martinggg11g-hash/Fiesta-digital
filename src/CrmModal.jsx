@@ -3,7 +3,7 @@ import {
   X, ClipboardList, Users, FileText, Printer, UserCheck, MessageCircle, 
   PartyPopper, CalendarClock, Clock, AlertTriangle, Receipt, Smartphone, 
   Copy, CheckCircle2, Plus, FileDown, Edit2, Trash2, FileSpreadsheet,
-  MonitorPlay // 👉 IMPORTAMOS EL ÍCONO DEL PROYECTOR
+  MonitorPlay
 } from "lucide-react";
 import { Inp, Toggle } from "./DashboardUI";
 import { supabase } from "./supabase";
@@ -45,10 +45,17 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
 
   useEffect(() => {
     const fetchVipGuests = async () => {
-      const { data: eventData } = await supabase.from('eventos').select('id').eq('slug', activeInv.id).single();
+      // 1. Buscamos el ID real consultando la tabla 'invitaciones' por el slug
+      const { data: eventData } = await supabase.from('invitaciones').select('id').eq('slug', activeInv.id).single();
+      
+      // 2. Si lo encuentra, traemos los invitados usando ese ID
       if (eventData) {
         const { data: guestsData } = await supabase.from('invitados').select('*').eq('evento_id', eventData.id).order('created_at', { ascending: false });
         if (guestsData) setVipGuests(guestsData);
+      } else {
+        // Fallback: Por si activeInv.id ya estuviera enviando el UUID directamente en vez del slug
+        const { data: guestsDataAlt } = await supabase.from('invitados').select('*').eq('evento_id', activeInv.id).order('created_at', { ascending: false });
+        if (guestsDataAlt) setVipGuests(guestsDataAlt);
       }
     };
     if (activeTab === 'guests') fetchVipGuests();
@@ -94,7 +101,7 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
   const saveGuest = async () => {
     if(!gName && !editingGuest?.isVip) return alert("Falta nombre");
     
-    // 👉 MAGIA DEL FORMATO MESA (Si pone '12', guarda 'Mesa 12')
+    // MAGIA DEL FORMATO MESA
     let finalTable = gTable.trim();
     if (finalTable && !finalTable.toLowerCase().startsWith('mesa')) {
         finalTable = `Mesa ${finalTable}`;
@@ -212,7 +219,6 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
       
       <div className={`w-full max-w-5xl max-h-[95vh] h-full sm:h-auto rounded-[2rem] overflow-hidden flex flex-col shadow-2xl anim-pop no-print ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
         
-        {/* 👉 ACÁ AGREGAMOS LA PESTAÑA PROYECTOR */}
         <div className={`px-6 py-4 border-b flex justify-between items-center shrink-0 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
            <div className="flex gap-4 border border-slate-300 rounded-xl p-1 bg-slate-100 flex-wrap">
              <button onClick={() => setActiveTab('info')} className={`px-4 py-2 rounded-lg text-xs font-black transition-colors cursor-pointer ${activeTab === 'info' ? 'bg-white shadow-sm text-violet-600' : 'text-slate-500 hover:text-slate-700'}`}><ClipboardList size={14} className="inline-block mr-1"/> Ficha Interna</button>
@@ -237,7 +243,6 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                     <h3 className="text-xs font-black text-blue-500 uppercase tracking-widest mb-4 border-b border-slate-200/20 pb-2 flex items-center gap-2"><UserCheck size={14}/> Datos del Cliente</h3>
                     <Inp label="Nombre Completo" value={activeInv.internal_data.clientName || ''} onChange={v => onUpdateInternal(activeInv.id, 'clientName', v)} isDark={isDark} />
                     <div className="flex gap-2 items-end mb-4">
-                       {/* 👉 CAMBIAMOS EL PLACEHOLDER AL DE MÉXICO */}
                        <Inp label="WhatsApp del Cliente" placeholder="Ej: 52 1 55 1234 5678" className="flex-1 !mb-0" value={activeInv.internal_data.clientPhone || ''} onChange={v => onUpdateInternal(activeInv.id, 'clientPhone', v)} isDark={isDark} />
                        <button onClick={() => window.open(`https://wa.me/${activeInv.internal_data.clientPhone?.replace(/\D/g, '')}`)} className="h-[46px] px-4 bg-green-500 text-white rounded-xl flex items-center justify-center cursor-pointer shadow-md"><MessageCircle size={18}/></button>
                     </div>
@@ -248,7 +253,6 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                     <Inp label="Nombre del Agasajado/s" value={activeInv.internal_data.internalHonoree || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalHonoree', v)} isDark={isDark} />
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       
-                      {/* 👉 CONVERTIMOS EL TIPO DE EVENTO EN DESPLEGABLE */}
                       <div>
                         <label className={`block text-[10px] font-black uppercase mb-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Tipo de Evento</label>
                         <select className={`w-full py-3 px-4 rounded-xl text-sm font-bold outline-none cursor-pointer border ${isDark ? 'bg-slate-800 text-white border-slate-700' : 'bg-white text-slate-800 border-slate-200'}`} value={activeInv.internal_data.eventType || ''} onChange={e => onUpdateInternal(activeInv.id, 'eventType', e.target.value)}>
@@ -381,7 +385,7 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
             </div>
           )}
 
-          {/* 👉 NUEVA PESTAÑA PROYECTOR */}
+          {/* PESTAÑA PROYECTOR */}
           {activeTab === 'projector' && (
             <div className="animate-in fade-in duration-300 flex flex-col items-center justify-center text-center py-20 px-4">
               <div className="w-24 h-24 bg-violet-100 text-violet-600 rounded-full flex items-center justify-center mb-6 shadow-sm border-4 border-white">
