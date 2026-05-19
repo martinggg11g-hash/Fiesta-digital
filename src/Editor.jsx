@@ -15,7 +15,7 @@ export const EditorScreen = ({ invitations, onSave }) => {
   
   const [inv, setInv] = useState(initialInv);
   const [loading, setLoading] = useState(false); // Ya no necesitamos loading de fetch
-  const [saving, setSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved'
   const [previewAnim, setPreviewAnim] = useState(false); 
   const [mobileView, setMobileView] = useState('editor');
 
@@ -26,12 +26,24 @@ export const EditorScreen = ({ invitations, onSave }) => {
   }, [invitations, id]);
 
   const handleSave = async () => {
-    setSaving(true);
-    // 👉 Llamamos a la función onSave que definimos en App.jsx
-    // Esto guardará en Supabase Y actualizará el estado global (invitations)
-    await onSave(inv);
-    setSaving(false);
-  };
+  setSaveStatus('saving');
+  try {
+    // onSave es la función que viene de App.jsx (que ya sincroniza todo)
+    await onSave(inv); 
+    
+    setSaveStatus('saved');
+    
+    // Volver al estado original después de 2 segundos
+    setTimeout(() => {
+      setSaveStatus('idle');
+    }, 2000);
+    
+  } catch (err) {
+    console.error("Error guardando:", err);
+    alert("Hubo un error al guardar. Intentá de nuevo.");
+    setSaveStatus('idle');
+  }
+};
 
   const updateConfig = (key, val) => {
     setInv(prev => ({ 
