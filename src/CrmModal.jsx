@@ -38,10 +38,11 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
 
   const [copiedStates, setCopiedStates] = useState({});
   const [vipGuests, setVipGuests] = useState([]);
-  const [photos, setPhotos] = useState([]); // Estado para las fotos del proyector
   
   const manualGuests = activeInv?.internal_data?.guests || [];
   const useTables = activeInv?.internal_data?.useTables || false;
+  // Leemos las fotos directamente del JSON del evento
+  const livePhotos = activeInv?.internal_data?.live_photos || []; 
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -57,17 +58,7 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
       }
     };
 
-    const fetchPhotos = async () => {
-      const { data: eventData } = await supabase.from('invitaciones').select('id').eq('slug', activeInv.id).single();
-      const targetId = eventData ? eventData.id : activeInv.id;
-      
-      // Asegurate de que tu tabla se llame 'fotos', de lo contrario cambialo aquí
-      const { data: photosData } = await supabase.from('fotos').select('*').eq('evento_id', targetId).order('created_at', { ascending: false });
-      if (photosData) setPhotos(photosData);
-    };
-
     if (activeTab === 'guests') fetchVipGuests();
-    if (activeTab === 'projector') fetchPhotos();
   }, [activeInv.id, activeTab]);
 
   const allGuests = [
@@ -142,15 +133,19 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
     }
   };
 
-  const handleDeletePhoto = async (photoId) => {
-    if(!window.confirm("¿Seguro que querés eliminar esta foto? Se quitará de la galería y del proyector en vivo.")) return;
-    await supabase.from('fotos').delete().eq('id', photoId);
-    setPhotos(photos.filter(p => p.id !== photoId));
+  // NUEVA LÓGICA DE BORRADO DE FOTOS (Filtra el array y actualiza el JSON)
+  const handleDeletePhoto = (photoUrl) => {
+    if(!window.confirm("¿Seguro que querés eliminar esta foto? Desaparecerá de la galería y del proyector.")) return;
+    
+    // Filtramos la foto que queremos borrar
+    const updatedPhotos = livePhotos.filter(url => url !== photoUrl);
+    
+    // Actualizamos el JSON internal_data
+    onUpdateInternal(activeInv.id, 'live_photos', updatedPhotos);
   };
 
   const handleExportCSV = () => {
     if(allGuests.length === 0) return alert("No hay invitados aún.");
-    // Se elimina ID Pase del Excel
     let csv = "Nombre Completo,Acompañantes,Mesa,Estado,Fecha de Registro\n";
     allGuests.forEach(g => {
       csv += `${g.name} ${g.lastname},${g.guests},${g.mesa || '-'},${g.status},${new Date(g.timestamp).toLocaleDateString('es-AR')}\n`;
@@ -179,7 +174,6 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
         if(!line.trim()) return;
         const cols = line.split(',');
         
-        // Ajustamos la lectura asumiendo que ya no está el ID Pase
         const fullName = cols[0]?.replace(/['"]/g, '').trim() || "";
         const nameParts = fullName.split(' ');
         const name = nameParts[0] || "";
@@ -197,9 +191,8 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
       });
       
       if (newGuests.length > 0) {
-        // Reemplaza directamente la lista para evitar duplicados
         onUpdateInternal(activeInv.id, 'guests', newGuests);
-        alert(`¡Importación exitosa! Se ha reemplazado la lista con ${newGuests.length} invitados (Los Pases VIP app no se borran).`);
+        alert(`¡Importación exitosa! Se ha reemplazado la lista con ${newGuests.length} invitados.`);
       } else {
         alert("No se encontraron invitados en el archivo. Asegurate de que sea un archivo CSV separado por comas.");
       }
@@ -353,7 +346,6 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                 </button>
               </div>
 
-              {/* NUEVO LINK PARA CLIENTES/GESTIÓN */}
               <div className="bg-purple-50 border border-purple-200 rounded-2xl p-4 md:p-5 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                   <h4 className="text-purple-800 font-black text-base mb-1 flex items-center gap-2"><ClipboardList size={18}/> Panel de Gestión para el Cliente</h4>
@@ -455,17 +447,18 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                 </p>
               </div>
 
-              {photos.length === 0 ? (
+              {livePhotos.length === 0 ? (
                  <div className="text-center py-20 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
                    <p className="text-slate-400 font-bold">Aún no hay fotos subidas por los invitados.</p>
                  </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                   {photos.map(p => (
-                      <div key={p.id} className="relative group aspect-square bg-slate-100 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                         <img src={p.url} alt="Foto del evento" className="w-full h-full object-cover" />
+                   {/* Iteramos directamente sobre el array de strings (URLs) */}
+                   {livePhotos.map((url, i) => (
+                      <div key={i} className="relative group aspect-square bg-slate-100 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                         <img src={url} alt={`Foto del evento ${i}`} className="w-full h-full object-cover" />
                          <button 
-                           onClick={() => handleDeletePhoto(p.id)} 
+                           onClick={() => handleDeletePhoto(url)} 
                            className="absolute top-2 right-2 bg-red-500 text-white w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 shadow-lg cursor-pointer"
                            title="Eliminar foto"
                          >
