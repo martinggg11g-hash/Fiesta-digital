@@ -24,7 +24,6 @@ const getTodaySpanish = () => {
   return `${today.getDate()} de ${months[today.getMonth()]} de ${today.getFullYear()}`;
 };
 
-// 👇 CAMBIO: Se agrega onUpdateConfig a los props
 export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal, onUpdateConfig, isDark }) => {
   const [activeTab, setActiveTab] = useState("info");
   const [printMode, setPrintMode] = useState("ficha");
@@ -46,15 +45,12 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
 
   useEffect(() => {
     const fetchVipGuests = async () => {
-      // 1. Buscamos el ID real consultando la tabla 'invitaciones' por el slug
       const { data: eventData } = await supabase.from('invitaciones').select('id').eq('slug', activeInv.id).single();
       
-      // 2. Si lo encuentra, traemos los invitados usando ese ID
       if (eventData) {
         const { data: guestsData } = await supabase.from('invitados').select('*').eq('evento_id', eventData.id).order('created_at', { ascending: false });
         if (guestsData) setVipGuests(guestsData);
       } else {
-        // Fallback: Por si activeInv.id ya estuviera enviando el UUID directamente en vez del slug
         const { data: guestsDataAlt } = await supabase.from('invitados').select('*').eq('evento_id', activeInv.id).order('created_at', { ascending: false });
         if (guestsDataAlt) setVipGuests(guestsDataAlt);
       }
@@ -102,7 +98,6 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
   const saveGuest = async () => {
     if(!gName && !editingGuest?.isVip) return alert("Falta nombre");
     
-    // MAGIA DEL FORMATO MESA
     let finalTable = gTable.trim();
     if (finalTable && !finalTable.toLowerCase().startsWith('mesa')) {
         finalTable = `Mesa ${finalTable}`;
@@ -251,7 +246,6 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                  </div>
                  <div>
                     <h3 className="text-xs font-black text-violet-500 uppercase tracking-widest mb-4 border-b border-slate-200/20 pb-2 flex items-center gap-2"><PartyPopper size={14}/> Detalles del Evento</h3>
-                    {/* 👇 CAMBIO: Nombre del agasajado ahora edita activeInv.config via onUpdateConfig */}
                     <Inp label="Nombre del Agasajado/s" value={activeInv.config?.honoreeName || ''} onChange={v => onUpdateConfig(activeInv.id, 'honoreeName', v)} isDark={isDark} />
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       
@@ -279,7 +273,6 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                         </select>
                       </div>
                     </div>
-                    {/* 👇 CAMBIO: Fecha y Horario ahora editan activeInv.config via onUpdateConfig */}
                     <div className="grid grid-cols-2 gap-4">
                        <Inp label="Fecha" type="date" icon={CalendarClock} value={activeInv.config?.date || ''} onChange={v => onUpdateConfig(activeInv.id, 'date', v)} isDark={isDark} />
                        <Inp label="Horario" type="text" placeholder="Ej: 14:00 a 20:00" icon={Clock} value={activeInv.config?.time || ''} onChange={v => onUpdateConfig(activeInv.id, 'time', v)} isDark={isDark} />
@@ -339,10 +332,26 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                   <h3 className={`font-black text-xl flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-800'}`}><Users className="text-violet-500" size={24}/> Control de Accesos</h3>
                   <div className="flex items-center gap-4 mt-2">
                     <p className="text-slate-500 text-sm">Asistentes: <strong className="text-violet-600">{allGuests.reduce((acc, g) => acc + Number(g.guests || 0), 0)}</strong></p>
+                    
                     <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
                       <span className="text-xs font-bold text-slate-500">Asignar Mesas</span>
                       <Toggle checked={useTables} onChange={val => onUpdateInternal(activeInv.id, 'useTables', val)} />
                     </div>
+
+                    {/* 👇 NUEVO: INPUT PARA EL LÍMITE DE MESAS (Controlado por el CRM) */}
+                    {useTables && (
+                      <div className="flex items-center gap-2 bg-violet-50 dark:bg-violet-900/20 px-3 py-1 rounded-lg border border-violet-200 dark:border-violet-800">
+                         <span className="text-[10px] font-black uppercase text-violet-600 dark:text-violet-400">Límite x Mesa:</span>
+                         <input 
+                           type="number" 
+                           min="1"
+                           className="w-12 bg-transparent text-center text-sm font-black text-violet-800 dark:text-violet-300 outline-none"
+                           value={activeInv.config?.max_por_mesa || 10}
+                           onChange={e => onUpdateConfig(activeInv.id, 'max_por_mesa', Number(e.target.value))}
+                         />
+                      </div>
+                    )}
+                    
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -467,10 +476,8 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                 <div>
                   <h3 style={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '2px', color: '#94a3b8', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px', marginBottom: '12px' }}>1. Detalles del Evento</h3>
                   <div style={{ fontSize: '14px', lineHeight: '1.6' }}>
-                    {/* 👇 CAMBIO: Usamos activeInv.config?.honoreeName para el agasajado */}
                     <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Agasajado:</span> <span style={{ fontWeight: '900', fontSize: '18px' }}>{activeInv.config?.honoreeName || activeInv.title}</span></p>
                     <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Tipo:</span> {activeInv.internal_data.eventType || '---'}</p>
-                    {/* 👇 CAMBIO: Usamos activeInv.config?.date y activeInv.config?.time */}
                     <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Fecha:</span> {formatDateSpanish(activeInv.config?.date)}</p>
                     <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Horario:</span> {activeInv.config?.time || '---'} hs</p>
                   </div>
@@ -511,10 +518,8 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                 <div>
                   <h2 style={{ fontSize: '24px', fontWeight: '900', color: '#1e293b', letterSpacing: '2px', margin: '0 0 4px 0', textTransform: 'uppercase' }}>LISTA DE ACCESOS</h2>
                   <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#475569', margin: '0 0 4px 0' }}>
-                    {/* 👇 CAMBIO: Usamos activeInv.config?.honoreeName */}
                     Evento: {activeInv.config?.honoreeName || activeInv.title}
                   </p>
-                  {/* 👇 CAMBIO: Usamos activeInv.config?.date */}
                   <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>Fecha: {formatDateSpanish(activeInv.config?.date)}</p>
                 </div>
                 <div style={{ textAlign: 'right' }}>
