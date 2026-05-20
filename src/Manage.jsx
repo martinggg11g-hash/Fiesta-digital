@@ -73,12 +73,11 @@ export const ManageScreen = () => {
   const [newGuest, setNewGuest] = useState({ nombre_completo: '', apodo: '', max_acompanantes: 0 });
   const [adding, setAdding] = useState(false);
 
-  const [maxPaxPorMesa, setMaxPaxPorMesa] = useState(10);
-  
-  // 👉 ESTADOS PARA EL MENSAJE DE WHATSAPP
-  const defaultWaMsg = "¡Hola [Nombre]! Te comparto tu pase VIP para nuestro evento. Por favor confirmá tu asistencia acá:\n\n[Link]";
-  const [waTemplate, setWaTemplate] = useState(defaultWaMsg);
+  // 👉 ESTADO DE WHATSAPP TEMPLATE
+  const [waTemplate, setWaTemplate] = useState('');
   const [savingMsg, setSavingMsg] = useState(false);
+
+  const [maxPaxPorMesa, setMaxPaxPorMesa] = useState(10);
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -94,16 +93,14 @@ export const ManageScreen = () => {
          const verifiedRealId = data.evento_id || data.id; 
          setRealDbId(verifiedRealId);
 
-         if (data.salonId) {
-             const { data: salonData } = await supabase.from('salones').select('max_por_mesa').eq('email', data.salonId).single();
+         // Cargar plantilla de WhatsApp si existe, sino poner una por defecto
+         setWaTemplate(data.config?.whatsappMsg || '¡Hola [Nombre]! Te comparto tu pase VIP para nuestro evento. Por favor confirmá tu asistencia acá: [Link]');
+
+         if (data.salon_id) {
+             const { data: salonData } = await supabase.from('salones').select('max_por_mesa').eq('email', data.salon_id).single();
              if (salonData && salonData.max_por_mesa) {
                  setMaxPaxPorMesa(salonData.max_por_mesa);
              }
-         }
-
-         // Cargamos el mensaje guardado (si existe)
-         if (data.config?.whatsappMsg) {
-             setWaTemplate(data.config.whatsappMsg);
          }
 
          if (!data.config?.clientPin || isProjectorMode) setIsAuthenticated(true);
@@ -149,7 +146,6 @@ export const ManageScreen = () => {
      }]).select();
 
      if (error) {
-        console.error("SUPABASE ERROR:", error);
         alert(`Error al guardar: ${error.message}`);
      } else if (data) {
         setInvitados([data[0], ...invitados]);
@@ -204,26 +200,14 @@ export const ManageScreen = () => {
      alert("¡Link copiado al portapapeles!");
   };
 
-  // 👉 LÓGICA DE ENVÍO CON VARIABLES DINÁMICAS
-  const sendWhatsApp = (invitado) => {
-     const link = `${window.location.origin}/invite/${eventSlug}?guest=${invitado.id}`;
-     const nombreAMostrar = invitado.apodo || invitado.nombre_completo;
-     
-     // Reemplazamos las variables mágicas por los datos reales
-     let text = waTemplate;
-     text = text.replace(/\[Nombre\]/g, nombreAMostrar);
-     text = text.replace(/\[Link\]/g, link);
-     
-     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-  };
-
-  // 👉 GUARDAR LA PLANTILLA DE WHATSAPP EN SUPABASE
+  // 👉 ACCIONES DE WHATSAPP TEMPLATE
   const handleSaveWaTemplate = async () => {
     setSavingMsg(true);
     const updatedConfig = { ...eventData.config, whatsappMsg: waTemplate };
     const { error } = await supabase.from('invitaciones').update({ config: updatedConfig }).eq('id', eventSlug);
+    
     if (error) {
-      alert("Error al guardar: " + error.message);
+      alert("Error al guardar la plantilla: " + error.message);
     } else {
       setEventData({ ...eventData, config: updatedConfig });
       alert("¡Plantilla guardada con éxito!");
@@ -232,7 +216,19 @@ export const ManageScreen = () => {
   };
 
   const insertVariable = (variable) => {
-    setWaTemplate(prev => prev + variable);
+    setWaTemplate(prev => prev + (prev.endsWith(' ') ? '' : ' ') + `[${variable}] `);
+  };
+
+  const sendWhatsApp = (invitado) => {
+     const link = `${window.location.origin}/invite/${eventSlug}?guest=${invitado.id}`;
+     const nombreAMostrar = invitado.apodo || invitado.nombre_completo;
+     
+     // El motor mágico de reemplazo
+     const finalMessage = waTemplate
+       .replace(/\[Nombre\]/gi, nombreAMostrar)
+       .replace(/\[Link\]/gi, link);
+
+     window.open(`https://wa.me/?text=${encodeURIComponent(finalMessage)}`, '_blank');
   };
 
   if (loading) return <div className="flex h-screen items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-violet-600" size={40} /></div>;
@@ -295,19 +291,52 @@ export const ManageScreen = () => {
               </div>
            </div>
 
-           {/* 👉 MENÚ DE PESTAÑAS (Ahora con 3 opciones) */}
-           <div className="flex bg-white p-2 rounded-2xl border border-slate-100 shadow-sm w-full max-w-lg mx-auto md:mx-0">
-              <button onClick={() => setActiveTab('lista')} className={`flex-1 py-3 text-[11px] font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'lista' ? 'bg-violet-50 text-violet-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>👥 Invitados</button>
-              <button onClick={() => setActiveTab('mesas')} className={`flex-1 py-3 text-[11px] font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'mesas' ? 'bg-violet-50 text-violet-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>🪑 Mesas</button>
-              <button onClick={() => setActiveTab('whatsapp')} className={`flex-1 py-3 text-[11px] font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'whatsapp' ? 'bg-[#25D366]/10 text-[#128C7E] shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>💬 Mensaje WP</button>
+           <div className="flex bg-white p-2 rounded-2xl border border-slate-100 shadow-sm w-full max-w-lg mx-auto md:mx-0 overflow-x-auto">
+              <button onClick={() => setActiveTab('lista')} className={`flex-1 min-w-[120px] py-3 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'lista' ? 'bg-violet-50 text-violet-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>👥 Invitados</button>
+              <button onClick={() => setActiveTab('mesas')} className={`flex-1 min-w-[120px] py-3 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'mesas' ? 'bg-violet-50 text-violet-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>🪑 Mesas</button>
+              <button onClick={() => setActiveTab('whatsapp')} className={`flex-1 min-w-[120px] py-3 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'whatsapp' ? 'bg-[#25D366]/10 text-[#25D366] shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>💬 WhatsApp</button>
            </div>
 
-           {/* ============================== */}
-           {/* PESTAÑA: LISTA DE INVITADOS */}
-           {/* ============================== */}
+           {activeTab === 'whatsapp' && (
+             <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-100 shadow-sm animate-in fade-in duration-300">
+               <div className="max-w-2xl">
+                 <h2 className="text-xl font-black text-slate-800 mb-2 flex items-center gap-2"><MessageCircle className="text-[#25D366]"/> Mensaje Automático</h2>
+                 <p className="text-sm text-slate-500 mb-6">Armá la plantilla que se enviará cuando hagas clic en el botón de WhatsApp en la lista de invitados. Usá los botones para insertar el nombre y el link automáticamente.</p>
+                 
+                 <div className="mb-4 flex flex-wrap gap-2">
+                   <button onClick={() => insertVariable('Nombre')} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg border border-slate-200 transition-colors">+ [Nombre]</button>
+                   <button onClick={() => insertVariable('Link')} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg border border-slate-200 transition-colors">+ [Link]</button>
+                 </div>
+
+                 <textarea 
+                   className="w-full h-40 p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-[#25D366] resize-none font-medium mb-4"
+                   value={waTemplate}
+                   onChange={(e) => setWaTemplate(e.target.value)}
+                   placeholder="Escribí tu mensaje acá..."
+                 />
+
+                 <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-6">
+                   <p className="text-[10px] font-black uppercase text-blue-400 mb-2 tracking-widest">Vista Previa (Ejemplo)</p>
+                   <p className="text-sm text-blue-900 whitespace-pre-wrap">
+                     {waTemplate.replace(/\[Nombre\]/gi, 'Juan Pérez').replace(/\[Link\]/gi, 'https://defiesta.lat/invite/evt-demo')}
+                   </p>
+                 </div>
+
+                 <button 
+                   onClick={handleSaveWaTemplate} 
+                   disabled={savingMsg}
+                   className="py-4 px-8 bg-[#25D366] hover:bg-[#20bd5a] text-white font-black uppercase tracking-widest rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+                 >
+                   {savingMsg ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                   {savingMsg ? 'Guardando...' : 'Guardar Mensaje'}
+                 </button>
+               </div>
+             </div>
+           )}
+
            {activeTab === 'lista' && (
              <>
-               <form onSubmit={handleAddGuest} className="bg-white p-6 md:p-8 rounded-3xl border border-slate-100 shadow-sm flex flex-col md:flex-row gap-4 items-end">
+               <form onSubmit={handleAddGuest} className="bg-white p-6 md:p-8 rounded-3xl border border-slate-100 shadow-sm flex flex-col md:flex-row gap-4 items-end animate-in fade-in duration-300">
                   <div className="flex-1 w-full"><label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Nombre y Apellido *</label><input type="text" required value={newGuest.nombre_completo} onChange={e=>setNewGuest({...newGuest, nombre_completo: e.target.value})} placeholder="Ej: Familia Pérez" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-violet-500 font-medium" /></div>
                   <div className="flex-1 w-full"><label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Apodo (Opcional)</label><input type="text" value={newGuest.apodo} onChange={e=>setNewGuest({...newGuest, apodo: e.target.value})} placeholder="Ej: Los Tíos" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-violet-500 font-medium" /></div>
                   <div className="w-full md:w-32"><label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Pases Extra</label><input type="number" min="0" value={newGuest.max_acompanantes} onChange={e=>setNewGuest({...newGuest, max_acompanantes: Number(e.target.value)})} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-violet-500 text-center font-bold" /></div>
@@ -316,7 +345,7 @@ export const ManageScreen = () => {
                   </button>
                </form>
 
-               <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+               <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden animate-in fade-in duration-300">
                   {invitados.length === 0 ? (
                      <div className="p-16 text-center text-slate-400"><Users size={64} className="mx-auto mb-4 opacity-20"/><p className="font-medium text-lg">Todavía no agregaste a nadie.</p><p className="text-sm">Usá el formulario de arriba para armar tu lista VIP.</p></div>
                   ) : (
@@ -345,117 +374,69 @@ export const ManageScreen = () => {
              </>
            )}
 
-           {/* ============================== */}
-           {/* PESTAÑA: ORGANIZADOR DE MESAS */}
-           {/* ============================== */}
            {activeTab === 'mesas' && (
-             <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-                
-                <div className="mb-6 border-b border-slate-100 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div>
-                    <h2 className="text-lg font-black text-slate-800">Organizador de Mesas</h2>
-                    <p className="text-xs text-slate-500 font-medium mt-1">Arrastrá a los invitados confirmados hacia su mesa.</p>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 bg-slate-50 p-2 px-4 rounded-xl border border-slate-200">
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Capacidad Máxima:</span>
-                    <span className="text-sm font-black text-slate-800">{maxPaxPorMesa} pax/mesa</span>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {['Sin Asignar', 'Mesa 1', 'Mesa 2', 'Mesa 3', 'Mesa 4', 'Mesa 5', 'Mesa 6', 'Mesa 7', 'Mesa 8', 'Mesa 9', 'Mesa 10'].map((mesaNombre) => {
-                     const invitadosMesa = invitados.filter(i => i.asistencia_confirmada && (i.mesa === mesaNombre || (!i.mesa && mesaNombre === 'Sin Asignar')));
-                     
-                     if (mesaNombre !== 'Sin Asignar' && invitadosMesa.length === 0) {
-                        return (
-                           <div key={mesaNombre} onDragOver={e => e.preventDefault()} onDrop={e => handleDrop(e, mesaNombre)} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 border-dashed opacity-50 hover:opacity-100 transition-opacity min-h-[150px]">
-                             <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3">{mesaNombre}</h3>
-                             <p className="text-[10px] font-bold text-slate-400 text-center mt-8">Soltar aquí</p>
-                           </div>
-                        );
-                     }
+             <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm animate-in fade-in duration-300">
+               
+               <div className="mb-6 border-b border-slate-100 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                 <div>
+                   <h2 className="text-lg font-black text-slate-800">Organizador de Mesas</h2>
+                   <p className="text-xs text-slate-500 font-medium mt-1">Arrastrá a los invitados confirmados hacia su mesa.</p>
+                 </div>
+                 
+                 <div className="flex items-center gap-2 bg-slate-50 p-2 px-4 rounded-xl border border-slate-200">
+                   <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Capacidad Máxima:</span>
+                   <span className="text-sm font-black text-slate-800">{maxPaxPorMesa} pax/mesa</span>
+                 </div>
+               </div>
+               
+               <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-6">
+                 {['Sin Asignar', 'Mesa 1', 'Mesa 2', 'Mesa 3', 'Mesa 4', 'Mesa 5', 'Mesa 6', 'Mesa 7', 'Mesa 8', 'Mesa 9', 'Mesa 10'].map((mesaNombre) => {
+                    const invitadosMesa = invitados.filter(i => i.asistencia_confirmada && (i.mesa === mesaNombre || (!i.mesa && mesaNombre === 'Sin Asignar')));
+                    
+                    if (mesaNombre !== 'Sin Asignar' && invitadosMesa.length === 0) {
+                       return (
+                          <div key={mesaNombre} onDragOver={e => e.preventDefault()} onDrop={e => handleDrop(e, mesaNombre)} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 border-dashed opacity-50 hover:opacity-100 transition-opacity min-h-[150px]">
+                            <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3">{mesaNombre}</h3>
+                            <p className="text-[10px] font-bold text-slate-400 text-center mt-8">Soltar aquí</p>
+                          </div>
+                       );
+                    }
 
-                     return (
-                       <div key={mesaNombre} onDragOver={e => e.preventDefault()} onDrop={e => handleDrop(e, mesaNombre)} className={`p-4 rounded-2xl border min-h-[150px] transition-colors ${mesaNombre === 'Sin Asignar' ? 'bg-orange-50 border-orange-200' : 'bg-violet-50 border-violet-200'}`}>
-                         <div className="flex justify-between items-center mb-4">
-                           <h3 className={`text-xs font-black uppercase tracking-widest ${mesaNombre === 'Sin Asignar' ? 'text-orange-700' : 'text-violet-700'}`}>{mesaNombre}</h3>
-                           <span className="text-[10px] font-bold bg-white px-2 py-0.5 rounded-md shadow-sm">{invitadosMesa.length} Pax</span>
-                         </div>
-                         
-                         <div className="space-y-2">
-                           {invitadosMesa.map(inv => (
-                             <div key={inv.id} draggable onDragStart={e => handleDragStart(e, inv.id)} className="p-3 bg-white border border-slate-100 rounded-xl shadow-sm cursor-grab active:cursor-grabbing flex flex-col md:flex-row md:items-center gap-2 md:gap-3 hover:border-violet-300 transition-colors group">
-                               <div className="flex items-center gap-3 w-full">
-                                 <GripVertical size={14} className="text-slate-300 group-hover:text-violet-400 hidden md:block" />
-                                 <div className="flex-1 min-w-0">
-                                   <p className="text-xs font-bold text-slate-800 truncate" title={inv.nombre_completo}>{inv.nombre_completo}</p>
-                                   {(inv.acompanantes_confirmados > 0) && <p className="text-[9px] text-slate-500 font-medium">+{inv.acompanantes_confirmados} acomp.</p>}
-                                 </div>
-                               </div>
+                    return (
+                      <div key={mesaNombre} onDragOver={e => e.preventDefault()} onDrop={e => handleDrop(e, mesaNombre)} className={`p-4 rounded-2xl border min-h-[150px] transition-colors ${mesaNombre === 'Sin Asignar' ? 'bg-orange-50 border-orange-200' : 'bg-violet-50 border-violet-200'}`}>
+                        <div className="flex justify-between items-center mb-4">
+                          <h3 className={`text-xs font-black uppercase tracking-widest ${mesaNombre === 'Sin Asignar' ? 'text-orange-700' : 'text-violet-700'}`}>{mesaNombre}</h3>
+                          <span className="text-[10px] font-bold bg-white px-2 py-0.5 rounded-md shadow-sm">{invitadosMesa.length} Pax</span>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          {invitadosMesa.map(inv => (
+                            <div key={inv.id} draggable onDragStart={e => handleDragStart(e, inv.id)} className="p-3 bg-white border border-slate-100 rounded-xl shadow-sm cursor-grab active:cursor-grabbing flex flex-col md:flex-row md:items-center gap-2 md:gap-3 hover:border-violet-300 transition-colors group">
+                              <div className="flex items-center gap-3 w-full">
+                                <GripVertical size={14} className="text-slate-300 group-hover:text-violet-400 hidden md:block" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-bold text-slate-800 truncate" title={inv.nombre_completo}>{inv.nombre_completo}</p>
+                                  {(inv.acompanantes_confirmados > 0) && <p className="text-[9px] text-slate-500 font-medium">+{inv.acompanantes_confirmados} acomp.</p>}
+                                </div>
+                              </div>
 
-                               <select 
-                                 value={mesaNombre} 
-                                 onChange={(e) => handleUpdateMesa(inv.id, e.target.value)}
-                                 className="md:hidden w-full mt-2 text-[10px] p-2 font-bold rounded-lg border border-slate-200 bg-slate-50 text-slate-600 outline-none focus:border-violet-400"
-                               >
-                                 <option value="Sin Asignar" disabled={mesaNombre === 'Sin Asignar'}>Mover a...</option>
-                                 {['Sin Asignar', 'Mesa 1', 'Mesa 2', 'Mesa 3', 'Mesa 4', 'Mesa 5', 'Mesa 6', 'Mesa 7', 'Mesa 8', 'Mesa 9', 'Mesa 10'].map(opcion => (
-                                   <option key={opcion} value={opcion}>{opcion}</option>
-                                 ))}
-                               </select>
-                             </div>
-                           ))}
-                         </div>
-                       </div>
-                     );
-                  })}
-                </div>
-             </div>
-           )}
-
-           {/* ============================== */}
-           {/* PESTAÑA: PLANTILLA DE WHATSAPP */}
-           {/* ============================== */}
-           {activeTab === 'whatsapp' && (
-             <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-100 shadow-sm max-w-3xl mx-auto">
-                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
-                   <div className="w-12 h-12 bg-[#25D366]/10 text-[#128C7E] rounded-xl flex items-center justify-center">
-                      <MessageCircle size={24} />
-                   </div>
-                   <div>
-                     <h2 className="text-lg font-black text-slate-800">Mensaje de WhatsApp</h2>
-                     <p className="text-xs text-slate-500 font-medium mt-1">Armá la plantilla que se enviará a tus invitados con su link VIP.</p>
-                   </div>
-                </div>
-
-                <div className="mb-4 flex flex-wrap gap-2">
-                   <span className="text-[10px] font-black uppercase text-slate-400 mr-2 flex items-center">Insertar:</span>
-                   <button onClick={() => insertVariable('[Nombre]')} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors">
-                     👋 [Nombre]
-                   </button>
-                   <button onClick={() => insertVariable('[Link]')} className="px-3 py-1.5 bg-violet-100 hover:bg-violet-200 text-violet-700 rounded-lg text-xs font-bold transition-colors">
-                     🔗 [Link]
-                   </button>
-                </div>
-
-                <textarea 
-                   className="w-full h-48 p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-[#25D366] focus:ring-2 focus:ring-[#25D366]/20 transition-all font-medium text-slate-700 resize-none leading-relaxed"
-                   value={waTemplate}
-                   onChange={e => setWaTemplate(e.target.value)}
-                   placeholder="Escribí tu mensaje acá..."
-                />
-
-                <div className="mt-6 flex justify-end">
-                   <button 
-                     onClick={handleSaveWaTemplate} 
-                     disabled={savingMsg}
-                     className="px-8 py-4 bg-[#25D366] hover:bg-[#128C7E] text-white font-black uppercase tracking-widest rounded-xl transition-all active:scale-95 flex items-center gap-2 disabled:opacity-50 shadow-lg shadow-[#25D366]/20"
-                   >
-                     {savingMsg ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                     {savingMsg ? 'Guardando...' : 'Guardar Mensaje'}
-                   </button>
-                </div>
+                              <select 
+                                value={mesaNombre} 
+                                onChange={(e) => handleUpdateMesa(inv.id, e.target.value)}
+                                className="md:hidden w-full mt-2 text-[10px] p-2 font-bold rounded-lg border border-slate-200 bg-slate-50 text-slate-600 outline-none focus:border-violet-400"
+                              >
+                                <option value="Sin Asignar" disabled={mesaNombre === 'Sin Asignar'}>Mover a...</option>
+                                {['Sin Asignar', 'Mesa 1', 'Mesa 2', 'Mesa 3', 'Mesa 4', 'Mesa 5', 'Mesa 6', 'Mesa 7', 'Mesa 8', 'Mesa 9', 'Mesa 10'].map(opcion => (
+                                  <option key={opcion} value={opcion}>{opcion}</option>
+                                ))}
+                              </select>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                 })}
+               </div>
              </div>
            )}
 
