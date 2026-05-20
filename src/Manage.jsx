@@ -74,7 +74,7 @@ export const ManageScreen = () => {
   const [newGuest, setNewGuest] = useState({ nombre_completo: '', apodo: '', max_acompanantes: 0 });
   const [adding, setAdding] = useState(false);
 
-  // 👉 ESTADO PARA EL LÍMITE DE MESAS
+  // 👉 ESTADO PARA EL LÍMITE DE MESAS (Se lee desde Supabase, no se edita acá)
   const [maxPaxPorMesa, setMaxPaxPorMesa] = useState(10);
 
   useEffect(() => {
@@ -92,7 +92,7 @@ export const ManageScreen = () => {
          const verifiedRealId = data.evento_id || data.id; 
          setRealDbId(verifiedRealId);
 
-         // 👉 CARGAMOS EL LÍMITE DESDE LA BASE DE DATOS (si existe)
+         // 👉 CARGAMOS EL LÍMITE DESDE LA BASE DE DATOS FIJADO POR EL CRM
          if (data.config?.max_por_mesa) {
              setMaxPaxPorMesa(data.config.max_por_mesa);
          }
@@ -159,28 +159,6 @@ export const ManageScreen = () => {
      setInvitados(invitados.filter(i => i.id !== id));
   };
 
-  // 👉 ACTUALIZAR LÍMITE DE MESAS EN SUPABASE
-  const handleUpdateMaxPax = async (nuevoMaximo) => {
-    setMaxPaxPorMesa(nuevoMaximo);
-    
-    // Mantenemos el resto de la configuración intacta
-    const updatedConfig = { 
-      ...(eventData?.config || {}), 
-      max_por_mesa: nuevoMaximo 
-    };
-
-    const { error } = await supabase
-      .from('invitaciones')
-      .update({ config: updatedConfig })
-      .eq('id', eventSlug);
-
-    if (error) {
-      alert("Error al guardar el límite en la base de datos: " + error.message);
-    } else {
-      setEventData({ ...eventData, config: updatedConfig });
-    }
-  };
-
   // 👉 MOVER INVITADO DE MESA (CON VALIDACIÓN DE LÍMITE)
   const handleUpdateMesa = async (guestId, nuevaMesa) => {
     if (nuevaMesa !== 'Sin Asignar') {
@@ -193,7 +171,7 @@ export const ManageScreen = () => {
       const invitadoAMover = invitados.find(i => i.id === guestId);
       const lugaresNecesarios = 1 + (invitadoAMover.acompanantes_confirmados || 0);
 
-      // Validamos límite
+      // Validamos límite (que fue impuesto por el CRM)
       if (ocupantesActuales + lugaresNecesarios > maxPaxPorMesa) {
         alert(`⚠️ Capacidad excedida: La ${nuevaMesa} tiene límite de ${maxPaxPorMesa} pax. (Hay ${ocupantesActuales} personas y querés sumar ${lugaresNecesarios}).`);
         return; // Frenamos la actualización
@@ -334,33 +312,18 @@ export const ManageScreen = () => {
            )}
 
            {activeTab === 'mesas' && (
-  <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-    <div className="mb-6 border-b border-slate-100 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <div>
-        <h2 className="text-lg font-black text-slate-800">Organizador de Mesas</h2>
-        <p className="text-xs text-slate-500 font-medium mt-1">Arrastrá a los invitados confirmados hacia su mesa.</p>
-      </div>
-      
-      {/* EL CLIENTE SOLO VE EL LÍMITE, NO LO PUEDE EDITAR */}
-      <div className="flex items-center gap-2 bg-slate-50 p-2 px-4 rounded-xl border border-slate-200">
-        <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Capacidad Máxima:</span>
-        <span className="text-sm font-black text-slate-800">{maxPaxPorMesa} pax/mesa</span>
-      </div>
-    </div>
-    
-    {/* ... acá abajo sigue tu grilla normal de mesas (grid-cols-1 md:grid-cols-3) ... */}
+             <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                
+                {/* 👉 CABECERA DONDE EL CLIENTE SOLO VE EL LÍMITE */}
+                <div className="mb-6 border-b border-slate-100 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-lg font-black text-slate-800">Organizador de Mesas</h2>
+                    <p className="text-xs text-slate-500 font-medium mt-1">Arrastrá a los invitados confirmados hacia su mesa.</p>
+                  </div>
                   
-                  <div className="flex items-center gap-3 bg-violet-50 p-2 pl-4 rounded-xl border border-violet-100">
-                    <label className="text-xs font-bold text-violet-700 uppercase tracking-wide">Límite por Mesa:</label>
-                    <input 
-                      type="number" 
-                      min="1" 
-                      value={maxPaxPorMesa} 
-                      onChange={(e) => setMaxPaxPorMesa(Number(e.target.value))}
-                      onBlur={(e) => handleUpdateMaxPax(Number(e.target.value))} 
-                      className="w-16 p-2 text-center text-sm font-black border border-violet-200 rounded-lg outline-none focus:border-violet-500 text-violet-900 bg-white"
-                      title="Se guarda automáticamente al hacer clic afuera"
-                    />
+                  <div className="flex items-center gap-2 bg-slate-50 p-2 px-4 rounded-xl border border-slate-200">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Capacidad Máxima:</span>
+                    <span className="text-sm font-black text-slate-800">{maxPaxPorMesa} pax/mesa</span>
                   </div>
                 </div>
                 
