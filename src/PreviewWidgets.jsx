@@ -130,7 +130,6 @@ export const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP, 
 
   const isEditor = window.location.pathname.includes('/editor');
 
-  // 👉 BARRERA DE PRODUCCIÓN: Si es lista privada, entran por link general y NO es el editor... CANDADO.
   if (cfg.isPrivateList && !guestData && !isEditor) {
     return (
       <div className="pt-8 text-center">
@@ -250,13 +249,35 @@ export const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP, 
           {shineOverlay}
           <div className="relative z-10 space-y-4">
             
-            {/* 👉 TEXTO NUEVO INCORPORADO CON COLOR DINÁMICO */}
             <p className="text-[11px] font-bold uppercase tracking-widest text-center px-2 mb-2" style={{ color: mutedC }}>
               Recuerda generar solo un pase por persona para asegurar tu ingreso rápido.
             </p>
 
-            <input type="text" placeholder="Tu Nombre" className="w-full p-4 rounded-xl outline-none font-bold placeholder-opacity-50" style={{ background: `${textC}0d`, color: textC, border: `1px solid ${textC}1a` }} onChange={e=>setFormData({...formData, name: e.target.value})} required />
-            <input type="text" placeholder="Tu Apellido" className="w-full p-4 rounded-xl outline-none font-bold placeholder-opacity-50" style={{ background: `${textC}0d`, color: textC, border: `1px solid ${textC}1a` }} onChange={e=>setFormData({...formData, lastname: e.target.value})} required />
+            {/* 👉 ATRIBUTOS EN ESPAÑOL AÑADIDOS A LOS INPUTS */}
+            <input 
+              type="text" 
+              placeholder="Tu Nombre" 
+              title="Ingresá tu nombre"
+              onInvalid={(e) => e.target.setCustomValidity('Por favor, ingresá tu nombre')}
+              onInput={(e) => e.target.setCustomValidity('')}
+              className="w-full p-4 rounded-xl outline-none font-bold placeholder-opacity-50" 
+              style={{ background: `${textC}0d`, color: textC, border: `1px solid ${textC}1a` }} 
+              onChange={e=>setFormData({...formData, name: e.target.value})} 
+              required 
+            />
+            
+            <input 
+              type="text" 
+              placeholder="Tu Apellido" 
+              title="Ingresá tu apellido"
+              onInvalid={(e) => e.target.setCustomValidity('Por favor, ingresá tu apellido')}
+              onInput={(e) => e.target.setCustomValidity('')}
+              className="w-full p-4 rounded-xl outline-none font-bold placeholder-opacity-50" 
+              style={{ background: `${textC}0d`, color: textC, border: `1px solid ${textC}1a` }} 
+              onChange={e=>setFormData({...formData, lastname: e.target.value})} 
+              required 
+            />
+
             <div className="flex items-center justify-between px-4 py-3 rounded-xl border" style={{ background: `${textC}0d`, borderColor: `${textC}1a` }}>
               <span className="text-xs font-bold flex items-center gap-2" style={{ color: textC }}><Users size={16}/> Extras</span>
               <div className="flex items-center gap-3">
@@ -265,6 +286,7 @@ export const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP, 
                 <button type="button" onClick={() => setFormData({...formData, guests: Math.min(cfg.maxGuestsPerFamily || 5, formData.guests + 1)})} className="w-8 h-8 rounded-lg flex items-center justify-center font-bold transition-transform hover:scale-105" style={{ background: `${textC}1a`, color: textC }}>+</button>
               </div>
             </div>
+            
             <button type="submit" disabled={loading} className="w-full py-4 font-black rounded-[1.5rem] uppercase tracking-widest mt-2 shadow-lg transition-transform active:scale-95 border border-white/20" style={{ background: cfg.accent || primary, color: cardC === '#000000' ? '#000' : '#fff' }}>{loading ? 'Procesando...' : 'GENERAR PASE'}</button>
             <button type="button" onClick={() => setStep('button')} className="w-full mt-2 text-xs font-bold uppercase tracking-widest opacity-60 hover:opacity-100 transition-opacity" style={{ color: textC }}>Cancelar</button>
           </div>
