@@ -298,4 +298,4 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
     </div>
   );
 };
-```</Toggle></Inp>
+
