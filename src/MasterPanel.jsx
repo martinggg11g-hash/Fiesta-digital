@@ -45,7 +45,7 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
   const [fTitular, setFTitular] = useState("");
   const [fIsFree, setFIsFree] = useState(false);
   const [fIsDemo, setFIsDemo] = useState(false);
-  const [fMaxPax, setFMaxPax] = useState(""); // 👉 ESTADO PARA LÍMITE DE MESAS
+  const [fMaxPax, setFMaxPax] = useState(""); 
   const [chatInput, setChatInput] = useState("");
   
   const chatEndRef = useRef(null);
@@ -58,23 +58,34 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
     }
   }, [modalMode, activeSalonChat?.support_chat]);
 
+  // 👉 FUNCIONES INTERCEPTORAS PARA LIMPIAR EVENTOS
+  // Esto evita que los Toggles o Inputs envíen objetos complejos (SyntheticEvents) al estado
+  const setVal = (setter) => (val) => setter(val?.target !== undefined ? val.target.value : (val || ""));
+  const setBool = (setter) => (val) => setter(val?.target !== undefined ? val.target.checked : Boolean(val));
+
   const openCreateModal = () => { 
     setModalMode("create"); 
     setFName(""); setFEmail(""); setFPhone(""); setFPass(""); 
     setFAddress(""); setFPayDate(""); setFAlert(false); 
     setFClabe(""); setFTitular(""); setFIsFree(false); setFIsDemo(false); 
-    setFMaxPax(""); // Reiniciamos el límite de mesas
+    setFMaxPax(""); 
     setShowModal(true); 
   };
 
   const openEditModal = (salon) => { 
-    setModalMode("edit"); setEditingEmail(salon.email); 
-    setFName(salon.name); setFEmail(salon.email); setFPhone(salon.phone || ""); 
-    setFAddress(salon.address || ""); setFPayDate(salon.payment_date || ""); 
-    setFAlert(salon.payment_alert || false); setFClabe(salon.payment_clabe || ""); 
-    setFTitular(salon.payment_titular || ""); setFIsFree(salon.is_free || false); 
+    setModalMode("edit"); 
+    setEditingEmail(salon.email); 
+    setFName(salon.name || ""); 
+    setFEmail(salon.email || ""); 
+    setFPhone(salon.phone || ""); 
+    setFAddress(salon.address || ""); 
+    setFPayDate(salon.payment_date || ""); 
+    setFAlert(salon.payment_alert || false); 
+    setFClabe(salon.payment_clabe || ""); 
+    setFTitular(salon.payment_titular || ""); 
+    setFIsFree(salon.is_free || false); 
     setFIsDemo(salon.is_demo || false); 
-    setFMaxPax(salon.max_pax || ""); // Cargamos el límite de mesas
+    setFMaxPax(salon.max_pax || ""); 
     setShowModal(true); 
   };
 
@@ -83,7 +94,6 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
   const openSupportModal = (salon) => { setModalMode("support"); setEditingEmail(salon.email); setFName(salon.name); setChatInput(""); setShowModal(true); };
 
   const handleSaveModal = () => {
-    // Parseamos el límite a número antes de guardar (si está vacío enviamos un string vacío o undefined según prefieras, aquí lo paso como venga o 0)
     const maxPaxValue = fMaxPax !== "" ? Number(fMaxPax) : ""; 
 
     if (modalMode === "create") {
@@ -91,14 +101,22 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
       onCreateSalon({ 
         name: fName, email: fEmail, pass: fPass, role: "salon", 
         address: fAddress, phone: fPhone, payment_date: fPayDate, 
-        payment_alert: fAlert, payment_clabe: fClabe, payment_titular: fTitular, 
-        is_free: fIsFree, is_demo: fIsDemo, max_pax: maxPaxValue 
+        payment_alert: Boolean(fAlert), payment_clabe: fClabe, payment_titular: fTitular, 
+        is_free: Boolean(fIsFree), is_demo: Boolean(fIsDemo), max_pax: maxPaxValue 
       });
     } else if (modalMode === "edit") {
+      // Usamos el fallback || "" para asegurar que no enviemos valores undefined a la BD
       onUpdateUser(editingEmail, { 
-        name: fName, phone: fPhone, address: fAddress, payment_date: fPayDate, 
-        payment_alert: fAlert, payment_clabe: fClabe, payment_titular: fTitular, 
-        is_free: fIsFree, is_demo: fIsDemo, max_pax: maxPaxValue // 👉 AQUÍ AÑADIMOS LAS BANDERAS Y EL LÍMITE
+        name: fName || "", 
+        phone: fPhone || "", 
+        address: fAddress || "", 
+        payment_date: fPayDate || "", 
+        payment_alert: Boolean(fAlert), 
+        payment_clabe: fClabe || "", 
+        payment_titular: fTitular || "", 
+        is_free: Boolean(fIsFree), 
+        is_demo: Boolean(fIsDemo), 
+        max_pax: maxPaxValue 
       });
     } else if (modalMode === "password") {
       if(!fPass) return alert("Escribe una contraseña");
@@ -140,7 +158,7 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
           <div className="flex w-full lg:w-auto items-center justify-between lg:justify-center gap-6 lg:border-l lg:border-slate-100 lg:pl-6">
             <div className="flex flex-col items-center justify-center shrink-0">
               <span className="text-[10px] font-black uppercase mb-2 text-slate-400">Estado</span>
-              <Toggle checked={masterAlertActive} onChange={setMasterAlertActive} />
+              <Toggle checked={masterAlertActive} onChange={setBool(setMasterAlertActive)} />
             </div>
             <button onClick={() => { onUpdateAlert(masterAlertMsg, masterAlertActive); notify("¡Alerta Actualizada!"); }} className="h-12 px-8 bg-slate-900 text-white rounded-xl font-black text-xs hover:bg-black transition-all shadow-lg active:scale-95 cursor-pointer shrink-0 uppercase tracking-widest">
               Publicar
@@ -206,44 +224,42 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
             <div className="space-y-4">
               {(modalMode === 'create' || modalMode === 'edit') && (
                 <>
-                  <div className="grid grid-cols-2 gap-3"><Inp label="Nombre" value={fName} onChange={setFName} /><Inp label="WhatsApp" value={fPhone} onChange={setFPhone} /></div>
-                  <Inp label="Email" value={fEmail} onChange={setFEmail} className={modalMode === 'edit' ? 'opacity-50 pointer-events-none' : ''} />
-                  {modalMode === 'create' && <Inp label="Contraseña" value={fPass} onChange={setFPass} type="password" />}
+                  <div className="grid grid-cols-2 gap-3"><Inp label="Nombre" value={fName} onChange={setVal(setFName)} /><Inp label="WhatsApp" value={fPhone} onChange={setVal(setFPhone)} /></div>
+                  <Inp label="Email" value={fEmail} onChange={setVal(setFEmail)} className={modalMode === 'edit' ? 'opacity-50 pointer-events-none' : ''} />
+                  {modalMode === 'create' && <Inp label="Contraseña" value={fPass} onChange={setVal(setFPass)} type="password" />}
                   
                   <div className="grid grid-cols-2 gap-3 mt-4 mb-2">
                      <div className="p-3 bg-violet-50 border border-violet-100 rounded-2xl flex flex-col items-center justify-center text-center">
                         <span className="text-[10px] font-black uppercase text-violet-700 mb-2">¿Salón Libre?</span>
-                        <Toggle checked={fIsFree} onChange={setFIsFree} />
+                        <Toggle checked={fIsFree} onChange={setBool(setFIsFree)} />
                      </div>
                      <div className="p-3 bg-amber-50 border border-amber-100 rounded-2xl flex flex-col items-center justify-center text-center">
                         <span className="text-[10px] font-black uppercase text-amber-700 mb-2">¿Modo DEMO?</span>
-                        <Toggle checked={fIsDemo} onChange={setFIsDemo} />
+                        <Toggle checked={fIsDemo} onChange={setBool(setFIsDemo)} />
                      </div>
                   </div>
                   
-                  {!fIsFree && <Inp label="Ubicación Global (Google Maps)" value={fAddress} onChange={setFAddress} className="!mb-0" />}
+                  {!fIsFree && <Inp label="Ubicación Global (Google Maps)" value={fAddress} onChange={setVal(setFAddress)} className="!mb-0" />}
 
-                  {/* 👉 ACÁ ESTÁ EL INPUT PARA LÍMITE DE MESAS */}
                   <Inp 
                     label="Límite de Mesas (Vacío = Sin límite)" 
                     type="number" 
                     placeholder="Ej: 50" 
                     value={fMaxPax} 
-                    onChange={setFMaxPax} 
+                    onChange={setVal(setFMaxPax)} 
                     className="mt-3" 
                   />
 
-                  {/* DATOS BANCARIOS */}
                   <div className="grid grid-cols-1 gap-3 mt-4 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                    <Inp label="Titular de la Cuenta" placeholder="Ej: Juan Pérez" value={fTitular} onChange={setFTitular} className="!mb-0" />
-                    <Inp label="CLABE / CVU de Pago" placeholder="Ej: 012345678901234567" value={fClabe} onChange={setFClabe} className="!mb-0" />
+                    <Inp label="Titular de la Cuenta" placeholder="Ej: Juan Pérez" value={fTitular} onChange={setVal(setFTitular)} className="!mb-0" />
+                    <Inp label="CLABE / CVU de Pago" placeholder="Ej: 012345678901234567" value={fClabe} onChange={setVal(setFClabe)} className="!mb-0" />
                   </div>
                   
                   <div className="flex gap-4 items-center bg-slate-50 p-4 rounded-2xl border border-slate-200 mt-2">
-                    <Inp label="Vencimiento Cuota" type="date" icon={CalendarClock} value={fPayDate} onChange={setFPayDate} className="flex-1 !mb-0" />
+                    <Inp label="Vencimiento Cuota" type="date" icon={CalendarClock} value={fPayDate} onChange={setVal(setFPayDate)} className="flex-1 !mb-0" />
                     <div className="flex flex-col items-center justify-center shrink-0 border-l border-slate-200 pl-4">
                       <span className="text-[10px] font-black uppercase mb-2 text-red-500 tracking-widest">Bloqueo Manual</span>
-                      <Toggle checked={fAlert} onChange={setFAlert} />
+                      <Toggle checked={fAlert} onChange={setBool(setFAlert)} />
                     </div>
                   </div>
                   <button onClick={handleSaveModal} className="w-full py-4 mt-6 bg-slate-900 text-white rounded-2xl font-black text-sm cursor-pointer shadow-lg active:scale-95 transition-transform uppercase tracking-widest">GUARDAR CAMBIOS</button>
@@ -252,7 +268,7 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
               
               {modalMode === 'password' && (
                 <>
-                  <Inp label="Escribí Nueva Contraseña" value={fPass} onChange={setFPass} type="password" />
+                  <Inp label="Escribí Nueva Contraseña" value={fPass} onChange={setVal(setFPass)} type="password" />
                   <button onClick={handleSaveModal} className="w-full py-4 mt-6 bg-slate-900 text-white rounded-2xl font-black text-sm cursor-pointer shadow-lg active:scale-95 transition-transform uppercase tracking-widest">GUARDAR CAMBIOS</button>
                 </>
               )}
@@ -283,3 +299,4 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
     </div>
   );
 };
+```</Inp></Toggle>
