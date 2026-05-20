@@ -53,7 +53,9 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
   const [newFacebook, setNewFacebook] = useState(salonInfo?.facebook || "");
   const [newTiktok, setNewTiktok] = useState(salonInfo?.tiktok || "");
   
+  // 👉 Estados de organización (Mesas y Personas)
   const [newMaxPax, setNewMaxPax] = useState(salonInfo?.max_por_mesa || 10);
+  const [newTotalMesas, setNewTotalMesas] = useState(salonInfo?.cantidad_mesas || 10);
 
   const chatEndRef = useRef(null);
   const [lastSeenChat, setLastSeenChat] = useState(() => Number(localStorage.getItem(`fiesta_chat_seen_${user?.email}`)) || 0);
@@ -71,6 +73,7 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
       setNewFacebook(salonInfo?.facebook || "");
       setNewTiktok(salonInfo?.tiktok || "");
       setNewMaxPax(salonInfo?.max_por_mesa || 10);
+      setNewTotalMesas(salonInfo?.cantidad_mesas || 10);
     }
   }, [showSettings, salonInfo]);
 
@@ -404,6 +407,7 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
                
                <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-700">
                  <p className="text-[10px] font-black uppercase text-slate-400 mb-4 text-left">Organización</p>
+                 <Inp label="Cantidad Total de Mesas" type="number" placeholder="Ej: 20" value={newTotalMesas} onChange={setNewTotalMesas} isDark={isDark} />
                  <Inp label="Límite Personas x Mesa" type="number" placeholder="Ej: 10" value={newMaxPax} onChange={setNewMaxPax} isDark={isDark} />
                </div>
 
@@ -418,7 +422,7 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
                  <Inp label="Nueva Clave de Acceso" type="password" value={newPassword} onChange={setNewPassword} isDark={isDark} />
                </div>
              </div>
-             <button onClick={() => { onUpdateUser(user.email, { logo: newLogo, phone: newPhone, max_por_mesa: Number(newMaxPax) || 10, instagram: newInstagram, facebook: newFacebook, tiktok: newTiktok, ...(newPassword ? {pass: newPassword} : {}) }); setShowSettings(false); notify("Ajustes guardados"); }} className="w-full py-4 mt-4 bg-violet-600 text-white rounded-xl font-black cursor-pointer shadow-lg active:scale-95 transition-transform">GUARDAR</button>
+             <button onClick={() => { onUpdateUser(user.email, { logo: newLogo, phone: newPhone, max_por_mesa: Number(newMaxPax) || 10, cantidad_mesas: Number(newTotalMesas) || 10, instagram: newInstagram, facebook: newFacebook, tiktok: newTiktok, ...(newPassword ? {pass: newPassword} : {}) }); setShowSettings(false); notify("Ajustes guardados"); }} className="w-full py-4 mt-4 bg-violet-600 text-white rounded-xl font-black cursor-pointer shadow-lg active:scale-95 transition-transform">GUARDAR</button>
              <button onClick={() => setShowSettings(false)} className="mt-4 text-xs font-bold opacity-50 cursor-pointer">CANCELAR</button>
            </div>
         </div>
