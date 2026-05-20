@@ -10,19 +10,32 @@ const ProjectorScreen = ({ eventSlug }) => {
   const [idx, setIdx] = useState(0);
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchPhotos = async () => {
       const { data } = await supabase.from('invitaciones').select('internal_data').eq('id', eventSlug).single();
-      if (data?.internal_data?.live_photos) {
-        setPhotos(prev => {
-          if (prev.length !== data.internal_data.live_photos.length) setIdx(0);
-          return data.internal_data.live_photos;
-        });
+      if (isMounted && data?.internal_data?.live_photos) {
+        setPhotos(data.internal_data.live_photos);
       }
     };
     
+    // Carga inicial
     fetchPhotos(); 
-    const radar = setInterval(fetchPhotos, 3000); 
-    return () => clearInterval(radar);
+
+    // 👉 ANTENA REALTIME PARA EL PROYECTOR
+    const channel = supabase.channel(`projector-${eventSlug}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'invitaciones', filter: `id=eq.${eventSlug}` }, (payload) => {
+        if (isMounted && payload.new?.internal_data?.live_photos) {
+           setPhotos(payload.new.internal_data.live_photos);
+           setIdx(0); // Reinicia el slider al recibir cambios
+        }
+      })
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      supabase.removeChannel(channel);
+    };
   }, [eventSlug]);
 
   useEffect(() => {
@@ -82,15 +95,17 @@ export const ManageScreen = () => {
   const [totalMesas, setTotalMesas] = useState(10); // <-- Nuevo estado para la cantidad de mesas
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchEvent = async () => {
       const { data, error } = await supabase.from('invitaciones').select('*').eq('id', eventSlug).single();
       if (error) {
          console.error("Error buscando evento:", error);
-         setLoading(false);
+         if(isMounted) setLoading(false);
          return;
       }
       
-      if (data) {
+      if (data && isMounted) {
          setEventData(data);
          const verifiedRealId = data.evento_id || data.id; 
          setRealDbId(verifiedRealId);
@@ -109,22 +124,53 @@ export const ManageScreen = () => {
 
          if (!data.config?.clientPin || isProjectorMode) setIsAuthenticated(true);
       }
-      setLoading(false);
+      if(isMounted) setLoading(false);
     };
+
     fetchEvent();
+
+    // 👉 ANTENA REALTIME PARA EL PANEL DE GESTIÓN (Detecta si el Salón edita algo)
+    const channel = supabase.channel(`manage-event-${eventSlug}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'invitaciones', filter: `id=eq.${eventSlug}` }, (payload) => {
+        if (isMounted && payload.new) {
+           setEventData(payload.new);
+        }
+      })
+      .subscribe();
+
+    return () => {
+       isMounted = false;
+       supabase.removeChannel(channel);
+    };
   }, [eventSlug, isProjectorMode]);
 
   useEffect(() => {
+    let isMounted = true;
+
+    const fetchInvitados = async () => {
+      const { data, error } = await supabase.from('invitados').select('*').eq('evento_id', realDbId).order('created_at', { ascending: false });
+      if (error) console.error("Error buscando invitados:", error);
+      if (data && isMounted) setInvitados(data);
+    };
+
     if (isAuthenticated && realDbId && !isProjectorMode) {
+      // Carga inicial de invitados
       fetchInvitados();
+
+      // 👉 ANTENA REALTIME PARA INVITADOS (Detecta nuevos confirmados, borrados, etc)
+      const guestChannel = supabase.channel(`manage-guests-${realDbId}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'invitados', filter: `evento_id=eq.${realDbId}` }, () => {
+          // Refresca la lista silenciosamente cuando hay cambios
+          if (isMounted) fetchInvitados();
+        })
+        .subscribe();
+
+      return () => {
+         isMounted = false;
+         supabase.removeChannel(guestChannel);
+      };
     }
   }, [isAuthenticated, realDbId, isProjectorMode]);
-
-  const fetchInvitados = async () => {
-    const { data, error } = await supabase.from('invitados').select('*').eq('evento_id', realDbId).order('created_at', { ascending: false });
-    if (error) console.error("Error buscando invitados:", error);
-    if (data) setInvitados(data);
-  };
 
   const handleLogin = (e) => {
     e.preventDefault();
