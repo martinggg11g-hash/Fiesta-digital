@@ -213,6 +213,19 @@ export default function App() {
     }
   };
 
+  // 👉 NUEVA FUNCIÓN: Actualizar datos del salón (Redes, Logo, Limite Mesas, etc)
+  const handleUpdateUser = async (email, updates) => {
+    setUsers(prevUsers => prevUsers.map(u => u.email === email ? { ...u, ...updates } : u));
+    const { error } = await supabase.from('salones').update(updates).eq('email', email);
+    if (error) console.error("Error al guardar ajustes del salón:", error);
+  };
+
+  // 👉 NUEVA FUNCIÓN: Borrar una invitación
+  const handleDeleteInv = async (id) => {
+    setInvitations(prev => prev.filter(i => i.id !== id));
+    await supabase.from('invitaciones').delete().eq('id', id);
+  };
+
   const handleConfirmRSVP = async (invId, guestData, realId = null) => {
     const { error } = await supabase.from('invitados').insert([{
        evento_id: realId || invId,
@@ -246,15 +259,25 @@ export default function App() {
       <Routes>
         <Route path="/" element={user ? <Navigate to="/dashboard" /> : <LoginScreen onLogin={handleLogin} users={users} />} />
         
-        <Route path="/dashboard" element={user ? <DashboardScreen user={user} users={users} invitations={invitations} onCreateInv={handleCreateInv} onUpdateInternal={handleUpdateInternal} onUpdateConfig={handleUpdateConfig} onLogout={handleLogout} /> : <Navigate to="/" />} />
+        <Route path="/dashboard" element={
+          user ? <DashboardScreen 
+            user={user} 
+            users={users} 
+            invitations={invitations} 
+            onCreateInv={handleCreateInv} 
+            onUpdateInternal={handleUpdateInternal} 
+            onUpdateConfig={handleUpdateConfig} 
+            onLogout={handleLogout}
+            onUpdateUser={handleUpdateUser}
+            onDeleteInv={handleDeleteInv}
+          /> : <Navigate to="/" />
+        } />
         
-        {/* 👉 PROPS AÑADIDAS: onUpdateInternal y onUpdateConfig al EditorScreen */}
         <Route path="/editor/:id" element={<EditorScreen invitations={invitations} onSave={handleSaveInv} onUpdateInternal={handleUpdateInternal} onUpdateConfig={handleUpdateConfig} />} />
         
         <Route path="/i/:salon/:invId" element={<PublicInviteScreen invitations={invitations} onConfirmRSVP={handleConfirmRSVP} onUpdateInternal={handleUpdateInternal} />} />
         <Route path="/puerta/:id" element={<PuertaScreen invitations={invitations} onUpdateInternal={handleUpdateInternal} />} />
         
-        {/* 👉 PROPS AÑADIDAS: onUpdateInternal y onUpdateConfig al ManageScreen */}
         <Route path="/manage/:id" element={<ManageScreen invitations={invitations} onUpdateInternal={handleUpdateInternal} onUpdateConfig={handleUpdateConfig} />} />
         
         <Route path="/invite/:id" element={<LiveInviteScreen />} />
