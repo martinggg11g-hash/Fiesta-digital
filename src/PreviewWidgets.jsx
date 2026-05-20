@@ -249,6 +249,12 @@ export const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP, 
         <form onSubmit={generateTicket} className="p-6 rounded-[2rem] space-y-4 text-left relative overflow-hidden" style={glassStyle}>
           {shineOverlay}
           <div className="relative z-10 space-y-4">
+            
+            {/* 👉 TEXTO NUEVO INCORPORADO CON COLOR DINÁMICO */}
+            <p className="text-[11px] font-bold uppercase tracking-widest text-center px-2 mb-2" style={{ color: mutedC }}>
+              Recuerda generar solo un pase por persona para asegurar tu ingreso rápido.
+            </p>
+
             <input type="text" placeholder="Tu Nombre" className="w-full p-4 rounded-xl outline-none font-bold placeholder-opacity-50" style={{ background: `${textC}0d`, color: textC, border: `1px solid ${textC}1a` }} onChange={e=>setFormData({...formData, name: e.target.value})} required />
             <input type="text" placeholder="Tu Apellido" className="w-full p-4 rounded-xl outline-none font-bold placeholder-opacity-50" style={{ background: `${textC}0d`, color: textC, border: `1px solid ${textC}1a` }} onChange={e=>setFormData({...formData, lastname: e.target.value})} required />
             <div className="flex items-center justify-between px-4 py-3 rounded-xl border" style={{ background: `${textC}0d`, borderColor: `${textC}1a` }}>
