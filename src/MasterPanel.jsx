@@ -13,6 +13,9 @@ const formatDateSpanish = (dateStr) => {
   return dateStr;
 };
 
+// 👉 MAGIA 1: Esta función evita el bug de que un string "false" o "0" se evalúe como true
+const isTrue = (val) => val === true || val === 'true' || val === 1 || val === '1';
+
 export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, onDeleteSalon, globalAlert, onUpdateAlert }) => {
   const navigate = useNavigate();
   const [toast, setToast] = useState("");
@@ -26,7 +29,7 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
   useEffect(() => {
     if (isInitialLoad && globalAlert) {
       setMasterAlertMsg(globalAlert.mensaje || "");
-      setMasterAlertActive(globalAlert.activo || false);
+      setMasterAlertActive(isTrue(globalAlert.activo)); // Evaluamos de forma segura
       setIsInitialLoad(false); 
     }
   }, [globalAlert, isInitialLoad]);
@@ -58,33 +61,30 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
     }
   }, [modalMode, activeSalonChat?.support_chat]);
 
-  // 👉 FUNCIONES INTERCEPTORAS PARA LIMPIAR EVENTOS
-  // Esto evita que los Toggles o Inputs envíen objetos complejos (SyntheticEvents) al estado
-  const setVal = (setter) => (val) => setter(val?.target !== undefined ? val.target.value : (val || ""));
-  const setBool = (setter) => (val) => setter(val?.target !== undefined ? val.target.checked : Boolean(val));
+  // 👉 MAGIA 2: Controlador súper seguro para los Toggles para que no tire TypeError
+  const handleToggle = (setter) => (e) => {
+    if (e && typeof e === 'object' && 'target' in e) {
+      setter(e.target.checked);
+    } else {
+      setter(isTrue(e));
+    }
+  };
 
   const openCreateModal = () => { 
-    setModalMode("create"); 
-    setFName(""); setFEmail(""); setFPhone(""); setFPass(""); 
-    setFAddress(""); setFPayDate(""); setFAlert(false); 
-    setFClabe(""); setFTitular(""); setFIsFree(false); setFIsDemo(false); 
-    setFMaxPax(""); 
+    setModalMode("create"); setFName(""); setFEmail(""); setFPhone(""); setFPass(""); 
+    setFAddress(""); setFPayDate(""); setFAlert(false); setFClabe(""); setFTitular(""); 
+    setFIsFree(false); setFIsDemo(false); setFMaxPax(""); 
     setShowModal(true); 
   };
 
   const openEditModal = (salon) => { 
-    setModalMode("edit"); 
-    setEditingEmail(salon.email); 
-    setFName(salon.name || ""); 
-    setFEmail(salon.email || ""); 
-    setFPhone(salon.phone || ""); 
-    setFAddress(salon.address || ""); 
-    setFPayDate(salon.payment_date || ""); 
-    setFAlert(salon.payment_alert || false); 
-    setFClabe(salon.payment_clabe || ""); 
-    setFTitular(salon.payment_titular || ""); 
-    setFIsFree(salon.is_free || false); 
-    setFIsDemo(salon.is_demo || false); 
+    setModalMode("edit"); setEditingEmail(salon.email); 
+    setFName(salon.name || ""); setFEmail(salon.email || ""); setFPhone(salon.phone || ""); 
+    setFAddress(salon.address || ""); setFPayDate(salon.payment_date || ""); 
+    setFAlert(isTrue(salon.payment_alert)); // Evaluamos de forma segura
+    setFClabe(salon.payment_clabe || ""); setFTitular(salon.payment_titular || ""); 
+    setFIsFree(isTrue(salon.is_free)); // Evaluamos de forma segura
+    setFIsDemo(isTrue(salon.is_demo)); // Evaluamos de forma segura
     setFMaxPax(salon.max_pax || ""); 
     setShowModal(true); 
   };
@@ -96,27 +96,24 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
   const handleSaveModal = () => {
     const maxPaxValue = fMaxPax !== "" ? Number(fMaxPax) : ""; 
 
+    // Forzamos a que sean booleanos puros antes de mandarlos a la base de datos
+    const safeAlert = isTrue(fAlert);
+    const safeFree = isTrue(fIsFree);
+    const safeDemo = isTrue(fIsDemo);
+
     if (modalMode === "create") {
       if(!fName || !fEmail || !fPass) return alert("Faltan datos");
       onCreateSalon({ 
         name: fName, email: fEmail, pass: fPass, role: "salon", 
         address: fAddress, phone: fPhone, payment_date: fPayDate, 
-        payment_alert: Boolean(fAlert), payment_clabe: fClabe, payment_titular: fTitular, 
-        is_free: Boolean(fIsFree), is_demo: Boolean(fIsDemo), max_pax: maxPaxValue 
+        payment_alert: safeAlert, payment_clabe: fClabe, payment_titular: fTitular, 
+        is_free: safeFree, is_demo: safeDemo, max_pax: maxPaxValue 
       });
     } else if (modalMode === "edit") {
-      // Usamos el fallback || "" para asegurar que no enviemos valores undefined a la BD
       onUpdateUser(editingEmail, { 
-        name: fName || "", 
-        phone: fPhone || "", 
-        address: fAddress || "", 
-        payment_date: fPayDate || "", 
-        payment_alert: Boolean(fAlert), 
-        payment_clabe: fClabe || "", 
-        payment_titular: fTitular || "", 
-        is_free: Boolean(fIsFree), 
-        is_demo: Boolean(fIsDemo), 
-        max_pax: maxPaxValue 
+        name: fName, phone: fPhone, address: fAddress, payment_date: fPayDate, 
+        payment_alert: safeAlert, payment_clabe: fClabe, payment_titular: fTitular, 
+        is_free: safeFree, is_demo: safeDemo, max_pax: maxPaxValue 
       });
     } else if (modalMode === "password") {
       if(!fPass) return alert("Escribe una contraseña");
@@ -158,7 +155,7 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
           <div className="flex w-full lg:w-auto items-center justify-between lg:justify-center gap-6 lg:border-l lg:border-slate-100 lg:pl-6">
             <div className="flex flex-col items-center justify-center shrink-0">
               <span className="text-[10px] font-black uppercase mb-2 text-slate-400">Estado</span>
-              <Toggle checked={masterAlertActive} onChange={setBool(setMasterAlertActive)} />
+              <Toggle checked={masterAlertActive} onChange={handleToggle(setMasterAlertActive)} />
             </div>
             <button onClick={() => { onUpdateAlert(masterAlertMsg, masterAlertActive); notify("¡Alerta Actualizada!"); }} className="h-12 px-8 bg-slate-900 text-white rounded-xl font-black text-xs hover:bg-black transition-all shadow-lg active:scale-95 cursor-pointer shrink-0 uppercase tracking-widest">
               Publicar
@@ -178,7 +175,9 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
               <tbody className="text-sm">
                 {mySalons.map(salon => {
                   let status = <span className="px-3 py-1.5 rounded-lg bg-green-50 border border-green-200 text-green-700 font-black text-[10px] uppercase tracking-widest">Al día</span>;
-                  if (salon.payment_alert) status = <span className="px-3 py-1.5 rounded-lg bg-red-50 border border-red-200 text-red-600 font-black text-[10px] uppercase tracking-widest">Atrasado</span>;
+                  // 👉 MAGIA 3: La tabla visual también lee isTrue() para no confundirse con un "false"
+                  if (isTrue(salon.payment_alert)) status = <span className="px-3 py-1.5 rounded-lg bg-red-50 border border-red-200 text-red-600 font-black text-[10px] uppercase tracking-widest">Atrasado</span>;
+                  
                   return (
                     <tr key={salon.email} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
                       <td className="p-5">
@@ -187,12 +186,12 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
                       </td>
                       <td className="p-5">
                         <div className="flex flex-col gap-2">
-                          {salon.is_free ? (
+                          {isTrue(salon.is_free) ? (
                              <div className="flex gap-2 items-center text-violet-600 bg-violet-50 px-2 py-1 rounded-md w-fit border border-violet-100"><Info size={12}/> <span className="text-[10px] font-bold uppercase tracking-wider">Libre</span></div>
                           ) : (
                              <div className="flex gap-2 items-center max-w-[150px]"><MapPin size={14} className="text-slate-300 shrink-0"/><span className="text-xs text-slate-600 truncate">{salon.address || 'Sin dirección'}</span></div>
                           )}
-                          {salon.is_demo && <div className="text-[10px] font-black uppercase text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md w-fit">Modo Demo</div>}
+                          {isTrue(salon.is_demo) && <div className="text-[10px] font-black uppercase text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md w-fit">Modo Demo</div>}
                         </div>
                       </td>
                       <td className="p-5 font-black text-slate-700">{salon.payment_date ? formatDateSpanish(salon.payment_date) : '--/--/----'}</td>
@@ -224,42 +223,42 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
             <div className="space-y-4">
               {(modalMode === 'create' || modalMode === 'edit') && (
                 <>
-                  <div className="grid grid-cols-2 gap-3"><Inp label="Nombre" value={fName} onChange={setVal(setFName)} /><Inp label="WhatsApp" value={fPhone} onChange={setVal(setFPhone)} /></div>
-                  <Inp label="Email" value={fEmail} onChange={setVal(setFEmail)} className={modalMode === 'edit' ? 'opacity-50 pointer-events-none' : ''} />
-                  {modalMode === 'create' && <Inp label="Contraseña" value={fPass} onChange={setVal(setFPass)} type="password" />}
+                  <div className="grid grid-cols-2 gap-3"><Inp label="Nombre" value={fName} onChange={setFName} /><Inp label="WhatsApp" value={fPhone} onChange={setFPhone} /></div>
+                  <Inp label="Email" value={fEmail} onChange={setFEmail} className={modalMode === 'edit' ? 'opacity-50 pointer-events-none' : ''} />
+                  {modalMode === 'create' && <Inp label="Contraseña" value={fPass} onChange={setFPass} type="password" />}
                   
                   <div className="grid grid-cols-2 gap-3 mt-4 mb-2">
                      <div className="p-3 bg-violet-50 border border-violet-100 rounded-2xl flex flex-col items-center justify-center text-center">
                         <span className="text-[10px] font-black uppercase text-violet-700 mb-2">¿Salón Libre?</span>
-                        <Toggle checked={fIsFree} onChange={setBool(setFIsFree)} />
+                        <Toggle checked={fIsFree} onChange={handleToggle(setFIsFree)} />
                      </div>
                      <div className="p-3 bg-amber-50 border border-amber-100 rounded-2xl flex flex-col items-center justify-center text-center">
                         <span className="text-[10px] font-black uppercase text-amber-700 mb-2">¿Modo DEMO?</span>
-                        <Toggle checked={fIsDemo} onChange={setBool(setFIsDemo)} />
+                        <Toggle checked={fIsDemo} onChange={handleToggle(setFIsDemo)} />
                      </div>
                   </div>
                   
-                  {!fIsFree && <Inp label="Ubicación Global (Google Maps)" value={fAddress} onChange={setVal(setFAddress)} className="!mb-0" />}
+                  {!fIsFree && <Inp label="Ubicación Global (Google Maps)" value={fAddress} onChange={setFAddress} className="!mb-0" />}
 
                   <Inp 
                     label="Límite de Mesas (Vacío = Sin límite)" 
                     type="number" 
                     placeholder="Ej: 50" 
                     value={fMaxPax} 
-                    onChange={setVal(setFMaxPax)} 
+                    onChange={setFMaxPax} 
                     className="mt-3" 
                   />
 
                   <div className="grid grid-cols-1 gap-3 mt-4 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-                    <Inp label="Titular de la Cuenta" placeholder="Ej: Juan Pérez" value={fTitular} onChange={setVal(setFTitular)} className="!mb-0" />
-                    <Inp label="CLABE / CVU de Pago" placeholder="Ej: 012345678901234567" value={fClabe} onChange={setVal(setFClabe)} className="!mb-0" />
+                    <Inp label="Titular de la Cuenta" placeholder="Ej: Juan Pérez" value={fTitular} onChange={setFTitular} className="!mb-0" />
+                    <Inp label="CLABE / CVU de Pago" placeholder="Ej: 012345678901234567" value={fClabe} onChange={setFClabe} className="!mb-0" />
                   </div>
                   
                   <div className="flex gap-4 items-center bg-slate-50 p-4 rounded-2xl border border-slate-200 mt-2">
-                    <Inp label="Vencimiento Cuota" type="date" icon={CalendarClock} value={fPayDate} onChange={setVal(setFPayDate)} className="flex-1 !mb-0" />
+                    <Inp label="Vencimiento Cuota" type="date" icon={CalendarClock} value={fPayDate} onChange={setFPayDate} className="flex-1 !mb-0" />
                     <div className="flex flex-col items-center justify-center shrink-0 border-l border-slate-200 pl-4">
                       <span className="text-[10px] font-black uppercase mb-2 text-red-500 tracking-widest">Bloqueo Manual</span>
-                      <Toggle checked={fAlert} onChange={setBool(setFAlert)} />
+                      <Toggle checked={fAlert} onChange={handleToggle(setFAlert)} />
                     </div>
                   </div>
                   <button onClick={handleSaveModal} className="w-full py-4 mt-6 bg-slate-900 text-white rounded-2xl font-black text-sm cursor-pointer shadow-lg active:scale-95 transition-transform uppercase tracking-widest">GUARDAR CAMBIOS</button>
@@ -268,7 +267,7 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
               
               {modalMode === 'password' && (
                 <>
-                  <Inp label="Escribí Nueva Contraseña" value={fPass} onChange={setVal(setFPass)} type="password" />
+                  <Inp label="Escribí Nueva Contraseña" value={fPass} onChange={setFPass} type="password" />
                   <button onClick={handleSaveModal} className="w-full py-4 mt-6 bg-slate-900 text-white rounded-2xl font-black text-sm cursor-pointer shadow-lg active:scale-95 transition-transform uppercase tracking-widest">GUARDAR CAMBIOS</button>
                 </>
               )}
@@ -299,4 +298,4 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
     </div>
   );
 };
-```</Inp></Toggle>
+```</Toggle></Inp>
