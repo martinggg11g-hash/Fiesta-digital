@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { 
   X, ClipboardList, Users, FileText, Printer, UserCheck, MessageCircle, 
-  PartyPopper, CalendarClock, Clock, AlertTriangle, Receipt, Smartphone, 
+  PartyPopper, CalendarClock, Clock, Receipt, Smartphone, 
   Copy, CheckCircle2, Plus, FileDown, Edit2, Trash2, FileSpreadsheet,
   MonitorPlay
 } from "lucide-react";
@@ -39,9 +39,17 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
   const [copiedStates, setCopiedStates] = useState({});
   const [vipGuests, setVipGuests] = useState([]);
   
+  // 👉 ESTADO LOCAL PARA EL INPUT DE MESAS (Evita que pierda el foco al escribir)
+  const [localMaxPax, setLocalMaxPax] = useState(activeInv.config?.max_por_mesa || 10);
+  
   const manualGuests = activeInv?.internal_data?.guests || [];
   const useTables = activeInv?.internal_data?.useTables || false;
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    // Si cambia desde la base de datos, actualizamos el local
+    setLocalMaxPax(activeInv.config?.max_por_mesa || 10);
+  }, [activeInv.config?.max_por_mesa]);
 
   useEffect(() => {
     const fetchVipGuests = async () => {
@@ -327,40 +335,52 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                 </button>
               </div>
 
-              <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4 border-t border-slate-200/50 pt-6">
-                <div>
-                  <h3 className={`font-black text-xl flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-800'}`}><Users className="text-violet-500" size={24}/> Control de Accesos</h3>
-                  <div className="flex items-center gap-4 mt-2">
-                    <p className="text-slate-500 text-sm">Asistentes: <strong className="text-violet-600">{allGuests.reduce((acc, g) => acc + Number(g.guests || 0), 0)}</strong></p>
-                    
-                    <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
-                      <span className="text-xs font-bold text-slate-500">Asignar Mesas</span>
-                      <Toggle checked={useTables} onChange={val => onUpdateInternal(activeInv.id, 'useTables', val)} />
-                    </div>
-
-                    {/* 👇 NUEVO: INPUT PARA EL LÍMITE DE MESAS (Controlado por el CRM) */}
-                    {useTables && (
-                      <div className="flex items-center gap-2 bg-violet-50 dark:bg-violet-900/20 px-3 py-1 rounded-lg border border-violet-200 dark:border-violet-800">
-                         <span className="text-[10px] font-black uppercase text-violet-600 dark:text-violet-400">Límite x Mesa:</span>
-                         <input 
-                           type="number" 
-                           min="1"
-                           className="w-12 bg-transparent text-center text-sm font-black text-violet-800 dark:text-violet-300 outline-none"
-                           value={activeInv.config?.max_por_mesa || 10}
-                           onChange={e => onUpdateConfig(activeInv.id, 'max_por_mesa', Number(e.target.value))}
-                         />
-                      </div>
-                    )}
-                    
-                  </div>
-                </div>
+              {/* 👉 NUEVO DISEÑO: Cabecera y Botones separados */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4 border-t border-slate-200/50 pt-6">
+                <h3 className={`font-black text-xl flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-800'}`}>
+                  <Users className="text-violet-500" size={24}/> Control de Accesos
+                </h3>
+                
                 <div className="flex flex-wrap gap-2">
-                   <button onClick={openNewGuest} className="px-4 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-black text-[11px] flex items-center gap-2 shadow-md transition-transform active:scale-95 cursor-pointer"><Plus size={16}/> MANUAL</button>
-                   <button onClick={() => fileInputRef.current.click()} className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-[11px] flex items-center gap-2 shadow-md transition-transform active:scale-95 cursor-pointer" title="Cargar archivo CSV separado por comas"><FileSpreadsheet size={16}/> IMPORTAR CSV/EXCEL</button>
+                   <button onClick={openNewGuest} className="px-3 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-black text-[11px] flex items-center gap-1.5 shadow-sm transition-transform active:scale-95 cursor-pointer"><Plus size={14}/> MANUAL</button>
+                   <button onClick={() => fileInputRef.current.click()} className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-black text-[11px] flex items-center gap-1.5 shadow-sm transition-transform active:scale-95 cursor-pointer" title="Cargar archivo CSV separado por comas"><FileSpreadsheet size={14}/> IMPORTAR</button>
                    <input type="file" accept=".csv" ref={fileInputRef} onChange={handleImportCSV} className="hidden" />
-                   <button onClick={() => handlePrint('invitados')} className="px-4 py-3 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-black text-[11px] flex items-center gap-2 shadow-md transition-transform active:scale-95 cursor-pointer"><Printer size={16}/> IMPRIMIR</button>
-                   <button onClick={handleExportCSV} className="px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-black text-[11px] flex items-center gap-2 shadow-md transition-transform active:scale-95 cursor-pointer"><FileDown size={16}/> EXCEL</button>
+                   <button onClick={() => handlePrint('invitados')} className="px-3 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-lg font-black text-[11px] flex items-center gap-1.5 shadow-sm transition-transform active:scale-95 cursor-pointer"><Printer size={14}/> IMPRIMIR</button>
+                   <button onClick={handleExportCSV} className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-black text-[11px] flex items-center gap-1.5 shadow-sm transition-transform active:scale-95 cursor-pointer"><FileDown size={14}/> EXCEL</button>
                 </div>
+              </div>
+
+              {/* 👉 NUEVO DISEÑO: Caja de Configuración (Mesas / Limites) */}
+              <div className={`flex flex-wrap items-center gap-4 mb-6 p-4 rounded-xl border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Asistentes Totales:</span>
+                  <span className="text-lg font-black text-violet-600">{allGuests.reduce((acc, g) => acc + Number(g.guests || 0), 0)}</span>
+                </div>
+
+                <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 hidden sm:block"></div>
+
+                <div className="flex items-center gap-3">
+                  <span className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Asignar Mesas</span>
+                  <Toggle checked={useTables} onChange={val => onUpdateInternal(activeInv.id, 'useTables', val)} />
+                </div>
+
+                {useTables && (
+                  <>
+                    <div className="w-px h-6 bg-slate-300 dark:bg-slate-600 hidden sm:block"></div>
+                    <div className="flex items-center gap-2">
+                       <span className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Límite x Mesa:</span>
+                       <input 
+                         type="number" 
+                         min="1"
+                         className={`w-16 text-center text-sm font-black p-1.5 rounded-lg border outline-none focus:border-violet-500 transition-colors ${isDark ? 'bg-slate-900 border-slate-700 text-violet-400' : 'bg-white border-slate-300 text-violet-700'}`}
+                         value={localMaxPax}
+                         onChange={e => setLocalMaxPax(e.target.value)}
+                         onBlur={e => onUpdateConfig(activeInv.id, 'max_por_mesa', Number(e.target.value) || 10)}
+                         title="Hace clic afuera para guardar"
+                       />
+                    </div>
+                  </>
+                )}
               </div>
 
               {allGuests.length === 0 ? (
