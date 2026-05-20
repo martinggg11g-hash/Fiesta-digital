@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabase';
-import { Loader2, Users, CheckCircle, Clock, Plus, Share2, Copy, Trash2, Lock, MonitorPlay, GripVertical, Image as ImageIcon } from 'lucide-react';
+import { Loader2, Users, CheckCircle, Clock, Plus, Share2, Copy, Trash2, Lock, MonitorPlay, GripVertical, Image as ImageIcon, MessageCircle, Save } from 'lucide-react';
 
 // ==========================================
 // 📺 MODO PROYECTOR (Slideshow Automático)
@@ -11,7 +11,6 @@ const ProjectorScreen = ({ eventSlug }) => {
 
   useEffect(() => {
     const fetchPhotos = async () => {
-      // BUSCAMOS POR ID CORTO ("evt-...") QUE ES EL SLUG EN ESTA TABLA
       const { data } = await supabase.from('invitaciones').select('internal_data').eq('id', eventSlug).single();
       if (data?.internal_data?.live_photos) {
         setPhotos(prev => {
@@ -64,7 +63,7 @@ export const ManageScreen = () => {
 
   const [loading, setLoading] = useState(true);
   const [eventData, setEventData] = useState(null);
-  const [realDbId, setRealDbId] = useState(null); // 👉 ACÁ GUARDAMOS EL ID VERDADERO
+  const [realDbId, setRealDbId] = useState(null); 
   
   const [pinInput, setPinInput] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -74,12 +73,15 @@ export const ManageScreen = () => {
   const [newGuest, setNewGuest] = useState({ nombre_completo: '', apodo: '', max_acompanantes: 0 });
   const [adding, setAdding] = useState(false);
 
-  // 👉 ESTADO PARA EL LÍMITE DE MESAS GLOBAL (Se lee desde la tabla 'salones')
   const [maxPaxPorMesa, setMaxPaxPorMesa] = useState(10);
+  
+  // 👉 ESTADOS PARA EL MENSAJE DE WHATSAPP
+  const defaultWaMsg = "¡Hola [Nombre]! Te comparto tu pase VIP para nuestro evento. Por favor confirmá tu asistencia acá:\n\n[Link]";
+  const [waTemplate, setWaTemplate] = useState(defaultWaMsg);
+  const [savingMsg, setSavingMsg] = useState(false);
 
   useEffect(() => {
     const fetchEvent = async () => {
-      // 1. Buscamos la invitación usando el slug corto ("evt-...")
       const { data, error } = await supabase.from('invitaciones').select('*').eq('id', eventSlug).single();
       if (error) {
          console.error("Error buscando evento:", error);
@@ -92,13 +94,16 @@ export const ManageScreen = () => {
          const verifiedRealId = data.evento_id || data.id; 
          setRealDbId(verifiedRealId);
 
-         // 2. Buscamos el salón dueño del evento para leer su límite de mesas global en la tabla 'salones'
-         // 👉 CORREGIDO: Usamos data.salon_id en lugar de data.salonId
-         if (data.salon_id) {
-             const { data: salonData } = await supabase.from('salones').select('max_por_mesa').eq('email', data.salon_id).single();
+         if (data.salonId) {
+             const { data: salonData } = await supabase.from('salones').select('max_por_mesa').eq('email', data.salonId).single();
              if (salonData && salonData.max_por_mesa) {
                  setMaxPaxPorMesa(salonData.max_por_mesa);
              }
+         }
+
+         // Cargamos el mensaje guardado (si existe)
+         if (data.config?.whatsappMsg) {
+             setWaTemplate(data.config.whatsappMsg);
          }
 
          if (!data.config?.clientPin || isProjectorMode) setIsAuthenticated(true);
@@ -163,22 +168,18 @@ export const ManageScreen = () => {
      setInvitados(invitados.filter(i => i.id !== id));
   };
 
-  // 👉 MOVER INVITADO DE MESA (CON VALIDACIÓN DE LÍMITE GLOBAL DEL SALÓN)
   const handleUpdateMesa = async (guestId, nuevaMesa) => {
     if (nuevaMesa !== 'Sin Asignar') {
-      // Calculamos ocupantes actuales
       const ocupantesActuales = invitados
         .filter(i => i.asistencia_confirmada && i.mesa === nuevaMesa)
         .reduce((total, inv) => total + 1 + (inv.acompanantes_confirmados || 0), 0);
 
-      // Calculamos cuánto espacio necesita este invitado
       const invitadoAMover = invitados.find(i => i.id === guestId);
       const lugaresNecesarios = 1 + (invitadoAMover.acompanantes_confirmados || 0);
 
-      // Validamos límite (que fue impuesto globalmente desde los ajustes del salón)
       if (ocupantesActuales + lugaresNecesarios > maxPaxPorMesa) {
         alert(`⚠️ Capacidad excedida: El salón tiene un límite estricto de ${maxPaxPorMesa} personas por mesa. (En la ${nuevaMesa} ya hay ${ocupantesActuales} personas y querés sumar ${lugaresNecesarios}).`);
-        return; // Frenamos la actualización
+        return; 
       }
     }
 
@@ -203,11 +204,35 @@ export const ManageScreen = () => {
      alert("¡Link copiado al portapapeles!");
   };
 
+  // 👉 LÓGICA DE ENVÍO CON VARIABLES DINÁMICAS
   const sendWhatsApp = (invitado) => {
      const link = `${window.location.origin}/invite/${eventSlug}?guest=${invitado.id}`;
      const nombreAMostrar = invitado.apodo || invitado.nombre_completo;
-     const text = `¡Hola ${nombreAMostrar}! Te comparto tu pase VIP para nuestro evento. Por favor confirmá tu asistencia acá: ${link}`;
+     
+     // Reemplazamos las variables mágicas por los datos reales
+     let text = waTemplate;
+     text = text.replace(/\[Nombre\]/g, nombreAMostrar);
+     text = text.replace(/\[Link\]/g, link);
+     
      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  };
+
+  // 👉 GUARDAR LA PLANTILLA DE WHATSAPP EN SUPABASE
+  const handleSaveWaTemplate = async () => {
+    setSavingMsg(true);
+    const updatedConfig = { ...eventData.config, whatsappMsg: waTemplate };
+    const { error } = await supabase.from('invitaciones').update({ config: updatedConfig }).eq('id', eventSlug);
+    if (error) {
+      alert("Error al guardar: " + error.message);
+    } else {
+      setEventData({ ...eventData, config: updatedConfig });
+      alert("¡Plantilla guardada con éxito!");
+    }
+    setSavingMsg(false);
+  };
+
+  const insertVariable = (variable) => {
+    setWaTemplate(prev => prev + variable);
   };
 
   if (loading) return <div className="flex h-screen items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-violet-600" size={40} /></div>;
@@ -270,11 +295,16 @@ export const ManageScreen = () => {
               </div>
            </div>
 
-           <div className="flex bg-white p-2 rounded-2xl border border-slate-100 shadow-sm w-full max-w-sm mx-auto md:mx-0">
-              <button onClick={() => setActiveTab('lista')} className={`flex-1 py-3 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'lista' ? 'bg-violet-50 text-violet-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>👥 Invitados</button>
-              <button onClick={() => setActiveTab('mesas')} className={`flex-1 py-3 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'mesas' ? 'bg-violet-50 text-violet-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>🪑 Mesas</button>
+           {/* 👉 MENÚ DE PESTAÑAS (Ahora con 3 opciones) */}
+           <div className="flex bg-white p-2 rounded-2xl border border-slate-100 shadow-sm w-full max-w-lg mx-auto md:mx-0">
+              <button onClick={() => setActiveTab('lista')} className={`flex-1 py-3 text-[11px] font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'lista' ? 'bg-violet-50 text-violet-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>👥 Invitados</button>
+              <button onClick={() => setActiveTab('mesas')} className={`flex-1 py-3 text-[11px] font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'mesas' ? 'bg-violet-50 text-violet-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>🪑 Mesas</button>
+              <button onClick={() => setActiveTab('whatsapp')} className={`flex-1 py-3 text-[11px] font-black uppercase tracking-widest rounded-xl transition-all ${activeTab === 'whatsapp' ? 'bg-[#25D366]/10 text-[#128C7E] shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>💬 Mensaje WP</button>
            </div>
 
+           {/* ============================== */}
+           {/* PESTAÑA: LISTA DE INVITADOS */}
+           {/* ============================== */}
            {activeTab === 'lista' && (
              <>
                <form onSubmit={handleAddGuest} className="bg-white p-6 md:p-8 rounded-3xl border border-slate-100 shadow-sm flex flex-col md:flex-row gap-4 items-end">
@@ -315,72 +345,117 @@ export const ManageScreen = () => {
              </>
            )}
 
+           {/* ============================== */}
+           {/* PESTAÑA: ORGANIZADOR DE MESAS */}
+           {/* ============================== */}
            {activeTab === 'mesas' && (
              <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-               
-               {/* 👉 CABECERA DONDE EL CLIENTE SOLO VE EL LÍMITE GENERAL DEL SALÓN */}
-               <div className="mb-6 border-b border-slate-100 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                 <div>
-                   <h2 className="text-lg font-black text-slate-800">Organizador de Mesas</h2>
-                   <p className="text-xs text-slate-500 font-medium mt-1">Arrastrá a los invitados confirmados hacia su mesa.</p>
-                 </div>
-                 
-                 <div className="flex items-center gap-2 bg-slate-50 p-2 px-4 rounded-xl border border-slate-200">
-                   <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Capacidad Máxima:</span>
-                   <span className="text-sm font-black text-slate-800">{maxPaxPorMesa} pax/mesa</span>
-                 </div>
-               </div>
-               
-               <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-6">
-                 {['Sin Asignar', 'Mesa 1', 'Mesa 2', 'Mesa 3', 'Mesa 4', 'Mesa 5', 'Mesa 6', 'Mesa 7', 'Mesa 8', 'Mesa 9', 'Mesa 10'].map((mesaNombre) => {
-                    const invitadosMesa = invitados.filter(i => i.asistencia_confirmada && (i.mesa === mesaNombre || (!i.mesa && mesaNombre === 'Sin Asignar')));
-                    
-                    if (mesaNombre !== 'Sin Asignar' && invitadosMesa.length === 0) {
-                       return (
-                          <div key={mesaNombre} onDragOver={e => e.preventDefault()} onDrop={e => handleDrop(e, mesaNombre)} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 border-dashed opacity-50 hover:opacity-100 transition-opacity min-h-[150px]">
-                            <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3">{mesaNombre}</h3>
-                            <p className="text-[10px] font-bold text-slate-400 text-center mt-8">Soltar aquí</p>
-                          </div>
-                       );
-                    }
+                
+                <div className="mb-6 border-b border-slate-100 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-lg font-black text-slate-800">Organizador de Mesas</h2>
+                    <p className="text-xs text-slate-500 font-medium mt-1">Arrastrá a los invitados confirmados hacia su mesa.</p>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 bg-slate-50 p-2 px-4 rounded-xl border border-slate-200">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Capacidad Máxima:</span>
+                    <span className="text-sm font-black text-slate-800">{maxPaxPorMesa} pax/mesa</span>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {['Sin Asignar', 'Mesa 1', 'Mesa 2', 'Mesa 3', 'Mesa 4', 'Mesa 5', 'Mesa 6', 'Mesa 7', 'Mesa 8', 'Mesa 9', 'Mesa 10'].map((mesaNombre) => {
+                     const invitadosMesa = invitados.filter(i => i.asistencia_confirmada && (i.mesa === mesaNombre || (!i.mesa && mesaNombre === 'Sin Asignar')));
+                     
+                     if (mesaNombre !== 'Sin Asignar' && invitadosMesa.length === 0) {
+                        return (
+                           <div key={mesaNombre} onDragOver={e => e.preventDefault()} onDrop={e => handleDrop(e, mesaNombre)} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 border-dashed opacity-50 hover:opacity-100 transition-opacity min-h-[150px]">
+                             <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3">{mesaNombre}</h3>
+                             <p className="text-[10px] font-bold text-slate-400 text-center mt-8">Soltar aquí</p>
+                           </div>
+                        );
+                     }
 
-                    return (
-                      <div key={mesaNombre} onDragOver={e => e.preventDefault()} onDrop={e => handleDrop(e, mesaNombre)} className={`p-4 rounded-2xl border min-h-[150px] transition-colors ${mesaNombre === 'Sin Asignar' ? 'bg-orange-50 border-orange-200' : 'bg-violet-50 border-violet-200'}`}>
-                        <div className="flex justify-between items-center mb-4">
-                          <h3 className={`text-xs font-black uppercase tracking-widest ${mesaNombre === 'Sin Asignar' ? 'text-orange-700' : 'text-violet-700'}`}>{mesaNombre}</h3>
-                          <span className="text-[10px] font-bold bg-white px-2 py-0.5 rounded-md shadow-sm">{invitadosMesa.length} Pax</span>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          {invitadosMesa.map(inv => (
-                            <div key={inv.id} draggable onDragStart={e => handleDragStart(e, inv.id)} className="p-3 bg-white border border-slate-100 rounded-xl shadow-sm cursor-grab active:cursor-grabbing flex flex-col md:flex-row md:items-center gap-2 md:gap-3 hover:border-violet-300 transition-colors group">
-                              <div className="flex items-center gap-3 w-full">
-                                {/* Ocultamos el ícono de arrastrar en móvil porque ahí usaremos el selector */}
-                                <GripVertical size={14} className="text-slate-300 group-hover:text-violet-400 hidden md:block" />
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-bold text-slate-800 truncate" title={inv.nombre_completo}>{inv.nombre_completo}</p>
-                                  {(inv.acompanantes_confirmados > 0) && <p className="text-[9px] text-slate-500 font-medium">+{inv.acompanantes_confirmados} acomp.</p>}
-                                </div>
-                              </div>
+                     return (
+                       <div key={mesaNombre} onDragOver={e => e.preventDefault()} onDrop={e => handleDrop(e, mesaNombre)} className={`p-4 rounded-2xl border min-h-[150px] transition-colors ${mesaNombre === 'Sin Asignar' ? 'bg-orange-50 border-orange-200' : 'bg-violet-50 border-violet-200'}`}>
+                         <div className="flex justify-between items-center mb-4">
+                           <h3 className={`text-xs font-black uppercase tracking-widest ${mesaNombre === 'Sin Asignar' ? 'text-orange-700' : 'text-violet-700'}`}>{mesaNombre}</h3>
+                           <span className="text-[10px] font-bold bg-white px-2 py-0.5 rounded-md shadow-sm">{invitadosMesa.length} Pax</span>
+                         </div>
+                         
+                         <div className="space-y-2">
+                           {invitadosMesa.map(inv => (
+                             <div key={inv.id} draggable onDragStart={e => handleDragStart(e, inv.id)} className="p-3 bg-white border border-slate-100 rounded-xl shadow-sm cursor-grab active:cursor-grabbing flex flex-col md:flex-row md:items-center gap-2 md:gap-3 hover:border-violet-300 transition-colors group">
+                               <div className="flex items-center gap-3 w-full">
+                                 <GripVertical size={14} className="text-slate-300 group-hover:text-violet-400 hidden md:block" />
+                                 <div className="flex-1 min-w-0">
+                                   <p className="text-xs font-bold text-slate-800 truncate" title={inv.nombre_completo}>{inv.nombre_completo}</p>
+                                   {(inv.acompanantes_confirmados > 0) && <p className="text-[9px] text-slate-500 font-medium">+{inv.acompanantes_confirmados} acomp.</p>}
+                                 </div>
+                               </div>
 
-                              {/* Selector rápido SOLO visible en móviles */}
-                              <select 
-                                value={mesaNombre} 
-                                onChange={(e) => handleUpdateMesa(inv.id, e.target.value)}
-                                className="md:hidden w-full mt-2 text-[10px] p-2 font-bold rounded-lg border border-slate-200 bg-slate-50 text-slate-600 outline-none focus:border-violet-400"
-                              >
-                                <option value="Sin Asignar" disabled={mesaNombre === 'Sin Asignar'}>Mover a...</option>
-                                {['Sin Asignar', 'Mesa 1', 'Mesa 2', 'Mesa 3', 'Mesa 4', 'Mesa 5', 'Mesa 6', 'Mesa 7', 'Mesa 8', 'Mesa 9', 'Mesa 10'].map(opcion => (
-                                  <option key={opcion} value={opcion}>{opcion}</option>
-                                ))}
-                              </select>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                 })}
-               </div>
+                               <select 
+                                 value={mesaNombre} 
+                                 onChange={(e) => handleUpdateMesa(inv.id, e.target.value)}
+                                 className="md:hidden w-full mt-2 text-[10px] p-2 font-bold rounded-lg border border-slate-200 bg-slate-50 text-slate-600 outline-none focus:border-violet-400"
+                               >
+                                 <option value="Sin Asignar" disabled={mesaNombre === 'Sin Asignar'}>Mover a...</option>
+                                 {['Sin Asignar', 'Mesa 1', 'Mesa 2', 'Mesa 3', 'Mesa 4', 'Mesa 5', 'Mesa 6', 'Mesa 7', 'Mesa 8', 'Mesa 9', 'Mesa 10'].map(opcion => (
+                                   <option key={opcion} value={opcion}>{opcion}</option>
+                                 ))}
+                               </select>
+                             </div>
+                           ))}
+                         </div>
+                       </div>
+                     );
+                  })}
+                </div>
+             </div>
+           )}
+
+           {/* ============================== */}
+           {/* PESTAÑA: PLANTILLA DE WHATSAPP */}
+           {/* ============================== */}
+           {activeTab === 'whatsapp' && (
+             <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-100 shadow-sm max-w-3xl mx-auto">
+                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+                   <div className="w-12 h-12 bg-[#25D366]/10 text-[#128C7E] rounded-xl flex items-center justify-center">
+                      <MessageCircle size={24} />
+                   </div>
+                   <div>
+                     <h2 className="text-lg font-black text-slate-800">Mensaje de WhatsApp</h2>
+                     <p className="text-xs text-slate-500 font-medium mt-1">Armá la plantilla que se enviará a tus invitados con su link VIP.</p>
+                   </div>
+                </div>
+
+                <div className="mb-4 flex flex-wrap gap-2">
+                   <span className="text-[10px] font-black uppercase text-slate-400 mr-2 flex items-center">Insertar:</span>
+                   <button onClick={() => insertVariable('[Nombre]')} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold transition-colors">
+                     👋 [Nombre]
+                   </button>
+                   <button onClick={() => insertVariable('[Link]')} className="px-3 py-1.5 bg-violet-100 hover:bg-violet-200 text-violet-700 rounded-lg text-xs font-bold transition-colors">
+                     🔗 [Link]
+                   </button>
+                </div>
+
+                <textarea 
+                   className="w-full h-48 p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-[#25D366] focus:ring-2 focus:ring-[#25D366]/20 transition-all font-medium text-slate-700 resize-none leading-relaxed"
+                   value={waTemplate}
+                   onChange={e => setWaTemplate(e.target.value)}
+                   placeholder="Escribí tu mensaje acá..."
+                />
+
+                <div className="mt-6 flex justify-end">
+                   <button 
+                     onClick={handleSaveWaTemplate} 
+                     disabled={savingMsg}
+                     className="px-8 py-4 bg-[#25D366] hover:bg-[#128C7E] text-white font-black uppercase tracking-widest rounded-xl transition-all active:scale-95 flex items-center gap-2 disabled:opacity-50 shadow-lg shadow-[#25D366]/20"
+                   >
+                     {savingMsg ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                     {savingMsg ? 'Guardando...' : 'Guardar Mensaje'}
+                   </button>
+                </div>
              </div>
            )}
 
