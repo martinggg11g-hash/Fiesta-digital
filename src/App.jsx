@@ -228,6 +228,28 @@ export default function App() {
     await supabase.from('invitaciones').delete().eq('id', id);
   };
 
+  // 👉 MÉTODOS PARA EL MASTER PANEL (Alertas y Salones)
+  const handleUpdateAlert = async (data) => {
+    setGlobalAlert(data);
+    const { error } = await supabase.from('alertas').update(data).eq('id', 1);
+    if (error) {
+       console.error("Error guardando alerta:", error);
+       alert("Hubo un error al guardar la notificación.");
+    } else {
+       alert("Notificación global guardada con éxito.");
+    }
+  };
+
+  const handleCreateSalon = async (salonData) => {
+    const { data, error } = await supabase.from('salones').insert([salonData]).select();
+    if (!error && data) setUsers(p => [...p, data[0]]);
+  };
+
+  const handleDeleteSalon = async (email) => {
+    setUsers(p => p.filter(u => u.email !== email));
+    await supabase.from('salones').delete().eq('email', email);
+  };
+
   const handleConfirmRSVP = async (invId, guestData, realId = null) => {
     // 👉 Totalmente silencioso, sin alerts
     await supabase.from('invitados').insert([{
@@ -265,12 +287,16 @@ export default function App() {
             user={user} 
             users={users} 
             invitations={invitations} 
+            globalAlert={globalAlert} /* ✅ AHORA PASA LA ALERTA AL MASTER PANEL */
             onCreateInv={handleCreateInv} 
             onUpdateInternal={handleUpdateInternal} 
             onUpdateConfig={handleUpdateConfig} 
             onLogout={handleLogout}
             onUpdateUser={handleUpdateUser}
             onDeleteInv={handleDeleteInv}
+            onUpdateAlert={handleUpdateAlert} /* ✅ AHORA PASA LA FUNCIÓN QUE SOLUCIONA EL ERROR */
+            onCreateSalon={handleCreateSalon}
+            onDeleteSalon={handleDeleteSalon}
           /> : <Navigate to="/" />
         } />
         
