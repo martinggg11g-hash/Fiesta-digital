@@ -77,7 +77,9 @@ export const ManageScreen = () => {
   const [waTemplate, setWaTemplate] = useState('');
   const [savingMsg, setSavingMsg] = useState(false);
 
+  // 👉 ESTADOS DE ORGANIZACIÓN DEL SALÓN
   const [maxPaxPorMesa, setMaxPaxPorMesa] = useState(10);
+  const [totalMesas, setTotalMesas] = useState(10); // <-- Nuevo estado para la cantidad de mesas
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -96,10 +98,12 @@ export const ManageScreen = () => {
          // Cargar plantilla de WhatsApp si existe, sino poner una por defecto
          setWaTemplate(data.config?.whatsappMsg || '¡Hola [Nombre]! Te comparto tu pase VIP para nuestro evento. Por favor confirmá tu asistencia acá: [Link]');
 
+         // Buscar los límites del salón en la base de datos
          if (data.salon_id) {
-             const { data: salonData } = await supabase.from('salones').select('max_por_mesa').eq('email', data.salon_id).single();
-             if (salonData && salonData.max_por_mesa) {
-                 setMaxPaxPorMesa(salonData.max_por_mesa);
+             const { data: salonData } = await supabase.from('salones').select('max_por_mesa, cantidad_mesas').eq('email', data.salon_id).single();
+             if (salonData) {
+                 if (salonData.max_por_mesa) setMaxPaxPorMesa(salonData.max_por_mesa);
+                 if (salonData.cantidad_mesas) setTotalMesas(salonData.cantidad_mesas);
              }
          }
 
@@ -200,7 +204,6 @@ export const ManageScreen = () => {
      alert("¡Link copiado al portapapeles!");
   };
 
-  // 👉 ACCIONES DE WHATSAPP TEMPLATE
   const handleSaveWaTemplate = async () => {
     setSavingMsg(true);
     const updatedConfig = { ...eventData.config, whatsappMsg: waTemplate };
@@ -223,13 +226,16 @@ export const ManageScreen = () => {
      const link = `${window.location.origin}/invite/${eventSlug}?guest=${invitado.id}`;
      const nombreAMostrar = invitado.apodo || invitado.nombre_completo;
      
-     // El motor mágico de reemplazo
      const finalMessage = waTemplate
        .replace(/\[Nombre\]/gi, nombreAMostrar)
        .replace(/\[Link\]/gi, link);
 
      window.open(`https://wa.me/?text=${encodeURIComponent(finalMessage)}`, '_blank');
   };
+
+  // 👉 ARRAY DINÁMICO DE MESAS
+  // Crea un array que empieza con "Sin Asignar" y luego "Mesa 1" hasta "Mesa X" según totalMesas
+  const opcionesMesas = ['Sin Asignar', ...Array.from({ length: totalMesas }, (_, i) => `Mesa ${i + 1}`)];
 
   if (loading) return <div className="flex h-screen items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-violet-600" size={40} /></div>;
   if (!eventData) return <div className="flex h-screen items-center justify-center bg-slate-50 font-bold text-slate-500">Evento no encontrado.</div>;
@@ -390,7 +396,8 @@ export const ManageScreen = () => {
                </div>
                
                <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-6">
-                 {['Sin Asignar', 'Mesa 1', 'Mesa 2', 'Mesa 3', 'Mesa 4', 'Mesa 5', 'Mesa 6', 'Mesa 7', 'Mesa 8', 'Mesa 9', 'Mesa 10'].map((mesaNombre) => {
+                 {/* 👉 MAPEO DINÁMICO DE MESAS BASADO EN totalMesas */}
+                 {opcionesMesas.map((mesaNombre) => {
                     const invitadosMesa = invitados.filter(i => i.asistencia_confirmada && (i.mesa === mesaNombre || (!i.mesa && mesaNombre === 'Sin Asignar')));
                     
                     if (mesaNombre !== 'Sin Asignar' && invitadosMesa.length === 0) {
@@ -426,7 +433,8 @@ export const ManageScreen = () => {
                                 className="md:hidden w-full mt-2 text-[10px] p-2 font-bold rounded-lg border border-slate-200 bg-slate-50 text-slate-600 outline-none focus:border-violet-400"
                               >
                                 <option value="Sin Asignar" disabled={mesaNombre === 'Sin Asignar'}>Mover a...</option>
-                                {['Sin Asignar', 'Mesa 1', 'Mesa 2', 'Mesa 3', 'Mesa 4', 'Mesa 5', 'Mesa 6', 'Mesa 7', 'Mesa 8', 'Mesa 9', 'Mesa 10'].map(opcion => (
+                                {/* 👉 LAS OPCIONES DEL SELECT TAMBIÉN SON DINÁMICAS */}
+                                {opcionesMesas.map(opcion => (
                                   <option key={opcion} value={opcion}>{opcion}</option>
                                 ))}
                               </select>
