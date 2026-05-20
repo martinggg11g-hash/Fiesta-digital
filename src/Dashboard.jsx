@@ -418,6 +418,7 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
                  <Inp label="TikTok (URL completa)" placeholder="https://tiktok.com/@tusalon" value={newTiktok} onChange={setNewTiktok} isDark={isDark} />
                </div>
                <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-700">
+                 <p className="text-[10px] font-black uppercase text-slate-400 mb-4 text-left">Seguridad</p>
                  <Inp label="Nueva Clave de Acceso" type="password" value={newPassword} onChange={setNewPassword} isDark={isDark} />
                </div>
              </div>
