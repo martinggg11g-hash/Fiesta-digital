@@ -74,12 +74,12 @@ export const ManageScreen = () => {
   const [newGuest, setNewGuest] = useState({ nombre_completo: '', apodo: '', max_acompanantes: 0 });
   const [adding, setAdding] = useState(false);
 
-  // 👉 ESTADO PARA EL LÍMITE DE MESAS (Se lee desde Supabase, no se edita acá)
+  // 👉 ESTADO PARA EL LÍMITE DE MESAS GLOBAL (Se lee desde la tabla 'salones')
   const [maxPaxPorMesa, setMaxPaxPorMesa] = useState(10);
 
   useEffect(() => {
     const fetchEvent = async () => {
-      // BUSCAMOS LA INVITACIÓN USANDO EL SLUG CORTO ("evt-...")
+      // 1. Buscamos la invitación usando el slug corto ("evt-...")
       const { data, error } = await supabase.from('invitaciones').select('*').eq('id', eventSlug).single();
       if (error) {
          console.error("Error buscando evento:", error);
@@ -92,9 +92,12 @@ export const ManageScreen = () => {
          const verifiedRealId = data.evento_id || data.id; 
          setRealDbId(verifiedRealId);
 
-         // 👉 CARGAMOS EL LÍMITE DESDE LA BASE DE DATOS FIJADO POR EL CRM
-         if (data.config?.max_por_mesa) {
-             setMaxPaxPorMesa(data.config.max_por_mesa);
+         // 2. Buscamos el salón dueño del evento para leer su límite de mesas global en la tabla 'salones'
+         if (data.salonId) {
+             const { data: salonData } = await supabase.from('salones').select('max_por_mesa').eq('email', data.salonId).single();
+             if (salonData && salonData.max_por_mesa) {
+                 setMaxPaxPorMesa(salonData.max_por_mesa);
+             }
          }
 
          if (!data.config?.clientPin || isProjectorMode) setIsAuthenticated(true);
@@ -159,7 +162,7 @@ export const ManageScreen = () => {
      setInvitados(invitados.filter(i => i.id !== id));
   };
 
-  // 👉 MOVER INVITADO DE MESA (CON VALIDACIÓN DE LÍMITE)
+  // 👉 MOVER INVITADO DE MESA (CON VALIDACIÓN DE LÍMITE GLOBAL DEL SALÓN)
   const handleUpdateMesa = async (guestId, nuevaMesa) => {
     if (nuevaMesa !== 'Sin Asignar') {
       // Calculamos ocupantes actuales
@@ -171,9 +174,9 @@ export const ManageScreen = () => {
       const invitadoAMover = invitados.find(i => i.id === guestId);
       const lugaresNecesarios = 1 + (invitadoAMover.acompanantes_confirmados || 0);
 
-      // Validamos límite (que fue impuesto por el CRM)
+      // Validamos límite (que fue impuesto globalmente desde los ajustes del salón)
       if (ocupantesActuales + lugaresNecesarios > maxPaxPorMesa) {
-        alert(`⚠️ Capacidad excedida: La ${nuevaMesa} tiene límite de ${maxPaxPorMesa} pax. (Hay ${ocupantesActuales} personas y querés sumar ${lugaresNecesarios}).`);
+        alert(`⚠️ Capacidad excedida: El salón tiene un límite estricto de ${maxPaxPorMesa} personas por mesa. (En la ${nuevaMesa} ya hay ${ocupantesActuales} personas y querés sumar ${lugaresNecesarios}).`);
         return; // Frenamos la actualización
       }
     }
@@ -314,7 +317,7 @@ export const ManageScreen = () => {
            {activeTab === 'mesas' && (
              <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
                 
-                {/* 👉 CABECERA DONDE EL CLIENTE SOLO VE EL LÍMITE */}
+                {/* 👉 CABECERA DONDE EL CLIENTE SOLO VE EL LÍMITE GENERAL DEL SALÓN */}
                 <div className="mb-6 border-b border-slate-100 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
                     <h2 className="text-lg font-black text-slate-800">Organizador de Mesas</h2>
