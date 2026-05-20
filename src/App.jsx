@@ -14,6 +14,9 @@ const PuertaScreen = React.lazy(() => import("./Puerta"));
 const EditorScreen = React.lazy(() => import("./Editor").then(module => ({ default: module.EditorScreen })));
 const ManageScreen = React.lazy(() => import("./Manage").then(module => ({ default: module.ManageScreen })));
 
+// 👉 1. IMPORTAMOS TU NUEVO COMPONENTE ACÁ
+const GuestListClientScreen = React.lazy(() => import("./GuestListClient").then(module => ({ default: module.GuestListClient })));
+
 const LoadingFallback = () => (
   <div className="h-screen w-full bg-black absolute inset-0 z-[9999] flex items-center justify-center">
     <Loader2 className="animate-spin text-white" size={40} />
@@ -323,6 +326,9 @@ export default function App() {
         <Route path="/i/:salon/:invId" element={<PublicInviteScreen invitations={invitations} onConfirmRSVP={handleConfirmRSVP} onUpdateInternal={handleUpdateInternal} />} />
         <Route path="/puerta/:id" element={<PuertaScreen invitations={invitations} onUpdateInternal={handleUpdateInternal} />} />
         
+        {/* 👉 2. ACÁ ENRUTAMOS EL NUEVO PANEL DEL CLIENTE */}
+        <Route path="/lista/:id" element={<GuestListClientScreen />} />
+
         <Route path="/manage/:id" element={<ManageScreen invitations={invitations} onUpdateInternal={handleUpdateInternal} onUpdateConfig={handleUpdateConfig} />} />
         
         <Route path="/invite/:id" element={<LiveInviteScreen />} />
