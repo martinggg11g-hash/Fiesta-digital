@@ -41,7 +41,6 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
   
   const manualGuests = activeInv?.internal_data?.guests || [];
   const useTables = activeInv?.internal_data?.useTables || false;
-  // Leemos las fotos directamente del JSON del evento
   const livePhotos = activeInv?.internal_data?.live_photos || []; 
   const fileInputRef = useRef(null);
 
@@ -133,14 +132,9 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
     }
   };
 
-  // NUEVA LÓGICA DE BORRADO DE FOTOS (Filtra el array y actualiza el JSON)
   const handleDeletePhoto = (photoUrl) => {
     if(!window.confirm("¿Seguro que querés eliminar esta foto? Desaparecerá de la galería y del proyector.")) return;
-    
-    // Filtramos la foto que queremos borrar
     const updatedPhotos = livePhotos.filter(url => url !== photoUrl);
-    
-    // Actualizamos el JSON internal_data
     onUpdateInternal(activeInv.id, 'live_photos', updatedPhotos);
   };
 
@@ -159,16 +153,20 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
     document.body.removeChild(link);
   };
 
-  const handleImportCSV = (e) => {
+  const handleImportCSV = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
       const text = evt.target.result;
       const lines = text.split('\n');
-      const newGuests = [];
+      const newManualGuests = [];
       let start = 0;
       if (lines[0].toLowerCase().includes('nombre') || lines[0].toLowerCase().includes('name')) start = 1;
+
+      const updatePromises = [];
+      let manualCount = 0;
+      let vipCount = 0;
 
       lines.slice(start).forEach(line => {
         if(!line.trim()) return;
@@ -183,19 +181,51 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
         const status = cols[3]?.replace(/['"]/g, '').trim() || "Pendiente";
         
         if(name) {
-          newGuests.push({
-            id: `MANUAL-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-            name, lastname, guests: parseInt(pax) || 1, mesa: table, status: status, timestamp: new Date().toISOString()
+          // Buscamos si el invitado importado ya es un pase VIP (matcheando nombre completo)
+          const matchedVip = vipGuests.find(vg => {
+            const vgName = `${vg.nombre_completo} ${vg.apodo ? `(${vg.apodo})` : ''}`.trim().toLowerCase();
+            return vgName === fullName.toLowerCase();
           });
+
+          if (matchedVip) {
+            // Es un VIP: no lo duplicamos, pero verificamos si le actualizaron la mesa o el estado en el Excel
+            let updated = false;
+            let updateData = {};
+            
+            if (matchedVip.mesa !== table && table) { 
+               updateData.mesa = table; 
+               updated = true; 
+            }
+            
+            const isConfirmed = status === 'Confirmado' || status === 'Ingresó';
+            if (matchedVip.asistencia_confirmada !== isConfirmed && (status === 'Confirmado' || status === 'Ingresó' || status === 'Pendiente')) { 
+               updateData.asistencia_confirmada = isConfirmed; 
+               updated = true; 
+            }
+            
+            if (updated) {
+               updatePromises.push(supabase.from('invitados').update(updateData).eq('id', matchedVip.id));
+            }
+            vipCount++;
+          } else {
+            // Es un invitado manual (nuevo o editado): Lo agregamos a la nueva lista limpia
+            newManualGuests.push({
+              id: `MANUAL-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+              name, lastname, guests: parseInt(pax) || 1, mesa: table, status: status, timestamp: new Date().toISOString()
+            });
+            manualCount++;
+          }
         }
       });
       
-      if (newGuests.length > 0) {
-        onUpdateInternal(activeInv.id, 'guests', newGuests);
-        alert(`¡Importación exitosa! Se ha reemplazado la lista con ${newGuests.length} invitados.`);
-      } else {
-        alert("No se encontraron invitados en el archivo. Asegurate de que sea un archivo CSV separado por comas.");
+      // Si hubo actualizaciones a los invitados VIP, las disparamos a Supabase
+      if (updatePromises.length > 0) {
+         await Promise.all(updatePromises);
       }
+
+      // Reemplazamos la lista manual por la nueva importada (sin duplicar VIPs)
+      onUpdateInternal(activeInv.id, 'guests', newManualGuests);
+      alert(`¡Excel importado! Se reemplazó la lista con ${manualCount} invitados manuales y se actualizaron/ignoraron ${vipCount} pases VIP de forma segura.`);
     };
     reader.readAsText(file);
     e.target.value = null;
@@ -453,7 +483,6 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                  </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                   {/* Iteramos directamente sobre el array de strings (URLs) */}
                    {livePhotos.map((url, i) => (
                       <div key={i} className="relative group aspect-square bg-slate-100 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                          <img src={url} alt={`Foto del evento ${i}`} className="w-full h-full object-cover" />
