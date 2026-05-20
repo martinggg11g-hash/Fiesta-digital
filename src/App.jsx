@@ -61,8 +61,11 @@ const LiveInviteScreen = () => {
           guestData={guestData} 
           onConfirmRSVP={async (formData) => {
              if (guestData) {
-                await supabase.from('invitados').update({ asistencia_confirmada: true, acompanantes_confirmados: formData.guests }).eq('id', guestData.id);
-                alert("¡Asistencia confirmada!");
+                // 👉 Totalmente silencioso, sin alerts
+                await supabase.from('invitados').update({ 
+                  asistencia_confirmada: true, 
+                  acompanantes_confirmados: formData.guests 
+                }).eq('id', guestData.id);
              }
           }} 
           onUploadLivePhoto={async (url) => {
@@ -165,7 +168,6 @@ export default function App() {
     const radar = setInterval(async () => {
       const { data: alertData } = await supabase.from('alertas').select('*').eq('id', 1).single();
       if (alertData) setGlobalAlert({ mensaje: alertData.mensaje, activo: alertData.activo });
-      // Removemos el recargo de salones tan frecuente para no saturar
     }, 30000);
 
     return () => { 
@@ -213,29 +215,28 @@ export default function App() {
     }
   };
 
-  // 👉 NUEVA FUNCIÓN: Actualizar datos del salón (Redes, Logo, Limite Mesas, etc)
+  // 👉 Actualizar datos del salón (Redes, Logo, Limite Mesas, etc)
   const handleUpdateUser = async (email, updates) => {
     setUsers(prevUsers => prevUsers.map(u => u.email === email ? { ...u, ...updates } : u));
     const { error } = await supabase.from('salones').update(updates).eq('email', email);
     if (error) console.error("Error al guardar ajustes del salón:", error);
   };
 
-  // 👉 NUEVA FUNCIÓN: Borrar una invitación
+  // 👉 Borrar una invitación
   const handleDeleteInv = async (id) => {
     setInvitations(prev => prev.filter(i => i.id !== id));
     await supabase.from('invitaciones').delete().eq('id', id);
   };
 
   const handleConfirmRSVP = async (invId, guestData, realId = null) => {
-    const { error } = await supabase.from('invitados').insert([{
+    // 👉 Totalmente silencioso, sin alerts
+    await supabase.from('invitados').insert([{
        evento_id: realId || invId,
        nombre_completo: `${guestData.name} ${guestData.lastname}`,
        max_acompanantes: (guestData.guests || 1) - 1,
        asistencia_confirmada: true, 
        status: 'Pendiente'
     }]);
-    if (error) alert("Error: " + error.message);
-    else alert("¡Asistencia confirmada!");
   };
 
   const handleCreateInv = async (sE, sN) => { 
