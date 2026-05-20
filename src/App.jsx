@@ -136,9 +136,15 @@ export default function App() {
         const { data: salones } = await supabase.from('salones').select('*');
         const { data: invs } = await supabase.from('invitaciones').select('*');
         const { data: alertData } = await supabase.from('alertas').select('*').eq('id', 1).single();
+        
         if (salones) setUsers(salones);
         if (invs) setInvitations(invs.map(i => ({ ...i, salonId: i.salon_id, internal_data: i.internal_data || {}, config: i.config || {} })));
-        if (alertData) setGlobalAlert(alertData);
+        
+        if (alertData) {
+          // Aseguramos que se guarde un booleano en el estado de React
+          const isActivo = alertData.activo === true || alertData.activo === 'true' || alertData.activo === 1;
+          setGlobalAlert({ mensaje: alertData.mensaje || "", activo: isActivo });
+        }
       } catch (error) { console.error(error); }
       finally { setLoading(false); }
     };
@@ -167,7 +173,10 @@ export default function App() {
 
     const radar = setInterval(async () => {
       const { data: alertData } = await supabase.from('alertas').select('*').eq('id', 1).single();
-      if (alertData) setGlobalAlert({ mensaje: alertData.mensaje, activo: alertData.activo });
+      if (alertData) {
+        const isActivo = alertData.activo === true || alertData.activo === 'true' || alertData.activo === 1;
+        setGlobalAlert({ mensaje: alertData.mensaje || "", activo: isActivo });
+      }
     }, 30000);
 
     return () => { 
@@ -229,14 +238,23 @@ export default function App() {
   };
 
   // 👉 MÉTODOS PARA EL MASTER PANEL (Alertas y Salones)
-  const handleUpdateAlert = async (data) => {
-    setGlobalAlert(data);
-    const { error } = await supabase.from('alertas').update(data).eq('id', 1);
+  // 🟢 AQUI ESTABA EL ERROR: Cambiamos para que reciba 'mensaje' y 'activo' separados
+  const handleUpdateAlert = async (mensaje, activo) => {
+    // Garantizamos que 'activo' sea un booleano puro de JS
+    const isActivo = activo === true || activo === 'true' || activo === 1;
+    
+    // Armamos el objeto tal como lo espera Supabase
+    const dataToSave = { 
+      mensaje: mensaje || "", 
+      activo: isActivo 
+    };
+
+    setGlobalAlert(dataToSave); // Actualizamos la UI inmediatamente
+
+    const { error } = await supabase.from('alertas').update(dataToSave).eq('id', 1);
     if (error) {
        console.error("Error guardando alerta:", error);
        alert("Hubo un error al guardar la notificación.");
-    } else {
-       alert("Notificación global guardada con éxito.");
     }
   };
 
@@ -287,14 +305,14 @@ export default function App() {
             user={user} 
             users={users} 
             invitations={invitations} 
-            globalAlert={globalAlert} /* ✅ AHORA PASA LA ALERTA AL MASTER PANEL */
+            globalAlert={globalAlert} 
             onCreateInv={handleCreateInv} 
             onUpdateInternal={handleUpdateInternal} 
             onUpdateConfig={handleUpdateConfig} 
             onLogout={handleLogout}
             onUpdateUser={handleUpdateUser}
             onDeleteInv={handleDeleteInv}
-            onUpdateAlert={handleUpdateAlert} /* ✅ AHORA PASA LA FUNCIÓN QUE SOLUCIONA EL ERROR */
+            onUpdateAlert={handleUpdateAlert} /* ✅ AHORA RECIBIRÁ LOS 2 PARÁMETROS BIEN */
             onCreateSalon={handleCreateSalon}
             onDeleteSalon={handleDeleteSalon}
           /> : <Navigate to="/" />
