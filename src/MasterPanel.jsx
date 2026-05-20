@@ -13,8 +13,8 @@ const formatDateSpanish = (dateStr) => {
   return dateStr;
 };
 
-// 👉 MAGIA 1: Esta función evita el bug de que un string "false" o "0" se evalúe como true
-const isTrue = (val) => val === true || val === 'true' || val === 1 || val === '1';
+// Función para garantizar que siempre tengamos un booleano puro (true/false) real
+const parseBool = (val) => val === true || val === 'true' || val === 1 || val === '1';
 
 export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, onDeleteSalon, globalAlert, onUpdateAlert }) => {
   const navigate = useNavigate();
@@ -29,7 +29,7 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
   useEffect(() => {
     if (isInitialLoad && globalAlert) {
       setMasterAlertMsg(globalAlert.mensaje || "");
-      setMasterAlertActive(isTrue(globalAlert.activo)); // Evaluamos de forma segura
+      setMasterAlertActive(parseBool(globalAlert.activo));
       setIsInitialLoad(false); 
     }
   }, [globalAlert, isInitialLoad]);
@@ -61,12 +61,14 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
     }
   }, [modalMode, activeSalonChat?.support_chat]);
 
-  // 👉 MAGIA 2: Controlador súper seguro para los Toggles para que no tire TypeError
-  const handleToggle = (setter) => (e) => {
-    if (e && typeof e === 'object' && 'target' in e) {
-      setter(e.target.checked);
+  // Manejador seguro para los Toggle, independientemente de qué devuelva el componente visual
+  const handleToggle = (setter) => (val) => {
+    if (typeof val === 'boolean') {
+      setter(val);
+    } else if (val && typeof val === 'object' && 'target' in val) {
+      setter(val.target.checked);
     } else {
-      setter(isTrue(e));
+      setter(parseBool(val));
     }
   };
 
@@ -81,10 +83,10 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
     setModalMode("edit"); setEditingEmail(salon.email); 
     setFName(salon.name || ""); setFEmail(salon.email || ""); setFPhone(salon.phone || ""); 
     setFAddress(salon.address || ""); setFPayDate(salon.payment_date || ""); 
-    setFAlert(isTrue(salon.payment_alert)); // Evaluamos de forma segura
+    setFAlert(parseBool(salon.payment_alert)); 
     setFClabe(salon.payment_clabe || ""); setFTitular(salon.payment_titular || ""); 
-    setFIsFree(isTrue(salon.is_free)); // Evaluamos de forma segura
-    setFIsDemo(isTrue(salon.is_demo)); // Evaluamos de forma segura
+    setFIsFree(parseBool(salon.is_free)); 
+    setFIsDemo(parseBool(salon.is_demo)); 
     setFMaxPax(salon.max_pax || ""); 
     setShowModal(true); 
   };
@@ -96,24 +98,19 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
   const handleSaveModal = () => {
     const maxPaxValue = fMaxPax !== "" ? Number(fMaxPax) : ""; 
 
-    // Forzamos a que sean booleanos puros antes de mandarlos a la base de datos
-    const safeAlert = isTrue(fAlert);
-    const safeFree = isTrue(fIsFree);
-    const safeDemo = isTrue(fIsDemo);
-
     if (modalMode === "create") {
       if(!fName || !fEmail || !fPass) return alert("Faltan datos");
       onCreateSalon({ 
         name: fName, email: fEmail, pass: fPass, role: "salon", 
         address: fAddress, phone: fPhone, payment_date: fPayDate, 
-        payment_alert: safeAlert, payment_clabe: fClabe, payment_titular: fTitular, 
-        is_free: safeFree, is_demo: safeDemo, max_pax: maxPaxValue 
+        payment_alert: parseBool(fAlert), payment_clabe: fClabe, payment_titular: fTitular, 
+        is_free: parseBool(fIsFree), is_demo: parseBool(fIsDemo), max_pax: maxPaxValue 
       });
     } else if (modalMode === "edit") {
       onUpdateUser(editingEmail, { 
         name: fName, phone: fPhone, address: fAddress, payment_date: fPayDate, 
-        payment_alert: safeAlert, payment_clabe: fClabe, payment_titular: fTitular, 
-        is_free: safeFree, is_demo: safeDemo, max_pax: maxPaxValue 
+        payment_alert: parseBool(fAlert), payment_clabe: fClabe, payment_titular: fTitular, 
+        is_free: parseBool(fIsFree), is_demo: parseBool(fIsDemo), max_pax: maxPaxValue 
       });
     } else if (modalMode === "password") {
       if(!fPass) return alert("Escribe una contraseña");
@@ -157,7 +154,7 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
               <span className="text-[10px] font-black uppercase mb-2 text-slate-400">Estado</span>
               <Toggle checked={masterAlertActive} onChange={handleToggle(setMasterAlertActive)} />
             </div>
-            <button onClick={() => { onUpdateAlert(masterAlertMsg, masterAlertActive); notify("¡Alerta Actualizada!"); }} className="h-12 px-8 bg-slate-900 text-white rounded-xl font-black text-xs hover:bg-black transition-all shadow-lg active:scale-95 cursor-pointer shrink-0 uppercase tracking-widest">
+            <button onClick={() => { onUpdateAlert(masterAlertMsg, parseBool(masterAlertActive)); notify("¡Alerta Actualizada!"); }} className="h-12 px-8 bg-slate-900 text-white rounded-xl font-black text-xs hover:bg-black transition-all shadow-lg active:scale-95 cursor-pointer shrink-0 uppercase tracking-widest">
               Publicar
             </button>
           </div>
@@ -175,8 +172,7 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
               <tbody className="text-sm">
                 {mySalons.map(salon => {
                   let status = <span className="px-3 py-1.5 rounded-lg bg-green-50 border border-green-200 text-green-700 font-black text-[10px] uppercase tracking-widest">Al día</span>;
-                  // 👉 MAGIA 3: La tabla visual también lee isTrue() para no confundirse con un "false"
-                  if (isTrue(salon.payment_alert)) status = <span className="px-3 py-1.5 rounded-lg bg-red-50 border border-red-200 text-red-600 font-black text-[10px] uppercase tracking-widest">Atrasado</span>;
+                  if (parseBool(salon.payment_alert)) status = <span className="px-3 py-1.5 rounded-lg bg-red-50 border border-red-200 text-red-600 font-black text-[10px] uppercase tracking-widest">Atrasado</span>;
                   
                   return (
                     <tr key={salon.email} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
@@ -186,12 +182,12 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
                       </td>
                       <td className="p-5">
                         <div className="flex flex-col gap-2">
-                          {isTrue(salon.is_free) ? (
+                          {parseBool(salon.is_free) ? (
                              <div className="flex gap-2 items-center text-violet-600 bg-violet-50 px-2 py-1 rounded-md w-fit border border-violet-100"><Info size={12}/> <span className="text-[10px] font-bold uppercase tracking-wider">Libre</span></div>
                           ) : (
                              <div className="flex gap-2 items-center max-w-[150px]"><MapPin size={14} className="text-slate-300 shrink-0"/><span className="text-xs text-slate-600 truncate">{salon.address || 'Sin dirección'}</span></div>
                           )}
-                          {isTrue(salon.is_demo) && <div className="text-[10px] font-black uppercase text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md w-fit">Modo Demo</div>}
+                          {parseBool(salon.is_demo) && <div className="text-[10px] font-black uppercase text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md w-fit">Modo Demo</div>}
                         </div>
                       </td>
                       <td className="p-5 font-black text-slate-700">{salon.payment_date ? formatDateSpanish(salon.payment_date) : '--/--/----'}</td>
@@ -298,4 +294,3 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
     </div>
   );
 };
-
