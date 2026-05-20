@@ -39,7 +39,7 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
   const [copiedStates, setCopiedStates] = useState({});
   const [vipGuests, setVipGuests] = useState([]);
   
-  // 👉 ESTADO LOCAL PARA EL INPUT DE MESAS (Evita que pierda el foco al escribir)
+  // 👉 ESTADO LOCAL PARA EL INPUT DE MESAS
   const [localMaxPax, setLocalMaxPax] = useState(activeInv.config?.max_por_mesa || 10);
   
   const manualGuests = activeInv?.internal_data?.guests || [];
@@ -47,7 +47,6 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    // Si cambia desde la base de datos, actualizamos el local
     setLocalMaxPax(activeInv.config?.max_por_mesa || 10);
   }, [activeInv.config?.max_por_mesa]);
 
@@ -335,22 +334,22 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                 </button>
               </div>
 
-              {/* 👉 NUEVO DISEÑO: Cabecera y Botones separados */}
+              {/* 👉 DISEÑO: Cabecera y Botones */}
               <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4 border-t border-slate-200/50 pt-6">
                 <h3 className={`font-black text-xl flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-800'}`}>
                   <Users className="text-violet-500" size={24}/> Control de Accesos
                 </h3>
                 
                 <div className="flex flex-wrap gap-2">
-                   <button onClick={openNewGuest} className="px-3 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-black text-[11px] flex items-center gap-1.5 shadow-sm transition-transform active:scale-95 cursor-pointer"><Plus size={14}/> MANUAL</button>
-                   <button onClick={() => fileInputRef.current.click()} className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-black text-[11px] flex items-center gap-1.5 shadow-sm transition-transform active:scale-95 cursor-pointer" title="Cargar archivo CSV separado por comas"><FileSpreadsheet size={14}/> IMPORTAR</button>
+                   <button onClick={openNewGuest} className="px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-black text-[11px] flex items-center gap-1.5 shadow-sm transition-transform active:scale-95 cursor-pointer"><Plus size={14}/> MANUAL</button>
+                   <button onClick={() => fileInputRef.current.click()} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-black text-[11px] flex items-center gap-1.5 shadow-sm transition-transform active:scale-95 cursor-pointer" title="Cargar archivo CSV separado por comas"><FileSpreadsheet size={14}/> IMPORTAR</button>
                    <input type="file" accept=".csv" ref={fileInputRef} onChange={handleImportCSV} className="hidden" />
-                   <button onClick={() => handlePrint('invitados')} className="px-3 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-lg font-black text-[11px] flex items-center gap-1.5 shadow-sm transition-transform active:scale-95 cursor-pointer"><Printer size={14}/> IMPRIMIR</button>
-                   <button onClick={handleExportCSV} className="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-black text-[11px] flex items-center gap-1.5 shadow-sm transition-transform active:scale-95 cursor-pointer"><FileDown size={14}/> EXCEL</button>
+                   <button onClick={() => handlePrint('invitados')} className="px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-lg font-black text-[11px] flex items-center gap-1.5 shadow-sm transition-transform active:scale-95 cursor-pointer"><Printer size={14}/> IMPRIMIR</button>
+                   <button onClick={handleExportCSV} className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-black text-[11px] flex items-center gap-1.5 shadow-sm transition-transform active:scale-95 cursor-pointer"><FileDown size={14}/> EXCEL</button>
                 </div>
               </div>
 
-              {/* 👉 NUEVO DISEÑO: Caja de Configuración (Mesas / Limites) */}
+              {/* 👉 DISEÑO: Caja de Configuración (Mesas / Limites) CON BOTÓN DE GUARDAR EXPLICITO */}
               <div className={`flex flex-wrap items-center gap-4 mb-6 p-4 rounded-xl border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
                 <div className="flex items-center gap-2">
                   <span className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Asistentes Totales:</span>
@@ -375,9 +374,17 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                          className={`w-16 text-center text-sm font-black p-1.5 rounded-lg border outline-none focus:border-violet-500 transition-colors ${isDark ? 'bg-slate-900 border-slate-700 text-violet-400' : 'bg-white border-slate-300 text-violet-700'}`}
                          value={localMaxPax}
                          onChange={e => setLocalMaxPax(e.target.value)}
-                         onBlur={e => onUpdateConfig(activeInv.id, 'max_por_mesa', Number(e.target.value) || 10)}
-                         title="Hace clic afuera para guardar"
                        />
+                       {/* 👇 BOTÓN PARA GUARDAR EL LÍMITE (Evita que el panel te saque por actualizar automático) */}
+                       {Number(localMaxPax) !== (activeInv.config?.max_por_mesa || 10) && (
+                         <button 
+                           onClick={() => onUpdateConfig(activeInv.id, 'max_por_mesa', Number(localMaxPax) || 10)}
+                           className="p-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg shadow-sm transition-colors animate-in zoom-in cursor-pointer"
+                           title="Guardar Límite"
+                         >
+                           <CheckCircle2 size={16} />
+                         </button>
+                       )}
                     </div>
                   </>
                 )}
