@@ -3,7 +3,7 @@ import {
   X, ClipboardList, Users, FileText, Printer, UserCheck, MessageCircle, 
   PartyPopper, CalendarClock, Clock, Receipt, Smartphone, 
   Copy, Plus, FileDown, Edit2, Trash2, FileSpreadsheet,
-  MonitorPlay
+  MonitorPlay, Image as ImageIcon
 } from "lucide-react";
 import { Inp, Toggle } from "./DashboardUI";
 import { supabase } from "./supabase";
@@ -38,6 +38,7 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
 
   const [copiedStates, setCopiedStates] = useState({});
   const [vipGuests, setVipGuests] = useState([]);
+  const [photos, setPhotos] = useState([]); // Estado para las fotos del proyector
   
   const manualGuests = activeInv?.internal_data?.guests || [];
   const useTables = activeInv?.internal_data?.useTables || false;
@@ -55,7 +56,18 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
         if (guestsDataAlt) setVipGuests(guestsDataAlt);
       }
     };
+
+    const fetchPhotos = async () => {
+      const { data: eventData } = await supabase.from('invitaciones').select('id').eq('slug', activeInv.id).single();
+      const targetId = eventData ? eventData.id : activeInv.id;
+      
+      // Asegurate de que tu tabla se llame 'fotos', de lo contrario cambialo aquí
+      const { data: photosData } = await supabase.from('fotos').select('*').eq('evento_id', targetId).order('created_at', { ascending: false });
+      if (photosData) setPhotos(photosData);
+    };
+
     if (activeTab === 'guests') fetchVipGuests();
+    if (activeTab === 'projector') fetchPhotos();
   }, [activeInv.id, activeTab]);
 
   const allGuests = [
@@ -130,11 +142,18 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
     }
   };
 
+  const handleDeletePhoto = async (photoId) => {
+    if(!window.confirm("¿Seguro que querés eliminar esta foto? Se quitará de la galería y del proyector en vivo.")) return;
+    await supabase.from('fotos').delete().eq('id', photoId);
+    setPhotos(photos.filter(p => p.id !== photoId));
+  };
+
   const handleExportCSV = () => {
     if(allGuests.length === 0) return alert("No hay invitados aún.");
-    let csv = "ID Pase,Nombre Completo,Acompañantes,Mesa,Estado,Fecha de Registro\n";
+    // Se elimina ID Pase del Excel
+    let csv = "Nombre Completo,Acompañantes,Mesa,Estado,Fecha de Registro\n";
     allGuests.forEach(g => {
-      csv += `${g.id},${g.name} ${g.lastname},${g.guests},${g.mesa || '-'},${g.status},${new Date(g.timestamp).toLocaleDateString('es-AR')}\n`;
+      csv += `${g.name} ${g.lastname},${g.guests},${g.mesa || '-'},${g.status},${new Date(g.timestamp).toLocaleDateString('es-AR')}\n`;
     });
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
@@ -159,21 +178,28 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
       lines.slice(start).forEach(line => {
         if(!line.trim()) return;
         const cols = line.split(',');
-        const name = cols[0]?.replace(/['"]/g, '').trim() || "";
-        const lastname = cols[1]?.replace(/['"]/g, '').trim() || "";
-        const pax = cols[2]?.replace(/['"]/g, '').trim() || "1";
-        const table = cols[3]?.replace(/['"]/g, '').trim() || "";
+        
+        // Ajustamos la lectura asumiendo que ya no está el ID Pase
+        const fullName = cols[0]?.replace(/['"]/g, '').trim() || "";
+        const nameParts = fullName.split(' ');
+        const name = nameParts[0] || "";
+        const lastname = nameParts.slice(1).join(' ') || "";
+        const pax = cols[1]?.replace(/['"]/g, '').trim() || "1";
+        const table = cols[2]?.replace(/['"]/g, '').trim() || "";
+        const status = cols[3]?.replace(/['"]/g, '').trim() || "Pendiente";
         
         if(name) {
           newGuests.push({
             id: `MANUAL-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
-            name, lastname, guests: parseInt(pax) || 1, mesa: table, status: 'Pendiente', timestamp: new Date().toISOString()
+            name, lastname, guests: parseInt(pax) || 1, mesa: table, status: status, timestamp: new Date().toISOString()
           });
         }
       });
+      
       if (newGuests.length > 0) {
-        onUpdateInternal(activeInv.id, 'guests', [...manualGuests, ...newGuests]);
-        alert(`¡Importación exitosa! Se cargaron ${newGuests.length} invitados.`);
+        // Reemplaza directamente la lista para evitar duplicados
+        onUpdateInternal(activeInv.id, 'guests', newGuests);
+        alert(`¡Importación exitosa! Se ha reemplazado la lista con ${newGuests.length} invitados (Los Pases VIP app no se borran).`);
       } else {
         alert("No se encontraron invitados en el archivo. Asegurate de que sea un archivo CSV separado por comas.");
       }
@@ -219,7 +245,7 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
            <div className="flex gap-4 border border-slate-300 rounded-xl p-1 bg-slate-100 flex-wrap">
              <button onClick={() => setActiveTab('info')} className={`px-4 py-2 rounded-lg text-xs font-black transition-colors cursor-pointer ${activeTab === 'info' ? 'bg-white shadow-sm text-violet-600' : 'text-slate-500 hover:text-slate-700'}`}><ClipboardList size={14} className="inline-block mr-1"/> Ficha Interna</button>
              <button onClick={() => setActiveTab('guests')} className={`px-4 py-2 rounded-lg text-xs font-black transition-colors cursor-pointer ${activeTab === 'guests' ? 'bg-white shadow-sm text-violet-600' : 'text-slate-500 hover:text-slate-700'}`}><Users size={14} className="inline-block mr-1"/> Invitados</button>
-             <button onClick={() => setActiveTab('projector')} className={`px-4 py-2 rounded-lg text-xs font-black transition-colors cursor-pointer ${activeTab === 'projector' ? 'bg-white shadow-sm text-violet-600' : 'text-slate-500 hover:text-slate-700'}`}><MonitorPlay size={14} className="inline-block mr-1"/> Proyector</button>
+             <button onClick={() => setActiveTab('projector')} className={`px-4 py-2 rounded-lg text-xs font-black transition-colors cursor-pointer ${activeTab === 'projector' ? 'bg-white shadow-sm text-violet-600' : 'text-slate-500 hover:text-slate-700'}`}><MonitorPlay size={14} className="inline-block mr-1"/> Proyector / Galería</button>
            </div>
            <button onClick={onClose} className="w-10 h-10 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-full flex items-center justify-center transition-colors cursor-pointer ml-2"><X size={20}/></button>
         </div>
@@ -317,7 +343,7 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
           {activeTab === 'guests' && (
             <div className="animate-in fade-in duration-300">
               
-              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 md:p-5 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 md:p-5 mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                   <h4 className="text-blue-800 font-black text-base mb-1 flex items-center gap-2"><Smartphone size={18}/> App de Recepción (Puerta)</h4>
                   <p className="text-blue-600 text-xs font-medium max-w-lg">Enviale este acceso a tu empleado. Desde ahí solo podrá usar el escáner de QR y ver la lista de ingreso.</p>
@@ -327,7 +353,18 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                 </button>
               </div>
 
-              {/* 👉 DISEÑO: Cabecera y Botones */}
+              {/* NUEVO LINK PARA CLIENTES/GESTIÓN */}
+              <div className="bg-purple-50 border border-purple-200 rounded-2xl p-4 md:p-5 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <h4 className="text-purple-800 font-black text-base mb-1 flex items-center gap-2"><ClipboardList size={18}/> Panel de Gestión para el Cliente</h4>
+                  <p className="text-purple-600 text-xs font-medium max-w-lg">Enviale este link al cliente (agasajado) para que él mismo pueda ver su lista, agregar manuales, editar y asignar las mesas a los invitados.</p>
+                </div>
+                <button onClick={() => handleCopyLink(`gestion-${activeInv.id}`, `${window.location.origin}/lista/${activeInv.id}`)} className={`px-6 py-3.5 rounded-xl font-black text-xs flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95 cursor-pointer shrink-0 ${copiedStates[`gestion-${activeInv.id}`] ? 'bg-green-500 text-white shadow-green-500/30' : 'bg-purple-600 hover:bg-purple-700 text-white shadow-purple-500/30'}`}>
+                  {copiedStates[`gestion-${activeInv.id}`] ? "¡COPIADO! ✅" : <><Copy size={16}/> COPIAR LINK</>}
+                </button>
+              </div>
+
+              {/* Cabecera y Botones */}
               <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4 border-t border-slate-200/50 pt-6">
                 <h3 className={`font-black text-xl flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-800'}`}>
                   <Users className="text-violet-500" size={24}/> Control de Accesos
@@ -342,7 +379,7 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                 </div>
               </div>
 
-              {/* 👉 DISEÑO: Solo Asistentes y Toggle de Mesas (Sin el límite acá) */}
+              {/* Toggle de Mesas */}
               <div className={`flex flex-wrap items-center gap-4 mb-6 p-4 rounded-xl border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
                 <div className="flex items-center gap-2">
                   <span className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Asistentes Totales:</span>
@@ -391,22 +428,53 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
             </div>
           )}
 
-          {/* PESTAÑA PROYECTOR */}
+          {/* PESTAÑA PROYECTOR Y MODERACIÓN */}
           {activeTab === 'projector' && (
-            <div className="animate-in fade-in duration-300 flex flex-col items-center justify-center text-center py-20 px-4">
-              <div className="w-24 h-24 bg-violet-100 text-violet-600 rounded-full flex items-center justify-center mb-6 shadow-sm border-4 border-white">
-                  <MonitorPlay size={40} />
+            <div className="animate-in fade-in duration-300">
+              <div className="flex flex-col md:flex-row items-center justify-between bg-violet-50 p-6 rounded-3xl border border-violet-100 mb-8 gap-6">
+                <div>
+                  <h2 className="text-xl font-black text-violet-900 mb-2 flex items-center gap-2"><MonitorPlay size={24} /> Modo Proyector DJ</h2>
+                  <p className="text-violet-700 text-sm font-medium max-w-lg">
+                     Abre una pantalla en formato de cine que reproduce automáticamente y en vivo las fotos que los invitados suben a la "Cámara Desechable".
+                  </p>
+                </div>
+                <button
+                    onClick={() => window.open(`/manage/${activeInv.id}?mode=projector`, '_blank')}
+                    className="px-6 py-4 bg-violet-600 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-violet-700 transition-transform active:scale-95 shadow-xl shadow-violet-600/30 flex items-center gap-3 cursor-pointer shrink-0"
+                >
+                    <MonitorPlay size={20} /> ABRIR PANTALLA COMPLETA
+                </button>
               </div>
-              <h2 className={`text-2xl font-black mb-3 ${isDark ? 'text-white' : 'text-slate-800'}`}>Modo Proyector DJ</h2>
-              <p className={`max-w-md mx-auto mb-8 font-medium leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Esta herramienta abre una pantalla limpia en formato de cine que reproduce automáticamente y en vivo las fotos que los invitados suben a la "Cámara Desechable".
-              </p>
-              <button
-                  onClick={() => window.open(`/manage/${activeInv.id}?mode=projector`, '_blank')}
-                  className="px-8 py-4 bg-violet-600 text-white rounded-2xl font-black uppercase tracking-widest hover:bg-violet-700 transition-transform active:scale-95 shadow-xl shadow-violet-600/30 flex items-center gap-3 cursor-pointer"
-              >
-                  <MonitorPlay size={20} /> ABRIR EN PANTALLA COMPLETA
-              </button>
+
+              <div className="mb-4">
+                <h3 className={`font-black text-lg flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-800'}`}>
+                  <ImageIcon className="text-pink-500" size={20}/> Moderador de Galería
+                </h3>
+                <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  Las fotos que borres aquí desaparecerán inmediatamente del proyector en vivo y de la galería del evento.
+                </p>
+              </div>
+
+              {photos.length === 0 ? (
+                 <div className="text-center py-20 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+                   <p className="text-slate-400 font-bold">Aún no hay fotos subidas por los invitados.</p>
+                 </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                   {photos.map(p => (
+                      <div key={p.id} className="relative group aspect-square bg-slate-100 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                         <img src={p.url} alt="Foto del evento" className="w-full h-full object-cover" />
+                         <button 
+                           onClick={() => handleDeletePhoto(p.id)} 
+                           className="absolute top-2 right-2 bg-red-500 text-white w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 shadow-lg cursor-pointer"
+                           title="Eliminar foto"
+                         >
+                            <Trash2 size={14}/>
+                         </button>
+                      </div>
+                   ))}
+                </div>
+              )}
             </div>
           )}
 
