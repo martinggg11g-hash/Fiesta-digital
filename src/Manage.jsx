@@ -334,14 +334,21 @@ export const ManageScreen = () => {
            )}
 
            {activeTab === 'mesas' && (
-             <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-                
-                {/* 👉 CABECERA CON EL INPUT DE LÍMITE DE MESAS */}
-                <div className="mb-6 border-b border-slate-100 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div>
-                    <h2 className="text-lg font-black text-slate-800">Organizador de Mesas</h2>
-                    <p className="text-xs text-slate-500 font-medium mt-1">Asigná a los invitados confirmados.</p>
-                  </div>
+  <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+    <div className="mb-6 border-b border-slate-100 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <h2 className="text-lg font-black text-slate-800">Organizador de Mesas</h2>
+        <p className="text-xs text-slate-500 font-medium mt-1">Arrastrá a los invitados confirmados hacia su mesa.</p>
+      </div>
+      
+      {/* EL CLIENTE SOLO VE EL LÍMITE, NO LO PUEDE EDITAR */}
+      <div className="flex items-center gap-2 bg-slate-50 p-2 px-4 rounded-xl border border-slate-200">
+        <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Capacidad Máxima:</span>
+        <span className="text-sm font-black text-slate-800">{maxPaxPorMesa} pax/mesa</span>
+      </div>
+    </div>
+    
+    {/* ... acá abajo sigue tu grilla normal de mesas (grid-cols-1 md:grid-cols-3) ... */}
                   
                   <div className="flex items-center gap-3 bg-violet-50 p-2 pl-4 rounded-xl border border-violet-100">
                     <label className="text-xs font-bold text-violet-700 uppercase tracking-wide">Límite por Mesa:</label>
