@@ -52,6 +52,9 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
   const [newInstagram, setNewInstagram] = useState(salonInfo?.instagram || "");
   const [newFacebook, setNewFacebook] = useState(salonInfo?.facebook || "");
   const [newTiktok, setNewTiktok] = useState(salonInfo?.tiktok || "");
+  
+  // 👉 NUEVO ESTADO PARA EL LÍMITE DE MESAS GLOBAL
+  const [newMaxPax, setNewMaxPax] = useState(salonInfo?.max_por_mesa || 10);
 
   const chatEndRef = useRef(null);
   const [lastSeenChat, setLastSeenChat] = useState(() => Number(localStorage.getItem(`fiesta_chat_seen_${user?.email}`)) || 0);
@@ -60,6 +63,18 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
     const saved = localStorage.getItem("fiesta_darkmode");
     return saved ? JSON.parse(saved) : false;
   });
+
+  // Efecto para actualizar los estados de settings cuando se abre el modal
+  useEffect(() => {
+    if (showSettings) {
+      setNewLogo(salonInfo?.logo || "");
+      setNewPhone(salonInfo?.phone || "");
+      setNewInstagram(salonInfo?.instagram || "");
+      setNewFacebook(salonInfo?.facebook || "");
+      setNewTiktok(salonInfo?.tiktok || "");
+      setNewMaxPax(salonInfo?.max_por_mesa || 10);
+    }
+  }, [showSettings, salonInfo]);
 
   useEffect(() => { localStorage.setItem("fiesta_darkmode", JSON.stringify(isDark)); }, [isDark]);
   
@@ -94,7 +109,6 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
     const matchText = !term || inv.title?.toLowerCase().includes(term) || (data.clientName || "").toLowerCase().includes(term) || honoree.toLowerCase().includes(term);
     
     if (!matchText) return false;
-    // CORRECCIÓN: usamos inv.config.date para el filtro, que es donde se guarda la fecha ahora
     if (filterType === 'upcoming') return !inv.config?.date || new Date(inv.config.date) >= new Date().setHours(0,0,0,0);
     if (filterType === 'past') return inv.config?.date && new Date(inv.config.date) < new Date().setHours(0,0,0,0);
     return true;
@@ -353,9 +367,10 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
         </div>
       )}
 
+      {/* 👉 ACÁ ESTABA EL ERROR: Solo se pasa activeCrmId como key para evitar que React destruya el modal al actualizar datos */}
       {activeCrmId && (
         <CrmModal 
-          key={activeCrmId + JSON.stringify(myInvs.find(i => i.id === activeCrmId))}
+          key={activeCrmId} 
           activeInv={myInvs.find(i => i.id === activeCrmId)} 
           onClose={() => setActiveCrmId(null)} 
           user={user} 
@@ -389,6 +404,13 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
              <div className="max-h-[60vh] overflow-y-auto px-2 fd-sb">
                <FileUpload label="Logo" value={newLogo} onChange={setNewLogo} isDark={isDark} />
                <Inp label="Teléfono (WhatsApp)" placeholder="Ej: +54 9 11 1234-5678" value={newPhone} onChange={setNewPhone} isDark={isDark} />
+               
+               {/* 👉 NUEVO: INPUT PARA LÍMITE DE MESAS GLOBAL DEL SALÓN */}
+               <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-700">
+                 <p className="text-[10px] font-black uppercase text-slate-400 mb-4 text-left">Organización</p>
+                 <Inp label="Límite Personas x Mesa" type="number" placeholder="Ej: 10" value={newMaxPax} onChange={setNewMaxPax} isDark={isDark} />
+               </div>
+
                <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-700">
                  <p className="text-[10px] font-black uppercase text-slate-400 mb-4 text-left">Redes Sociales</p>
                  <Inp label="Instagram (URL completa)" placeholder="https://instagram.com/tusalon" value={newInstagram} onChange={setNewInstagram} isDark={isDark} />
@@ -399,7 +421,8 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
                  <Inp label="Nueva Clave de Acceso" type="password" value={newPassword} onChange={setNewPassword} isDark={isDark} />
                </div>
              </div>
-             <button onClick={() => { onUpdateUser(user.email, { logo: newLogo, phone: newPhone, instagram: newInstagram, facebook: newFacebook, tiktok: newTiktok, ...(newPassword ? {pass: newPassword} : {}) }); setShowSettings(false); notify("Ajustes guardados"); }} className="w-full py-4 mt-4 bg-violet-600 text-white rounded-xl font-black cursor-pointer shadow-lg active:scale-95 transition-transform">GUARDAR</button>
+             {/* 👉 GUARDAR SE LLEVA EL max_por_mesa AL PERFIL */}
+             <button onClick={() => { onUpdateUser(user.email, { logo: newLogo, phone: newPhone, max_por_mesa: Number(newMaxPax) || 10, instagram: newInstagram, facebook: newFacebook, tiktok: newTiktok, ...(newPassword ? {pass: newPassword} : {}) }); setShowSettings(false); notify("Ajustes guardados"); }} className="w-full py-4 mt-4 bg-violet-600 text-white rounded-xl font-black cursor-pointer shadow-lg active:scale-95 transition-transform">GUARDAR</button>
              <button onClick={() => setShowSettings(false)} className="mt-4 text-xs font-bold opacity-50 cursor-pointer">CANCELAR</button>
            </div>
         </div>
