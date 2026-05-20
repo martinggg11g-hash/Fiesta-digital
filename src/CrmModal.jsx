@@ -28,6 +28,9 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
   const [activeTab, setActiveTab] = useState("info");
   const [printMode, setPrintMode] = useState("ficha");
   
+  // 👉 NUEVO ESTADO: Clona activeInv pero se actualiza en vivo
+  const [liveEvent, setLiveEvent] = useState(activeInv); 
+
   const [showGuestModal, setShowGuestModal] = useState(false);
   const [editingGuest, setEditingGuest] = useState(null);
   const [gName, setGName] = useState("");
@@ -39,26 +42,47 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
   const [copiedStates, setCopiedStates] = useState({});
   const [vipGuests, setVipGuests] = useState([]);
   
-  const manualGuests = activeInv?.internal_data?.guests || [];
-  const useTables = activeInv?.internal_data?.useTables || false;
-  const livePhotos = activeInv?.internal_data?.live_photos || []; 
+  // 👉 Leemos del evento EN VIVO
+  const manualGuests = liveEvent?.internal_data?.guests || [];
+  const useTables = liveEvent?.internal_data?.useTables || false;
+  const livePhotos = liveEvent?.internal_data?.live_photos || []; 
   const fileInputRef = useRef(null);
 
   useEffect(() => {
+    let isMounted = true;
+
+    // Función para cargar los VIP (Pases de la App)
     const fetchVipGuests = async () => {
+      let targetId = activeInv.id;
+      // Si el activeInv.id es un slug, buscamos el ID real
       const { data: eventData } = await supabase.from('invitaciones').select('id').eq('slug', activeInv.id).single();
-      
-      if (eventData) {
-        const { data: guestsData } = await supabase.from('invitados').select('*').eq('evento_id', eventData.id).order('created_at', { ascending: false });
-        if (guestsData) setVipGuests(guestsData);
-      } else {
-        const { data: guestsDataAlt } = await supabase.from('invitados').select('*').eq('evento_id', activeInv.id).order('created_at', { ascending: false });
-        if (guestsDataAlt) setVipGuests(guestsDataAlt);
-      }
+      if (eventData) targetId = eventData.id;
+
+      const { data: guestsData } = await supabase.from('invitados').select('*').eq('evento_id', targetId).order('created_at', { ascending: false });
+      if (isMounted && guestsData) setVipGuests(guestsData);
     };
 
-    if (activeTab === 'guests') fetchVipGuests();
-  }, [activeInv.id, activeTab]);
+    fetchVipGuests();
+
+    // 👉 LA ANTENA REALTIME PARA EL SALÓN
+    const channel = supabase.channel(`crm-modal-${activeInv.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'invitaciones' }, (payload) => {
+        // Se actualiza si borras fotos, cambian manuales o el cliente edita configuraciones
+        if (isMounted && payload.new && (payload.new.id === activeInv.id || payload.new.slug === activeInv.id)) {
+          setLiveEvent(payload.new);
+        }
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'invitados' }, () => {
+        // Se actualiza si alguien confirma (código QR) o el cliente edita un pase VIP
+        if (isMounted) fetchVipGuests();
+      })
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      supabase.removeChannel(channel);
+    };
+  }, [activeInv.id]);
 
   const allGuests = [
     ...manualGuests,
@@ -147,7 +171,7 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.setAttribute("download", `Invitados_${activeInv.title}.csv`);
+    link.setAttribute("download", `Invitados_${liveEvent.title}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -181,14 +205,12 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
         const status = cols[3]?.replace(/['"]/g, '').trim() || "Pendiente";
         
         if(name) {
-          // Buscamos si el invitado importado ya es un pase VIP (matcheando nombre completo)
           const matchedVip = vipGuests.find(vg => {
             const vgName = `${vg.nombre_completo} ${vg.apodo ? `(${vg.apodo})` : ''}`.trim().toLowerCase();
             return vgName === fullName.toLowerCase();
           });
 
           if (matchedVip) {
-            // Es un VIP: no lo duplicamos, pero verificamos si le actualizaron la mesa o el estado en el Excel
             let updated = false;
             let updateData = {};
             
@@ -208,7 +230,6 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
             }
             vipCount++;
           } else {
-            // Es un invitado manual (nuevo o editado): Lo agregamos a la nueva lista limpia
             newManualGuests.push({
               id: `MANUAL-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
               name, lastname, guests: parseInt(pax) || 1, mesa: table, status: status, timestamp: new Date().toISOString()
@@ -218,12 +239,10 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
         }
       });
       
-      // Si hubo actualizaciones a los invitados VIP, las disparamos a Supabase
       if (updatePromises.length > 0) {
          await Promise.all(updatePromises);
       }
 
-      // Reemplazamos la lista manual por la nueva importada (sin duplicar VIPs)
       onUpdateInternal(activeInv.id, 'guests', newManualGuests);
       alert(`¡Excel importado! Se reemplazó la lista con ${manualCount} invitados manuales y se actualizaron/ignoraron ${vipCount} pases VIP de forma segura.`);
     };
@@ -286,21 +305,21 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                  <div>
                     <h3 className="text-xs font-black text-blue-500 uppercase tracking-widest mb-4 border-b border-slate-200/20 pb-2 flex items-center gap-2"><UserCheck size={14}/> Datos del Cliente</h3>
-                    <Inp label="Nombre Completo" value={activeInv.internal_data.clientName || ''} onChange={v => onUpdateInternal(activeInv.id, 'clientName', v)} isDark={isDark} />
+                    <Inp label="Nombre Completo" value={liveEvent.internal_data?.clientName || ''} onChange={v => onUpdateInternal(activeInv.id, 'clientName', v)} isDark={isDark} />
                     <div className="flex gap-2 items-end mb-4">
-                       <Inp label="WhatsApp del Cliente" placeholder="Ej: 52 1 55 1234 5678" className="flex-1 !mb-0" value={activeInv.internal_data.clientPhone || ''} onChange={v => onUpdateInternal(activeInv.id, 'clientPhone', v)} isDark={isDark} />
-                       <button onClick={() => window.open(`https://wa.me/${activeInv.internal_data.clientPhone?.replace(/\D/g, '')}`)} className="h-[46px] px-4 bg-green-500 text-white rounded-xl flex items-center justify-center cursor-pointer shadow-md"><MessageCircle size={18}/></button>
+                       <Inp label="WhatsApp del Cliente" placeholder="Ej: 52 1 55 1234 5678" className="flex-1 !mb-0" value={liveEvent.internal_data?.clientPhone || ''} onChange={v => onUpdateInternal(activeInv.id, 'clientPhone', v)} isDark={isDark} />
+                       <button onClick={() => window.open(`https://wa.me/${liveEvent.internal_data?.clientPhone?.replace(/\D/g, '')}`)} className="h-[46px] px-4 bg-green-500 text-white rounded-xl flex items-center justify-center cursor-pointer shadow-md"><MessageCircle size={18}/></button>
                     </div>
-                    <Inp label="Cantidad de Invitados (Aprox)" type="number" placeholder="Ej: 80" value={activeInv.internal_data.guestCount || ''} onChange={v => onUpdateInternal(activeInv.id, 'guestCount', v)} isDark={isDark} />
+                    <Inp label="Cantidad de Invitados (Aprox)" type="number" placeholder="Ej: 80" value={liveEvent.internal_data?.guestCount || ''} onChange={v => onUpdateInternal(activeInv.id, 'guestCount', v)} isDark={isDark} />
                  </div>
                  <div>
                     <h3 className="text-xs font-black text-violet-500 uppercase tracking-widest mb-4 border-b border-slate-200/20 pb-2 flex items-center gap-2"><PartyPopper size={14}/> Detalles del Evento</h3>
-                    <Inp label="Nombre del Agasajado/s" value={activeInv.config?.honoreeName || ''} onChange={v => onUpdateConfig(activeInv.id, 'honoreeName', v)} isDark={isDark} />
+                    <Inp label="Nombre del Agasajado/s" value={liveEvent.config?.honoreeName || ''} onChange={v => onUpdateConfig(activeInv.id, 'honoreeName', v)} isDark={isDark} />
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       
                       <div>
                         <label className={`block text-[10px] font-black uppercase mb-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Tipo de Evento</label>
-                        <select className={`w-full py-3 px-4 rounded-xl text-sm font-bold outline-none cursor-pointer border ${isDark ? 'bg-slate-800 text-white border-slate-700' : 'bg-white text-slate-800 border-slate-200'}`} value={activeInv.internal_data.eventType || ''} onChange={e => onUpdateInternal(activeInv.id, 'eventType', e.target.value)}>
+                        <select className={`w-full py-3 px-4 rounded-xl text-sm font-bold outline-none cursor-pointer border ${isDark ? 'bg-slate-800 text-white border-slate-700' : 'bg-white text-slate-800 border-slate-200'}`} value={liveEvent.internal_data?.eventType || ''} onChange={e => onUpdateInternal(activeInv.id, 'eventType', e.target.value)}>
                            <option value="">Seleccionar...</option>
                            <option value="15 Años">15 Años</option>
                            <option value="Boda">Boda / Casamiento</option>
@@ -314,7 +333,7 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
 
                       <div>
                         <label className={`block text-[10px] font-black uppercase mb-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Estado</label>
-                        <select className={`w-full py-3 px-4 rounded-xl text-sm font-bold outline-none cursor-pointer border ${isDark ? 'bg-slate-800 text-white border-slate-700' : 'bg-white text-slate-800 border-slate-200'}`} value={activeInv.internal_data.eventStatus || 'Nuevo'} onChange={e => onUpdateInternal(activeInv.id, 'eventStatus', e.target.value)}>
+                        <select className={`w-full py-3 px-4 rounded-xl text-sm font-bold outline-none cursor-pointer border ${isDark ? 'bg-slate-800 text-white border-slate-700' : 'bg-white text-slate-800 border-slate-200'}`} value={liveEvent.internal_data?.eventStatus || 'Nuevo'} onChange={e => onUpdateInternal(activeInv.id, 'eventStatus', e.target.value)}>
                            <option value="Nuevo">🔵 Nuevo / Borrador</option>
                            <option value="Confirmado">🟣 Confirmado</option>
                            <option value="Finalizado">⚪ Finalizado</option>
@@ -323,8 +342,8 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                       <Inp label="Fecha" type="date" icon={CalendarClock} value={activeInv.config?.date || ''} onChange={v => onUpdateConfig(activeInv.id, 'date', v)} isDark={isDark} />
-                       <Inp label="Horario" type="text" placeholder="Ej: 14:00 a 20:00" icon={Clock} value={activeInv.config?.time || ''} onChange={v => onUpdateConfig(activeInv.id, 'time', v)} isDark={isDark} />
+                       <Inp label="Fecha" type="date" icon={CalendarClock} value={liveEvent.config?.date || ''} onChange={v => onUpdateConfig(activeInv.id, 'date', v)} isDark={isDark} />
+                       <Inp label="Horario" type="text" placeholder="Ej: 14:00 a 20:00" icon={Clock} value={liveEvent.config?.time || ''} onChange={v => onUpdateConfig(activeInv.id, 'time', v)} isDark={isDark} />
                     </div>
                  </div>
               </div>
@@ -332,10 +351,10 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
               <div className="mb-8">
                  <h3 className="text-xs font-black text-amber-500 uppercase tracking-widest mb-4 border-b border-slate-200/20 pb-2 flex items-center gap-2"><ClipboardList size={14}/> Logística y Servicios</h3>
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Inp label="Servicios Solicitados" placeholder="Ej: DJ, Fotógrafo, Show de Magia..." multiline value={activeInv.internal_data.requestedServices || ''} onChange={v => onUpdateInternal(activeInv.id, 'requestedServices', v)} isDark={isDark} />
-                    <Inp label="Menús Especiales / Alergias" placeholder="Ej: 2 Celíacos, 1 Vegano..." multiline value={activeInv.internal_data.specialMenus || ''} onChange={v => onUpdateInternal(activeInv.id, 'specialMenus', v)} isDark={isDark} />
+                    <Inp label="Servicios Solicitados" placeholder="Ej: DJ, Fotógrafo, Show de Magia..." multiline value={liveEvent.internal_data?.requestedServices || ''} onChange={v => onUpdateInternal(activeInv.id, 'requestedServices', v)} isDark={isDark} />
+                    <Inp label="Menús Especiales / Alergias" placeholder="Ej: 2 Celíacos, 1 Vegano..." multiline value={liveEvent.internal_data?.specialMenus || ''} onChange={v => onUpdateInternal(activeInv.id, 'specialMenus', v)} isDark={isDark} />
                  </div>
-                 <Inp label="Notas Internas (Privadas)" placeholder="Anotaciones para la cocina o administración..." multiline className="mt-2" value={activeInv.internal_data.internalNotes || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalNotes', v)} isDark={isDark} />
+                 <Inp label="Notas Internas (Privadas)" placeholder="Anotaciones para la cocina o administración..." multiline className="mt-2" value={liveEvent.internal_data?.internalNotes || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalNotes', v)} isDark={isDark} />
               </div>
 
               <div className="mb-8">
@@ -343,18 +362,18 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                  <div className={`p-5 rounded-2xl border grid grid-cols-1 md:grid-cols-4 gap-4 ${isDark ? 'bg-green-500/10 border-green-500/20' : 'bg-green-50 border-green-200'}`}>
                     <div>
                       <label className={`block text-[10px] font-black uppercase mb-1.5 ${isDark ? 'text-green-400' : 'text-slate-500'}`}>Estado de Pago</label>
-                      <select className={`w-full py-3 px-4 rounded-xl text-sm font-bold outline-none cursor-pointer border ${isDark ? 'bg-slate-800 text-white border-green-900' : 'bg-white text-slate-800 border-green-200'}`} value={activeInv.internal_data.paymentStatus || 'Pendiente'} onChange={e => onUpdateInternal(activeInv.id, 'paymentStatus', e.target.value)}>
+                      <select className={`w-full py-3 px-4 rounded-xl text-sm font-bold outline-none cursor-pointer border ${isDark ? 'bg-slate-800 text-white border-green-900' : 'bg-white text-slate-800 border-green-200'}`} value={liveEvent.internal_data?.paymentStatus || 'Pendiente'} onChange={e => onUpdateInternal(activeInv.id, 'paymentStatus', e.target.value)}>
                          <option value="Pendiente">🔴 Pendiente</option>
                          <option value="Seña / Parcial">🟡 Seña Adelantada</option>
                          <option value="Pagado Total">🟢 Pagado Total</option>
                       </select>
                     </div>
-                    <Inp label="Presupuesto Total" type="number" prefix="$" value={activeInv.internal_data.totalBudget || ''} onChange={v => onUpdateInternal(activeInv.id, 'totalBudget', v)} isDark={isDark} />
-                    <Inp label="Abonado / Seña" type="number" prefix="$" value={activeInv.internal_data.paymentAmount || ''} onChange={v => onUpdateInternal(activeInv.id, 'paymentAmount', v)} isDark={isDark} />
+                    <Inp label="Presupuesto Total" type="number" prefix="$" value={liveEvent.internal_data?.totalBudget || ''} onChange={v => onUpdateInternal(activeInv.id, 'totalBudget', v)} isDark={isDark} />
+                    <Inp label="Abonado / Seña" type="number" prefix="$" value={liveEvent.internal_data?.paymentAmount || ''} onChange={v => onUpdateInternal(activeInv.id, 'paymentAmount', v)} isDark={isDark} />
                     <div>
                        <label className={`block text-[10px] font-black uppercase mb-1.5 ${isDark ? 'text-green-400' : 'text-slate-500'}`}>Saldo Restante</label>
                        <div className={`w-full py-3 px-4 rounded-xl text-sm font-black flex items-center gap-1 border ${isDark ? 'bg-slate-800 border-green-900 text-white' : 'bg-white border-green-200 text-slate-800'}`}>
-                          <span className="text-slate-400 opacity-50">$</span> {(Number(activeInv.internal_data.totalBudget || 0) - Number(activeInv.internal_data.paymentAmount || 0)).toLocaleString('es-AR')}
+                          <span className="text-slate-400 opacity-50">$</span> {(Number(liveEvent.internal_data?.totalBudget || 0) - Number(liveEvent.internal_data?.paymentAmount || 0)).toLocaleString('es-AR')}
                        </div>
                     </div>
                  </div>
@@ -552,7 +571,7 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <h2 style={{ fontSize: '24px', fontWeight: '900', color: '#1e293b', letterSpacing: '2px', margin: '0 0 4px 0' }}>{printMode === 'presupuesto' ? 'PRESUPUESTO' : 'FICHA DE EVENTO'}</h2>
-                  <p style={{ fontSize: '14px', fontWeight: 'bold', color: '#64748b', background: '#f1f5f9', display: 'inline-block', padding: '4px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', margin: 0 }}>Ref: {activeInv.id.split('-')[1]?.toUpperCase()}</p>
+                  <p style={{ fontSize: '14px', fontWeight: 'bold', color: '#64748b', background: '#f1f5f9', display: 'inline-block', padding: '4px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', margin: 0 }}>Ref: {liveEvent.id.split('-')[1]?.toUpperCase()}</p>
                 </div>
              </div>
 
@@ -560,18 +579,18 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                 <div>
                   <h3 style={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '2px', color: '#94a3b8', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px', marginBottom: '12px' }}>1. Detalles del Evento</h3>
                   <div style={{ fontSize: '14px', lineHeight: '1.6' }}>
-                    <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Agasajado:</span> <span style={{ fontWeight: '900', fontSize: '18px' }}>{activeInv.config?.honoreeName || activeInv.title}</span></p>
-                    <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Tipo:</span> {activeInv.internal_data.eventType || '---'}</p>
-                    <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Fecha:</span> {formatDateSpanish(activeInv.config?.date)}</p>
-                    <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Horario:</span> {activeInv.config?.time || '---'} hs</p>
+                    <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Agasajado:</span> <span style={{ fontWeight: '900', fontSize: '18px' }}>{liveEvent.config?.honoreeName || liveEvent.title}</span></p>
+                    <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Tipo:</span> {liveEvent.internal_data?.eventType || '---'}</p>
+                    <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Fecha:</span> {formatDateSpanish(liveEvent.config?.date)}</p>
+                    <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Horario:</span> {liveEvent.config?.time || '---'} hs</p>
                   </div>
                 </div>
                 <div>
                   <h3 style={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '2px', color: '#94a3b8', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px', marginBottom: '12px' }}>2. Datos del Cliente</h3>
                   <div style={{ fontSize: '14px', lineHeight: '1.6' }}>
-                    <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Nombre:</span> <span style={{ fontWeight: 'bold' }}>{activeInv.internal_data.clientName || '---'}</span></p>
-                    <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Teléfono:</span> {activeInv.internal_data.clientPhone || '---'}</p>
-                    <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Invitados:</span> {activeInv.internal_data.guestCount || '---'} personas</p>
+                    <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Nombre:</span> <span style={{ fontWeight: 'bold' }}>{liveEvent.internal_data?.clientName || '---'}</span></p>
+                    <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Teléfono:</span> {liveEvent.internal_data?.clientPhone || '---'}</p>
+                    <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Invitados:</span> {liveEvent.internal_data?.guestCount || '---'} personas</p>
                   </div>
                 </div>
              </div>
@@ -579,18 +598,18 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
              <div style={{ marginBottom: '32px' }}>
                 <h3 style={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '2px', color: '#94a3b8', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px', marginBottom: '12px' }}>3. Servicios Incluidos</h3>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', fontSize: '14px' }}>
-                  <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}><p style={{ fontWeight: '900', color: '#334155', margin: '0 0 4px 0' }}>Servicios Solicitados:</p><p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{activeInv.internal_data.requestedServices || 'Ninguno especificado.'}</p></div>
-                  <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}><p style={{ fontWeight: '900', color: '#334155', margin: '0 0 4px 0' }}>Menús Especiales / Alergias:</p><p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{activeInv.internal_data.specialMenus || 'Ninguno especificado.'}</p></div>
+                  <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}><p style={{ fontWeight: '900', color: '#334155', margin: '0 0 4px 0' }}>Servicios Solicitados:</p><p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{liveEvent.internal_data?.requestedServices || 'Ninguno especificado.'}</p></div>
+                  <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}><p style={{ fontWeight: '900', color: '#334155', margin: '0 0 4px 0' }}>Menús Especiales / Alergias:</p><p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{liveEvent.internal_data?.specialMenus || 'Ninguno especificado.'}</p></div>
                 </div>
-                {printMode === 'ficha' && <div style={{ marginTop: '16px', padding: '16px', border: '1px solid #cbd5e1', borderRadius: '12px', background: '#fefce8' }}><p style={{ fontWeight: '900', color: '#334155', margin: '0 0 4px 0' }}>Notas Internas del Salón:</p><p style={{ whiteSpace: 'pre-wrap', fontStyle: 'italic', color: '#475569', margin: 0 }}>{activeInv.internal_data.internalNotes || 'Sin observaciones.'}</p></div>}
+                {printMode === 'ficha' && <div style={{ marginTop: '16px', padding: '16px', border: '1px solid #cbd5e1', borderRadius: '12px', background: '#fefce8' }}><p style={{ fontWeight: '900', color: '#334155', margin: '0 0 4px 0' }}>Notas Internas del Salón:</p><p style={{ whiteSpace: 'pre-wrap', fontStyle: 'italic', color: '#475569', margin: 0 }}>{liveEvent.internal_data?.internalNotes || 'Sin observaciones.'}</p></div>}
              </div>
 
              <div>
                 <h3 style={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '2px', color: '#94a3b8', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px', marginBottom: '12px' }}>{printMode === 'presupuesto' ? '4. Detalle de Valores' : '4. Estado Financiero Interno'}</h3>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                  <div style={{ textAlign: 'center' }}><p style={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', color: '#64748b', margin: '0 0 4px 0' }}>Valor Total</p><p style={{ fontSize: '24px', fontWeight: 'bold', color: '#1e293b', margin: 0 }}>${Number(activeInv.internal_data.totalBudget || 0).toLocaleString('es-AR')}</p></div>
-                  <div style={{ textAlign: 'center' }}><p style={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', color: '#64748b', margin: '0 0 4px 0' }}>Abonado / Seña</p><p style={{ fontSize: '24px', fontWeight: 'bold', color: '#15803d', margin: 0 }}>${Number(activeInv.internal_data.paymentAmount || 0).toLocaleString('es-AR')}</p></div>
-                  <div style={{ textAlign: 'center', background: '#1e293b', color: 'white', padding: '12px 24px', borderRadius: '12px' }}><p style={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', color: '#cbd5e1', margin: '0 0 4px 0' }}>Saldo Pendiente</p><p style={{ fontSize: '30px', fontWeight: '900', margin: 0 }}>${(Number(activeInv.internal_data.totalBudget || 0) - Number(activeInv.internal_data.paymentAmount || 0)).toLocaleString('es-AR')}</p></div>
+                  <div style={{ textAlign: 'center' }}><p style={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', color: '#64748b', margin: '0 0 4px 0' }}>Valor Total</p><p style={{ fontSize: '24px', fontWeight: 'bold', color: '#1e293b', margin: 0 }}>${Number(liveEvent.internal_data?.totalBudget || 0).toLocaleString('es-AR')}</p></div>
+                  <div style={{ textAlign: 'center' }}><p style={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', color: '#64748b', margin: '0 0 4px 0' }}>Abonado / Seña</p><p style={{ fontSize: '24px', fontWeight: 'bold', color: '#15803d', margin: 0 }}>${Number(liveEvent.internal_data?.paymentAmount || 0).toLocaleString('es-AR')}</p></div>
+                  <div style={{ textAlign: 'center', background: '#1e293b', color: 'white', padding: '12px 24px', borderRadius: '12px' }}><p style={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', color: '#cbd5e1', margin: '0 0 4px 0' }}>Saldo Pendiente</p><p style={{ fontSize: '30px', fontWeight: '900', margin: 0 }}>${(Number(liveEvent.internal_data?.totalBudget || 0) - Number(liveEvent.internal_data?.paymentAmount || 0)).toLocaleString('es-AR')}</p></div>
                 </div>
              </div>
              
@@ -602,9 +621,9 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                 <div>
                   <h2 style={{ fontSize: '24px', fontWeight: '900', color: '#1e293b', letterSpacing: '2px', margin: '0 0 4px 0', textTransform: 'uppercase' }}>LISTA DE ACCESOS</h2>
                   <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#475569', margin: '0 0 4px 0' }}>
-                    Evento: {activeInv.config?.honoreeName || activeInv.title}
+                    Evento: {liveEvent.config?.honoreeName || liveEvent.title}
                   </p>
-                  <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>Fecha: {formatDateSpanish(activeInv.config?.date)}</p>
+                  <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>Fecha: {formatDateSpanish(liveEvent.config?.date)}</p>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <p style={{ fontSize: '30px', fontWeight: '900', color: '#7c3aed', margin: '0 0 4px 0' }}>{allGuests.reduce((acc, g) => acc + Number(g.guests || 0), 0)}</p>
