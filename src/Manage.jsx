@@ -74,6 +74,9 @@ export const ManageScreen = () => {
   const [newGuest, setNewGuest] = useState({ nombre_completo: '', apodo: '', max_acompanantes: 0 });
   const [adding, setAdding] = useState(false);
 
+  // 👉 ESTADO PARA EL LÍMITE DE MESAS
+  const [maxPaxPorMesa, setMaxPaxPorMesa] = useState(10);
+
   useEffect(() => {
     const fetchEvent = async () => {
       // BUSCAMOS LA INVITACIÓN USANDO EL SLUG CORTO ("evt-...")
@@ -86,10 +89,13 @@ export const ManageScreen = () => {
       
       if (data) {
          setEventData(data);
-         // 👉 EL SECRETO: El verdadero UUID está escondido en la columna evento_id (o es el ID interno si migraste distinto)
-         // Supabase usa UUID, así que debemos asegurarnos de obtener ese identificador largo para buscar invitados.
          const verifiedRealId = data.evento_id || data.id; 
          setRealDbId(verifiedRealId);
+
+         // 👉 CARGAMOS EL LÍMITE DESDE LA BASE DE DATOS (si existe)
+         if (data.config?.max_por_mesa) {
+             setMaxPaxPorMesa(data.config.max_por_mesa);
+         }
 
          if (!data.config?.clientPin || isProjectorMode) setIsAuthenticated(true);
       }
@@ -99,14 +105,12 @@ export const ManageScreen = () => {
   }, [eventSlug, isProjectorMode]);
 
   useEffect(() => {
-    // Si estamos autenticados y YA TENEMOS EL ID REAL, buscamos los invitados
     if (isAuthenticated && realDbId && !isProjectorMode) {
       fetchInvitados();
     }
   }, [isAuthenticated, realDbId, isProjectorMode]);
 
   const fetchInvitados = async () => {
-    // 👉 BUSCAMOS USANDO EL UUID REAL
     const { data, error } = await supabase.from('invitados').select('*').eq('evento_id', realDbId).order('created_at', { ascending: false });
     if (error) console.error("Error buscando invitados:", error);
     if (data) setInvitados(data);
@@ -127,7 +131,6 @@ export const ManageScreen = () => {
      if (!newGuest.nombre_completo || !realDbId) return;
      setAdding(true);
      
-     // 👉 INSERTAMOS USANDO EL UUID REAL
      const { data, error } = await supabase.from('invitados').insert([{
         evento_id: realDbId,
         nombre_completo: newGuest.nombre_completo,
@@ -156,7 +159,47 @@ export const ManageScreen = () => {
      setInvitados(invitados.filter(i => i.id !== id));
   };
 
+  // 👉 ACTUALIZAR LÍMITE DE MESAS EN SUPABASE
+  const handleUpdateMaxPax = async (nuevoMaximo) => {
+    setMaxPaxPorMesa(nuevoMaximo);
+    
+    // Mantenemos el resto de la configuración intacta
+    const updatedConfig = { 
+      ...(eventData?.config || {}), 
+      max_por_mesa: nuevoMaximo 
+    };
+
+    const { error } = await supabase
+      .from('invitaciones')
+      .update({ config: updatedConfig })
+      .eq('id', eventSlug);
+
+    if (error) {
+      alert("Error al guardar el límite en la base de datos: " + error.message);
+    } else {
+      setEventData({ ...eventData, config: updatedConfig });
+    }
+  };
+
+  // 👉 MOVER INVITADO DE MESA (CON VALIDACIÓN DE LÍMITE)
   const handleUpdateMesa = async (guestId, nuevaMesa) => {
+    if (nuevaMesa !== 'Sin Asignar') {
+      // Calculamos ocupantes actuales
+      const ocupantesActuales = invitados
+        .filter(i => i.asistencia_confirmada && i.mesa === nuevaMesa)
+        .reduce((total, inv) => total + 1 + (inv.acompanantes_confirmados || 0), 0);
+
+      // Calculamos cuánto espacio necesita este invitado
+      const invitadoAMover = invitados.find(i => i.id === guestId);
+      const lugaresNecesarios = 1 + (invitadoAMover.acompanantes_confirmados || 0);
+
+      // Validamos límite
+      if (ocupantesActuales + lugaresNecesarios > maxPaxPorMesa) {
+        alert(`⚠️ Capacidad excedida: La ${nuevaMesa} tiene límite de ${maxPaxPorMesa} pax. (Hay ${ocupantesActuales} personas y querés sumar ${lugaresNecesarios}).`);
+        return; // Frenamos la actualización
+      }
+    }
+
     const updated = invitados.map(i => i.id === guestId ? { ...i, mesa: nuevaMesa } : i);
     setInvitados(updated);
     const { error } = await supabase.from('invitados').update({ mesa: nuevaMesa }).eq('id', guestId);
@@ -292,9 +335,26 @@ export const ManageScreen = () => {
 
            {activeTab === 'mesas' && (
              <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-                <div className="mb-6 border-b border-slate-100 pb-4">
-                  <h2 className="text-lg font-black text-slate-800">Organizador de Mesas</h2>
-                  <p className="text-xs text-slate-500 font-medium mt-1">Arrastrá a los invitados confirmados hacia la mesa correspondiente. (Solo se muestran los invitados que ya confirmaron asistencia).</p>
+                
+                {/* 👉 CABECERA CON EL INPUT DE LÍMITE DE MESAS */}
+                <div className="mb-6 border-b border-slate-100 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-lg font-black text-slate-800">Organizador de Mesas</h2>
+                    <p className="text-xs text-slate-500 font-medium mt-1">Asigná a los invitados confirmados.</p>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 bg-violet-50 p-2 pl-4 rounded-xl border border-violet-100">
+                    <label className="text-xs font-bold text-violet-700 uppercase tracking-wide">Límite por Mesa:</label>
+                    <input 
+                      type="number" 
+                      min="1" 
+                      value={maxPaxPorMesa} 
+                      onChange={(e) => setMaxPaxPorMesa(Number(e.target.value))}
+                      onBlur={(e) => handleUpdateMaxPax(Number(e.target.value))} 
+                      className="w-16 p-2 text-center text-sm font-black border border-violet-200 rounded-lg outline-none focus:border-violet-500 text-violet-900 bg-white"
+                      title="Se guarda automáticamente al hacer clic afuera"
+                    />
+                  </div>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -320,27 +380,27 @@ export const ManageScreen = () => {
                          <div className="space-y-2">
                            {invitadosMesa.map(inv => (
                              <div key={inv.id} draggable onDragStart={e => handleDragStart(e, inv.id)} className="p-3 bg-white border border-slate-100 rounded-xl shadow-sm cursor-grab active:cursor-grabbing flex flex-col md:flex-row md:items-center gap-2 md:gap-3 hover:border-violet-300 transition-colors group">
-  <div className="flex items-center gap-3 w-full">
-    {/* Ocultamos el ícono de arrastrar en móvil porque ahí usaremos el selector */}
-    <GripVertical size={14} className="text-slate-300 group-hover:text-violet-400 hidden md:block" />
-    <div className="flex-1 min-w-0">
-      <p className="text-xs font-bold text-slate-800 truncate" title={inv.nombre_completo}>{inv.nombre_completo}</p>
-      {(inv.acompanantes_confirmados > 0) && <p className="text-[9px] text-slate-500 font-medium">+{inv.acompanantes_confirmados} acomp.</p>}
-    </div>
-  </div>
+                               <div className="flex items-center gap-3 w-full">
+                                 {/* Ocultamos el ícono de arrastrar en móvil porque ahí usaremos el selector */}
+                                 <GripVertical size={14} className="text-slate-300 group-hover:text-violet-400 hidden md:block" />
+                                 <div className="flex-1 min-w-0">
+                                   <p className="text-xs font-bold text-slate-800 truncate" title={inv.nombre_completo}>{inv.nombre_completo}</p>
+                                   {(inv.acompanantes_confirmados > 0) && <p className="text-[9px] text-slate-500 font-medium">+{inv.acompanantes_confirmados} acomp.</p>}
+                                 </div>
+                               </div>
 
-  {/* Selector rápido SOLO visible en móviles */}
-  <select 
-    value={mesaNombre} 
-    onChange={(e) => handleUpdateMesa(inv.id, e.target.value)}
-    className="md:hidden w-full mt-2 text-[10px] p-2 font-bold rounded-lg border border-slate-200 bg-slate-50 text-slate-600 outline-none focus:border-violet-400"
-  >
-    <option value="Sin Asignar" disabled={mesaNombre === 'Sin Asignar'}>Mover a...</option>
-    {['Sin Asignar', 'Mesa 1', 'Mesa 2', 'Mesa 3', 'Mesa 4', 'Mesa 5', 'Mesa 6', 'Mesa 7', 'Mesa 8', 'Mesa 9', 'Mesa 10'].map(opcion => (
-      <option key={opcion} value={opcion}>{opcion}</option>
-    ))}
-  </select>
-</div>
+                               {/* Selector rápido SOLO visible en móviles */}
+                               <select 
+                                 value={mesaNombre} 
+                                 onChange={(e) => handleUpdateMesa(inv.id, e.target.value)}
+                                 className="md:hidden w-full mt-2 text-[10px] p-2 font-bold rounded-lg border border-slate-200 bg-slate-50 text-slate-600 outline-none focus:border-violet-400"
+                               >
+                                 <option value="Sin Asignar" disabled={mesaNombre === 'Sin Asignar'}>Mover a...</option>
+                                 {['Sin Asignar', 'Mesa 1', 'Mesa 2', 'Mesa 3', 'Mesa 4', 'Mesa 5', 'Mesa 6', 'Mesa 7', 'Mesa 8', 'Mesa 9', 'Mesa 10'].map(opcion => (
+                                   <option key={opcion} value={opcion}>{opcion}</option>
+                                 ))}
+                               </select>
+                             </div>
                            ))}
                          </div>
                        </div>
