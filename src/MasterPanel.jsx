@@ -42,9 +42,10 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
   const [fPayDate, setFPayDate] = useState("");
   const [fAlert, setFAlert] = useState(false);
   const [fClabe, setFClabe] = useState(""); 
-  const [fTitular, setFTitular] = useState(""); // 👉 ESTADO DEL TITULAR
+  const [fTitular, setFTitular] = useState("");
   const [fIsFree, setFIsFree] = useState(false);
   const [fIsDemo, setFIsDemo] = useState(false);
+  const [fMaxPax, setFMaxPax] = useState(""); // 👉 ESTADO PARA LÍMITE DE MESAS
   const [chatInput, setChatInput] = useState("");
   
   const chatEndRef = useRef(null);
@@ -57,18 +58,48 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
     }
   }, [modalMode, activeSalonChat?.support_chat]);
 
-  const openCreateModal = () => { setModalMode("create"); setFName(""); setFEmail(""); setFPhone(""); setFPass(""); setFAddress(""); setFPayDate(""); setFAlert(false); setFClabe(""); setFTitular(""); setFIsFree(false); setFIsDemo(false); setShowModal(true); };
-  const openEditModal = (salon) => { setModalMode("edit"); setEditingEmail(salon.email); setFName(salon.name); setFEmail(salon.email); setFPhone(salon.phone || ""); setFAddress(salon.address || ""); setFPayDate(salon.payment_date || ""); setFAlert(salon.payment_alert || false); setFClabe(salon.payment_clabe || ""); setFTitular(salon.payment_titular || ""); setFIsFree(salon.is_free || false); setFIsDemo(salon.is_demo || false); setShowModal(true); };
+  const openCreateModal = () => { 
+    setModalMode("create"); 
+    setFName(""); setFEmail(""); setFPhone(""); setFPass(""); 
+    setFAddress(""); setFPayDate(""); setFAlert(false); 
+    setFClabe(""); setFTitular(""); setFIsFree(false); setFIsDemo(false); 
+    setFMaxPax(""); // Reiniciamos el límite de mesas
+    setShowModal(true); 
+  };
+
+  const openEditModal = (salon) => { 
+    setModalMode("edit"); setEditingEmail(salon.email); 
+    setFName(salon.name); setFEmail(salon.email); setFPhone(salon.phone || ""); 
+    setFAddress(salon.address || ""); setFPayDate(salon.payment_date || ""); 
+    setFAlert(salon.payment_alert || false); setFClabe(salon.payment_clabe || ""); 
+    setFTitular(salon.payment_titular || ""); setFIsFree(salon.is_free || false); 
+    setFIsDemo(salon.is_demo || false); 
+    setFMaxPax(salon.max_pax || ""); // Cargamos el límite de mesas
+    setShowModal(true); 
+  };
+
   const openPassModal = (salon) => { setModalMode("password"); setEditingEmail(salon.email); setFPass(""); setShowModal(true); };
   
   const openSupportModal = (salon) => { setModalMode("support"); setEditingEmail(salon.email); setFName(salon.name); setChatInput(""); setShowModal(true); };
 
   const handleSaveModal = () => {
+    // Parseamos el límite a número antes de guardar (si está vacío enviamos un string vacío o undefined según prefieras, aquí lo paso como venga o 0)
+    const maxPaxValue = fMaxPax !== "" ? Number(fMaxPax) : ""; 
+
     if (modalMode === "create") {
       if(!fName || !fEmail || !fPass) return alert("Faltan datos");
-      onCreateSalon({ name: fName, email: fEmail, pass: fPass, role: "salon", address: fAddress, phone: fPhone, payment_date: fPayDate, payment_alert: fAlert, payment_clabe: fClabe, payment_titular: fTitular, is_free: fIsFree, is_demo: fIsDemo });
+      onCreateSalon({ 
+        name: fName, email: fEmail, pass: fPass, role: "salon", 
+        address: fAddress, phone: fPhone, payment_date: fPayDate, 
+        payment_alert: fAlert, payment_clabe: fClabe, payment_titular: fTitular, 
+        is_free: fIsFree, is_demo: fIsDemo, max_pax: maxPaxValue 
+      });
     } else if (modalMode === "edit") {
-      onUpdateUser(editingEmail, { name: fName, phone: fPhone, address: fAddress, payment_date: fPayDate, payment_alert: fAlert, payment_clabe: fClabe, payment_titular: fTitular, is_free: fIsFree, is_demo: fIsDemo });
+      onUpdateUser(editingEmail, { 
+        name: fName, phone: fPhone, address: fAddress, payment_date: fPayDate, 
+        payment_alert: fAlert, payment_clabe: fClabe, payment_titular: fTitular, 
+        is_free: fIsFree, is_demo: fIsDemo, max_pax: maxPaxValue // 👉 AQUÍ AÑADIMOS LAS BANDERAS Y EL LÍMITE
+      });
     } else if (modalMode === "password") {
       if(!fPass) return alert("Escribe una contraseña");
       onUpdateUser(editingEmail, { pass: fPass });
@@ -192,7 +223,17 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
                   
                   {!fIsFree && <Inp label="Ubicación Global (Google Maps)" value={fAddress} onChange={setFAddress} className="!mb-0" />}
 
-                  {/* 👉 ACÁ ESTÁ LA MAGIA VISUAL: LOS DOS CAMPOS */}
+                  {/* 👉 ACÁ ESTÁ EL INPUT PARA LÍMITE DE MESAS */}
+                  <Inp 
+                    label="Límite de Mesas (Vacío = Sin límite)" 
+                    type="number" 
+                    placeholder="Ej: 50" 
+                    value={fMaxPax} 
+                    onChange={setFMaxPax} 
+                    className="mt-3" 
+                  />
+
+                  {/* DATOS BANCARIOS */}
                   <div className="grid grid-cols-1 gap-3 mt-4 bg-slate-50 p-4 rounded-2xl border border-slate-200">
                     <Inp label="Titular de la Cuenta" placeholder="Ej: Juan Pérez" value={fTitular} onChange={setFTitular} className="!mb-0" />
                     <Inp label="CLABE / CVU de Pago" placeholder="Ej: 012345678901234567" value={fClabe} onChange={setFClabe} className="!mb-0" />
