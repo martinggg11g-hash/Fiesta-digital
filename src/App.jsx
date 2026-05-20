@@ -245,11 +245,18 @@ export default function App() {
     <Suspense fallback={<LoadingFallback />}>
       <Routes>
         <Route path="/" element={user ? <Navigate to="/dashboard" /> : <LoginScreen onLogin={handleLogin} users={users} />} />
+        
         <Route path="/dashboard" element={user ? <DashboardScreen user={user} users={users} invitations={invitations} onCreateInv={handleCreateInv} onUpdateInternal={handleUpdateInternal} onUpdateConfig={handleUpdateConfig} onLogout={handleLogout} /> : <Navigate to="/" />} />
-        <Route path="/editor/:id" element={<EditorScreen invitations={invitations} onSave={handleSaveInv} />} />
+        
+        {/* 👉 PROPS AÑADIDAS: onUpdateInternal y onUpdateConfig al EditorScreen */}
+        <Route path="/editor/:id" element={<EditorScreen invitations={invitations} onSave={handleSaveInv} onUpdateInternal={handleUpdateInternal} onUpdateConfig={handleUpdateConfig} />} />
+        
         <Route path="/i/:salon/:invId" element={<PublicInviteScreen invitations={invitations} onConfirmRSVP={handleConfirmRSVP} onUpdateInternal={handleUpdateInternal} />} />
         <Route path="/puerta/:id" element={<PuertaScreen invitations={invitations} onUpdateInternal={handleUpdateInternal} />} />
-        <Route path="/manage/:id" element={<ManageScreen />} />
+        
+        {/* 👉 PROPS AÑADIDAS: onUpdateInternal y onUpdateConfig al ManageScreen */}
+        <Route path="/manage/:id" element={<ManageScreen invitations={invitations} onUpdateInternal={handleUpdateInternal} onUpdateConfig={handleUpdateConfig} />} />
+        
         <Route path="/invite/:id" element={<LiveInviteScreen />} />
       </Routes>
     </Suspense>
