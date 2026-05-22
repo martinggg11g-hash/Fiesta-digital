@@ -13,8 +13,6 @@ const DashboardScreen = React.lazy(() => import("./Dashboard"));
 const PuertaScreen = React.lazy(() => import("./Puerta"));
 const EditorScreen = React.lazy(() => import("./Editor").then(module => ({ default: module.EditorScreen })));
 const ManageScreen = React.lazy(() => import("./Manage").then(module => ({ default: module.ManageScreen })));
-
-// PANEL DE CLIENTE
 const GuestListClientScreen = React.lazy(() => import("./GuestListClient").then(module => ({ default: module.GuestListClient })));
 
 const LoadingFallback = () => (
@@ -23,7 +21,6 @@ const LoadingFallback = () => (
   </div>
 );
 
-// Helper para castear booleanos de Supabase de forma segura (MC-12)
 const toBool = (v) => v === true || v === 'true' || v === 1;
 
 // ===============================================
@@ -40,7 +37,7 @@ const LiveInviteScreen = () => {
 
   useEffect(() => {
     const fetchEventAndGuest = async () => {
-      try { // BM-09: Try/catch agregado
+      try { 
         const { data: eventData } = await supabase.from('invitaciones').select('*').eq('id', eventSlug).single();
         if (eventData) {
           setInv(eventData);
@@ -53,7 +50,7 @@ const LiveInviteScreen = () => {
       } catch (error) {
         console.error("Error cargando evento:", error);
       } finally {
-        setLoading(false); // BM-09: Siempre libera el loading
+        setLoading(false); 
       }
     };
     fetchEventAndGuest();
@@ -144,7 +141,6 @@ export default function App() {
     sessionStorage.removeItem("fiesta_user"); 
   }, []);
 
-  // BC-04: Carga Inicial aislada de la sesión del usuario
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -164,7 +160,6 @@ export default function App() {
     fetchData();
   }, []);
 
-  // BC-04 & MC-06: Canal Realtime unificado y de una sola instancia
   useEffect(() => {
     const channel = supabase
       .channel('fiesta-realtime')
@@ -193,7 +188,7 @@ export default function App() {
     };
   }, []);
 
-  // BC-03: Evitamos la Race Condition usando callback puro sin closures mutables externos
+  // 👉 FIX CRÍTICO DEL PANTALLAZO BLANCO: Quitamos el .catch() e implementamos una función async interna
   const handleUpdateInternal = useCallback((id, f, v) => {
     setInvitations(prev => {
       const inv = prev.find(i => i.id === id);
@@ -201,9 +196,11 @@ export default function App() {
       
       const newInternal = { ...inv.internal_data, [f]: v };
       
-      // Update asíncrono disparado con datos 100% frescos del state
-      supabase.from('invitaciones').update({ internal_data: newInternal }).eq('id', id)
-        .catch(err => console.error("Error al guardar internal_data:", err));
+      const saveToDb = async () => {
+        const { error } = await supabase.from('invitaciones').update({ internal_data: newInternal }).eq('id', id);
+        if (error) console.error("Error al guardar internal_data:", error);
+      };
+      saveToDb();
         
       return prev.map(i => i.id === id ? { ...i, internal_data: newInternal } : i);
     });
@@ -216,8 +213,11 @@ export default function App() {
       
       const newConfig = { ...inv.config, [key]: value };
       
-      supabase.from('invitaciones').update({ config: newConfig }).eq('id', id)
-        .catch(err => console.error("Error al guardar config:", err));
+      const saveToDb = async () => {
+        const { error } = await supabase.from('invitaciones').update({ config: newConfig }).eq('id', id);
+        if (error) console.error("Error al guardar config:", error);
+      };
+      saveToDb();
         
       return prev.map(i => i.id === id ? { ...i, config: newConfig } : i);
     });
@@ -263,7 +263,6 @@ export default function App() {
     }]);
   }, []);
 
-  // BM-04 & MC-11: Se usa el parámetro sN y retorna null en caso de error explícito
   const handleCreateInv = useCallback(async (sE, sN) => { 
     const sInfo = users.find(u => u.email === sE);
     if (sInfo?.is_demo && (sInfo?.invites_created || 0) >= 3) return null;
@@ -311,11 +310,9 @@ export default function App() {
           /> : <Navigate to="/" />
         } />
         
-        {/* BM-01: Rutas de administración ahora protegidas */}
         <Route path="/editor/:id" element={user ? <EditorScreen invitations={invitations} onSave={handleSaveInv} onUpdateInternal={handleUpdateInternal} onUpdateConfig={handleUpdateConfig} /> : <Navigate to="/" />} />
         <Route path="/manage/:id" element={user ? <ManageScreen invitations={invitations} onUpdateInternal={handleUpdateInternal} onUpdateConfig={handleUpdateConfig} /> : <Navigate to="/" />} />
         
-        {/* MC-10: Limpiamos props inútiles enviados a Puerta */}
         <Route path="/puerta/:id" element={user ? <PuertaScreen /> : <Navigate to="/" />} />
         
         <Route path="/i/:salon/:invId" element={<PublicInviteScreen invitations={invitations} onConfirmRSVP={handleConfirmRSVP} onUpdateInternal={handleUpdateInternal} />} />
