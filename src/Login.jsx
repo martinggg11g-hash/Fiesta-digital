@@ -1,16 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2, PartyPopper, ShieldCheck, AlertCircle, Eye, EyeOff } from "lucide-react";
 
+// 👉 MC-09: Inp simplificado al 100%. Sin debounce, directo y reactivo.
 const Inp = ({ label, value, onChange, placeholder, type="text", className="", icon: Icon = null }) => {
-  const [localVal, setLocalVal] = useState(value || "");
   const [showPwd, setShowPwd] = useState(false);
-  const isFocused = useRef(false);
-
-  useEffect(() => { if (!isFocused.current) setLocalVal(value || ""); }, [value]);
-  useEffect(() => { const timeout = setTimeout(() => { if (localVal !== (value || "")) onChange(localVal); }, 400); return () => clearTimeout(timeout); }, [localVal, onChange, value]);
-
-  const handleBlur = () => { isFocused.current = false; if (localVal !== (value || "")) onChange(localVal); };
   const actualType = type === 'password' && showPwd ? 'text' : type;
   
   return (
@@ -20,12 +14,10 @@ const Inp = ({ label, value, onChange, placeholder, type="text", className="", i
         {Icon && <div className="absolute left-4 text-slate-400"><Icon size={16}/></div>}
         <input 
           type={actualType} 
-          value={localVal} 
-          onChange={e => setLocalVal(e.target.value)} 
-          onFocus={() => isFocused.current = true} 
-          onBlur={handleBlur} 
+          value={value || ""} 
+          onChange={e => onChange(e.target.value)} 
           placeholder={placeholder} 
-          className={`w-full py-3 rounded-xl text-sm focus:border-violet-400 outline-none transition-all bg-gray-50 border-gray-200 text-slate-800 focus:bg-white ${Icon ? 'pl-11' : 'px-4'} ${type === 'password' ? 'pr-12' : 'pr-4'}`} 
+          className={`w-full py-3 rounded-xl text-sm border focus:border-violet-400 outline-none transition-all bg-gray-50 border-gray-200 text-slate-800 focus:bg-white ${Icon ? 'pl-11' : 'px-4'} ${type === 'password' ? 'pr-12' : 'pr-4'}`} 
         />
         {type === 'password' && (
           <button type="button" onClick={() => setShowPwd(!showPwd)} className="absolute right-4 text-slate-400 hover:text-violet-500 transition-colors cursor-pointer">
@@ -50,7 +42,9 @@ export default function LoginScreen({ isMaster = false, onLogin, users }) {
     setLoading(true);
     setError("");
 
-    // Validación instantánea sin retrasos artificiales
+    // NOTA: BC-01 y BM-07 (Seguridad y Auth de base de datos) 
+    // se mantienen tal cual para resolver en la etapa de paso a Producción.
+
     if (isMaster && email === "owner@defiesta.lat" && pass === "owner123") {
       onLogin({ name: "Master", role: "owner", email }, rememberMe);
       navigate("/dashboard");
