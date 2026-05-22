@@ -22,6 +22,9 @@ export const GuestListClient = () => {
   const [gPax, setGPax] = useState(1);
   const [gStatus, setGStatus] = useState("Pendiente");
   const [gTable, setGTable] = useState("");
+  
+  // 👉 MC-03: Estado para manejar errores sin usar window.alert()
+  const [formError, setFormError] = useState("");
 
   const fetchData = async () => {
     try {
@@ -47,7 +50,7 @@ export const GuestListClient = () => {
   useEffect(() => {
     fetchData();
 
-    // 👉 LA ANTENA REALTIME PARA EL CLIENTE
+    // LA ANTENA REALTIME PARA EL CLIENTE
     const channel = supabase.channel(`client-room-${id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'invitaciones' }, (payload) => {
         // Si el salón edita la ficha o los invitados manuales, se refleja acá
@@ -95,17 +98,23 @@ export const GuestListClient = () => {
   const openNewGuest = () => {
     setEditingGuest(null);
     setGName(""); setGLastname(""); setGPax(1); setGStatus("Pendiente"); setGTable("");
+    setFormError(""); // Limpiamos errores previos
     setShowModal(true);
   };
   
   const openEditGuest = (g) => {
     setEditingGuest(g);
     setGName(g.name); setGLastname(g.lastname); setGPax(g.guests); setGStatus(g.status); setGTable(g.mesa || "");
+    setFormError(""); // Limpiamos errores previos
     setShowModal(true);
   };
 
   const saveGuest = async () => {
-    if(!gName && !editingGuest?.isVip) return alert("Por favor ingresá un nombre.");
+    // MC-03: Reemplazado alert por estado local
+    if(!gName && !editingGuest?.isVip) {
+      setFormError("Por favor ingresá un nombre.");
+      return;
+    }
     
     let finalTable = gTable.trim();
     if (finalTable && !finalTable.toLowerCase().startsWith('mesa')) {
@@ -119,7 +128,8 @@ export const GuestListClient = () => {
       if (editingGuest) {
         newList = newList.map(g => g.id === editingGuest.id ? { ...g, name: gName, lastname: gLastname, guests: Number(gPax), status: gStatus, mesa: finalTable } : g);
       } else {
-        const fakeId = `MANUAL-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+        // 👉 BM-05 & MC-04: ID robusto sin deprecaciones ni colisiones
+        const fakeId = `MANUAL-${crypto.randomUUID()}`;
         newList.push({ id: fakeId, name: gName, lastname: gLastname, guests: Number(gPax), mesa: finalTable, status: gStatus, timestamp: new Date().toISOString() });
       }
       await updateInternalGuests(newList);
@@ -200,8 +210,9 @@ export const GuestListClient = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredGuests.map((g, i) => (
-              <div key={i} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between gap-4">
+            {filteredGuests.map((g) => (
+              /* 👉 MC-02: Usamos g.id real en lugar del index para no romper el diffing de React */
+              <div key={g.id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="font-black text-slate-800 text-lg truncate">{g.name} {g.lastname}</h3>
@@ -237,12 +248,18 @@ export const GuestListClient = () => {
               <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200"><X size={16}/></button>
               <h3 className="font-black text-xl mb-6 text-slate-800">{editingGuest ? 'Editar Invitado' : 'Nuevo Invitado'}</h3>
               
+              {formError && (
+                <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-xl text-xs font-bold border border-red-200 text-left">
+                  {formError}
+                </div>
+              )}
+
               <div className="space-y-4 text-left">
                  {!editingGuest?.isVip ? (
                    <>
                      <div>
                        <label className="block text-[10px] font-black uppercase mb-1.5 text-slate-500">Nombre</label>
-                       <input type="text" value={gName} onChange={e => setGName(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-violet-500 focus:bg-white" />
+                       <input type="text" value={gName} onChange={e => setGName(e.target.value)} className={`w-full bg-slate-50 border ${formError && !gName ? 'border-red-300' : 'border-slate-200'} rounded-xl px-4 py-3 outline-none focus:border-violet-500 focus:bg-white`} />
                      </div>
                      <div>
                        <label className="block text-[10px] font-black uppercase mb-1.5 text-slate-500">Apellido (Opcional)</label>
