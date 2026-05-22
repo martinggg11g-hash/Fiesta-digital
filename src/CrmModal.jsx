@@ -24,7 +24,6 @@ const getTodaySpanish = () => {
   return `${today.getDate()} de ${months[today.getMonth()]} de ${today.getFullYear()}`;
 };
 
-// 👉 FIX CRÍTICO: Función a prueba de balas para evitar el RangeError (Pantallazo Blanco)
 const safeFormatDate = (ts) => {
   if (!ts) return 'Sin fecha';
   try {
@@ -41,6 +40,12 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
   const [printMode, setPrintMode] = useState("ficha");
   
   const [liveEvent, setLiveEvent] = useState(activeInv); 
+
+  // 👉 FIX: El "Espejo" mágico. 
+  // Esto obliga al Modal a actualizarse instantáneamente cuando App.jsx cambia los datos (Ej: al activar el switch o agregar un invitado manual).
+  useEffect(() => {
+    setLiveEvent(activeInv);
+  }, [activeInv]);
 
   const [showGuestModal, setShowGuestModal] = useState(false);
   const [editingGuest, setEditingGuest] = useState(null);
@@ -79,12 +84,9 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
 
     fetchVipGuests();
 
-    const channel = supabase.channel(`crm-modal-${activeInv.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'invitaciones' }, (payload) => {
-        if (isMounted && payload.new && (payload.new.id === activeInv.id || payload.new.slug === activeInv.id)) {
-          setLiveEvent(payload.new);
-        }
-      })
+    // Solo mantenemos la antena de Supabase para los VIPs (App de puerta).
+    // Las configuraciones y manuales ya se actualizan solas gracias al "Espejo" de arriba.
+    const channel = supabase.channel(`crm-modal-vips-${activeInv.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'invitados' }, () => {
         if (isMounted) fetchVipGuests();
       })
@@ -443,6 +445,7 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                 </button>
               </div>
 
+              {/* Cabecera y Botones */}
               <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4 border-t border-slate-200/50 pt-6">
                 <h3 className={`font-black text-lg sm:text-xl flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-800'}`}>
                   <Users className="text-violet-500" size={24}/> Control de Accesos
@@ -457,7 +460,7 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                 </div>
               </div>
 
-              {/* 👉 FIX: Switch propio para evitar el componente Toggle */}
+              {/* Toggle de Mesas con div custom */}
               <div className={`flex flex-col sm:flex-row sm:items-center gap-4 mb-6 p-4 rounded-xl border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
                 <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
                   <span className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Asistentes Totales:</span>
@@ -492,7 +495,6 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                         <tr key={g.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                           <td className="p-4 font-bold text-slate-800">
                             {g.name} {g.lastname} {g.isVip && <span className="ml-2 text-[8px] bg-violet-100 text-violet-600 px-2 py-0.5 rounded-full uppercase tracking-widest">VIP App</span>}
-                            {/* 👉 FIX: Usamos la función safeFormatDate para que React no explote nunca */}
                             <br/><span className="text-[9px] text-slate-400 font-normal uppercase tracking-wider">{safeFormatDate(g.timestamp)}</span>
                           </td>
                           <td className="p-4 text-center"><code className="bg-slate-100 px-2 py-1 rounded text-xs text-slate-500 font-mono">{g.id.split('-').pop()}</code></td>
@@ -608,6 +610,7 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
         </div>
       </div>
 
+      {/* ---------------- LA HOJA A4 PARA IMPRIMIR (DOBLE PLANTILLA) ---------------- */}
       <div className="only-print">
          {printMode !== 'invitados' ? (
            <>
