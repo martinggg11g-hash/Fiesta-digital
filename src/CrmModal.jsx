@@ -28,7 +28,6 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
   const [activeTab, setActiveTab] = useState("info");
   const [printMode, setPrintMode] = useState("ficha");
   
-  // 👉 NUEVO ESTADO: Clona activeInv pero se actualiza en vivo
   const [liveEvent, setLiveEvent] = useState(activeInv); 
 
   const [showGuestModal, setShowGuestModal] = useState(false);
@@ -38,11 +37,18 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
   const [gPax, setGPax] = useState(1);
   const [gStatus, setGStatus] = useState("Pendiente");
   const [gTable, setGTable] = useState("");
+  const [formError, setFormError] = useState(""); // 👉 MC-03: Reemplazo del alert en el formulario
 
   const [copiedStates, setCopiedStates] = useState({});
   const [vipGuests, setVipGuests] = useState([]);
   
-  // 👉 Leemos del evento EN VIVO
+  // 👉 MC-03: Sistema Toast local
+  const [toast, setToast] = useState(null);
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
+
   const manualGuests = liveEvent?.internal_data?.guests || [];
   const useTables = liveEvent?.internal_data?.useTables || false;
   const livePhotos = liveEvent?.internal_data?.live_photos || []; 
@@ -51,10 +57,8 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
   useEffect(() => {
     let isMounted = true;
 
-    // Función para cargar los VIP (Pases de la App)
     const fetchVipGuests = async () => {
       let targetId = activeInv.id;
-      // Si el activeInv.id es un slug, buscamos el ID real
       const { data: eventData } = await supabase.from('invitaciones').select('id').eq('slug', activeInv.id).single();
       if (eventData) targetId = eventData.id;
 
@@ -64,16 +68,13 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
 
     fetchVipGuests();
 
-    // 👉 LA ANTENA REALTIME PARA EL SALÓN
     const channel = supabase.channel(`crm-modal-${activeInv.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'invitaciones' }, (payload) => {
-        // Se actualiza si borras fotos, cambian manuales o el cliente edita configuraciones
         if (isMounted && payload.new && (payload.new.id === activeInv.id || payload.new.slug === activeInv.id)) {
           setLiveEvent(payload.new);
         }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'invitados' }, () => {
-        // Se actualiza si alguien confirma (código QR) o el cliente edita un pase VIP
         if (isMounted) fetchVipGuests();
       })
       .subscribe();
@@ -112,17 +113,22 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
   const openNewGuest = () => {
     setEditingGuest(null);
     setGName(""); setGLastname(""); setGPax(1); setGStatus("Pendiente"); setGTable("");
+    setFormError("");
     setShowGuestModal(true);
   };
   
   const openEditGuest = (g) => {
     setEditingGuest(g);
     setGName(g.name); setGLastname(g.lastname); setGPax(g.guests); setGStatus(g.status); setGTable(g.mesa || "");
+    setFormError("");
     setShowGuestModal(true);
   };
 
   const saveGuest = async () => {
-    if(!gName && !editingGuest?.isVip) return alert("Falta nombre");
+    if(!gName && !editingGuest?.isVip) {
+       setFormError("Por favor ingresá un nombre.");
+       return;
+    }
     
     let finalTable = gTable.trim();
     if (finalTable && !finalTable.toLowerCase().startsWith('mesa')) {
@@ -137,7 +143,8 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
       if (editingGuest) {
         newList = newList.map(g => g.id === editingGuest.id ? { ...g, name: gName, lastname: gLastname, guests: Number(gPax), status: gStatus, mesa: finalTable } : g);
       } else {
-        const fakeId = `MANUAL-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+        // 👉 BM-05 & MC-04: Usamos crypto.randomUUID()
+        const fakeId = `MANUAL-${crypto.randomUUID()}`;
         newList.push({ id: fakeId, name: gName, lastname: gLastname, guests: Number(gPax), mesa: finalTable, status: gStatus, timestamp: new Date().toISOString() });
       }
       onUpdateInternal(activeInv.id, 'guests', newList);
@@ -163,7 +170,10 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
   };
 
   const handleExportCSV = () => {
-    if(allGuests.length === 0) return alert("No hay invitados aún.");
+    if(allGuests.length === 0) {
+      showToast("No hay invitados aún para exportar.", "error");
+      return;
+    }
     let csv = "Nombre Completo,Acompañantes,Mesa,Estado,Fecha de Registro\n";
     allGuests.forEach(g => {
       csv += `${g.name} ${g.lastname},${g.guests},${g.mesa || '-'},${g.status},${new Date(g.timestamp).toLocaleDateString('es-AR')}\n`;
@@ -230,8 +240,9 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
             }
             vipCount++;
           } else {
+            // 👉 BM-05 & MC-04: Usamos crypto.randomUUID() también en el importador
             newManualGuests.push({
-              id: `MANUAL-${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+              id: `MANUAL-${crypto.randomUUID()}`,
               name, lastname, guests: parseInt(pax) || 1, mesa: table, status: status, timestamp: new Date().toISOString()
             });
             manualCount++;
@@ -244,7 +255,7 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
       }
 
       onUpdateInternal(activeInv.id, 'guests', newManualGuests);
-      alert(`¡Excel importado! Se reemplazó la lista con ${manualCount} invitados manuales y se actualizaron/ignoraron ${vipCount} pases VIP de forma segura.`);
+      showToast(`¡Excel importado! Se agregaron ${manualCount} manuales y se actualizaron ${vipCount} VIPs.`, "success");
     };
     reader.readAsText(file);
     e.target.value = null;
@@ -281,6 +292,13 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
         }
       `}</style>
       
+      {/* Toast Flotante */}
+      {toast && (
+        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[999] px-6 py-3 rounded-xl shadow-xl font-bold text-sm text-white transition-all ${toast.type === 'error' ? 'bg-red-500' : 'bg-[#25D366]'}`}>
+          {toast.message}
+        </div>
+      )}
+
       <div className={`w-full max-w-5xl max-h-[95vh] h-full sm:h-auto rounded-[2rem] overflow-hidden flex flex-col shadow-2xl anim-pop no-print ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
         
         <div className={`px-6 py-4 border-b flex justify-between items-center shrink-0 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
@@ -444,8 +462,9 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                   <table className="w-full text-left bg-white min-w-[600px]">
                     <thead><tr className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest"><th className="p-4 border-b">Invitado</th><th className="p-4 border-b text-center">Pase VIP ID</th><th className="p-4 border-b text-center">Personas</th>{useTables && <th className="p-4 border-b text-center text-violet-500">Mesa</th>}<th className="p-4 border-b text-center">Estado</th><th className="p-4 border-b text-right">Acciones</th></tr></thead>
                     <tbody className="text-sm">
-                      {allGuests.map((g, i) => (
-                        <tr key={i} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                      {/* 👉 MC-02: key={g.id} solucionado */}
+                      {allGuests.map((g) => (
+                        <tr key={g.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                           <td className="p-4 font-bold text-slate-800">
                             {g.name} {g.lastname} {g.isVip && <span className="ml-2 text-[8px] bg-violet-100 text-violet-600 px-2 py-0.5 rounded-full uppercase tracking-widest">VIP App</span>}
                             <br/><span className="text-[9px] text-slate-400 font-normal uppercase tracking-wider">{new Date(g.timestamp).toLocaleDateString('es-AR')}</span>
@@ -502,9 +521,10 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                  </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                   {livePhotos.map((url, i) => (
-                      <div key={i} className="relative group aspect-square bg-slate-100 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                         <img src={url} alt={`Foto del evento ${i}`} className="w-full h-full object-cover" />
+                   {/* 👉 MC-02: key={url} solucionado */}
+                   {livePhotos.map((url) => (
+                      <div key={url} className="relative group aspect-square bg-slate-100 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                         <img src={url} alt="Foto del evento" className="w-full h-full object-cover" />
                          <button 
                            onClick={() => handleDeletePhoto(url)} 
                            className="absolute top-2 right-2 bg-red-500 text-white w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 shadow-lg cursor-pointer"
@@ -525,6 +545,13 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                <div className={`w-full max-w-sm rounded-[2rem] p-6 shadow-2xl relative text-center anim-pop ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
                   <button onClick={() => setShowGuestModal(false)} className="absolute top-4 right-4 w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 cursor-pointer"><X size={16}/></button>
                   <h3 className={`font-black text-lg mb-4 ${isDark ? 'text-white' : 'text-slate-800'}`}>{editingGuest ? 'Editar Invitado' : 'Agregar Invitado Manual'}</h3>
+                  
+                  {formError && (
+                    <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-xl text-xs font-bold border border-red-200 text-left">
+                      {formError}
+                    </div>
+                  )}
+
                   <div className="space-y-2">
                      {!editingGuest?.isVip ? (
                        <>
@@ -642,8 +669,9 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                  </tr>
                </thead>
                <tbody>
-                 {allGuests.map((g, i) => (
-                   <tr key={i} style={{ borderBottom: '1px solid #e2e8f0', fontSize: '14px' }}>
+                 {/* 👉 MC-02: key={g.id} para la hoja impresa */}
+                 {allGuests.map((g) => (
+                   <tr key={g.id} style={{ borderBottom: '1px solid #e2e8f0', fontSize: '14px' }}>
                      <td style={{ padding: '12px 8px', fontFamily: 'monospace', color: '#64748b' }}>{g.id.split('-').pop()}</td>
                      <td style={{ padding: '12px 8px', fontWeight: 'bold', color: '#1e293b' }}>{g.name} {g.lastname}</td>
                      <td style={{ padding: '12px 8px', textAlign: 'center', fontWeight: '900' }}>{g.guests}</td>
