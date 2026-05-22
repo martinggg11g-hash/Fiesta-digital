@@ -13,7 +13,7 @@ const formatDateSpanish = (dateStr) => {
   return dateStr;
 };
 
-// Función para garantizar que siempre tengamos un booleano puro (true/false) real
+// 👉 MC-12: Función unificada para garantizar un booleano puro
 const parseBool = (val) => val === true || val === 'true' || val === 1 || val === '1';
 
 export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, onDeleteSalon, globalAlert, onUpdateAlert }) => {
@@ -61,7 +61,7 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
     }
   }, [modalMode, activeSalonChat?.support_chat]);
 
-  // Manejador seguro para los Toggle, independientemente de qué devuelva el componente visual
+  // Manejador seguro para los Toggle
   const handleToggle = (setter) => (val) => {
     if (typeof val === 'boolean') {
       setter(val);
@@ -99,7 +99,7 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
     const maxPaxValue = fMaxPax !== "" ? Number(fMaxPax) : ""; 
 
     if (modalMode === "create") {
-      if(!fName || !fEmail || !fPass) return alert("Faltan datos");
+      if(!fName || !fEmail || !fPass) return notify("Faltan datos");
       onCreateSalon({ 
         name: fName, email: fEmail, pass: fPass, role: "salon", 
         address: fAddress, phone: fPhone, payment_date: fPayDate, 
@@ -113,7 +113,7 @@ export const MasterPanel = ({ mySalons, onLogout, onCreateSalon, onUpdateUser, o
         is_free: parseBool(fIsFree), is_demo: parseBool(fIsDemo), max_pax: maxPaxValue 
       });
     } else if (modalMode === "password") {
-      if(!fPass) return alert("Escribe una contraseña");
+      if(!fPass) return notify("Escribe una contraseña");
       onUpdateUser(editingEmail, { pass: fPass });
     }
     setShowModal(false);
