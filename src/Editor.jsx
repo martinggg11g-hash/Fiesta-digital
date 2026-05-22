@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Loader2, Eye, Edit2, CheckCircle2 } from 'lucide-react';
 import EditorSidebar from './EditorSidebar';
@@ -10,7 +10,6 @@ export const EditorScreen = ({ invitations, onSave }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   
-  // Buscamos la invitación global o inicializamos un estado vacío seguro
   const initialInv = invitations.find(i => i.id === id) || null;
   
   const [inv, setInv] = useState(initialInv);
@@ -18,13 +17,18 @@ export const EditorScreen = ({ invitations, onSave }) => {
   const [previewAnim, setPreviewAnim] = useState(false); 
   const [mobileView, setMobileView] = useState('editor');
 
-  // Sincronizamos cuando las invitaciones globales llegan
+  // 👉 BM-08: El flag que evita que Supabase nos pise los cambios si estamos editando
+  const [isDirty, setIsDirty] = useState(false);
+
+  // Sincronizamos cuando las invitaciones globales llegan, PERO SOLAMENTE si no hay cambios locales sin guardar
   useEffect(() => {
-    if (invitations && id) {
+    if (invitations && id && !isDirty) {
       const currentInv = invitations.find(i => i.id === id);
-      if (currentInv) setInv(currentInv);
+      if (currentInv) {
+        setInv(currentInv);
+      }
     }
-  }, [invitations, id]);
+  }, [invitations, id, isDirty]);
 
   const handleSave = async () => {
     if (!inv) return;
@@ -32,6 +36,7 @@ export const EditorScreen = ({ invitations, onSave }) => {
     try {
       await onSave(inv); 
       setSaveStatus('saved');
+      setIsDirty(false); // 👉 BM-08: Cuando guardamos, liberamos el candado
       setTimeout(() => setSaveStatus('idle'), 2000);
     } catch (err) {
       console.error("Error guardando:", err);
@@ -40,14 +45,14 @@ export const EditorScreen = ({ invitations, onSave }) => {
     }
   };
 
-  const updateConfig = (key, val) => {
+  const updateConfig = useCallback((key, val) => {
     setInv(prev => ({ 
         ...prev, 
         config: { ...(prev?.config || DEF_CONFIG), [key]: val } 
     }));
-  };
+    setIsDirty(true); // 👉 BM-08: Al primer cambio, trabamos el candado para que el realtime no pise
+  }, []);
 
-  // 👉 SEGURIDAD: Si no hay invitación aún, mostramos cargando en lugar de romper
   if (!inv) {
     return (
       <div className="w-screen h-screen flex flex-col items-center justify-center bg-[#0f172a] text-white">
@@ -67,13 +72,17 @@ export const EditorScreen = ({ invitations, onSave }) => {
       )}
 
       {/* HEADER */}
-      <header className="h-16 bg-[#0f172a] border-b border-white/10 flex items-center justify-between px-4 md:px-6 shrink-0 z-50">
+      <header className="h-16 bg-[#0f172a] border-b border-white/10 flex items-center justify-between px-4 md:px-6 shrink-0 z-50 relative">
         <div className="flex items-center gap-4 text-white">
-          <button onClick={() => navigate('/dashboard')} className="p-2 hover:bg-white/10 rounded-xl transition-colors cursor-pointer">
+          <button onClick={() => {
+              if (isDirty && !window.confirm("Tenés cambios sin guardar. ¿Seguro que querés salir?")) return;
+              navigate('/dashboard');
+            }} className="p-2 hover:bg-white/10 rounded-xl transition-colors cursor-pointer">
             <ArrowLeft size={20} />
           </button>
-          <h1 className="font-black text-sm uppercase tracking-widest hidden md:block">
+          <h1 className="font-black text-sm uppercase tracking-widest hidden md:block flex items-center gap-2">
             Editando: <span className="text-violet-400">{inv.title || "Evento"}</span>
+            {isDirty && <span className="w-2 h-2 bg-amber-400 rounded-full" title="Hay cambios sin guardar"></span>}
           </h1>
         </div>
         
