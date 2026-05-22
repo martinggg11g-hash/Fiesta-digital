@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from './supabase';
 import { Loader2, Users, CheckCircle, Clock, Plus, Share2, Copy, Trash2, Lock, MonitorPlay, GripVertical, Image as ImageIcon, MessageCircle, Save } from 'lucide-react';
 
@@ -19,15 +20,13 @@ const ProjectorScreen = ({ eventSlug }) => {
       }
     };
     
-    // Carga inicial
     fetchPhotos(); 
 
-    // 👉 ANTENA REALTIME PARA EL PROYECTOR
     const channel = supabase.channel(`projector-${eventSlug}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'invitaciones', filter: `id=eq.${eventSlug}` }, (payload) => {
         if (isMounted && payload.new?.internal_data?.live_photos) {
            setPhotos(payload.new.internal_data.live_photos);
-           setIdx(0); // Reinicia el slider al recibir cambios
+           setIdx(0);
         }
       })
       .subscribe();
@@ -71,8 +70,10 @@ const ProjectorScreen = ({ eventSlug }) => {
 // 👔 PANEL DE GESTIÓN PRINCIPAL
 // ==========================================
 export const ManageScreen = () => {
-  const eventSlug = window.location.pathname.split('/').pop();
-  const isProjectorMode = new URLSearchParams(window.location.search).get('mode') === 'projector';
+  // 👉 BM-02: Uso de hooks de React Router en lugar de window.location
+  const { id: eventSlug } = useParams();
+  const [searchParams] = useSearchParams();
+  const isProjectorMode = searchParams.get('mode') === 'projector';
 
   const [loading, setLoading] = useState(true);
   const [eventData, setEventData] = useState(null);
@@ -86,13 +87,18 @@ export const ManageScreen = () => {
   const [newGuest, setNewGuest] = useState({ nombre_completo: '', apodo: '', max_acompanantes: 0 });
   const [adding, setAdding] = useState(false);
 
-  // 👉 ESTADO DE WHATSAPP TEMPLATE
   const [waTemplate, setWaTemplate] = useState('');
   const [savingMsg, setSavingMsg] = useState(false);
 
-  // 👉 ESTADOS DE ORGANIZACIÓN DEL SALÓN
   const [maxPaxPorMesa, setMaxPaxPorMesa] = useState(10);
-  const [totalMesas, setTotalMesas] = useState(10); // <-- Nuevo estado para la cantidad de mesas
+  const [totalMesas, setTotalMesas] = useState(10);
+
+  // 👉 MC-03: Sistema de Toast local para reemplazar los alert()
+  const [toast, setToast] = useState(null);
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -110,10 +116,8 @@ export const ManageScreen = () => {
          const verifiedRealId = data.evento_id || data.id; 
          setRealDbId(verifiedRealId);
 
-         // Cargar plantilla de WhatsApp si existe, sino poner una por defecto
          setWaTemplate(data.config?.whatsappMsg || '¡Hola [Nombre]! Te comparto tu pase VIP para nuestro evento. Por favor confirmá tu asistencia acá: [Link]');
 
-         // Buscar los límites del salón en la base de datos
          if (data.salon_id) {
              const { data: salonData } = await supabase.from('salones').select('max_por_mesa, cantidad_mesas').eq('email', data.salon_id).single();
              if (salonData) {
@@ -129,7 +133,6 @@ export const ManageScreen = () => {
 
     fetchEvent();
 
-    // 👉 ANTENA REALTIME PARA EL PANEL DE GESTIÓN (Detecta si el Salón edita algo)
     const channel = supabase.channel(`manage-event-${eventSlug}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'invitaciones', filter: `id=eq.${eventSlug}` }, (payload) => {
         if (isMounted && payload.new) {
@@ -154,13 +157,10 @@ export const ManageScreen = () => {
     };
 
     if (isAuthenticated && realDbId && !isProjectorMode) {
-      // Carga inicial de invitados
       fetchInvitados();
 
-      // 👉 ANTENA REALTIME PARA INVITADOS (Detecta nuevos confirmados, borrados, etc)
       const guestChannel = supabase.channel(`manage-guests-${realDbId}`)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'invitados', filter: `evento_id=eq.${realDbId}` }, () => {
-          // Refresca la lista silenciosamente cuando hay cambios
           if (isMounted) fetchInvitados();
         })
         .subscribe();
@@ -177,7 +177,7 @@ export const ManageScreen = () => {
     if (pinInput === eventData?.config?.clientPin) {
       setIsAuthenticated(true);
     } else {
-      alert('PIN incorrecto. Revisá el código e intentá de nuevo.');
+      showToast('PIN incorrecto. Revisá el código e intentá de nuevo.', 'error');
       setPinInput('');
     }
   };
@@ -196,10 +196,11 @@ export const ManageScreen = () => {
      }]).select();
 
      if (error) {
-        alert(`Error al guardar: ${error.message}`);
+        showToast(`Error al guardar: ${error.message}`, 'error');
      } else if (data) {
         setInvitados([data[0], ...invitados]);
         setNewGuest({ nombre_completo: '', apodo: '', max_acompanantes: 0 }); 
+        showToast('Invitado agregado correctamente', 'success');
      }
      setAdding(false);
   };
@@ -208,10 +209,11 @@ export const ManageScreen = () => {
      if(!window.confirm("¿Seguro que querés borrar a este invitado? Su pase dejará de funcionar.")) return;
      const { error } = await supabase.from('invitados').delete().eq('id', id);
      if (error) {
-       alert("Error al borrar: " + error.message);
+       showToast(`Error al borrar: ${error.message}`, 'error');
        return;
      }
      setInvitados(invitados.filter(i => i.id !== id));
+     showToast('Invitado eliminado', 'success');
   };
 
   const handleUpdateMesa = async (guestId, nuevaMesa) => {
@@ -224,7 +226,7 @@ export const ManageScreen = () => {
       const lugaresNecesarios = 1 + (invitadoAMover.acompanantes_confirmados || 0);
 
       if (ocupantesActuales + lugaresNecesarios > maxPaxPorMesa) {
-        alert(`⚠️ Capacidad excedida: El salón tiene un límite estricto de ${maxPaxPorMesa} personas por mesa. (En la ${nuevaMesa} ya hay ${ocupantesActuales} personas y querés sumar ${lugaresNecesarios}).`);
+        showToast(`Capacidad excedida: La mesa ya tiene ${ocupantesActuales} personas (límite ${maxPaxPorMesa}).`, 'error');
         return; 
       }
     }
@@ -232,7 +234,9 @@ export const ManageScreen = () => {
     const updated = invitados.map(i => i.id === guestId ? { ...i, mesa: nuevaMesa } : i);
     setInvitados(updated);
     const { error } = await supabase.from('invitados').update({ mesa: nuevaMesa }).eq('id', guestId);
-    if (error) alert("Error guardando mesa: " + error.message);
+    if (error) {
+      showToast(`Error guardando mesa: ${error.message}`, 'error');
+    }
   };
 
   const handleDragStart = (e, guestId) => {
@@ -247,7 +251,7 @@ export const ManageScreen = () => {
 
   const copyLink = (id) => {
      navigator.clipboard.writeText(`${window.location.origin}/invite/${eventSlug}?guest=${id}`);
-     alert("¡Link copiado al portapapeles!");
+     showToast("¡Link copiado al portapapeles!", 'success');
   };
 
   const handleSaveWaTemplate = async () => {
@@ -256,10 +260,10 @@ export const ManageScreen = () => {
     const { error } = await supabase.from('invitaciones').update({ config: updatedConfig }).eq('id', eventSlug);
     
     if (error) {
-      alert("Error al guardar la plantilla: " + error.message);
+      showToast(`Error al guardar la plantilla: ${error.message}`, 'error');
     } else {
       setEventData({ ...eventData, config: updatedConfig });
-      alert("¡Plantilla guardada con éxito!");
+      showToast("¡Plantilla guardada con éxito!", 'success');
     }
     setSavingMsg(false);
   };
@@ -279,8 +283,6 @@ export const ManageScreen = () => {
      window.open(`https://wa.me/?text=${encodeURIComponent(finalMessage)}`, '_blank');
   };
 
-  // 👉 ARRAY DINÁMICO DE MESAS
-  // Crea un array que empieza con "Sin Asignar" y luego "Mesa 1" hasta "Mesa X" según totalMesas
   const opcionesMesas = ['Sin Asignar', ...Array.from({ length: totalMesas }, (_, i) => `Mesa ${i + 1}`)];
 
   if (loading) return <div className="flex h-screen items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-violet-600" size={40} /></div>;
@@ -290,7 +292,14 @@ export const ManageScreen = () => {
 
   if (!isAuthenticated) {
      return (
-        <div className="flex h-screen items-center justify-center bg-slate-50 p-4">
+        <div className="flex h-screen items-center justify-center bg-slate-50 p-4 relative">
+           
+           {toast && (
+             <div className={`absolute top-4 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl shadow-lg font-bold text-sm text-white transition-all ${toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'}`}>
+               {toast.message}
+             </div>
+           )}
+
            <form onSubmit={handleLogin} className="bg-white p-8 rounded-3xl shadow-xl max-w-sm w-full text-center border border-slate-100">
               <div className="w-16 h-16 bg-violet-100 text-violet-600 rounded-full flex items-center justify-center mx-auto mb-6"><Lock size={32}/></div>
               <h2 className="text-xl font-black text-slate-800 mb-2">Acceso Privado</h2>
@@ -308,7 +317,15 @@ export const ManageScreen = () => {
   const pendientes = invitados.length - confirmados;
 
   return (
-     <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans text-slate-800">
+     <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans text-slate-800 relative">
+        
+        {/* COMPONENTE TOAST FLOTANTE */}
+        {toast && (
+          <div className={`fixed bottom-4 left-1/2 -translate-x-1/2 z-[999] px-6 py-3 rounded-xl shadow-xl font-bold text-sm text-white transition-all ${toast.type === 'error' ? 'bg-red-500' : 'bg-[#25D366]'}`}>
+            {toast.message}
+          </div>
+        )}
+
         <div className="max-w-6xl mx-auto space-y-6">
            
            <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
@@ -442,7 +459,6 @@ export const ManageScreen = () => {
                </div>
                
                <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-6">
-                 {/* 👉 MAPEO DINÁMICO DE MESAS BASADO EN totalMesas */}
                  {opcionesMesas.map((mesaNombre) => {
                     const invitadosMesa = invitados.filter(i => i.asistencia_confirmada && (i.mesa === mesaNombre || (!i.mesa && mesaNombre === 'Sin Asignar')));
                     
@@ -479,7 +495,6 @@ export const ManageScreen = () => {
                                 className="md:hidden w-full mt-2 text-[10px] p-2 font-bold rounded-lg border border-slate-200 bg-slate-50 text-slate-600 outline-none focus:border-violet-400"
                               >
                                 <option value="Sin Asignar" disabled={mesaNombre === 'Sin Asignar'}>Mover a...</option>
-                                {/* 👉 LAS OPCIONES DEL SELECT TAMBIÉN SON DINÁMICAS */}
                                 {opcionesMesas.map(opcion => (
                                   <option key={opcion} value={opcion}>{opcion}</option>
                                 ))}
