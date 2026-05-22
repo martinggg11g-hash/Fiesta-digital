@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense, useCallback } from "react";
 import { Routes, Route, useParams, Navigate, useSearchParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 
@@ -14,7 +14,7 @@ const PuertaScreen = React.lazy(() => import("./Puerta"));
 const EditorScreen = React.lazy(() => import("./Editor").then(module => ({ default: module.EditorScreen })));
 const ManageScreen = React.lazy(() => import("./Manage").then(module => ({ default: module.ManageScreen })));
 
-// 👉 1. IMPORTAMOS TU NUEVO COMPONENTE ACÁ
+// PANEL DE CLIENTE
 const GuestListClientScreen = React.lazy(() => import("./GuestListClient").then(module => ({ default: module.GuestListClient })));
 
 const LoadingFallback = () => (
@@ -22,6 +22,9 @@ const LoadingFallback = () => (
     <Loader2 className="animate-spin text-white" size={40} />
   </div>
 );
+
+// Helper para castear booleanos de Supabase de forma segura (MC-12)
+const toBool = (v) => v === true || v === 'true' || v === 1;
 
 // ===============================================
 // 📱 PANTALLA INVITADO VIP
@@ -37,16 +40,21 @@ const LiveInviteScreen = () => {
 
   useEffect(() => {
     const fetchEventAndGuest = async () => {
-      const { data: eventData } = await supabase.from('invitaciones').select('*').eq('id', eventSlug).single();
-      if (eventData) {
-        setInv(eventData);
-        document.title = eventData.config?.honoreeName ? `${eventData.config.honoreeName} | Invitación` : "Invitación";
+      try { // BM-09: Try/catch agregado
+        const { data: eventData } = await supabase.from('invitaciones').select('*').eq('id', eventSlug).single();
+        if (eventData) {
+          setInv(eventData);
+          document.title = eventData.config?.honoreeName ? `${eventData.config.honoreeName} | Invitación` : "Invitación";
+        }
+        if (guestId) {
+          const { data: gData } = await supabase.from('invitados').select('*').eq('id', guestId).single();
+          if (gData) setGuestData(gData);
+        }
+      } catch (error) {
+        console.error("Error cargando evento:", error);
+      } finally {
+        setLoading(false); // BM-09: Siempre libera el loading
       }
-      if (guestId) {
-        const { data: gData } = await supabase.from('invitados').select('*').eq('id', guestId).single();
-        if (gData) setGuestData(gData);
-      }
-      setLoading(false);
     };
     fetchEventAndGuest();
   }, [eventSlug, guestId]);
@@ -64,7 +72,6 @@ const LiveInviteScreen = () => {
           guestData={guestData} 
           onConfirmRSVP={async (formData) => {
              if (guestData) {
-                // 👉 Totalmente silencioso, sin alerts
                 await supabase.from('invitados').update({ 
                   asistencia_confirmada: true, 
                   acompanantes_confirmados: formData.guests 
@@ -125,14 +132,19 @@ export default function App() {
   const [globalAlert, setGlobalAlert] = useState({ mensaje: "", activo: false });
   const [loading, setLoading] = useState(true);
 
-  const handleLogin = (u, r) => {
+  const handleLogin = useCallback((u, r) => {
     setUser(u);
     if (r) localStorage.setItem("fiesta_user", JSON.stringify(u));
     else sessionStorage.setItem("fiesta_user", JSON.stringify(u));
-  };
+  }, []);
 
-  const handleLogout = () => { setUser(null); localStorage.removeItem("fiesta_user"); sessionStorage.removeItem("fiesta_user"); };
+  const handleLogout = useCallback(() => { 
+    setUser(null); 
+    localStorage.removeItem("fiesta_user"); 
+    sessionStorage.removeItem("fiesta_user"); 
+  }, []);
 
+  // BC-04: Carga Inicial aislada de la sesión del usuario
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -142,27 +154,26 @@ export default function App() {
         
         if (salones) setUsers(salones);
         if (invs) setInvitations(invs.map(i => ({ ...i, salonId: i.salon_id, internal_data: i.internal_data || {}, config: i.config || {} })));
-        
-        if (alertData) {
-          // Aseguramos que se guarde un booleano en el estado de React
-          const isActivo = alertData.activo === true || alertData.activo === 'true' || alertData.activo === 1;
-          setGlobalAlert({ mensaje: alertData.mensaje || "", activo: isActivo });
-        }
-      } catch (error) { console.error(error); }
-      finally { setLoading(false); }
+        if (alertData) setGlobalAlert({ mensaje: alertData.mensaje || "", activo: toBool(alertData.activo) });
+      } catch (error) { 
+        console.error(error); 
+      } finally { 
+        setLoading(false); 
+      }
     };
     fetchData();
+  }, []);
 
-    // 👉 CANAL REALTIME A PRUEBA DE BALAS
+  // BC-04 & MC-06: Canal Realtime unificado y de una sola instancia
+  useEffect(() => {
     const channel = supabase
       .channel('fiesta-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'invitaciones' }, (payload) => {
-        console.log("🔥 SUPABASE AVISÓ DE UN CAMBIO:", payload);
         if (payload.new && payload.new.id) {
           setInvitations(prevInvs => prevInvs.map(inv => 
             inv.id === payload.new.id ? { 
-              ...inv, // Conservamos local
-              ...payload.new, // Sobrescribimos con BD
+              ...inv, 
+              ...payload.new,
               salonId: payload.new.salon_id, 
               internal_data: payload.new.internal_data || {}, 
               config: payload.new.config || {} 
@@ -170,109 +181,79 @@ export default function App() {
           ));
         }
       })
-      .subscribe((status) => {
-        console.log("📡 ESTADO REALTIME:", status);
-      });
-
-    const radar = setInterval(async () => {
-      const { data: alertData } = await supabase.from('alertas').select('*').eq('id', 1).single();
-      if (alertData) {
-        const isActivo = alertData.activo === true || alertData.activo === 'true' || alertData.activo === 1;
-        setGlobalAlert({ mensaje: alertData.mensaje || "", activo: isActivo });
-      }
-    }, 30000);
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'alertas' }, (payload) => {
+        if (payload.new && payload.new.id === 1) {
+          setGlobalAlert({ mensaje: payload.new.mensaje || "", activo: toBool(payload.new.activo) });
+        }
+      })
+      .subscribe();
 
     return () => { 
-      clearInterval(radar); 
       supabase.removeChannel(channel); 
     };
-  }, [user]);
+  }, []);
 
-  // 👉 CORRECCIÓN DEL ANTI-PATRÓN DE ESTADO (Separamos UI de Base de Datos)
-  const handleUpdateInternal = async (id, f, v) => {
-    let targetData = null;
-    
-    // 1. Actualizamos la UI al instante (Memoria local)
-    setInvitations(prevInvs => prevInvs.map(i => {
-      if (i.id === id) {
-        targetData = { ...i.internal_data, [f]: v };
-        return { ...i, internal_data: targetData };
-      }
-      return i;
-    }));
+  // BC-03: Evitamos la Race Condition usando callback puro sin closures mutables externos
+  const handleUpdateInternal = useCallback((id, f, v) => {
+    setInvitations(prev => {
+      const inv = prev.find(i => i.id === id);
+      if (!inv) return prev;
+      
+      const newInternal = { ...inv.internal_data, [f]: v };
+      
+      // Update asíncrono disparado con datos 100% frescos del state
+      supabase.from('invitaciones').update({ internal_data: newInternal }).eq('id', id)
+        .catch(err => console.error("Error al guardar internal_data:", err));
+        
+      return prev.map(i => i.id === id ? { ...i, internal_data: newInternal } : i);
+    });
+  }, []);
 
-    // 2. Guardamos en Base de Datos por fuera
-    if (targetData) {
-      const { error } = await supabase.from('invitaciones').update({ internal_data: targetData }).eq('id', id);
-      if (error) console.error("Error al guardar internal_data:", error);
-    }
-  };
+  const handleUpdateConfig = useCallback((id, key, value) => {
+    setInvitations(prev => {
+      const inv = prev.find(i => i.id === id);
+      if (!inv) return prev;
+      
+      const newConfig = { ...inv.config, [key]: value };
+      
+      supabase.from('invitaciones').update({ config: newConfig }).eq('id', id)
+        .catch(err => console.error("Error al guardar config:", err));
+        
+      return prev.map(i => i.id === id ? { ...i, config: newConfig } : i);
+    });
+  }, []);
 
-  const handleUpdateConfig = async (id, key, value) => {
-    let targetConfig = null;
-
-    // 1. Actualizamos la UI al instante
-    setInvitations(prevInvs => prevInvs.map(i => {
-      if (i.id === id) {
-        targetConfig = { ...i.config, [key]: value };
-        return { ...i, config: targetConfig };
-      }
-      return i;
-    }));
-
-    // 2. Guardamos en BD por fuera
-    if (targetConfig) {
-      const { error } = await supabase.from('invitaciones').update({ config: targetConfig }).eq('id', id);
-      if (error) console.error("Error al guardar config:", error);
-    }
-  };
-
-  // 👉 Actualizar datos del salón (Redes, Logo, Limite Mesas, etc)
-  const handleUpdateUser = async (email, updates) => {
+  const handleUpdateUser = useCallback(async (email, updates) => {
     setUsers(prevUsers => prevUsers.map(u => u.email === email ? { ...u, ...updates } : u));
     const { error } = await supabase.from('salones').update(updates).eq('email', email);
     if (error) console.error("Error al guardar ajustes del salón:", error);
-  };
+  }, []);
 
-  // 👉 Borrar una invitación
-  const handleDeleteInv = async (id) => {
+  const handleDeleteInv = useCallback(async (id) => {
     setInvitations(prev => prev.filter(i => i.id !== id));
     await supabase.from('invitaciones').delete().eq('id', id);
-  };
+  }, []);
 
-  // 👉 MÉTODOS PARA EL MASTER PANEL (Alertas y Salones)
-  // 🟢 AQUI ESTABA EL ERROR: Cambiamos para que reciba 'mensaje' y 'activo' separados
-  const handleUpdateAlert = async (mensaje, activo) => {
-    // Garantizamos que 'activo' sea un booleano puro de JS
-    const isActivo = activo === true || activo === 'true' || activo === 1;
+  const handleUpdateAlert = useCallback(async (mensaje, activo) => {
+    const isActivo = toBool(activo);
+    const dataToSave = { mensaje: mensaje || "", activo: isActivo };
     
-    // Armamos el objeto tal como lo espera Supabase
-    const dataToSave = { 
-      mensaje: mensaje || "", 
-      activo: isActivo 
-    };
-
-    setGlobalAlert(dataToSave); // Actualizamos la UI inmediatamente
-
+    setGlobalAlert(dataToSave);
     const { error } = await supabase.from('alertas').update(dataToSave).eq('id', 1);
-    if (error) {
-       console.error("Error guardando alerta:", error);
-       alert("Hubo un error al guardar la notificación.");
-    }
-  };
+    if (error) alert("Hubo un error al guardar la notificación.");
+  }, []);
 
-  const handleCreateSalon = async (salonData) => {
+  const handleCreateSalon = useCallback(async (salonData) => {
     const { data, error } = await supabase.from('salones').insert([salonData]).select();
     if (!error && data) setUsers(p => [...p, data[0]]);
-  };
+  }, []);
 
-  const handleDeleteSalon = async (email) => {
+  const handleDeleteSalon = useCallback(async (email) => {
     setUsers(p => p.filter(u => u.email !== email));
     await supabase.from('salones').delete().eq('email', email);
-  };
+  }, []);
 
-  const handleConfirmRSVP = async (invId, guestData, realId = null) => {
-    // 👉 Totalmente silencioso, sin alerts
+  const handleConfirmRSVP = useCallback(async (invId, guestData, realId = null) => {
     await supabase.from('invitados').insert([{
        evento_id: realId || invId,
        nombre_completo: `${guestData.name} ${guestData.lastname}`,
@@ -280,21 +261,30 @@ export default function App() {
        asistencia_confirmada: true, 
        status: 'Pendiente'
     }]);
-  };
+  }, []);
 
-  const handleCreateInv = async (sE, sN) => { 
+  // BM-04 & MC-11: Se usa el parámetro sN y retorna null en caso de error explícito
+  const handleCreateInv = useCallback(async (sE, sN) => { 
     const sInfo = users.find(u => u.email === sE);
     if (sInfo?.is_demo && (sInfo?.invites_created || 0) >= 3) return null;
+    
     const nId = "evt-" + Date.now().toString(36);
-    const nI = { id: nId, salon_id: sE, title: "Nuevo Evento", config: { ...DEF_CONFIG }, internal_data: {} };
+    const nI = { id: nId, salon_id: sE, title: sN || "Nuevo Evento", config: { ...DEF_CONFIG }, internal_data: {} };
+    
     const { error } = await supabase.from('invitaciones').insert([nI]);
-    if (!error) { setInvitations(p => [...p, { ...nI, salonId: sE }]); return nId; }
-  };
+    if (error) { 
+      console.error(error); 
+      return null; 
+    }
+    
+    setInvitations(p => [...p, { ...nI, salonId: sE }]); 
+    return nId;
+  }, [users]);
   
-  const handleSaveInv = async (uI) => { 
+  const handleSaveInv = useCallback(async (uI) => { 
     await supabase.from('invitaciones').update({ title: uI.title, config: uI.config, internal_data: uI.internal_data }).eq('id', uI.id); 
     setInvitations(p => p.map(i => i.id === uI.id ? uI : i)); 
-  };
+  }, []);
 
   if (loading) return <LoadingFallback />;
 
@@ -315,22 +305,21 @@ export default function App() {
             onLogout={handleLogout}
             onUpdateUser={handleUpdateUser}
             onDeleteInv={handleDeleteInv}
-            onUpdateAlert={handleUpdateAlert} /* ✅ AHORA RECIBIRÁ LOS 2 PARÁMETROS BIEN */
+            onUpdateAlert={handleUpdateAlert}
             onCreateSalon={handleCreateSalon}
             onDeleteSalon={handleDeleteSalon}
           /> : <Navigate to="/" />
         } />
         
-        <Route path="/editor/:id" element={<EditorScreen invitations={invitations} onSave={handleSaveInv} onUpdateInternal={handleUpdateInternal} onUpdateConfig={handleUpdateConfig} />} />
+        {/* BM-01: Rutas de administración ahora protegidas */}
+        <Route path="/editor/:id" element={user ? <EditorScreen invitations={invitations} onSave={handleSaveInv} onUpdateInternal={handleUpdateInternal} onUpdateConfig={handleUpdateConfig} /> : <Navigate to="/" />} />
+        <Route path="/manage/:id" element={user ? <ManageScreen invitations={invitations} onUpdateInternal={handleUpdateInternal} onUpdateConfig={handleUpdateConfig} /> : <Navigate to="/" />} />
+        
+        {/* MC-10: Limpiamos props inútiles enviados a Puerta */}
+        <Route path="/puerta/:id" element={user ? <PuertaScreen /> : <Navigate to="/" />} />
         
         <Route path="/i/:salon/:invId" element={<PublicInviteScreen invitations={invitations} onConfirmRSVP={handleConfirmRSVP} onUpdateInternal={handleUpdateInternal} />} />
-        <Route path="/puerta/:id" element={<PuertaScreen invitations={invitations} onUpdateInternal={handleUpdateInternal} />} />
-        
-        {/* 👉 2. ACÁ ENRUTAMOS EL NUEVO PANEL DEL CLIENTE */}
         <Route path="/lista/:id" element={<GuestListClientScreen />} />
-
-        <Route path="/manage/:id" element={<ManageScreen invitations={invitations} onUpdateInternal={handleUpdateInternal} onUpdateConfig={handleUpdateConfig} />} />
-        
         <Route path="/invite/:id" element={<LiveInviteScreen />} />
       </Routes>
     </Suspense>
