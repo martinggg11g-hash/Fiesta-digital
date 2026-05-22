@@ -37,7 +37,7 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
   const [gPax, setGPax] = useState(1);
   const [gStatus, setGStatus] = useState("Pendiente");
   const [gTable, setGTable] = useState("");
-  const [formError, setFormError] = useState("");
+  const [formError, setFormError] = useState(""); 
 
   const [copiedStates, setCopiedStates] = useState({});
   const [vipGuests, setVipGuests] = useState([]);
@@ -297,11 +297,24 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
 
       <div className={`w-full max-w-5xl max-h-[95vh] h-full sm:h-auto rounded-[2rem] overflow-hidden flex flex-col shadow-2xl anim-pop no-print ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
         
+        {/* CABECERA AJUSTADA PARA MÓVIL */}
         <div className={`px-4 sm:px-6 py-3 sm:py-4 border-b flex justify-between items-center shrink-0 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-           <div className="flex gap-2 sm:gap-4 border border-slate-300 rounded-xl p-1 bg-slate-100 flex-wrap flex-1 mr-2">
-             <button onClick={() => setActiveTab('info')} className={`px-2 sm:px-4 py-2 rounded-lg text-[10px] sm:text-xs font-black transition-colors cursor-pointer flex-1 sm:flex-none text-center ${activeTab === 'info' ? 'bg-white shadow-sm text-violet-600' : 'text-slate-500 hover:text-slate-700'}`}><ClipboardList size={14} className="inline-block sm:mr-1"/><span className="hidden sm:inline"> Ficha Interna</span><span className="sm:hidden"> Ficha</span></button>
-             <button onClick={() => setActiveTab('guests')} className={`px-2 sm:px-4 py-2 rounded-lg text-[10px] sm:text-xs font-black transition-colors cursor-pointer flex-1 sm:flex-none text-center ${activeTab === 'guests' ? 'bg-white shadow-sm text-violet-600' : 'text-slate-500 hover:text-slate-700'}`}><Users size={14} className="inline-block sm:mr-1"/> Invitados</button>
-             <button onClick={() => setActiveTab('projector')} className={`px-2 sm:px-4 py-2 rounded-lg text-[10px] sm:text-xs font-black transition-colors cursor-pointer flex-1 sm:flex-none text-center ${activeTab === 'projector' ? 'bg-white shadow-sm text-violet-600' : 'text-slate-500 hover:text-slate-700'}`}><MonitorPlay size={14} className="inline-block sm:mr-1"/><span className="hidden sm:inline"> Proyector / Galería</span><span className="sm:hidden"> Galería</span></button>
+           <div className="flex gap-2 sm:gap-4 border border-slate-300 rounded-xl p-1 bg-slate-100 w-full sm:w-auto flex-1 mr-2">
+             <button onClick={() => setActiveTab('info')} className={`px-2 sm:px-4 py-2 rounded-lg text-[10px] sm:text-xs font-black transition-colors cursor-pointer flex-1 sm:flex-none text-center ${activeTab === 'info' ? 'bg-white shadow-sm text-violet-600' : 'text-slate-500 hover:text-slate-700'}`}>
+               <ClipboardList size={14} className="inline-block sm:mr-1"/>
+               <span className="hidden sm:inline"> Ficha Interna</span>
+               <span className="sm:hidden"> Ficha</span>
+             </button>
+             <button onClick={() => setActiveTab('guests')} className={`px-2 sm:px-4 py-2 rounded-lg text-[10px] sm:text-xs font-black transition-colors cursor-pointer flex-1 sm:flex-none text-center ${activeTab === 'guests' ? 'bg-white shadow-sm text-violet-600' : 'text-slate-500 hover:text-slate-700'}`}>
+               <Users size={14} className="inline-block sm:mr-1"/> 
+               <span className="hidden sm:inline"> Invitados</span>
+               <span className="sm:hidden"> Lista</span>
+             </button>
+             <button onClick={() => setActiveTab('projector')} className={`px-2 sm:px-4 py-2 rounded-lg text-[10px] sm:text-xs font-black transition-colors cursor-pointer flex-1 sm:flex-none text-center ${activeTab === 'projector' ? 'bg-white shadow-sm text-violet-600' : 'text-slate-500 hover:text-slate-700'}`}>
+               <MonitorPlay size={14} className="inline-block sm:mr-1"/>
+               <span className="hidden sm:inline"> Proyector / Galería</span>
+               <span className="sm:hidden"> Galería</span>
+             </button>
            </div>
            <button onClick={onClose} className="w-8 h-8 sm:w-10 sm:h-10 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-full flex items-center justify-center transition-colors cursor-pointer shrink-0"><X size={18}/></button>
         </div>
@@ -434,7 +447,7 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                 </div>
               </div>
 
-              {/* Toggle de Mesas */}
+              {/* Toggle de Mesas (¡EL FIX CRÍTICO ESTÁ ACÁ!) */}
               <div className={`flex flex-col sm:flex-row sm:items-center gap-4 mb-6 p-4 rounded-xl border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
                 <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
                   <span className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Asistentes Totales:</span>
@@ -445,14 +458,13 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
 
                 <div className="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
                   <span className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Asignar Mesas</span>
-                  {/* 👉 FIX: Blindado contra eventos nativos que causan el crash Circular JSON */}
+                  
+                  {/* FIX: Ignoramos totalmente el evento del Toggle e invertimos el valor booleano puro */}
                   <Toggle 
-                    checked={useTables} 
-                    onChange={val => {
-                      const isChecked = typeof val === 'boolean' ? val : (val && val.target ? val.target.checked : false);
-                      onUpdateInternal(activeInv.id, 'useTables', isChecked);
-                    }} 
+                    checked={!!useTables} 
+                    onChange={() => onUpdateInternal(activeInv.id, 'useTables', !useTables)} 
                   />
+                  
                 </div>
               </div>
 
