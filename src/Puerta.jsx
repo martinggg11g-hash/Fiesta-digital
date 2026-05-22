@@ -75,6 +75,27 @@ export default function PuertaScreen() {
 
   useEffect(() => {
     fetchLiveGuests();
+
+    // 👉 BM-03: Canal Realtime para sincronizar la puerta entre múltiples dispositivos
+    const channel = supabase
+      .channel('puerta-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'invitados' }, (payload) => {
+        // Solo reaccionamos a cambios de este evento específico
+        if (payload.new && payload.new.evento_id !== id && payload.eventType !== 'DELETE') return;
+
+        if (payload.eventType === 'INSERT') {
+          setInvitados(prev => [payload.new, ...prev]);
+        } else if (payload.eventType === 'UPDATE') {
+          setInvitados(prev => prev.map(g => g.id === payload.new.id ? payload.new : g));
+        } else if (payload.eventType === 'DELETE') {
+          setInvitados(prev => prev.filter(g => g.id !== payload.old.id));
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [id]);
 
   const ingresaron = invitados.filter(g => g.status === 'Ingresó').reduce((acc, g) => acc + (1 + (g.acompanantes_confirmados || 0)), 0);
@@ -90,18 +111,9 @@ export default function PuertaScreen() {
 
     const [tId, tName, tLast, tPax] = qrString.split('|');
 
-    if (tId === "VIP-MOCK-1234") {
-      setValidationResult({ 
-        status: 'success', 
-        title: '¡QR de Prueba OK!', 
-        desc: 'El escáner lee perfecto. Este es un QR generado por el panel de edición.', 
-        data: { id: tId, nombre_completo: 'Invitado de Prueba', max_acompanantes: 1 } 
-      });
-      return;
-    }
-
     let guestDb = invitados.find(g => g.id === tId);
 
+    // Fallback por nombre si no coincide el ID pero el formato es válido
     if (!guestDb && tName) {
       const qrFullName = `${tName} ${tLast || ''}`.trim().toLowerCase();
       guestDb = invitados.find(g => (g.nombre_completo || '').trim().toLowerCase() === qrFullName);
@@ -117,18 +129,14 @@ export default function PuertaScreen() {
   };
 
   const confirmAccess = async () => {
-    if (validationResult.data.id === "VIP-MOCK-1234") {
-      setValidationResult(null);
-      return;
-    }
-
+    // Si la BD falla silenciosamente, el UI igual debe notificar
     const { error } = await supabase.from('invitados').update({ status: 'Ingresó' }).eq('id', validationResult.data.id);
     
     if (error) {
       alert("Error al registrar ingreso en la BD: " + error.message);
     } else {
       setValidationResult(null);
-      fetchLiveGuests(); 
+      // No llamamos a fetchLiveGuests() acá porque el canal realtime ya se encarga de actualizar el UI
     }
   };
 
@@ -136,7 +144,7 @@ export default function PuertaScreen() {
     if (window.confirm(`¿Querés marcar el ingreso manual de ${guestName}?`)) {
       const { error } = await supabase.from('invitados').update({ status: 'Ingresó' }).eq('id', guestId);
       if (error) alert("Error: " + error.message);
-      else fetchLiveGuests();
+      // Tampoco llamamos fetchLiveGuests() porque el realtime lo maneja
     }
   };
 
@@ -173,7 +181,7 @@ export default function PuertaScreen() {
             <p className="text-xs text-center text-slate-500 py-6">No hay invitados registrados en este evento aún.</p>
           ) : (
             invitados.map((g, i) => (
-              <div key={i} className={`border p-4 rounded-2xl flex justify-between items-center gap-2 transition-colors ${g.status === 'Ingresó' ? 'bg-slate-900/50 border-green-500/20' : 'bg-slate-900 border-slate-700'}`}>
+              <div key={g.id} className={`border p-4 rounded-2xl flex justify-between items-center gap-2 transition-colors ${g.status === 'Ingresó' ? 'bg-slate-900/50 border-green-500/20' : 'bg-slate-900 border-slate-700'}`}>
                 <div className="flex-1 min-w-0">
                   <p className={`font-bold text-sm truncate ${g.status === 'Ingresó' ? 'text-slate-400' : 'text-white'}`}>{g.nombre_completo}</p>
                   <p className="text-xs text-slate-500 mt-0.5">{1 + (g.max_acompanantes || 0)} pases • <span className="font-mono text-[9px] opacity-60">{g.id.substring(0,8)}...</span></p>
