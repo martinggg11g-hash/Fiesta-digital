@@ -24,6 +24,18 @@ const getTodaySpanish = () => {
   return `${today.getDate()} de ${months[today.getMonth()]} de ${today.getFullYear()}`;
 };
 
+// 👉 FIX CRÍTICO: Función a prueba de balas para evitar el RangeError (Pantallazo Blanco)
+const safeFormatDate = (ts) => {
+  if (!ts) return 'Sin fecha';
+  try {
+    const d = new Date(ts);
+    if (isNaN(d.getTime())) return 'Fecha inválida';
+    return d.toLocaleDateString('es-AR');
+  } catch (e) {
+    return 'Fecha inválida';
+  }
+};
+
 export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal, onUpdateConfig, isDark }) => {
   const [activeTab, setActiveTab] = useState("info");
   const [printMode, setPrintMode] = useState("ficha");
@@ -174,7 +186,7 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
     }
     let csv = "Nombre Completo,Acompañantes,Mesa,Estado,Fecha de Registro\n";
     allGuests.forEach(g => {
-      csv += `${g.name} ${g.lastname},${g.guests},${g.mesa || '-'},${g.status},${new Date(g.timestamp).toLocaleDateString('es-AR')}\n`;
+      csv += `${g.name} ${g.lastname},${g.guests},${g.mesa || '-'},${g.status},${safeFormatDate(g.timestamp)}\n`;
     });
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
@@ -297,7 +309,6 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
 
       <div className={`w-full max-w-5xl max-h-[95vh] h-full sm:h-auto rounded-[2rem] overflow-hidden flex flex-col shadow-2xl anim-pop no-print ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
         
-        {/* CABECERA AJUSTADA PARA MÓVIL */}
         <div className={`px-4 sm:px-6 py-3 sm:py-4 border-b flex justify-between items-center shrink-0 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
            <div className="flex gap-2 sm:gap-4 border border-slate-300 rounded-xl p-1 bg-slate-100 w-full sm:w-auto flex-1 mr-2">
              <button onClick={() => setActiveTab('info')} className={`px-2 sm:px-4 py-2 rounded-lg text-[10px] sm:text-xs font-black transition-colors cursor-pointer flex-1 sm:flex-none text-center ${activeTab === 'info' ? 'bg-white shadow-sm text-violet-600' : 'text-slate-500 hover:text-slate-700'}`}>
@@ -432,7 +443,6 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                 </button>
               </div>
 
-              {/* Cabecera y Botones */}
               <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4 border-t border-slate-200/50 pt-6">
                 <h3 className={`font-black text-lg sm:text-xl flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-800'}`}>
                   <Users className="text-violet-500" size={24}/> Control de Accesos
@@ -447,7 +457,7 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                 </div>
               </div>
 
-              {/* Toggle de Mesas (¡EL FIX CRÍTICO ESTÁ ACÁ!) */}
+              {/* 👉 FIX: Switch propio para evitar el componente Toggle */}
               <div className={`flex flex-col sm:flex-row sm:items-center gap-4 mb-6 p-4 rounded-xl border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
                 <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
                   <span className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Asistentes Totales:</span>
@@ -457,13 +467,14 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                 <div className="w-full h-px sm:w-px sm:h-6 bg-slate-200 dark:bg-slate-700"></div>
 
                 <div className="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
-                  <span className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Asignar Mesas</span>
+                  <span className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Activar Armado de Mesas</span>
                   
-                  {/* FIX: Ignoramos totalmente el evento del Toggle e invertimos el valor booleano puro */}
-                  <Toggle 
-                    checked={!!useTables} 
-                    onChange={() => onUpdateInternal(activeInv.id, 'useTables', !useTables)} 
-                  />
+                  <div 
+                    onClick={() => onUpdateInternal(activeInv.id, 'useTables', !useTables)}
+                    className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors shadow-inner flex items-center ${useTables ? 'bg-violet-600' : isDark ? 'bg-slate-700' : 'bg-slate-300'}`}
+                  >
+                    <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${useTables ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                  </div>
                   
                 </div>
               </div>
@@ -481,7 +492,8 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                         <tr key={g.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                           <td className="p-4 font-bold text-slate-800">
                             {g.name} {g.lastname} {g.isVip && <span className="ml-2 text-[8px] bg-violet-100 text-violet-600 px-2 py-0.5 rounded-full uppercase tracking-widest">VIP App</span>}
-                            <br/><span className="text-[9px] text-slate-400 font-normal uppercase tracking-wider">{new Date(g.timestamp).toLocaleDateString('es-AR')}</span>
+                            {/* 👉 FIX: Usamos la función safeFormatDate para que React no explote nunca */}
+                            <br/><span className="text-[9px] text-slate-400 font-normal uppercase tracking-wider">{safeFormatDate(g.timestamp)}</span>
                           </td>
                           <td className="p-4 text-center"><code className="bg-slate-100 px-2 py-1 rounded text-xs text-slate-500 font-mono">{g.id.split('-').pop()}</code></td>
                           <td className="p-4 text-center font-black text-slate-600">{g.guests}</td>
@@ -596,7 +608,6 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
         </div>
       </div>
 
-      {/* ---------------- LA HOJA A4 PARA IMPRIMIR (DOBLE PLANTILLA) ---------------- */}
       <div className="only-print">
          {printMode !== 'invitados' ? (
            <>
