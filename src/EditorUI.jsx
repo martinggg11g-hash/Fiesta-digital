@@ -186,21 +186,48 @@ export const SelectInp = ({ label, value, onChange, options }) => {
   );
 };
 
-export const TypoControl = ({ label, value, onChange }) => {
+export const TypoControl = ({ label, fontVal, onFont, colorVal, onColor, sizeVal, onSize, minSize = 10, maxSize = 100 }) => {
   return (
-    <div className="mb-4">
-      {label && <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1 pl-1">{label}</label>}
-      <input type="text" value={value || ""} onChange={e => onChange(e.target.value)} className="w-full py-2 px-3 rounded-lg text-sm border focus:border-violet-500 outline-none transition-all bg-white text-slate-800 shadow-sm" placeholder="Ej: 24px" />
+    <div className="mb-4 bg-slate-50 p-3 rounded-xl border border-slate-200">
+      {label && <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3 pl-1">{label}</label>}
+      <div className="space-y-3">
+        {onFont && (
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold text-slate-400 w-12 uppercase">Fuente</span>
+            <select value={fontVal || ""} onChange={e => onFont(e.target.value)} className="flex-1 py-1.5 px-2 rounded-lg text-xs border focus:border-violet-500 outline-none bg-white text-slate-800 shadow-sm cursor-pointer" style={{ fontFamily: fontVal }}>
+              {FONTS.map(f => (
+                <option key={f.value} value={f.value} style={{ fontFamily: f.value }}>{f.label}</option>
+              ))}
+            </select>
+          </div>
+        )}
+        {onColor && (
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold text-slate-400 w-12 uppercase">Color</span>
+            <div className="flex-1 flex items-center gap-2">
+              <input type="color" value={colorVal || "#ffffff"} onChange={e => onColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0 p-0" />
+              <input type="text" value={colorVal || "#ffffff"} onChange={e => onColor(e.target.value)} className="flex-1 py-1.5 px-2 rounded-lg text-xs border focus:border-violet-500 outline-none bg-white text-slate-800 uppercase shadow-sm" />
+            </div>
+          </div>
+        )}
+        {onSize && (
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold text-slate-400 w-12 uppercase">Tam.</span>
+            <input type="range" min={minSize} max={maxSize} value={sizeVal || 16} onChange={e => onSize(Number(e.target.value))} className="flex-1 accent-violet-600" />
+            <span className="text-xs font-bold text-slate-600 w-8 text-right">{sizeVal}px</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
-export const FontSelector = ({ value, onChange, fonts }) => {
+export const FontSelector = ({ value, onChange }) => {
   return (
     <div className="mb-4">
       <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1 pl-1">Fuente</label>
       <select value={value || ""} onChange={e => onChange(e.target.value)} className="w-full py-2 px-3 rounded-lg text-sm border focus:border-violet-500 outline-none transition-all bg-white text-slate-800 shadow-sm cursor-pointer" style={{ fontFamily: value }}>
-        {fonts.map(f => (
+        {FONTS.map(f => (
           <option key={f.value} value={f.value} style={{ fontFamily: f.value }}>{f.label}</option>
         ))}
       </select>
@@ -208,12 +235,16 @@ export const FontSelector = ({ value, onChange, fonts }) => {
   );
 };
 
-export const EmojiPicker = ({ onSelect }) => {
+export const EmojiPicker = ({ value, onSelect }) => {
   const emojis = ["✨","👑","🎈","🎉","🎊","🥳","🎁","💝","❤️","💖"];
   return (
     <div className="flex gap-2 flex-wrap mb-4">
       {emojis.map(e => (
-        <button key={e} onClick={() => onSelect(e)} className="w-8 h-8 flex items-center justify-center bg-slate-100 hover:bg-violet-100 rounded-lg cursor-pointer transition-colors text-lg">
+        <button 
+          key={e} 
+          onClick={() => onSelect(e)} 
+          className={`w-8 h-8 flex items-center justify-center rounded-lg cursor-pointer transition-colors text-lg ${e === value ? 'ring-2 ring-violet-500 bg-violet-100' : 'bg-slate-100 hover:bg-violet-100'}`}
+        >
           {e}
         </button>
       ))}
@@ -237,11 +268,15 @@ export const Acc = ({ title, icon: Icon, iconColor, children, defaultOpen = fals
   );
 };
 
-export const BordersGallery = ({ selected, onSelect, borders }) => {
+export const BordersGallery = ({ value, onChange }) => {
   return (
     <div className="grid grid-cols-4 gap-2 mb-4">
-      {borders.map(b => (
-        <button key={b.id} onClick={() => onSelect(b.url)} className={`aspect-square rounded-lg border-2 overflow-hidden cursor-pointer hover:border-violet-400 transition-colors ${selected === b.url ? 'border-violet-600' : 'border-slate-200'}`}>
+      {BORDERS.map(b => (
+        <button 
+          key={b.id} 
+          onClick={() => onChange(b.url)} 
+          className={`aspect-square rounded-lg border-2 overflow-hidden cursor-pointer hover:border-violet-400 transition-colors ${value === b.url ? 'border-violet-600' : 'border-slate-200'}`}
+        >
           <img src={b.url} alt={b.name} className="w-full h-full object-cover bg-slate-800" />
         </button>
       ))}
