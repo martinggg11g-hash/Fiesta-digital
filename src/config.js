@@ -531,10 +531,24 @@ export const BORDERS = [
   { id: 'b15', name: 'Neon', url: '/borders/15-Photoroom.png' },
   { id: 'b16', name: 'Líneas', url: '/borders/16-Photoroom.png' }
 ];
+
 export const formatToDDMMYYYY = (dateString) => {
   if (!dateString) return "";
   const parts = dateString.split('-');
   if (parts.length !== 3) return dateString;
   const [year, month, day] = parts;
   return `${day}/${month}/${year}`;
+};
+
+export const getYouTubeId = (url) => {
+  if (!url) return '';
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+};
+
+export const getSpotifyEmbed = (url) => {
+  if (!url) return '';
+  if (url.includes('/embed/')) return url;
+  return url.replace('open.spotify.com/', 'open.spotify.com/embed/');
 };
