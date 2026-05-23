@@ -138,15 +138,8 @@ export function InvitePreview({
        }
     };
 
-    return (
-      <a href={generateCalLink()} target="_blank" rel="noreferrer" className={`w-full py-4 rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 border shadow-lg mt-4 ${theme === 'light' ? 'bg-white border-slate-200 text-slate-800' : 'bg-white/10 border-white/20 text-white backdrop-blur-md'}`}>
-         AGENDAR DÍA
-      </a>
-    );
-  };
-
+  // CORRECCIÓN: Usamos config.fontBody para el contenedor principal en vez de fontFamily
   return (
-    {/* CORRECCIÓN: Usamos config.fontBody para el contenedor principal en vez de fontFamily */}
     <div className={`min-h-screen relative overflow-hidden flex flex-col font-sans ${bgClass}`} style={config.fontBody ? { fontFamily: config.fontBody } : {}}>
       
       {config.bgMusic && (
@@ -336,7 +329,7 @@ export function InvitePreview({
       {showCam && (
         <div className="fixed inset-0 z-[200] bg-black flex flex-col">
            <div className="h-20 flex items-center justify-between px-6 bg-gradient-to-b from-black/80 to-transparent absolute top-0 w-full z-10">
-              <button onClick={() => setShowCam(false)} className="text-white p-2"><X size={24}/></button>
+               <button onClick={() => setShowCam(false)} className="text-white p-2"><X size={24}/></button>
               <span className="text-white text-xs font-black tracking-widest uppercase bg-red-500 px-3 py-1 rounded-full flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-white animate-pulse"></div> EN VIVO</span>
            </div>
            <div className="flex-1 flex items-center justify-center">
