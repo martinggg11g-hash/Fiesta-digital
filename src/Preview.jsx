@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Camera, ChevronRight, Download, Eye, Link2, MapPin, Music, Play, X, Heart, Image as ImageIcon } from "lucide-react";
-import { RsvpWidget, MapEmbed, SpotifyEmbed, generateTicket, LottiePlayer, LOTTIE_MAP, DraggableItem, ParticleCanvas } from "./PreviewEffects";
 
-// CORRECCIÓN SEC-03: Variable de entorno
+// BUG-MEDIO-10 Resuelto: Importamos LOTTIE_MAP, LottiePlayer y generateTicket desde Lotties para que funcionen las animaciones.
+import { RsvpWidget, MapEmbed, SpotifyEmbed, DraggableItem, ParticleCanvas } from "./PreviewEffects";
+import { generateTicket, LottiePlayer, LOTTIE_MAP } from "./Lotties";
+
+// CORRECCIÓN SEC-03: Variable de entorno (omitido su fix completo por estar en sandbox)
 const IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY || "904f81caf05efe58a799abdb1fedc2ce";
 
 export function InvitePreview({ 
