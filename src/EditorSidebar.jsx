@@ -65,8 +65,10 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
          </div>
          {cfg.openingAnimation !== 'none' && (
            <div className="mb-6 border-b border-gray-100 pb-4">
-             <div className="flex gap-2 overflow-x-auto fd-sb pb-2 mb-4">{Object.keys(ANIMATION_CATEGORIES).map(c => (<button key={c} onClick={() => setAnimCategory(c)} type="button" className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest shrink-0 transition-colors cursor-pointer ${animCat === c ? 'bg-violet-600 text-white shadow-md' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}>{c === 'quince' ? '15 Años' : c}</button>))}</div>
-             <div className="grid grid-cols-2 gap-2 mb-4">{ANIMATION_CATEGORIES[animCat].map(anim => (<button key={anim.id} onClick={() => { update('openingAnimation', anim.id); setPreviewAnim(true); }} type="button" className={`p-2.5 border rounded-xl text-xs font-bold flex flex-col items-center gap-1 transition-all cursor-pointer ${cfg.openingAnimation === anim.id ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 bg-white text-slate-600 hover:bg-gray-50'}`}><span className="text-2xl mb-1">{anim.emoji}</span><span className="text-center text-[10px] leading-tight">{anim.name}</span></button>))}</div>
+             {/* PROTECCIÓN APLICADA AQUÍ */}
+             <div className="flex gap-2 overflow-x-auto fd-sb pb-2 mb-4">{Object.keys(ANIMATION_CATEGORIES || {})?.map(c => (<button key={c} onClick={() => setAnimCategory(c)} type="button" className={`px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest shrink-0 transition-colors cursor-pointer ${animCat === c ? 'bg-violet-600 text-white shadow-md' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}>{c === 'quince' ? '15 Años' : c}</button>))}</div>
+             {/* PROTECCIÓN APLICADA AQUÍ */}
+             <div className="grid grid-cols-2 gap-2 mb-4">{ANIMATION_CATEGORIES?.[animCat]?.map(anim => (<button key={anim.id} onClick={() => { update('openingAnimation', anim.id); setPreviewAnim(true); }} type="button" className={`p-2.5 border rounded-xl text-xs font-bold flex flex-col items-center gap-1 transition-all cursor-pointer ${cfg.openingAnimation === anim.id ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 bg-white text-slate-600 hover:bg-gray-50'}`}><span className="text-2xl mb-1">{anim.emoji}</span><span className="text-center text-[10px] leading-tight">{anim.name}</span></button>))}</div>
              
              <div className="mb-4 p-3 bg-slate-50 rounded-xl border border-slate-200 shadow-inner">
                <label className="flex justify-between items-center text-[9px] font-black text-slate-500 uppercase mb-3">
@@ -117,7 +119,8 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
 
         <label className="flex items-center text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Temas Sugeridos <Tooltip text="Paletas de color pre-armadas." /></label>
         <div className="flex flex-wrap gap-2.5 mb-6">
-            {THEMES.map(th => (
+            {/* PROTECCIÓN APLICADA AQUÍ */}
+            {THEMES?.map(th => (
               <button 
                 key={th.id} 
                 title={th.name} 
@@ -140,8 +143,10 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
         
         <div className="mb-2 border-t border-gray-100 pt-4 z-10 relative">
           <label className="flex items-center text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-left">Efectos y Partículas</label>
-          <div className="flex gap-1 overflow-x-auto pb-2 mb-2 fd-sb">{Object.keys(PARTICLE_CATEGORIES).map(c => (<button key={c} type="button" onClick={() => setPartCat(c)} className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase shrink-0 transition-colors cursor-pointer ${partCat === c ? 'bg-violet-600 text-white shadow-sm' : 'bg-gray-100 text-gray-500'}`}>{c}</button>))}</div>
-          <div className="grid grid-cols-2 gap-2">{PARTICLE_CATEGORIES[partCat].map(eff => (<button key={eff.id} type="button" onClick={() => update("particleEffect", eff.id)} className={`p-2 rounded-xl border text-left flex items-center gap-2 transition-all cursor-pointer ${cfg.particleEffect === eff.id ? 'border-violet-500 bg-violet-50 text-violet-700 shadow-sm' : 'border-gray-200 bg-white text-slate-600 hover:border-violet-200'}`}><span className="text-xl">{eff.icon}</span><span className="truncate text-[10px] font-bold">{eff.name}</span></button>))}</div>
+          {/* PROTECCIÓN APLICADA AQUÍ */}
+          <div className="flex gap-1 overflow-x-auto pb-2 mb-2 fd-sb">{Object.keys(PARTICLE_CATEGORIES || {})?.map(c => (<button key={c} type="button" onClick={() => setPartCat(c)} className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase shrink-0 transition-colors cursor-pointer ${partCat === c ? 'bg-violet-600 text-white shadow-sm' : 'bg-gray-100 text-gray-500'}`}>{c}</button>))}</div>
+          {/* PROTECCIÓN APLICADA AQUÍ */}
+          <div className="grid grid-cols-2 gap-2">{PARTICLE_CATEGORIES?.[partCat]?.map(eff => (<button key={eff.id} type="button" onClick={() => update("particleEffect", eff.id)} className={`p-2 rounded-xl border text-left flex items-center gap-2 transition-all cursor-pointer ${cfg.particleEffect === eff.id ? 'border-violet-500 bg-violet-50 text-violet-700 shadow-sm' : 'border-gray-200 bg-white text-slate-600 hover:border-violet-200'}`}><span className="text-xl">{eff.icon}</span><span className="truncate text-[10px] font-bold">{eff.name}</span></button>))}</div>
           
           {cfg.particleEffect && cfg.particleEffect !== 'none' && (
             <div className="flex items-center justify-between mt-4 bg-violet-50 p-3 rounded-xl border border-violet-100">
