@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2, PartyPopper, ShieldCheck, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { supabase } from "./supabase"; 
 
-// 👉 MC-09: Inp simplificado al 100%. Sin debounce, directo y reactivo.
+// Componente de entrada simplificado y reactivo
 const Inp = ({ label, value, onChange, placeholder, type="text", className="", icon: Icon = null }) => {
   const [showPwd, setShowPwd] = useState(false);
   const actualType = type === 'password' && showPwd ? 'text' : type;
@@ -42,40 +43,52 @@ export default function LoginScreen({ isMaster = false, onLogin, users }) {
     setLoading(true);
     setError("");
 
-    // NOTA: BC-01 y BM-07 (Seguridad y Auth de base de datos) 
-    // se mantienen tal cual para resolver en la etapa de paso a Producción.
-    
-    // CORRECCIÓN SEC-01: Evitamos credenciales hardcodeadas en el frontend usando variables de entorno.
-    // Asegurate de agregar VITE_MASTER_EMAIL y VITE_MASTER_PASS en tu archivo .env local.
-    const masterEmail = import.meta.env.VITE_MASTER_EMAIL || "owner@defiesta.lat";
-    const masterPass = import.meta.env.VITE_MASTER_PASS || "owner123";
+    // BUG-03: Eliminación de fallbacks hardcodeados
+    const masterEmail = import.meta.env.VITE_MASTER_EMAIL;
+    const masterPass = import.meta.env.VITE_MASTER_PASS;
 
-    if (isMaster && email === masterEmail && pass === masterPass) {
-      onLogin({ name: "Master", role: "owner", email }, rememberMe);
-      navigate("/dashboard");
-      return;
+    if (isMaster) {
+      if (!masterEmail || !masterPass) {
+        setError("Error de configuración: Faltan credenciales maestras en las variables de entorno.");
+        setLoading(false);
+        return;
+      }
+      
+      if (email === masterEmail && pass === masterPass) {
+        onLogin({ name: "Master", role: "owner", email }, rememberMe);
+        navigate("/dashboard");
+        return;
+      } else {
+        setError("Credenciales maestras no válidas.");
+        setLoading(false);
+        return;
+      }
     }
     
-    /* 
-    // CORRECCIÓN SEC-02 (PREPARACIÓN PARA PRODUCCIÓN): 
-    // Cuando pases a prod, elimina el users.find y usá Supabase Auth directo:
-    const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password: pass });
-    if (authError) {
-      setError("Credenciales no válidas.");
-      setLoading(false);
-      return;
-    }
-    // onLogin(data.user, rememberMe);
-    // navigate("/dashboard");
-    // return;
-    */
+    // BUG-04: Migración a Supabase Auth real para evitar contraseñas en texto plano
+    try {
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ 
+        email: email, 
+        password: pass 
+      });
 
-    const found = users.find(u => u.email === email && u.pass === pass);
-    if (found) { 
-      onLogin(found, rememberMe); 
-      navigate("/dashboard"); 
-    } else {
-      setError("Credenciales no válidas.");
+      if (authError) {
+        setError("Credenciales no válidas.");
+        setLoading(false);
+        return;
+      }
+
+      // Una vez autenticado, buscamos la información extendida del salón en el estado local 'users'
+      const found = users.find(u => u.email === email);
+      if (found) { 
+        onLogin(found, rememberMe); 
+        navigate("/dashboard"); 
+      } else {
+        setError("Autenticación correcta, pero el salón no se encuentra registrado en la base de datos de perfiles.");
+        setLoading(false);
+      }
+    } catch (err) {
+      setError("Ocurrió un error al intentar conectar con el servicio de autenticación.");
       setLoading(false);
     }
   };
@@ -93,15 +106,15 @@ export default function LoginScreen({ isMaster = false, onLogin, users }) {
           <form onSubmit={handleAuth} className="space-y-2">
             {error && <div className="p-4 mb-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm font-bold flex items-center gap-3"><AlertCircle size={16} /> {error}</div>}
             
-            <Inp label="Email" value={email} onChange={setEmail} />
-            <Inp label="Clave" type="password" value={pass} onChange={setPass} />
+            <Inp label="Email" value={email} onChange={setEmail} placeholder="ejemplo@defiesta.lat" type="email" />
+            <Inp label="Clave" type="password" value={pass} onChange={setPass} placeholder="••••••••" />
             
-            <label className="flex items-center gap-2 mb-4 mt-4 cursor-pointer">
-              <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="w-4 h-4 text-violet-600 rounded border-gray-300 focus:ring-violet-500" />
+            <label className="flex items-center gap-2 mb-4 mt-4 cursor-pointer user-select-none">
+              <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="w-4 h-4 text-violet-600 rounded border-gray-300 focus:ring-violet-500 bg-transparent cursor-pointer" />
               <span className="text-sm text-slate-300 font-bold">Mantener sesión iniciada</span>
             </label>
 
-            <button className="w-full py-4 mt-2 bg-violet-600 text-white rounded-2xl font-black text-sm transition-transform active:scale-95 flex justify-center items-center cursor-pointer shadow-lg">
+            <button type="submit" className="w-full py-4 mt-2 bg-violet-600 text-white rounded-2xl font-black text-sm transition-transform active:scale-95 flex justify-center items-center cursor-pointer shadow-lg hover:bg-violet-700">
               {loading ? <Loader2 size={18} className="animate-spin"/> : "INGRESAR"}
             </button>
           </form>
