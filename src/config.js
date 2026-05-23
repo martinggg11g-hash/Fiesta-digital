@@ -19,7 +19,7 @@ export const DEF_CONFIG = {
   fontBody: "Montserrat",
   fontTitle: "Playfair Display",
   
-  // Basicos
+  // Básicos
   date: "2026-12-15",
   time: "21:00 a 05:00 hs",
   coverPhoto: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=800&q=80",
@@ -52,6 +52,9 @@ export const DEF_CONFIG = {
   
   // Secciones a mostrar
   showCountdown: true,
+  showBanner: false,
+  bannerOffsetX: 50,
+  bannerOffsetY: 50,
   showDate: true,
   showTime: true,
   showLocation: true,
@@ -69,7 +72,7 @@ export const DEF_CONFIG = {
   showFacebook: false,
   showTiktok: false,
   
-  // Ubicacion y Estacionamiento
+  // Ubicación y Estacionamiento
   locationName: "Salón de Eventos",
   locationAddress: "Calle Falsa 123",
   venueName: "Salón",
@@ -99,7 +102,7 @@ export const DEF_CONFIG = {
   videoTitle: "Nuestro Video",
   liveCameraTitle: "Cámara en Vivo",
   
-  // Itinerario
+  // Itinerario (Arreglo inicializado)
   itinerarySectionTitle: "Itinerario",
   itinerary: [
     { time: "21:00", text: "Recepción", icon: "🥂" },
@@ -107,7 +110,7 @@ export const DEF_CONFIG = {
     { time: "00:00", text: "Fiesta", icon: "🪩" }
   ],
   
-  // Menu
+  // Menú (Arreglo inicializado)
   menuSectionTitle: "Menú",
   menuItems: [
     { name: "Entrada", desc: "Tabla de fiambres", icon: "🧀" },
@@ -119,7 +122,7 @@ export const DEF_CONFIG = {
   dressCodeIcon: "icon-dress",
   dressCodeText: "Elegante Sport",
   
-  // Regalos
+  // Regalos (Arreglo inicializado)
   giftIcon: "icon-gift",
   giftLabel: "Mesa de Regalos",
   giftText: "El mejor regalo es tu presencia. Si deseas, puedes ayudarnos con nuestra luna de miel.",
@@ -127,15 +130,16 @@ export const DEF_CONFIG = {
   giftNoteText: "",
   giftNoteColor: "#6b7280",
   giftNoteSize: "sm",
-  giftLinks: [],
+  giftLinks: [], 
   
-  // Galeria
+  // Galería (Arreglo inicializado)
   galleryTitle: "Nuestros Momentos",
   galleryLayout: "grid",
   galleryPhotos: [],
   
-  // Notas extras
+  // Notas extras (Arreglo inicializado para evitar errores de .map)
   notesSectionTitle: "Notas Importantes",
+  notes: [],
   
   // Efectos y Animaciones
   particleEffect: "none",
@@ -345,42 +349,42 @@ export const THEMES = [
   {
     id: "negro-blanco",
     name: "Negro y Blanco (Elegante)",
-    primary: "#ffffff",           
-    bg1: "#000000",               
-    bg2: "#18181b",               
-    text: "#ffffff",              
-    muted: "#a1a1aa",             
-    card: "#27272a"               
+    primary: "#ffffff",            
+    bg1: "#000000",                
+    bg2: "#18181b",                
+    text: "#ffffff",               
+    muted: "#a1a1aa",              
+    card: "#27272a"                
   },
   {
     id: "blanco-negro",
     name: "Blanco y Negro (Minimalista)",
-    primary: "#000000",           
-    bg1: "#ffffff",               
-    bg2: "#f4f4f5",               
-    text: "#000000",              
-    muted: "#71717a",             
-    card: "#ffffff"               
+    primary: "#000000",            
+    bg1: "#ffffff",                
+    bg2: "#f4f4f5",                
+    text: "#000000",               
+    muted: "#71717a",              
+    card: "#ffffff"                
   },
   {
     id: "negro-violeta",
     name: "Negro y Violeta (Cyber)",
-    primary: "#a78bfa",           
-    bg1: "#0b061f",               
-    bg2: "#1e0b36",               
-    text: "#ffffff",              
-    muted: "#c084fc",             
-    card: "#25143a"               
+    primary: "#a78bfa",            
+    bg1: "#0b061f",                
+    bg2: "#1e0b36",                
+    text: "#ffffff",               
+    muted: "#c084fc",              
+    card: "#25143a"                
   },
   {
     id: "rosa-negro",
     name: "Rosa y Negro (Glam)",
-    primary: "#f472b6",           
-    bg1: "#000000",               
-    bg2: "#1c0512",               
-    text: "#ffffff",              
-    muted: "#f9a8d4",             
-    card: "#2d0b1e"               
+    primary: "#f472b6",            
+    bg1: "#000000",                
+    bg2: "#1c0512",                
+    text: "#ffffff",               
+    muted: "#f9a8d4",              
+    card: "#2d0b1e"                
   }
 ];
 
