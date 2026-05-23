@@ -4,7 +4,20 @@ import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App.jsx'
 import { registerSW } from 'virtual:pwa-register'
-registerSW({ immediate: true })
+
+// BUG 15 CORREGIDO: Callbacks para evitar fallos silenciosos del Service Worker
+registerSW({ 
+  immediate: true,
+  onNeedRefresh() {
+    console.log('Nueva versión disponible. Recargando la página en segundo plano.');
+  },
+  onOfflineReady() {
+    console.log('Aplicación lista para funcionar offline.');
+  },
+  onRegisterError(error) {
+    console.error('Error al registrar el Service Worker:', error);
+  }
+})
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
