@@ -34,18 +34,15 @@ export const Tooltip = ({ text }) => {
         <HelpCircle size={14} />
       </button>
       {show && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-800 text-white text-[10px] rounded-lg shadow-xl z-[9999] pointer-events-none anim-pop text-center leading-tight">
+        <div className="absolute z-[99999] bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2.5 bg-slate-800 text-white text-[10px] font-medium leading-tight rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.3)] text-center pointer-events-none normal-case tracking-normal">
           {text}
-          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-[5px] border-transparent border-t-slate-800" />
         </div>
       )}
     </div>
   );
 };
 
-// ---------------------------------------------------------
-// FIX BUG-CRITICO-01: ICONRENDERER RESTAURADO
-// ---------------------------------------------------------
 export const IconRenderer = ({ name, size = 24, color = "currentColor", className = "" }) => {
   if (!name) return null;
   const p = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: 1.5, strokeLinecap: "round", strokeLinejoin: "round", className };
@@ -99,242 +96,308 @@ export const IconRenderer = ({ name, size = 24, color = "currentColor", classNam
   }
 };
 
-export const FileUpload = ({ label, value, onChange, accept = "image/*" }) => {
-  const [uploading, setUploading] = useState(false);
-  const inputRef = useRef(null);
+export const FontSelector = ({ value, onChange }) => {
+  const [open, setOpen] = useState(false);
+  const [cat, setCat] = useState("Modernas");
+  const ref = useRef(null);
 
-  const handleFileChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.type.includes('audio')) {
-      const reader = new FileReader();
-      reader.onloadend = () => onChange(reader.result);
-      reader.readAsDataURL(file);
-      return;
-    }
-
-    setUploading(true);
-    const formData = new FormData();
-    formData.append("image", file);
-    try {
-      const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: "POST", body: formData });
-      const data = await res.json();
-      if (data.success) onChange(data.data.url);
-      else alert("Error al subir archivo");
-    } catch (err) { alert("Error de red al subir archivo"); }
-    setUploading(false);
-    if (inputRef.current) inputRef.current.value = "";
-  };
-
-  const isAudio = accept.includes('audio');
+  useEffect(() => { 
+    const fn = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }; 
+    document.addEventListener("mousedown", fn); 
+    return () => document.removeEventListener("mousedown", fn); 
+  }, []);
 
   return (
-    <div className="mb-6">
-      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 pl-1">{label}</label>
-      <input type="file" ref={inputRef} accept={accept} onChange={handleFileChange} className="hidden" />
-      <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm transition-all hover:border-violet-300 hover:shadow-md group">
-        {value ? (
-           <div className="w-16 h-16 rounded-xl bg-slate-100 overflow-hidden flex items-center justify-center shrink-0 border relative">
-              {isAudio ? <Music size={24} className="text-violet-500" /> : <img src={value} alt="" className="w-full h-full object-cover" />}
-              <button onClick={(e) => { e.stopPropagation(); onChange(""); }} className="absolute inset-0 bg-red-500/90 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={18}/></button>
-           </div>
-        ) : (
-           <div className="w-16 h-16 rounded-xl bg-slate-50 flex items-center justify-center shrink-0 border border-dashed border-slate-300 text-slate-400 group-hover:text-violet-500 group-hover:border-violet-300 transition-colors">
-              {isAudio ? <Music size={24}/> : <ImageIcon size={24}/>}
-           </div>
-        )}
-        <div className="flex-1 px-2">
-           <button disabled={uploading} onClick={() => inputRef.current?.click()} className="w-full py-2.5 text-xs font-bold rounded-xl border flex items-center justify-center gap-2 transition-colors bg-slate-50 text-slate-700 hover:bg-slate-100 disabled:opacity-50">
-             {uploading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />} {uploading ? "SUBIENDO..." : "SELECCIONAR ARCHIVO"}
-           </button>
+    <div className="relative w-full z-[9999]" ref={ref}>
+      <button type="button" onClick={() => setOpen(!open)} className="w-full px-4 py-3 rounded-xl text-slate-800 bg-white border border-gray-200 text-base flex justify-between items-center shadow-sm cursor-pointer" style={{ fontFamily: value }}>
+        <span className="truncate">{value || "Seleccionar fuente..." }</span>
+        <ChevronDown size={16} className={`text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-2xl shadow-2xl p-2 z-[99999] origin-top anim-pop">
+          <div className="flex gap-1 overflow-x-auto pb-2 mb-2 border-b border-gray-100 fd-sb">
+            {Object.keys(FONT_CATEGORIES || {})?.map(c => (
+              <button key={c} type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCat(c); }} className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shrink-0 transition-colors cursor-pointer ${cat === c ? 'bg-violet-600 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>{c}</button>
+            ))}
+          </div>
+          <div className="max-h-60 overflow-y-auto fd-sb">
+            {FONT_CATEGORIES?.[cat]?.map(f => (
+              <button key={f} type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onChange(f); setOpen(false); }} className={`w-full text-left px-4 py-3 hover:bg-violet-50 text-lg rounded-xl border-b border-gray-50 last:border-0 cursor-pointer ${value === f ? 'bg-violet-100 text-violet-700 font-bold' : 'text-slate-700'}`} style={{ fontFamily: f }}>{f}</button>
+            ))}
+          </div>
         </div>
-      </div>
-    </div>
-  );
-};
-
-export const Inp = ({ label, value, onChange, placeholder, type = "text", multiline = false }) => {
-  const [localVal, setLocalVal] = useState(value || "");
-  const isFocused = useRef(false);
-
-  useEffect(() => { if (!isFocused.current) setLocalVal(value || ""); }, [value]);
-  useEffect(() => { const timeout = setTimeout(() => { if (localVal !== (value || "")) onChange(localVal); }, 500); return () => clearTimeout(timeout); }, [localVal, onChange, value]);
-
-  const handleBlur = () => { isFocused.current = false; if (localVal !== (value || "")) onChange(localVal); };
-
-  return (
-    <div className="mb-5">
-      {label && <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5 pl-1">{label}</label>}
-      {multiline ? (
-        <textarea value={localVal} onFocus={() => isFocused.current = true} onBlur={handleBlur} onChange={e => setLocalVal(e.target.value)} placeholder={placeholder} className="w-full py-3.5 px-4 rounded-xl text-sm border focus:border-violet-500 outline-none transition-all resize-none min-h-[120px] bg-white text-slate-800 shadow-sm hover:border-slate-300" />
-      ) : (
-        <input type={type} value={localVal} onFocus={() => isFocused.current = true} onBlur={handleBlur} onChange={e => setLocalVal(e.target.value)} placeholder={placeholder} className="w-full py-3.5 px-4 rounded-xl text-sm border focus:border-violet-500 outline-none transition-all bg-white text-slate-800 shadow-sm hover:border-slate-300" />
       )}
     </div>
   );
 };
 
-export const Toggle = ({ checked, onChange }) => (
-  <label className="relative w-12 h-7 flex-shrink-0 cursor-pointer inline-block">
-    <input type="checkbox" className="sr-only peer" checked={checked || false} onChange={e => onChange(e.target.checked)} />
-    <div className="w-12 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-violet-600 shadow-inner"></div>
-  </label>
+export const EmojiPicker = ({ value, onSelect }) => {
+  const [open, setOpen] = useState(false);
+  const [mainTab, setMainTab] = useState('emoji'); 
+  const [activeCat, setActiveCat] = useState("Magia");
+  const ref = useRef(null);
+
+  useEffect(() => { 
+    if (mainTab === 'emoji') setActiveCat(Object.keys(EMOJI_CATEGORIES || {})[0]); 
+    else setActiveCat(Object.keys(ICON_CATEGORIES || {})[0]); 
+  }, [mainTab]);
+
+  useEffect(() => { 
+    const fn = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }; 
+    document.addEventListener("mousedown", fn); 
+    return () => document.removeEventListener("mousedown", fn); 
+  }, []);
+
+  const isIcon = (val) => typeof val === 'string' && val.startsWith('icon-');
+
+  return (
+    <div ref={ref} className="relative z-[20]">
+      <button type="button" onClick={() => setOpen(!open)} className="w-12 h-12 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-2xl hover:border-violet-300 focus:ring-2 focus:ring-violet-200 outline-none transition-all shadow-sm cursor-pointer">
+        {isIcon(value) ? <IconRenderer name={value} size={24} color="#64748b" /> : (value || "✨")}
+      </button>
+
+      {open && (
+        <div className="absolute top-14 left-0 bg-white border border-gray-200 rounded-2xl p-3 w-72 shadow-[0_20px_50px_rgba(0,0,0,0.3)] z-[99999]" style={{ isolation: 'isolate' }}>
+          <div className="flex bg-slate-100 p-1 rounded-xl mb-3">
+            <button type="button" onClick={() => setMainTab('emoji')} className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all ${mainTab === 'emoji' ? 'bg-white shadow text-violet-600' : 'text-slate-500'}`}>😀 Emojis</button>
+            <button type="button" onClick={() => setMainTab('icon')} className={`flex-1 py-1.5 text-[10px] font-bold rounded-lg transition-all ${mainTab === 'icon' ? 'bg-white shadow text-violet-600' : 'text-slate-500'}`}>✨ Íconos</button>
+          </div>
+
+          <div className="flex gap-1 overflow-x-auto pb-2 mb-2 border-b border-slate-100 fd-sb">
+            {Object.keys(mainTab === 'emoji' ? (EMOJI_CATEGORIES || {}) : (ICON_CATEGORIES || {}))?.map(c => (
+              <button key={c} onClick={() => setActiveCat(c)} type="button" className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-tight shrink-0 transition-all ${activeCat === c ? 'bg-violet-100 text-violet-700' : 'bg-slate-50 text-slate-400'}`}>{c}</button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-5 gap-1.5 max-h-56 overflow-y-auto fd-sb p-1 relative z-[99999]">
+            {mainTab === 'emoji' ? (
+              EMOJI_CATEGORIES?.[activeCat]?.map((e, i) => (
+                <button key={i} type="button" onClick={() => { onSelect(e); setOpen(false); }} className="p-2 text-xl hover:bg-violet-50 rounded-xl transition-colors cursor-pointer flex items-center justify-center">{e}</button>
+              ))
+            ) : (
+              ICON_CATEGORIES?.[activeCat]?.map((ic, i) => (
+                <button key={i} type="button" onClick={() => { onSelect(ic); setOpen(false); }} className="p-2 hover:bg-violet-50 text-slate-500 hover:text-violet-700 rounded-xl transition-colors cursor-pointer flex items-center justify-center">
+                  <IconRenderer name={ic} size={22} />
+                </button>
+              ))
+            )}
+          </div>
+          
+          {mainTab === 'emoji' && (
+            <div className="mt-2 pt-2 border-t border-slate-50">
+               <input type="text" placeholder="O pega un emoji aquí..." maxLength={2} className="w-full p-2 text-center bg-slate-50 rounded-lg text-sm border border-slate-100 outline-none focus:border-violet-300" onChange={e => { if(e.target.value) { onSelect(e.target.value); setOpen(false); } }} />
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export const BordersGallery = ({ value, onChange }) => (
+  <div className="grid grid-cols-3 gap-2">
+    {BORDERS?.map(b => (
+      <button key={b.id} type="button" onClick={() => onChange(b.url)} className={`p-2 border rounded-xl flex flex-col items-center gap-2 transition-all cursor-pointer ${value === b.url ? 'border-violet-500 bg-violet-100 shadow-md' : 'border-slate-200 bg-white hover:bg-slate-50'}`}>
+        <div style={{ width: '40px', height: '40px', backgroundColor: value === b.url ? '#7c3aed' : '#94a3b8', WebkitMaskImage: `url("${b.url}")`, WebkitMaskSize: 'contain', WebkitMaskRepeat: 'no-repeat', maskImage: `url("${b.url}")`, maskSize: 'contain', maskRepeat: 'no-repeat' }} />
+        <span className={`text-[9px] font-bold ${value === b.url ? 'text-violet-700' : 'text-slate-500'}`}>{b.name}</span>
+      </button>
+    ))}
+  </div>
 );
 
-export const GiphySearch = ({ onSelect }) => {
-  const [term, setTerm] = useState("");
-  const [results, setResults] = useState([]);
+// 👉 EL BUSCADOR DE GIPHY CON FETCH PURO Y VISTA PREVIA
+export const GiphySearch = ({ onSelect, value, placeholder = "Buscar GIF..." }) => {
+  const [term, setTerm] = useState("fiesta");
+  const [gifs, setGifs] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [selectedGifUrl, setSelectedGifUrl] = useState(value || null);
 
-  const search = async () => {
-    if (!term) return;
+  useEffect(() => { setSelectedGifUrl(value); }, [value]);
+
+  const searchGifs = async (query) => {
+    if (!query) return;
     setLoading(true);
     try {
-      const url = `https://api.giphy.com/v1/gifs/search?api_key=${import.meta.env.VITE_GIPHY_API_KEY || "32PbboqCveiWSlj9vROPmyjv8l8cuaj1"}&q=${term}&limit=20`;
-      const res = await fetch(url);
+      const res = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=32PbboqCveiWSlj9vROPmyjv8l8cuaj1&q=${query}&limit=20&rating=g`);
       const data = await res.json();
-      setResults(data.data || []);
-    } catch (e) {}
+      setGifs(data.data?.map(g => g.images.original.url) || []);
+    } catch (e) {
+      console.error("Error fetching Giphy:", e);
+    }
     setLoading(false);
   };
 
+  useEffect(() => {
+    const timer = setTimeout(() => searchGifs(term), 600);
+    return () => clearTimeout(timer);
+  }, [term]);
+
   return (
-    <div className="mt-2 bg-white p-4 rounded-2xl border shadow-sm">
-      <div className="flex gap-2 mb-4">
-        <input value={term} onChange={e => setTerm(e.target.value)} onKeyDown={e => e.key === 'Enter' && search()} placeholder="Buscar sticker..." className="flex-1 py-2 px-3 border rounded-xl text-sm outline-none focus:border-violet-500 bg-slate-50" />
-        <button onClick={search} className="px-4 bg-violet-100 text-violet-700 font-bold rounded-xl text-xs uppercase cursor-pointer hover:bg-violet-200">{loading ? '...' : 'BUSCAR'}</button>
+    <div className="bg-slate-100 p-3 rounded-2xl border border-slate-200 mt-2 mb-4">
+      <div className="relative mb-3">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+        <input 
+          value={term} 
+          onChange={(e) => setTerm(e.target.value)} 
+          placeholder={placeholder} 
+          className="w-full pl-9 pr-4 py-2.5 rounded-xl text-xs border border-slate-200 focus:border-violet-400 outline-none shadow-sm" 
+        />
       </div>
-      <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
-        {/* Usamos el opcional encadenado ?.map() */}
-        {results?.map(g => (
-          <img key={g.id} src={g.images.fixed_height_small.url} alt="" onClick={() => onSelect(g.images.fixed_height.url)} className="w-full h-16 object-cover rounded-lg cursor-pointer hover:opacity-80 border" />
-        ))}
-      </div>
-    </div>
-  );
-};
 
-export const MiniInp = ({ label, value, onChange, type = "text", placeholder }) => {
-  return (
-    <div className="flex-1">
-      {label && <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1 pl-1">{label}</label>}
-      <input type={type} value={value || ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} className="w-full py-2 px-3 rounded-lg text-sm border focus:border-violet-500 outline-none transition-all bg-white text-slate-800 shadow-sm" />
-    </div>
-  );
-};
-
-export const SelectInp = ({ label, value, onChange, options }) => {
-  return (
-    <div className="mb-4">
-      {label && <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1 pl-1">{label}</label>}
-      <select value={value || ""} onChange={e => onChange(e.target.value)} className="w-full py-2 px-3 rounded-lg text-sm border focus:border-violet-500 outline-none transition-all bg-white text-slate-800 shadow-sm cursor-pointer">
-        {/* Usamos el opcional encadenado ?.map() */}
-        {options?.map(opt => (
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
-        ))}
-      </select>
-    </div>
-  );
-};
-
-export const TypoControl = ({ label, fontVal, onFont, colorVal, onColor, sizeVal, onSize, minSize = 10, maxSize = 100 }) => {
-  return (
-    <div className="mb-4 bg-slate-50 p-3 rounded-xl border border-slate-200">
-      {label && <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3 pl-1">{label}</label>}
-      <div className="space-y-3">
-        {onFont && (
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold text-slate-400 w-12 uppercase">Fuente</span>
-            <select value={fontVal || ""} onChange={e => onFont(e.target.value)} className="flex-1 py-1.5 px-2 rounded-lg text-xs border focus:border-violet-500 outline-none bg-white text-slate-800 shadow-sm cursor-pointer" style={{ fontFamily: fontVal }}>
-              {/* Usamos el opcional encadenado ?.map() */}
-              {FONTS?.map(f => (
-                <option key={f.value} value={f.value} style={{ fontFamily: f.value }}>{f.label}</option>
-              ))}
-            </select>
+      <div className="h-48 overflow-y-auto rounded-xl bg-white border border-slate-100 relative z-50 p-2">
+        {loading && gifs.length === 0 ? (
+          <div className="flex justify-center items-center h-full">
+             <span className="text-[10px] font-bold text-slate-400 animate-pulse">Cargando GIFs...</span>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2">
+            {gifs?.map(g => (
+              <div 
+                key={g} 
+                className="relative aspect-square cursor-pointer group rounded-lg overflow-hidden border-2" 
+                onClick={(e) => { e.preventDefault(); setSelectedGifUrl(g); onSelect(g); }} 
+                style={{ borderColor: selectedGifUrl === g ? '#8b5cf6' : 'transparent' }}
+              >
+                 <img src={g} alt="gif" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                 {selectedGifUrl === g && (
+                   <div className="absolute inset-0 bg-violet-500/30 flex items-center justify-center backdrop-blur-[1px]">
+                      <CheckCircle2 className="text-white drop-shadow-md" size={24} />
+                   </div>
+                 )}
+              </div>
+            ))}
           </div>
         )}
-        {onColor && (
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold text-slate-400 w-12 uppercase">Color</span>
-            <div className="flex-1 flex items-center gap-2">
-              <input type="color" value={colorVal || "#ffffff"} onChange={e => onColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0 p-0" />
-              <input type="text" value={colorVal || "#ffffff"} onChange={e => onColor(e.target.value)} className="flex-1 py-1.5 px-2 rounded-lg text-xs border focus:border-violet-500 outline-none bg-white text-slate-800 uppercase shadow-sm" />
+      </div>
+
+      {selectedGifUrl && (
+        <div className="mt-3 pt-3 border-t border-slate-200 flex flex-col items-center">
+          <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">GIF Seleccionado</span>
+          <div className="relative w-full h-24 rounded-xl overflow-hidden border-2 border-violet-400 shadow-sm bg-white">
+            <img src={selectedGifUrl} alt="GIF Seleccionado" className="w-full h-full object-cover" />
+            <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1 shadow-md flex items-center justify-center">
+              <CheckCircle2 size={12} />
             </div>
           </div>
-        )}
-        {onSize && (
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold text-slate-400 w-12 uppercase">Tam.</span>
-            <input type="range" min={minSize} max={maxSize} value={sizeVal || 16} onChange={e => onSize(Number(e.target.value))} className="flex-1 accent-violet-600" />
-            <span className="text-xs font-bold text-slate-600 w-8 text-right">{sizeVal}px</span>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export const FontSelector = ({ value, onChange }) => {
+export const Inp = ({ label, value, onChange, placeholder, type="text", multiline = false, className="", icon: Icon = null, tooltip = null }) => {
+  const [localVal, setLocalVal] = useState(value || "");
+  useEffect(() => { setLocalVal(value || ""); }, [value]);
+  useEffect(() => { const timeout = setTimeout(() => { if (localVal !== (value || "")) onChange(localVal); }, 300); return () => clearTimeout(timeout); }, [localVal, onChange, value]);
   return (
-    <div className="mb-4">
-      <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1 pl-1">Fuente</label>
-      <select value={value || ""} onChange={e => onChange(e.target.value)} className="w-full py-2 px-3 rounded-lg text-sm border focus:border-violet-500 outline-none transition-all bg-white text-slate-800 shadow-sm cursor-pointer" style={{ fontFamily: value }}>
-        {/* Usamos el opcional encadenado ?.map() */}
-        {FONTS?.map(f => (
-          <option key={f.value} value={f.value} style={{ fontFamily: f.value }}>{f.label}</option>
-        ))}
-      </select>
+    <div className={`mb-2 text-left ${className}`}>
+      {label && (
+        <label className="flex items-center text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
+          {label}
+          {tooltip && <Tooltip text={tooltip} />}
+        </label>
+      )}
+      <div className="relative flex items-center">{Icon && <div className="absolute left-4 text-slate-400"><Icon size={16}/></div>}{multiline ? (<textarea value={localVal} onChange={e => setLocalVal(e.target.value)} placeholder={placeholder} rows={3} className={`w-full py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm resize-none focus:bg-white focus:border-violet-400 outline-none transition-all ${Icon ? 'pl-11 pr-4' : 'px-4'}`} />) : (<input type={type} value={localVal} onChange={e => setLocalVal(e.target.value)} placeholder={placeholder} className={`w-full py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all ${Icon ? 'pl-11 pr-4' : 'px-4'}`} />)}</div>
     </div>
   );
 };
 
-export const EmojiPicker = ({ value, onSelect }) => {
-  const emojis = ["✨","👑","🎈","🎉","🎊","🥳","🎁","💝","❤️","💖"];
+export const MiniInp = ({ value, onChange, placeholder, className, type="text" }) => {
+  const [localVal, setLocalVal] = useState(value || "");
+  useEffect(() => { setLocalVal(value || ""); }, [value]);
+  useEffect(() => { const timeout = setTimeout(() => { if (localVal !== (value || "")) onChange(localVal); }, 300); return () => clearTimeout(timeout); }, [localVal, onChange, value]);
+  return <input type={type} className={className} value={localVal} onChange={e => setLocalVal(e.target.value)} placeholder={placeholder} />;
+};
+
+export const SelectInp = ({ label, value, onChange, options, className="", tooltip = null }) => (
+  <div className={`mb-2 text-left ${className}`}>
+    {label && (
+      <label className="flex items-center text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
+        {label}
+        {tooltip && <Tooltip text={tooltip} />}
+      </label>
+    )}
+    <select value={value || ""} onChange={e => onChange(e.target.value)} className="w-full px-4 py-3 rounded-xl text-slate-800 bg-gray-50 border border-gray-200 text-sm focus:bg-white focus:border-violet-400 outline-none transition-all cursor-pointer">
+      {options?.map((opt, i) => <option key={i} value={opt.value}>{opt.label}</option>)}
+    </select>
+  </div>
+);
+
+export const TypoControl = ({ label, fontVal, onFont, colorVal, onColor, sizeVal, onSize, minSize=10, maxSize=80, tooltip = null }) => (
+  <div className="bg-gray-50/70 p-3 rounded-xl border border-gray-100 shadow-sm mb-5 relative overflow-visible z-[10] hover:z-[9999] focus-within:z-[9999]">
+    <div className="absolute left-0 top-0 bottom-0 w-1 bg-violet-200 rounded-l-xl" />
+    <label className="flex justify-between items-center text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 pl-2">
+      <span className="flex items-center">{label} {tooltip && <Tooltip text={tooltip} />}</span>
+      {sizeVal && <span className="text-violet-500 bg-violet-100 px-2 py-0.5 rounded-full">{sizeVal}px</span>}
+    </label>
+    <div className="flex gap-2 pl-2 items-start">{onFont && <div className="flex-1"><FontSelector value={fontVal} onChange={onFont} /></div>}{onColor && <div className="shrink-0"><input type="color" value={colorVal} onChange={e => onColor(e.target.value)} className="w-10 h-11 rounded-lg cursor-pointer border border-gray-200 p-0 shadow-sm bg-white" /></div>}</div>
+    {onSize && (<div className="mt-4 pl-2"><input type="range" min={minSize} max={maxSize} value={sizeVal} onChange={e => onSize(Number(e.target.value))} className="w-full accent-violet-600 cursor-pointer" /></div>)}
+  </div>
+);
+
+export const FileUpload = ({ label, onChange, value, tooltip = null }) => {
+  const [uploading, setUploading] = useState(false);
+  const handleFile = async (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    setUploading(true); const formData = new FormData(); formData.append("image", file);
+    try { const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: "POST", body: formData }); const data = await res.json(); if (data.success) onChange(data.data.url); } catch (err) { } 
+    finally { setUploading(false); }
+  };
   return (
-    <div className="flex gap-2 flex-wrap mb-4">
-      {emojis?.map(e => (
-        <button 
-          key={e} 
-          onClick={() => onSelect(e)} 
-          className={`w-8 h-8 flex items-center justify-center rounded-lg cursor-pointer transition-colors text-lg ${e === value ? 'ring-2 ring-violet-500 bg-violet-100' : 'bg-slate-100 hover:bg-violet-100'}`}
-        >
-          {e}
-        </button>
-      ))}
+    <div className="mb-4 text-left relative">
+      {label && (
+        <label className="flex items-center text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
+          {label}
+          {tooltip && <Tooltip text={tooltip} />}
+        </label>
+      )}
+      <div className="relative"><label className={`flex items-center justify-center w-full py-3 px-4 rounded-xl text-xs font-bold border transition-all cursor-pointer ${uploading ? 'bg-violet-100 border-violet-200 text-violet-400 cursor-not-allowed' : 'bg-white border-violet-200 text-violet-600 hover:bg-violet-50 hover:border-violet-300 shadow-sm'}`}><span className="flex items-center gap-2">{uploading ? <><Loader2 size={14} className="animate-spin" /> Subiendo...</> : <><ImageIcon size={16}/> Subir PNG/JPG</>}</span><input type="file" accept="image/*" onChange={handleFile} disabled={uploading} className="hidden" /></label></div>
+      {value && !uploading && (<div className="relative mt-3 group w-fit"><img src={value} alt="preview" className="h-20 w-auto object-cover rounded-xl border border-gray-200 shadow-sm" /><button type="button" onClick={() => onChange("")} className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg cursor-pointer"><Trash2 size={12} /></button></div>)}
     </div>
   );
 };
 
-export const Acc = ({ title, icon: Icon, iconColor, children, defaultOpen = false }) => {
-  const [open, setOpen] = useState(defaultOpen);
+export const Toggle = ({ checked, onChange }) => (
+  <label className="relative w-11 h-6 flex-shrink-0 cursor-pointer inline-block"><input type="checkbox" className="sr-only peer" checked={checked || false} onChange={e => onChange(e.target.checked)} /><div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-violet-600"></div></label>
+);
+
+export const Acc = ({ title, icon: Icon, children, defaultOpen = false, iconColor = "#7c3aed" }) => {
+  const [open, setOpen] = useState(defaultOpen); 
+  const [fullyOpen, setFullyOpen] = useState(defaultOpen);
+  
+  useEffect(() => { 
+    let t; 
+    if (open) {
+      t = setTimeout(() => setFullyOpen(true), 300); 
+    } else {
+      setFullyOpen(false); 
+    }
+    return () => clearTimeout(t); 
+  }, [open]);
+
   return (
-    <div className="mb-3 border rounded-xl bg-white shadow-sm overflow-hidden">
-      <button onClick={() => setOpen(!open)} className="w-full p-4 flex items-center justify-between hover:bg-slate-50 cursor-pointer text-left">
+    <div className={`mb-3 rounded-2xl border border-gray-100 bg-white shadow-sm relative transition-all ${open ? 'z-40' : 'z-10'} hover:z-50 focus-within:z-50`}>
+      <button onClick={() => setOpen(!open)} type="button" className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors text-left cursor-pointer">
         <div className="flex items-center gap-3">
-          {Icon && <Icon size={18} color={iconColor || "#64748b"} />}
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${iconColor}15` }}>
+            <Icon size={18} style={{ color: iconColor }} />
+          </div>
           <span className="font-bold text-slate-800 text-sm">{title}</span>
         </div>
-        <span className={`transform transition-transform ${open ? "rotate-180" : ""}`}>▼</span>
+        <ChevronDown size={18} className={`text-slate-300 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
-      {open && <div className="p-4 border-t bg-slate-50/50">{children}</div>}
-    </div>
-  );
-};
-
-export const BordersGallery = ({ value, onChange }) => {
-  return (
-    <div className="grid grid-cols-4 gap-2 mb-4">
-      {/* Usamos el opcional encadenado ?.map() */}
-      {BORDERS?.map(b => (
-        <button 
-          key={b.id} 
-          onClick={() => onChange(b.url)} 
-          className={`aspect-square rounded-lg border-2 overflow-hidden cursor-pointer hover:border-violet-400 transition-colors ${value === b.url ? 'border-violet-600' : 'border-slate-200'}`}
-        >
-          <img src={b.url} alt={b.name} className="w-full h-full object-cover bg-slate-800" />
-        </button>
-      ))}
+      <div 
+        className={`transition-all duration-300 ease-in-out ${fullyOpen ? 'overflow-visible' : 'overflow-hidden'}`} 
+        style={{ 
+          maxHeight: open ? '5000px' : '0', 
+          opacity: open ? 1 : 0,
+          pointerEvents: open ? 'auto' : 'none'
+        }}
+      >
+        <div className="p-4 pt-0 border-t border-gray-50">
+          {children}
+        </div>
+      </div>
     </div>
   );
 };
