@@ -69,8 +69,8 @@ const ProjectorScreen = ({ eventSlug }) => {
 // ==========================================
 // 👔 PANEL DE GESTIÓN PRINCIPAL
 // ==========================================
-// 👇 FIX BN-02: Recibimos onUpdateConfig como prop para mantener el estado global sincronizado
-export const ManageScreen = ({ onUpdateConfig }) => {
+// BUG-ALTO-05 Resuelto: Agregamos invitations y onUpdateInternal a la firma
+export const ManageScreen = ({ invitations, onUpdateInternal, onUpdateConfig }) => {
   const { id: eventSlug } = useParams();
   const [searchParams] = useSearchParams();
   const isProjectorMode = searchParams.get('mode') === 'projector';
@@ -103,11 +103,18 @@ export const ManageScreen = ({ onUpdateConfig }) => {
     let isMounted = true;
 
     const fetchEvent = async () => {
-      const { data, error } = await supabase.from('invitaciones').select('*').eq('id', eventSlug).single();
-      if (error) {
-         console.error("Error buscando evento:", error);
-         if(isMounted) setLoading(false);
-         return;
+      // BUG-ALTO-05: Buscamos el evento primero en el estado global para evitar desincronizaciones visuales
+      let data = invitations && invitations.length > 0 ? invitations.find(i => i.id === eventSlug) : null;
+      
+      // Fallback a Supabase en caso de recargar la página directamente y que el state global esté vacío
+      if (!data) {
+        const { data: dbData, error } = await supabase.from('invitaciones').select('*').eq('id', eventSlug).single();
+        if (error) {
+           console.error("Error buscando evento:", error);
+           if(isMounted) setLoading(false);
+           return;
+        }
+        data = dbData;
       }
       
       if (data && isMounted) {
@@ -144,6 +151,9 @@ export const ManageScreen = ({ onUpdateConfig }) => {
        isMounted = false;
        supabase.removeChannel(channel);
     };
+    // Deshabilitamos la regla de dependencias para invitations porque solo nos interesa
+    // el estado de la prop en el mount inicial para semilla, el realtime actualiza el resto.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventSlug, isProjectorMode]);
 
   useEffect(() => {
@@ -256,7 +266,6 @@ export const ManageScreen = ({ onUpdateConfig }) => {
   const handleSaveWaTemplate = async () => {
     setSavingMsg(true);
     
-    // 👇 FIX BN-02: Usar onUpdateConfig si está disponible (desde App.jsx), sino fallback a BD directa.
     if (onUpdateConfig) {
       await onUpdateConfig(eventSlug, 'whatsappMsg', waTemplate);
       setEventData(prev => ({ ...prev, config: { ...prev.config, whatsappMsg: waTemplate } }));
@@ -470,7 +479,6 @@ export const ManageScreen = ({ onUpdateConfig }) => {
                  {opcionesMesas.map((mesaNombre) => {
                     const invitadosMesa = invitados.filter(i => i.asistencia_confirmada && (i.mesa === mesaNombre || (!i.mesa && mesaNombre === 'Sin Asignar')));
                     
-                    // 👇 FIX BN-03: Calculamos paxTotal en lugar de invitadosMesa.length para contemplar acompañantes
                     const paxTotal = invitadosMesa.reduce((acc, i) => acc + 1 + (i.acompanantes_confirmados || 0), 0);
 
                     if (mesaNombre !== 'Sin Asignar' && invitadosMesa.length === 0) {
@@ -486,7 +494,6 @@ export const ManageScreen = ({ onUpdateConfig }) => {
                       <div key={mesaNombre} onDragOver={e => e.preventDefault()} onDrop={e => handleDrop(e, mesaNombre)} className={`p-4 rounded-2xl border min-h-[150px] transition-colors ${mesaNombre === 'Sin Asignar' ? 'bg-orange-50 border-orange-200' : 'bg-violet-50 border-violet-200'}`}>
                         <div className="flex justify-between items-center mb-4">
                           <h3 className={`text-xs font-black uppercase tracking-widest ${mesaNombre === 'Sin Asignar' ? 'text-orange-700' : 'text-violet-700'}`}>{mesaNombre}</h3>
-                          {/* 👇 FIX BN-03: Renderizamos el paxTotal correcto */}
                           <span className="text-[10px] font-bold bg-white px-2 py-0.5 rounded-md shadow-sm">{paxTotal} Pax</span>
                         </div>
                         
