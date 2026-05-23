@@ -14,7 +14,7 @@ export const DraggableItem = ({ id, cfg, update, children, className }) => {
 
   const onPointerDown = (e) => {
     if (!update) return; 
-    e.stopPropagation(); // Evita conflictos con clics del fondo
+    e.stopPropagation(); 
     setIsDragging(true);
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -28,7 +28,6 @@ export const DraggableItem = ({ id, cfg, update, children, className }) => {
     let x = dragRef.current.origX + (clientX - dragRef.current.startX);
     let y = dragRef.current.origY + (clientY - dragRef.current.startY);
     
-    // 👉 Límite eliminado. Ahora fluyen libres y no saltan hacia arriba.
     setLocalPos({ x, y });
   };
 
@@ -158,3 +157,61 @@ export const ParticleCanvas = ({ effect, primary }) => {
   if (effect === "none") return null;
   return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none z-20" style={{ opacity: 0.85 }} />;
 };
+
+// ===============================================
+// NUEVOS COMPONENTES RECUPERADOS (Previene fallos de build en Preview.jsx)
+// ===============================================
+
+export const RsvpWidget = ({ theme, date, isPreview }) => {
+  const cardBg = theme === 'light' ? 'bg-slate-50 border-slate-200 text-slate-800' : 'bg-white/5 border-white/10 text-white';
+  
+  return (
+    <div className={`w-full p-6 rounded-[2rem] border text-center ${cardBg}`}>
+      <h3 className="font-bold mb-2">Confirmar Asistencia</h3>
+      <p className="text-xs opacity-60 mb-6">Por favor confirmá tu presencia{date ? ` antes del ${date}` : ''}.</p>
+      <button className="w-full py-4 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-black text-xs uppercase flex items-center justify-center shadow-lg transition-colors cursor-pointer">
+        {isPreview ? 'CONFIRMAR (VISTA PREVIA)' : 'CONFIRMAR ASISTENCIA'}
+      </button>
+    </div>
+  );
+};
+
+export const MapEmbed = ({ url }) => {
+  if (!url) return null;
+  return (
+    <iframe 
+      src={url} 
+      width="100%" 
+      height="100%" 
+      style={{ border: 0 }} 
+      allowFullScreen 
+      loading="lazy" 
+      referrerPolicy="no-referrer-when-downgrade" 
+      className="w-full h-full object-cover"
+    ></iframe>
+  );
+};
+
+export const SpotifyEmbed = ({ url }) => {
+  if (!url) return null;
+  // Convertimos enlaces estándar de Spotify a formato embed para que renderice el widget
+  const embedUrl = url.includes('embed') ? url : url.replace('spotify.com/', 'spotify.com/embed/');
+  
+  return (
+    <iframe 
+      src={embedUrl} 
+      width="100%" 
+      height="152" 
+      frameBorder="0" 
+      allowFullScreen 
+      allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" 
+      loading="lazy" 
+      className="rounded-xl bg-transparent"
+    ></iframe>
+  );
+};
+
+// Stubs exportados para satisfacer cualquier importación huérfana de Preview.jsx
+export const generateTicket = () => {};
+export const LottiePlayer = () => null;
+export const LOTTIE_MAP = {};
