@@ -41,8 +41,6 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
   
   const [liveEvent, setLiveEvent] = useState(activeInv); 
 
-  // 👉 FIX: El "Espejo" mágico. 
-  // Esto obliga al Modal a actualizarse instantáneamente cuando App.jsx cambia los datos (Ej: al activar el switch o agregar un invitado manual).
   useEffect(() => {
     setLiveEvent(activeInv);
   }, [activeInv]);
@@ -70,31 +68,43 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
   const livePhotos = liveEvent?.internal_data?.live_photos || []; 
   const fileInputRef = useRef(null);
 
+  // 👇 FIX BP-04: Inicializamos los datos y la antena con un ID estricto
   useEffect(() => {
     let isMounted = true;
+    let channel;
 
-    const fetchVipGuests = async () => {
+    const init = async () => {
       let targetId = activeInv.id;
-      const { data: eventData } = await supabase.from('invitaciones').select('id').eq('slug', activeInv.id).single();
-      if (eventData) targetId = eventData.id;
+      // Resolver slug a ID si es necesario
+      if (!targetId.includes('-')) {
+         const { data: eventData } = await supabase.from('invitaciones').select('id').eq('slug', activeInv.id).single();
+         if (eventData) targetId = eventData.id;
+      }
 
+      // 1. Fetch Inicial
       const { data: guestsData } = await supabase.from('invitados').select('*').eq('evento_id', targetId).order('created_at', { ascending: false });
       if (isMounted && guestsData) setVipGuests(guestsData);
+
+      // 2. Antena Realtime con Filtro
+      channel = supabase.channel(`crm-modal-vips-${targetId}`)
+        .on('postgres_changes', { 
+           event: '*', 
+           schema: 'public', 
+           table: 'invitados', 
+           filter: `evento_id=eq.${targetId}` 
+        }, () => {
+           // Refetch optimizado
+           supabase.from('invitados').select('*').eq('evento_id', targetId).order('created_at', { ascending: false })
+             .then(({data}) => { if (isMounted && data) setVipGuests(data); });
+        })
+        .subscribe();
     };
 
-    fetchVipGuests();
-
-    // Solo mantenemos la antena de Supabase para los VIPs (App de puerta).
-    // Las configuraciones y manuales ya se actualizan solas gracias al "Espejo" de arriba.
-    const channel = supabase.channel(`crm-modal-vips-${activeInv.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'invitados' }, () => {
-        if (isMounted) fetchVipGuests();
-      })
-      .subscribe();
+    init();
 
     return () => {
       isMounted = false;
-      supabase.removeChannel(channel);
+      if (channel) supabase.removeChannel(channel);
     };
   }, [activeInv.id]);
 
