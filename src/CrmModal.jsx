@@ -3,20 +3,11 @@ import {
   X, ClipboardList, Users, FileText, Printer, UserCheck, MessageCircle, 
   PartyPopper, CalendarClock, Clock, Receipt, Smartphone, 
   Copy, Plus, FileDown, Edit2, Trash2, FileSpreadsheet,
-  MonitorPlay, Image as ImageIcon
+  MonitorPlay, Image as ImageIcon, AlertTriangle
 } from "lucide-react";
 import { Inp, Toggle } from "./DashboardUI";
+import { formatDateSpanish } from "./config";
 import { supabase } from "./supabase";
-
-const formatDateSpanish = (dateStr) => {
-  if (!dateStr) return 'Sin fecha';
-  if (dateStr.includes('-')) {
-    const [y, m, d] = dateStr.split('-');
-    const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-    return `${parseInt(d, 10)} de ${months[parseInt(m, 10) - 1]} de ${y}`;
-  }
-  return dateStr;
-};
 
 const getTodaySpanish = () => {
   const today = new Date();
@@ -27,65 +18,43 @@ const getTodaySpanish = () => {
 const safeFormatDate = (ts) => {
   if (!ts) return 'Sin fecha';
   try {
-    const d = new Date(ts);
-    if (isNaN(d.getTime())) return 'Fecha inválida';
-    return d.toLocaleDateString('es-AR');
-  } catch (e) {
-    return 'Fecha inválida';
-  }
+    return new Intl.DateTimeFormat('es-AR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(ts));
+  } catch (e) { return ts; }
 };
 
 export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal, onUpdateConfig, isDark }) => {
-  const [activeTab, setActiveTab] = useState("info");
-  const [printMode, setPrintMode] = useState("ficha");
+  const [activeTab, setActiveTab] = useState("resumen");
+  const [showPrint, setShowPrint] = useState(false);
+  const [useTables, setUseTables] = useState(activeInv?.internal_data?.useTables || false);
   
-  const [liveEvent, setLiveEvent] = useState(activeInv); 
-
-  useEffect(() => {
-    setLiveEvent(activeInv);
-  }, [activeInv]);
-
-  const [showGuestModal, setShowGuestModal] = useState(false);
+  const [livePhotos, setLivePhotos] = useState(activeInv?.internal_data?.live_photos?.map(p => typeof p === 'string' ? p : p.url) || []);
+  
   const [editingGuest, setEditingGuest] = useState(null);
   const [gName, setGName] = useState("");
   const [gLastname, setGLastname] = useState("");
   const [gPax, setGPax] = useState(1);
   const [gStatus, setGStatus] = useState("Pendiente");
   const [gTable, setGTable] = useState("");
-  const [formError, setFormError] = useState(""); 
+  const [dbStatus, setDbStatus] = useState("synced");
 
-  const [copiedStates, setCopiedStates] = useState({});
   const [vipGuests, setVipGuests] = useState([]);
   
-  const [toast, setToast] = useState(null);
-  const showToast = (message, type = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
-  };
+  // Modales de confirmación para eliminar (DEUDA-02)
+  const [deleteGuestConfirm, setDeleteGuestConfirm] = useState(null);
+  const [deletePhotoConfirm, setDeletePhotoConfirm] = useState(null);
 
-  const manualGuests = liveEvent?.internal_data?.guests || [];
-  const useTables = liveEvent?.internal_data?.useTables || false;
-  const livePhotos = liveEvent?.internal_data?.live_photos || []; 
-  const fileInputRef = useRef(null);
-
-  // 👇 FIX BP-04: Inicializamos los datos y la antena con un ID estricto
+  // Hook unificado para Suscripción Realtime (OPT-01 confirmada)
   useEffect(() => {
     let isMounted = true;
     let channel;
+    const targetId = activeInv?.id;
 
-    const init = async () => {
-      let targetId = activeInv.id;
-      // Resolver slug a ID si es necesario
-      if (!targetId.includes('-')) {
-         const { data: eventData } = await supabase.from('invitaciones').select('id').eq('slug', activeInv.id).single();
-         if (eventData) targetId = eventData.id;
-      }
+    if (targetId) {
+      // 1. Carga inicial
+      supabase.from('invitados').select('*').eq('evento_id', targetId).order('created_at', { ascending: false })
+      .then(({data}) => { if (isMounted && data) setVipGuests(data); });
 
-      // 1. Fetch Inicial
-      const { data: guestsData } = await supabase.from('invitados').select('*').eq('evento_id', targetId).order('created_at', { ascending: false });
-      if (isMounted && guestsData) setVipGuests(guestsData);
-
-      // 2. Antena Realtime con Filtro
+      // 2. Antena Realtime con Filtro (OPT-01)
       channel = supabase.channel(`crm-modal-vips-${targetId}`)
         .on('postgres_changes', { 
            event: '*', 
@@ -98,631 +67,389 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
              .then(({data}) => { if (isMounted && data) setVipGuests(data); });
         })
         .subscribe();
-    };
+    }
+    return () => { isMounted = false; if (channel) supabase.removeChannel(channel); };
+  }, [activeInv?.id]);
 
-    init();
+  if (!activeInv) return null;
 
-    return () => {
-      isMounted = false;
-      if (channel) supabase.removeChannel(channel);
-    };
-  }, [activeInv.id]);
+  const data = activeInv.internal_data || {};
+  const cfg = activeInv.config || {};
+  const manualGuests = data.guests || [];
 
   const allGuests = [
     ...manualGuests,
     ...vipGuests.map(vg => ({
-      id: vg.id,
-      name: vg.nombre_completo,
-      lastname: vg.apodo ? `(${vg.apodo})` : '',
-      guests: vg.acompanantes_confirmados > 0 ? vg.acompanantes_confirmados : vg.max_acompanantes,
-      status: vg.asistencia_confirmada ? 'Confirmado' : 'Pendiente',
-      mesa: vg.mesa || '',
-      timestamp: vg.created_at,
-      isVip: true 
+       id: vg.id,
+       name: vg.nombre,
+       lastname: vg.apellidos || '',
+       phone: vg.telefono || '',
+       guests: 1, // Por ahora el flujo VIP asume 1 pase por fila
+       status: vg.status,
+       mesa: vg.mesa || '',
+       isVip: true,
+       created_at: vg.created_at
     }))
   ];
 
-  const handleCopyLink = (id, url) => {
-    navigator.clipboard.writeText(url);
-    setCopiedStates(prev => ({ ...prev, [id]: true }));
-    setTimeout(() => { setCopiedStates(prev => ({ ...prev, [id]: false })); }, 2000);
+  const totalConf = allGuests.reduce((acc, g) => acc + (Number(g.guests) || 1), 0);
+  const themeCard = isDark ? "bg-slate-800 border-slate-700" : "bg-white border-slate-200";
+
+  const toggleTables = (val) => {
+    setUseTables(val);
+    onUpdateInternal(activeInv.id, 'useTables', val);
   };
 
-  const handlePrint = (mode) => {
-    setPrintMode(mode);
-    setTimeout(() => window.print(), 300); 
+  const openGuestModal = (g = null) => {
+    if (g) {
+      setEditingGuest(g); setGName(g.name); setGLastname(g.lastname || "");
+      setGPax(g.guests); setGStatus(g.status || "Pendiente"); setGTable(g.mesa || "");
+    } else {
+      setEditingGuest({ isNew: true }); setGName(""); setGLastname("");
+      setGPax(1); setGStatus("Pendiente"); setGTable("");
+    }
   };
 
-  const openNewGuest = () => {
+  const handleSaveGuest = async () => {
+    if (!gName.trim()) return alert("El nombre es obligatorio");
+    setDbStatus("saving");
+    const finalTable = useTables ? gTable : "";
+
+    if (editingGuest.isNew) {
+      const newG = { id: `m-${Date.now()}`, name: gName, lastname: gLastname, guests: Number(gPax), status: gStatus, mesa: finalTable };
+      await onUpdateInternal(activeInv.id, 'guests', [newG, ...manualGuests]);
+    } else if (editingGuest.isVip) {
+      await supabase.from('invitados').update({
+         nombre: gName, apellidos: gLastname, status: gStatus, mesa: finalTable 
+      }).eq('id', editingGuest.id);
+      // Actualizamos UI optimista
+      setVipGuests(vipGuests.map(v => v.id === editingGuest.id ? { ...v, nombre: gName, apellidos: gLastname, status: gStatus, mesa: finalTable } : v));
+    } else {
+      let newList = manualGuests.map(g => g.id === editingGuest.id ? { ...g, name: gName, lastname: gLastname, guests: Number(gPax), status: gStatus, mesa: finalTable } : g);
+      await onUpdateInternal(activeInv.id, 'guests', newList);
+    }
+    
     setEditingGuest(null);
-    setGName(""); setGLastname(""); setGPax(1); setGStatus("Pendiente"); setGTable("");
-    setFormError("");
-    setShowGuestModal(true);
-  };
-  
-  const openEditGuest = (g) => {
-    setEditingGuest(g);
-    setGName(g.name); setGLastname(g.lastname); setGPax(g.guests); setGStatus(g.status); setGTable(g.mesa || "");
-    setFormError("");
-    setShowGuestModal(true);
+    setDbStatus("synced");
   };
 
-  const saveGuest = async () => {
-    if(!gName && !editingGuest?.isVip) {
-       setFormError("Por favor ingresá un nombre.");
-       return;
-    }
-    
-    let finalTable = gTable.trim();
-    if (finalTable && !finalTable.toLowerCase().startsWith('mesa')) {
-        finalTable = `Mesa ${finalTable}`;
-    }
-    
-    if (editingGuest?.isVip) {
-      await supabase.from('invitados').update({ mesa: finalTable }).eq('id', editingGuest.id);
-      setVipGuests(vipGuests.map(v => v.id === editingGuest.id ? { ...v, mesa: finalTable } : v));
+  // Reemplazo de window.confirm
+  const handleDeleteGuest = async () => {
+    setDbStatus("saving");
+    if (deleteGuestConfirm.isVip) {
+      await supabase.from('invitados').delete().eq('id', deleteGuestConfirm.id);
+      setVipGuests(vipGuests.filter(v => v.id !== deleteGuestConfirm.id));
     } else {
-      let newList = [...manualGuests];
-      if (editingGuest) {
-        newList = newList.map(g => g.id === editingGuest.id ? { ...g, name: gName, lastname: gLastname, guests: Number(gPax), status: gStatus, mesa: finalTable } : g);
-      } else {
-        const fakeId = `MANUAL-${crypto.randomUUID()}`;
-        newList.push({ id: fakeId, name: gName, lastname: gLastname, guests: Number(gPax), mesa: finalTable, status: gStatus, timestamp: new Date().toISOString() });
-      }
-      onUpdateInternal(activeInv.id, 'guests', newList);
+      const newList = manualGuests.filter(g => g.id !== deleteGuestConfirm.id);
+      await onUpdateInternal(activeInv.id, 'guests', newList);
     }
-    setShowGuestModal(false);
+    setDeleteGuestConfirm(null);
+    setEditingGuest(null);
+    setDbStatus("synced");
   };
 
-  const deleteGuest = async (g) => {
-    if(!window.confirm("¿Seguro que querés borrar a este invitado? El QR dejará de funcionar.")) return;
-    if (g.isVip) {
-      await supabase.from('invitados').delete().eq('id', g.id);
-      setVipGuests(vipGuests.filter(v => v.id !== g.id));
-    } else {
-      const newList = manualGuests.filter(mg => mg.id !== g.id);
-      onUpdateInternal(activeInv.id, 'guests', newList);
-    }
+  // Reemplazo de window.confirm para borrar fotos
+  const handleDeletePhoto = async () => {
+    const newList = livePhotos.filter(p => p !== deletePhotoConfirm);
+    setLivePhotos(newList);
+    // En caso de que se haya guardado como string o como objeto
+    const toSave = activeInv?.internal_data?.live_photos?.filter(p => (typeof p === 'string' ? p : p.url) !== deletePhotoConfirm) || [];
+    await onUpdateInternal(activeInv.id, 'live_photos', toSave);
+    setDeletePhotoConfirm(null);
   };
 
-  const handleDeletePhoto = (photoUrl) => {
-    if(!window.confirm("¿Seguro que querés eliminar esta foto? Desaparecerá de la galería y del proyector.")) return;
-    const updatedPhotos = livePhotos.filter(url => url !== photoUrl);
-    onUpdateInternal(activeInv.id, 'live_photos', updatedPhotos);
-  };
-
-  const handleExportCSV = () => {
-    if(allGuests.length === 0) {
-      showToast("No hay invitados aún para exportar.", "error");
-      return;
-    }
-    let csv = "Nombre Completo,Acompañantes,Mesa,Estado,Fecha de Registro\n";
-    allGuests.forEach(g => {
-      csv += `${g.name} ${g.lastname},${g.guests},${g.mesa || '-'},${g.status},${safeFormatDate(g.timestamp)}\n`;
-    });
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const exportExcel = () => {
+    const header = useTables ? "Nombre,Apellido,Acompañantes,Estado,Mesa\n" : "Nombre,Apellido,Acompañantes,Estado\n";
+    const csv = allGuests.map(g => {
+      const base = `"${g.name}","${g.lastname}","${g.guests}","${g.status}"`;
+      return useTables ? `${base},"${g.mesa || ''}"` : base;
+    }).join("\n");
+    
+    const blob = new Blob(["\uFEFF" + header + csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.setAttribute("download", `Invitados_${liveEvent.title}.csv`);
-    document.body.appendChild(link);
+    link.download = `Lista_${activeInv.title.replace(/ /g,'_')}.csv`;
     link.click();
-    document.body.removeChild(link);
   };
 
-  const handleImportCSV = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (evt) => {
-      const text = evt.target.result;
-      const lines = text.split('\n');
-      const newManualGuests = [];
-      let start = 0;
-      if (lines[0].toLowerCase().includes('nombre') || lines[0].toLowerCase().includes('name')) start = 1;
-
-      const updatePromises = [];
-      let manualCount = 0;
-      let vipCount = 0;
-
-      lines.slice(start).forEach(line => {
-        if(!line.trim()) return;
-        const cols = line.split(',');
-        
-        const fullName = cols[0]?.replace(/['"]/g, '').trim() || "";
-        const nameParts = fullName.split(' ');
-        const name = nameParts[0] || "";
-        const lastname = nameParts.slice(1).join(' ') || "";
-        const pax = cols[1]?.replace(/['"]/g, '').trim() || "1";
-        const table = cols[2]?.replace(/['"]/g, '').trim() || "";
-        const status = cols[3]?.replace(/['"]/g, '').trim() || "Pendiente";
-        
-        if(name) {
-          const matchedVip = vipGuests.find(vg => {
-            const vgName = `${vg.nombre_completo} ${vg.apodo ? `(${vg.apodo})` : ''}`.trim().toLowerCase();
-            return vgName === fullName.toLowerCase();
-          });
-
-          if (matchedVip) {
-            let updated = false;
-            let updateData = {};
-            
-            if (matchedVip.mesa !== table && table) { 
-               updateData.mesa = table; 
-               updated = true; 
-            }
-            
-            const isConfirmed = status === 'Confirmado' || status === 'Ingresó';
-            if (matchedVip.asistencia_confirmada !== isConfirmed && (status === 'Confirmado' || status === 'Ingresó' || status === 'Pendiente')) { 
-               updateData.asistencia_confirmada = isConfirmed; 
-               updated = true; 
-            }
-            
-            if (updated) {
-               updatePromises.push(supabase.from('invitados').update(updateData).eq('id', matchedVip.id));
-            }
-            vipCount++;
-          } else {
-            newManualGuests.push({
-              id: `MANUAL-${crypto.randomUUID()}`,
-              name, lastname, guests: parseInt(pax) || 1, mesa: table, status: status, timestamp: new Date().toISOString()
-            });
-            manualCount++;
-          }
-        }
-      });
-      
-      if (updatePromises.length > 0) {
-         await Promise.all(updatePromises);
-      }
-
-      onUpdateInternal(activeInv.id, 'guests', newManualGuests);
-      showToast(`¡Excel importado! Se agregaron ${manualCount} manuales y se actualizaron ${vipCount} VIPs.`, "success");
-    };
-    reader.readAsText(file);
-    e.target.value = null;
+  const getQRLink = (guestId) => {
+    return `${window.location.origin}/vip/${activeInv.id}?t=${guestId}`;
   };
+
+  // Si pasamos a modo impresión
+  if (showPrint) {
+    return (
+      <div className="fixed inset-0 bg-white z-[9999] overflow-y-auto print:p-0 p-8 text-black" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+        <div className="max-w-4xl mx-auto">
+           <div className="flex justify-between items-center mb-8 border-b-2 border-black pb-4 no-print">
+             <div>
+               <h1 className="text-3xl font-black">{activeInv.title}</h1>
+               <p className="text-gray-600">{formatDateSpanish(cfg.date)} • {cfg.time}</p>
+             </div>
+             <div className="flex gap-4">
+               <button onClick={() => window.print()} className="px-6 py-3 bg-black text-white font-bold rounded-xl flex items-center gap-2"><Printer size={18}/> IMPRIMIR AHORA</button>
+               <button onClick={() => setShowPrint(false)} className="px-6 py-3 bg-gray-200 font-bold rounded-xl flex items-center gap-2"><X size={18}/> CERRAR</button>
+             </div>
+           </div>
+
+           <div className="only-print text-center mb-8">
+             <h1 className="text-2xl font-black uppercase mb-1">{activeInv.title}</h1>
+             <p className="text-sm font-bold">{formatDateSpanish(cfg.date)} • {cfg.time}</p>
+             <p className="text-xs uppercase mt-2">Lista Oficial de Invitados • {totalConf} Personas Confirmadas</p>
+           </div>
+
+           <table className="w-full text-left border-collapse">
+             <thead>
+               <tr style={{ borderBottom: '2px solid #000' }}>
+                 <th style={{ padding: '12px 8px' }}># TKT</th>
+                 <th style={{ padding: '12px 8px' }}>Invitado</th>
+                 <th style={{ padding: '12px 8px', textAlign: 'center' }}>Pax</th>
+                 {useTables && <th style={{ padding: '12px 8px', textAlign: 'center' }}>Mesa</th>}
+                 <th style={{ padding: '12px 8px', textAlign: 'center' }}>Check-in (Firma)</th>
+               </tr>
+             </thead>
+             <tbody>
+               {allGuests.map((g) => (
+                 <tr key={g.id} style={{ borderBottom: '1px solid #e2e8f0', fontSize: '14px' }}>
+                   <td style={{ padding: '12px 8px', fontFamily: 'monospace', color: '#64748b' }}>{g.id.split('-').pop()}</td>
+                   <td style={{ padding: '12px 8px', fontWeight: 'bold', color: '#1e293b' }}>{g.name} {g.lastname}</td>
+                   <td style={{ padding: '12px 8px', textAlign: 'center', fontWeight: '900' }}>{g.guests}</td>
+                   {useTables && <td style={{ padding: '12px 8px', textAlign: 'center', fontWeight: '900', color: '#7c3aed' }}>{g.mesa || '-'}</td>}
+                   <td style={{ padding: '12px 8px', textAlign: 'center' }}>
+                     <div style={{ width: '24px', height: '24px', borderRadius: '4px', border: '2px solid #cbd5e1', margin: '0 auto' }}></div>
+                   </td>
+                 </tr>
+               ))}
+             </tbody>
+           </table>
+           <div style={{ marginTop: '48px', textAlign: 'center', fontSize: '12px', color: '#64748b' }}>
+             Documento generado por <strong>defiesta.lat</strong> el {getTodaySpanish()}
+           </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 crm-modal-wrapper">
-      <style>{`
-        .only-print { display: none !important; }
-        @media print {
-          @page { margin: 0.5cm; }
-          body { background: white !important; -webkit-print-color-adjust: exact; }
-          body * { visibility: hidden; }
-          .crm-modal-wrapper {
-             position: absolute !important;
-             left: 0 !important;
-             top: 0 !important;
-             background: white !important;
-             backdrop-filter: none !important;
-             padding: 0 !important;
-          }
-          .no-print { display: none !important; }
-          .only-print, .only-print * { visibility: visible; }
-          .only-print { 
-             display: block !important;
-             position: absolute !important; 
-             left: 0 !important; 
-             top: 0 !important; 
-             width: 100% !important; 
-             margin: 0 !important; 
-             padding: 20px !important; 
-             background: white !important; 
-          }
-        }
-      `}</style>
-      
-      {toast && (
-        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[999] px-6 py-3 rounded-xl shadow-xl font-bold text-sm text-white transition-all ${toast.type === 'error' ? 'bg-red-500' : 'bg-[#25D366]'}`}>
-          {toast.message}
-        </div>
-      )}
-
-      <div className={`w-full max-w-5xl max-h-[95vh] h-full sm:h-auto rounded-[2rem] overflow-hidden flex flex-col shadow-2xl anim-pop no-print ${isDark ? 'bg-slate-900' : 'bg-white'}`}>
+    <div className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-md flex justify-end">
+      <div className={`w-full max-w-3xl h-full shadow-2xl flex flex-col anim-slide-left ${isDark ? 'bg-slate-900 text-white' : 'bg-[#f8f9fc] text-slate-800'}`}>
         
-        <div className={`px-4 sm:px-6 py-3 sm:py-4 border-b flex justify-between items-center shrink-0 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-           <div className="flex gap-2 sm:gap-4 border border-slate-300 rounded-xl p-1 bg-slate-100 w-full sm:w-auto flex-1 mr-2">
-             <button onClick={() => setActiveTab('info')} className={`px-2 sm:px-4 py-2 rounded-lg text-[10px] sm:text-xs font-black transition-colors cursor-pointer flex-1 sm:flex-none text-center ${activeTab === 'info' ? 'bg-white shadow-sm text-violet-600' : 'text-slate-500 hover:text-slate-700'}`}>
-               <ClipboardList size={14} className="inline-block sm:mr-1"/>
-               <span className="hidden sm:inline"> Ficha Interna</span>
-               <span className="sm:hidden"> Ficha</span>
-             </button>
-             <button onClick={() => setActiveTab('guests')} className={`px-2 sm:px-4 py-2 rounded-lg text-[10px] sm:text-xs font-black transition-colors cursor-pointer flex-1 sm:flex-none text-center ${activeTab === 'guests' ? 'bg-white shadow-sm text-violet-600' : 'text-slate-500 hover:text-slate-700'}`}>
-               <Users size={14} className="inline-block sm:mr-1"/> 
-               <span className="hidden sm:inline"> Invitados</span>
-               <span className="sm:hidden"> Lista</span>
-             </button>
-             <button onClick={() => setActiveTab('projector')} className={`px-2 sm:px-4 py-2 rounded-lg text-[10px] sm:text-xs font-black transition-colors cursor-pointer flex-1 sm:flex-none text-center ${activeTab === 'projector' ? 'bg-white shadow-sm text-violet-600' : 'text-slate-500 hover:text-slate-700'}`}>
-               <MonitorPlay size={14} className="inline-block sm:mr-1"/>
-               <span className="hidden sm:inline"> Proyector / Galería</span>
-               <span className="sm:hidden"> Galería</span>
-             </button>
-           </div>
-           <button onClick={onClose} className="w-8 h-8 sm:w-10 sm:h-10 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-full flex items-center justify-center transition-colors cursor-pointer shrink-0"><X size={18}/></button>
+        <div className={`shrink-0 px-6 py-5 border-b flex items-center justify-between z-10 ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
+          <div className="flex items-center gap-4">
+             <div className="w-12 h-12 bg-violet-600 text-white rounded-xl flex items-center justify-center shadow-lg"><ClipboardList size={24}/></div>
+             <div>
+                <h2 className="text-xl font-black tracking-tight">{activeInv.title}</h2>
+                <p className={`text-[11px] uppercase tracking-widest font-bold ${isDark ? 'text-violet-400' : 'text-violet-600'}`}>Ficha de Evento CRM</p>
+             </div>
+          </div>
+          <button onClick={onClose} className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors cursor-pointer ${isDark ? 'bg-slate-800 hover:bg-slate-700' : 'bg-slate-100 hover:bg-slate-200'}`}><X size={20}/></button>
         </div>
 
-        <div className="p-4 sm:p-6 lg:p-8 overflow-y-auto fd-sb flex-1 relative">
-          
-          {/* PESTAÑA FICHA INTERNA */}
-          {activeTab === 'info' && (
-            <div className="animate-in fade-in duration-300">
-              <div className="flex justify-end gap-2 mb-6">
-                <button onClick={() => handlePrint('presupuesto')} className="px-4 py-2 bg-green-100 text-green-700 hover:bg-green-200 rounded-xl text-[10px] sm:text-xs font-bold flex items-center gap-2 cursor-pointer"><FileText size={14}/> Imprimir Presupuesto</button>
-                <button onClick={() => handlePrint('ficha')} className="px-4 py-2 bg-slate-200 text-slate-700 hover:bg-slate-300 rounded-xl text-[10px] sm:text-xs font-bold flex items-center gap-2 cursor-pointer"><Printer size={14}/> Imprimir Ficha</button>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 mb-8">
-                 <div>
-                    <h3 className="text-xs font-black text-blue-500 uppercase tracking-widest mb-4 border-b border-slate-200/20 pb-2 flex items-center gap-2"><UserCheck size={14}/> Datos del Cliente</h3>
-                    <Inp label="Nombre Completo" value={liveEvent.internal_data?.clientName || ''} onChange={v => onUpdateInternal(activeInv.id, 'clientName', v)} isDark={isDark} />
-                    <div className="flex gap-2 items-end mb-4">
-                       <Inp label="WhatsApp del Cliente" placeholder="Ej: 52 1 55 1234 5678" className="flex-1 !mb-0" value={liveEvent.internal_data?.clientPhone || ''} onChange={v => onUpdateInternal(activeInv.id, 'clientPhone', v)} isDark={isDark} />
-                       <button onClick={() => window.open(`https://wa.me/${liveEvent.internal_data?.clientPhone?.replace(/\D/g, '')}`)} className="h-[46px] px-4 bg-green-500 text-white rounded-xl flex items-center justify-center cursor-pointer shadow-md"><MessageCircle size={18}/></button>
-                    </div>
-                    <Inp label="Cantidad de Invitados (Aprox)" type="number" placeholder="Ej: 80" value={liveEvent.internal_data?.guestCount || ''} onChange={v => onUpdateInternal(activeInv.id, 'guestCount', v)} isDark={isDark} />
-                 </div>
-                 <div>
-                    <h3 className="text-xs font-black text-violet-500 uppercase tracking-widest mb-4 border-b border-slate-200/20 pb-2 flex items-center gap-2"><PartyPopper size={14}/> Detalles del Evento</h3>
-                    <Inp label="Nombre del Agasajado/s" value={liveEvent.config?.honoreeName || ''} onChange={v => onUpdateConfig(activeInv.id, 'honoreeName', v)} isDark={isDark} />
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                      
-                      <div>
-                        <label className={`block text-[10px] font-black uppercase mb-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Tipo de Evento</label>
-                        <select className={`w-full py-3 px-4 rounded-xl text-sm font-bold outline-none cursor-pointer border ${isDark ? 'bg-slate-800 text-white border-slate-700' : 'bg-white text-slate-800 border-slate-200'}`} value={liveEvent.internal_data?.eventType || ''} onChange={e => onUpdateInternal(activeInv.id, 'eventType', e.target.value)}>
-                           <option value="">Seleccionar...</option>
-                           <option value="15 Años">15 Años</option>
-                           <option value="Boda">Boda / Casamiento</option>
-                           <option value="Cumpleaños">Cumpleaños</option>
-                           <option value="Bautismo">Bautismo</option>
-                           <option value="Baby Shower">Baby Shower</option>
-                           <option value="Corporativo">Evento Corporativo</option>
-                           <option value="Otro">Otro</option>
-                        </select>
-                      </div>
+        <div className={`shrink-0 px-6 py-3 border-b flex gap-6 overflow-x-auto custom-scrollbar ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+           <button onClick={() => setActiveTab('resumen')} className={`py-2 px-1 text-sm font-black uppercase tracking-widest border-b-2 whitespace-nowrap transition-colors ${activeTab === 'resumen' ? 'border-violet-500 text-violet-500' : 'border-transparent opacity-50'}`}>Info. General</button>
+           <button onClick={() => setActiveTab('invitados')} className={`py-2 px-1 text-sm font-black uppercase tracking-widest border-b-2 whitespace-nowrap transition-colors flex items-center gap-2 ${activeTab === 'invitados' ? 'border-violet-500 text-violet-500' : 'border-transparent opacity-50'}`}>Invitados <span className="bg-violet-100 text-violet-600 px-2 py-0.5 rounded-full text-[10px]">{allGuests.length}</span></button>
+           <button onClick={() => setActiveTab('fotos')} className={`py-2 px-1 text-sm font-black uppercase tracking-widest border-b-2 whitespace-nowrap transition-colors flex items-center gap-2 ${activeTab === 'fotos' ? 'border-violet-500 text-violet-500' : 'border-transparent opacity-50'}`}>Cámara / Fotos <span className="bg-pink-100 text-pink-600 px-2 py-0.5 rounded-full text-[10px]">{livePhotos.length}</span></button>
+        </div>
 
-                      <div>
-                        <label className={`block text-[10px] font-black uppercase mb-1.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Estado</label>
-                        <select className={`w-full py-3 px-4 rounded-xl text-sm font-bold outline-none cursor-pointer border ${isDark ? 'bg-slate-800 text-white border-slate-700' : 'bg-white text-slate-800 border-slate-200'}`} value={liveEvent.internal_data?.eventStatus || 'Nuevo'} onChange={e => onUpdateInternal(activeInv.id, 'eventStatus', e.target.value)}>
-                           <option value="Nuevo">🔵 Nuevo / Borrador</option>
-                           <option value="Confirmado">🟣 Confirmado</option>
-                           <option value="Finalizado">⚪ Finalizado</option>
-                           <option value="Cancelado">🔴 Cancelado</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                       <Inp label="Fecha" type="date" icon={CalendarClock} value={liveEvent.config?.date || ''} onChange={v => onUpdateConfig(activeInv.id, 'date', v)} isDark={isDark} />
-                       <Inp label="Horario" type="text" placeholder="Ej: 14:00 a 20:00" icon={Clock} value={liveEvent.config?.time || ''} onChange={v => onUpdateConfig(activeInv.id, 'time', v)} isDark={isDark} />
-                    </div>
-                 </div>
-              </div>
-
-              <div className="mb-8">
-                 <h3 className="text-xs font-black text-amber-500 uppercase tracking-widest mb-4 border-b border-slate-200/20 pb-2 flex items-center gap-2"><ClipboardList size={14}/> Logística y Servicios</h3>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Inp label="Servicios Solicitados" placeholder="Ej: DJ, Fotógrafo, Show de Magia..." multiline value={liveEvent.internal_data?.requestedServices || ''} onChange={v => onUpdateInternal(activeInv.id, 'requestedServices', v)} isDark={isDark} />
-                    <Inp label="Menús Especiales / Alergias" placeholder="Ej: 2 Celíacos, 1 Vegano..." multiline value={liveEvent.internal_data?.specialMenus || ''} onChange={v => onUpdateInternal(activeInv.id, 'specialMenus', v)} isDark={isDark} />
-                 </div>
-                 <Inp label="Notas Internas (Privadas)" placeholder="Anotaciones para la cocina o administración..." multiline className="mt-2" value={liveEvent.internal_data?.internalNotes || ''} onChange={v => onUpdateInternal(activeInv.id, 'internalNotes', v)} isDark={isDark} />
-              </div>
-
-              <div className="mb-8">
-                 <h3 className="text-xs font-black text-green-500 uppercase tracking-widest mb-4 border-b border-slate-200/20 pb-2 flex items-center gap-2"><Receipt size={14}/> Finanzas</h3>
-                 <div className={`p-4 sm:p-5 rounded-2xl border grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 ${isDark ? 'bg-green-500/10 border-green-500/20' : 'bg-green-50 border-green-200'}`}>
-                    <div>
-                      <label className={`block text-[10px] font-black uppercase mb-1.5 ${isDark ? 'text-green-400' : 'text-slate-500'}`}>Estado de Pago</label>
-                      <select className={`w-full py-3 px-4 rounded-xl text-sm font-bold outline-none cursor-pointer border ${isDark ? 'bg-slate-800 text-white border-green-900' : 'bg-white text-slate-800 border-green-200'}`} value={liveEvent.internal_data?.paymentStatus || 'Pendiente'} onChange={e => onUpdateInternal(activeInv.id, 'paymentStatus', e.target.value)}>
-                         <option value="Pendiente">🔴 Pendiente</option>
-                         <option value="Seña / Parcial">🟡 Seña Adelantada</option>
-                         <option value="Pagado Total">🟢 Pagado Total</option>
-                      </select>
-                    </div>
-                    <Inp label="Presupuesto Total" type="number" prefix="$" value={liveEvent.internal_data?.totalBudget || ''} onChange={v => onUpdateInternal(activeInv.id, 'totalBudget', v)} isDark={isDark} />
-                    <Inp label="Abonado / Seña" type="number" prefix="$" value={liveEvent.internal_data?.paymentAmount || ''} onChange={v => onUpdateInternal(activeInv.id, 'paymentAmount', v)} isDark={isDark} />
-                    <div>
-                       <label className={`block text-[10px] font-black uppercase mb-1.5 ${isDark ? 'text-green-400' : 'text-slate-500'}`}>Saldo Restante</label>
-                       <div className={`w-full py-3 px-4 rounded-xl text-sm font-black flex items-center gap-1 border ${isDark ? 'bg-slate-800 border-green-900 text-white' : 'bg-white border-green-200 text-slate-800'}`}>
-                          <span className="text-slate-400 opacity-50">$</span> {(Number(liveEvent.internal_data?.totalBudget || 0) - Number(liveEvent.internal_data?.paymentAmount || 0)).toLocaleString('es-AR')}
-                       </div>
-                    </div>
-                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* PESTAÑA LISTA DE INVITADOS */}
-          {activeTab === 'guests' && (
-            <div className="animate-in fade-in duration-300">
-              
-              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 md:p-5 mb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                  <h4 className="text-blue-800 font-black text-sm sm:text-base mb-1 flex items-center gap-2"><Smartphone size={18}/> App de Recepción (Puerta)</h4>
-                  <p className="text-blue-600 text-[11px] sm:text-xs font-medium max-w-lg">Enviale este acceso a tu empleado. Desde ahí solo podrá usar el escáner de QR y ver la lista de ingreso.</p>
-                </div>
-                <button onClick={() => handleCopyLink(`puerta-${activeInv.id}`, `${window.location.origin}/puerta/${activeInv.id}`)} className={`w-full md:w-auto px-6 py-3 sm:py-3.5 rounded-xl font-black text-[11px] sm:text-xs flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95 cursor-pointer shrink-0 ${copiedStates[`puerta-${activeInv.id}`] ? 'bg-green-500 text-white shadow-green-500/30' : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/30'}`}>
-                  {copiedStates[`puerta-${activeInv.id}`] ? "¡COPIADO! ✅" : <><Copy size={16}/> COPIAR LINK</>}
-                </button>
-              </div>
-
-              <div className="bg-purple-50 border border-purple-200 rounded-2xl p-4 md:p-5 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                  <h4 className="text-purple-800 font-black text-sm sm:text-base mb-1 flex items-center gap-2"><ClipboardList size={18}/> Panel de Gestión para el Cliente</h4>
-                  <p className="text-purple-600 text-[11px] sm:text-xs font-medium max-w-lg">Enviale este link al cliente (agasajado) para que él mismo pueda ver su lista, agregar manuales, editar y asignar las mesas a los invitados.</p>
-                </div>
-                <button onClick={() => handleCopyLink(`gestion-${activeInv.id}`, `${window.location.origin}/lista/${activeInv.id}`)} className={`w-full md:w-auto px-6 py-3 sm:py-3.5 rounded-xl font-black text-[11px] sm:text-xs flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95 cursor-pointer shrink-0 ${copiedStates[`gestion-${activeInv.id}`] ? 'bg-green-500 text-white shadow-green-500/30' : 'bg-purple-600 hover:bg-purple-700 text-white shadow-purple-500/30'}`}>
-                  {copiedStates[`gestion-${activeInv.id}`] ? "¡COPIADO! ✅" : <><Copy size={16}/> COPIAR LINK</>}
-                </button>
-              </div>
-
-              {/* Cabecera y Botones */}
-              <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4 border-t border-slate-200/50 pt-6">
-                <h3 className={`font-black text-lg sm:text-xl flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-800'}`}>
-                  <Users className="text-violet-500" size={24}/> Control de Accesos
-                </h3>
-                
-                <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 w-full md:w-auto">
-                   <button onClick={openNewGuest} className="w-full sm:w-auto px-2 sm:px-3 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-black text-[10px] sm:text-[11px] flex items-center justify-center gap-1.5 shadow-sm transition-transform active:scale-95 cursor-pointer"><Plus size={14}/> MANUAL</button>
-                   <button onClick={() => fileInputRef.current.click()} className="w-full sm:w-auto px-2 sm:px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-black text-[10px] sm:text-[11px] flex items-center justify-center gap-1.5 shadow-sm transition-transform active:scale-95 cursor-pointer" title="Cargar archivo CSV separado por comas"><FileSpreadsheet size={14}/> IMPORTAR</button>
-                   <input type="file" accept=".csv" ref={fileInputRef} onChange={handleImportCSV} className="hidden" />
-                   <button onClick={() => handlePrint('invitados')} className="w-full sm:w-auto px-2 sm:px-3 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-lg font-black text-[10px] sm:text-[11px] flex items-center justify-center gap-1.5 shadow-sm transition-transform active:scale-95 cursor-pointer"><Printer size={14}/> IMPRIMIR</button>
-                   <button onClick={handleExportCSV} className="w-full sm:w-auto px-2 sm:px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-black text-[10px] sm:text-[11px] flex items-center justify-center gap-1.5 shadow-sm transition-transform active:scale-95 cursor-pointer"><FileDown size={14}/> EXCEL</button>
-                </div>
-              </div>
-
-              {/* Toggle de Mesas con div custom */}
-              <div className={`flex flex-col sm:flex-row sm:items-center gap-4 mb-6 p-4 rounded-xl border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto">
-                  <span className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Asistentes Totales:</span>
-                  <span className="text-lg font-black text-violet-600">{allGuests.reduce((acc, g) => acc + Number(g.guests || 0), 0)}</span>
+        <div className="flex-1 overflow-y-auto p-6 md:p-8">
+           
+           {activeTab === 'resumen' && (
+             <div className="space-y-6 max-w-2xl mx-auto pb-20">
+                <div className={`p-6 rounded-[2rem] border grid grid-cols-2 md:grid-cols-4 gap-6 ${themeCard}`}>
+                   <div className="col-span-2 md:col-span-4 border-b pb-4 mb-2">
+                     <p className="text-[10px] uppercase font-black text-slate-400 tracking-widest mb-1">Cliente / Homenajeado</p>
+                     <p className="text-xl font-black">{data.clientName || cfg.honoreeName || "Sin nombre"}</p>
+                   </div>
+                   <div>
+                     <p className="text-[10px] uppercase font-black text-slate-400 tracking-widest mb-1 flex items-center gap-1"><CalendarClock size={12}/> Fecha</p>
+                     <p className="font-bold text-sm">{formatDateSpanish(cfg.date)}</p>
+                   </div>
+                   <div>
+                     <p className="text-[10px] uppercase font-black text-slate-400 tracking-widest mb-1 flex items-center gap-1"><Clock size={12}/> Horario</p>
+                     <p className="font-bold text-sm">{cfg.time || "Sin horario"}</p>
+                   </div>
+                   <div>
+                     <p className="text-[10px] uppercase font-black text-slate-400 tracking-widest mb-1 flex items-center gap-1"><Users size={12}/> Confirmados</p>
+                     <p className="text-2xl font-black text-violet-500 leading-none">{totalConf}</p>
+                   </div>
+                   <div>
+                     <p className="text-[10px] uppercase font-black text-slate-400 tracking-widest mb-1 flex items-center gap-1"><PartyPopper size={12}/> Tipo</p>
+                     <p className="font-bold text-sm">{cfg.eventType || "Evento"}</p>
+                   </div>
                 </div>
 
-                <div className="w-full h-px sm:w-px sm:h-6 bg-slate-200 dark:bg-slate-700"></div>
-
-                <div className="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
-                  <span className={`text-xs font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Activar Armado de Mesas</span>
-                  
-                  <div 
-                    onClick={() => onUpdateInternal(activeInv.id, 'useTables', !useTables)}
-                    className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors shadow-inner flex items-center ${useTables ? 'bg-violet-600' : isDark ? 'bg-slate-700' : 'bg-slate-300'}`}
-                  >
-                    <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${useTables ? 'translate-x-6' : 'translate-x-0'}`}></div>
-                  </div>
-                  
+                <div className={`p-6 rounded-[2rem] border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${themeCard}`}>
+                   <div>
+                     <h3 className="font-black flex items-center gap-2 mb-1"><MonitorPlay size={18} className="text-violet-500"/> Proyector en Vivo</h3>
+                     <p className="text-sm opacity-70">Enviá este link a la DJ o técnica para proyectar las fotos que suban los invitados.</p>
+                   </div>
+                   <button onClick={() => window.open(`${window.location.origin}/proyector/${activeInv.id}`)} className="px-6 py-3 rounded-xl bg-violet-600 text-white font-black text-xs uppercase tracking-widest hover:bg-violet-700 shadow-md">ABRIR PROYECTOR</button>
                 </div>
-              </div>
+             </div>
+           )}
 
-              {allGuests.length === 0 ? (
-                <div className="text-center py-20 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
-                  <p className="text-slate-400 font-bold">Todavía no hay invitados registrados.</p>
+           {activeTab === 'fotos' && (
+             <div className="max-w-4xl mx-auto pb-20">
+                <div className={`p-6 rounded-[2rem] border mb-6 flex flex-col md:flex-row items-center justify-between gap-4 ${themeCard}`}>
+                   <div>
+                     <h3 className="text-lg font-black mb-1">Fotos en Vivo ({livePhotos.length})</h3>
+                     <p className="text-sm opacity-70">Acá aparecen las fotos que los invitados suben desde su celular.</p>
+                   </div>
+                   <button onClick={() => window.open(`${window.location.origin}/proyector/${activeInv.id}`)} className="px-6 py-3 rounded-xl bg-violet-600 text-white font-black text-xs uppercase tracking-widest shadow-md flex items-center gap-2"><MonitorPlay size={16}/> MODO PROYECTOR</button>
                 </div>
-              ) : (
-                <div className="border border-slate-200 rounded-3xl overflow-x-auto shadow-sm w-full">
-                  <table className="w-full text-left bg-white min-w-[600px]">
-                    <thead><tr className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest"><th className="p-4 border-b">Invitado</th><th className="p-4 border-b text-center">Pase VIP ID</th><th className="p-4 border-b text-center">Personas</th>{useTables && <th className="p-4 border-b text-center text-violet-500">Mesa</th>}<th className="p-4 border-b text-center">Estado</th><th className="p-4 border-b text-right">Acciones</th></tr></thead>
-                    <tbody className="text-sm">
-                      {allGuests.map((g) => (
-                        <tr key={g.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                          <td className="p-4 font-bold text-slate-800">
-                            {g.name} {g.lastname} {g.isVip && <span className="ml-2 text-[8px] bg-violet-100 text-violet-600 px-2 py-0.5 rounded-full uppercase tracking-widest">VIP App</span>}
-                            <br/><span className="text-[9px] text-slate-400 font-normal uppercase tracking-wider">{safeFormatDate(g.timestamp)}</span>
-                          </td>
-                          <td className="p-4 text-center"><code className="bg-slate-100 px-2 py-1 rounded text-xs text-slate-500 font-mono">{g.id.split('-').pop()}</code></td>
-                          <td className="p-4 text-center font-black text-slate-600">{g.guests}</td>
-                          {useTables && <td className="p-4 text-center font-black text-violet-600 text-lg">{g.mesa || '-'}</td>}
-                          <td className="p-4 text-center">
-                            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${g.status === 'Confirmado' || g.status === 'Ingresó' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{g.status}</span>
-                          </td>
-                          <td className="p-4 text-right flex justify-end gap-2">
-                             <button onClick={() => openEditGuest(g)} className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors bg-slate-100 text-slate-600 hover:bg-violet-100 hover:text-violet-600 cursor-pointer" title="Editar"><Edit2 size={14}/></button>
-                             <button onClick={() => deleteGuest(g)} className="w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 flex items-center justify-center cursor-pointer transition-colors"><Trash2 size={14}/></button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          )}
 
-          {/* PESTAÑA PROYECTOR Y MODERACIÓN */}
-          {activeTab === 'projector' && (
-            <div className="animate-in fade-in duration-300">
-              <div className="flex flex-col md:flex-row items-center justify-between bg-violet-50 p-5 sm:p-6 rounded-3xl border border-violet-100 mb-8 gap-4 sm:gap-6">
-                <div>
-                  <h2 className="text-lg sm:text-xl font-black text-violet-900 mb-2 flex items-center gap-2"><MonitorPlay size={24} /> Modo Proyector DJ</h2>
-                  <p className="text-violet-700 text-xs sm:text-sm font-medium max-w-lg">
-                     Abre una pantalla en formato de cine que reproduce automáticamente y en vivo las fotos que los invitados suben a la "Cámara Desechable".
-                  </p>
-                </div>
-                <button
-                    onClick={() => window.open(`/manage/${activeInv.id}?mode=projector`, '_blank')}
-                    className="w-full md:w-auto px-6 py-3 sm:py-4 bg-violet-600 text-white rounded-2xl font-black text-[11px] sm:text-xs uppercase tracking-widest hover:bg-violet-700 transition-transform active:scale-95 shadow-xl shadow-violet-600/30 flex items-center justify-center gap-3 cursor-pointer shrink-0"
-                >
-                    <MonitorPlay size={20} /> ABRIR PANTALLA COMPLETA
-                </button>
-              </div>
-
-              <div className="mb-4">
-                <h3 className={`font-black text-lg flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-800'}`}>
-                  <ImageIcon className="text-pink-500" size={20}/> Moderador de Galería
-                </h3>
-                <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Las fotos que borres aquí desaparecerán inmediatamente del proyector en vivo y de la galería del evento.
-                </p>
-              </div>
-
-              {livePhotos.length === 0 ? (
-                 <div className="text-center py-20 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
-                   <p className="text-slate-400 font-bold">Aún no hay fotos subidas por los invitados.</p>
-                 </div>
-              ) : (
+                {livePhotos.length === 0 ? (
+                   <div className="text-center py-20 opacity-50">
+                     <ImageIcon size={48} className="mx-auto mb-4" />
+                     <p className="text-lg font-bold">Aún no hay fotos</p>
+                     <p className="text-sm">Las fotos aparecerán acá automáticamente.</p>
+                   </div>
+                ) : (
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                   {livePhotos.map((url) => (
-                      <div key={url} className="relative group aspect-square bg-slate-100 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                   {livePhotos.map((url, i) => (
+                      <div key={`photo-${i}`} className="relative group aspect-square bg-slate-100 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                          <img src={url} alt="Foto del evento" className="w-full h-full object-cover" />
-                         <button 
-                           onClick={() => handleDeletePhoto(url)} 
-                           className="absolute top-2 right-2 bg-red-500 text-white w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 shadow-lg cursor-pointer"
-                           title="Eliminar foto"
-                         >
-                            <Trash2 size={14}/>
-                         </button>
+                         <button onClick={() => setDeletePhotoConfirm(url)} className="absolute top-2 right-2 w-8 h-8 bg-red-500/90 text-white rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={14}/></button>
+                         <a href={url} target="_blank" rel="noreferrer" className="absolute bottom-2 right-2 w-8 h-8 bg-black/50 backdrop-blur-sm text-white rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><FileDown size={14}/></a>
                       </div>
                    ))}
                 </div>
-              )}
-            </div>
-          )}
+                )}
+             </div>
+           )}
 
-          {/* MODAL CREAR/EDITAR INVITADO MANUAL */}
-          {showGuestModal && (
-            <div className="absolute inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
-               <div className={`w-full max-w-sm rounded-[2rem] p-6 shadow-2xl relative text-center anim-pop ${isDark ? 'bg-slate-800' : 'bg-white'}`}>
-                  <button onClick={() => setShowGuestModal(false)} className="absolute top-4 right-4 w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 cursor-pointer"><X size={16}/></button>
-                  <h3 className={`font-black text-lg mb-4 ${isDark ? 'text-white' : 'text-slate-800'}`}>{editingGuest ? 'Editar Invitado' : 'Agregar Invitado Manual'}</h3>
-                  
-                  {formError && (
-                    <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-xl text-xs font-bold border border-red-200 text-left">
-                      {formError}
-                    </div>
-                  )}
+           {activeTab === 'invitados' && (
+             <div className="max-w-4xl mx-auto pb-20">
+                <div className={`p-6 rounded-[2rem] border mb-6 flex flex-col md:flex-row items-center justify-between gap-6 ${themeCard}`}>
+                   <div className="flex items-center gap-4">
+                     <div className="p-3 bg-violet-500/10 text-violet-600 rounded-xl"><UserCheck size={24}/></div>
+                     <div>
+                       <h3 className="font-black text-xl leading-none mb-1">Gestión de Accesos</h3>
+                       <p className="text-sm font-bold opacity-70">Total confirmados: {totalConf} personas</p>
+                     </div>
+                   </div>
+                   <div className="flex items-center gap-3">
+                     <button onClick={() => setShowPrint(true)} className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-colors ${isDark ? 'border-slate-600 hover:bg-slate-700' : 'border-slate-200 hover:bg-slate-100'}`}><Printer size={20}/></button>
+                     <button onClick={exportExcel} className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-colors ${isDark ? 'border-slate-600 hover:bg-slate-700' : 'border-slate-200 hover:bg-slate-100'}`}><FileSpreadsheet size={20}/></button>
+                     <button onClick={() => openGuestModal()} className="px-6 py-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-black text-xs uppercase tracking-widest shadow-md flex items-center gap-2"><Plus size={16}/> AGREGAR</button>
+                   </div>
+                </div>
 
-                  <div className="space-y-2">
-                     {!editingGuest?.isVip ? (
-                       <>
-                         <Inp label="Nombre" value={gName} onChange={setGName} isDark={isDark} />
-                         <Inp label="Apellido" value={gLastname} onChange={setGLastname} isDark={isDark} />
-                         <div className="flex gap-2">
-                           <div className="flex-1"><Inp label="Cantidad" type="number" value={gPax} onChange={v => setGPax(v)} isDark={isDark} /></div>
-                           <div className="flex-1">
-                             <label className={`block text-[10px] font-black uppercase mb-1.5 text-left ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Estado</label>
-                             <select className={`w-full py-3 px-4 rounded-xl text-sm outline-none cursor-pointer border ${isDark ? 'bg-slate-700 text-white border-slate-600' : 'bg-gray-50 text-slate-800 border-gray-200'}`} value={gStatus} onChange={e => setGStatus(e.target.value)}>
-                               <option value="Pendiente">Pendiente</option>
-                               <option value="Confirmado">Confirmado</option>
-                               <option value="Ingresó">Ingresó</option>
-                             </select>
-                           </div>
-                         </div>
-                       </>
-                     ) : (
-                       <div className="p-4 bg-violet-50 text-violet-800 rounded-xl mb-4 text-xs font-bold border border-violet-200">
-                         Estás editando un pase VIP generado por el cliente. Solo podés asignarle la mesa.
+                <div className={`p-4 rounded-[1.5rem] border mb-6 flex items-center justify-between ${themeCard}`}>
+                   <div>
+                     <p className="font-bold text-sm">Habilitar asignación de mesas</p>
+                     <p className="text-xs opacity-60">Permite indicar número de mesa por familia/invitado.</p>
+                   </div>
+                   <Toggle checked={useTables} onChange={toggleTables} />
+                </div>
+
+                <div className="space-y-3">
+                  {allGuests.map((g, idx) => (
+                    <div key={`guest-${g.id}-${idx}`} className={`p-4 rounded-[1.5rem] border flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:shadow-md ${themeCard} ${g.status === 'Ingresó' ? 'border-l-4 border-l-green-500' : ''}`}>
+                       <div className="flex items-center gap-4">
+                          <div className={`w-12 h-12 rounded-full flex flex-col items-center justify-center shrink-0 border-2 ${g.isVip ? 'bg-amber-100 border-amber-300 text-amber-700' : 'bg-slate-100 border-slate-200 text-slate-500'}`}>
+                             <span className="text-sm font-black">{g.guests}</span>
+                             <span className="text-[8px] font-black uppercase leading-none">PAX</span>
+                          </div>
+                          <div>
+                            <p className="font-black text-lg leading-tight flex items-center gap-2">
+                               {g.name} {g.lastname} 
+                               {g.isVip && <span className="bg-amber-500 text-white text-[9px] px-2 py-0.5 rounded-full uppercase tracking-widest">VIP</span>}
+                            </p>
+                            <p className="text-xs font-bold opacity-60 mt-1">
+                               {g.status} {g.phone && `• 📞 ${g.phone}`} {useTables && g.mesa && `• Mesa ${g.mesa}`}
+                            </p>
+                          </div>
                        </div>
-                     )}
-                     {useTables && <Inp label="Asignar Mesa (Opcional)" placeholder="Ej: Mesa 12" value={gTable} onChange={setGTable} isDark={isDark} />}
-                     <button onClick={saveGuest} className="w-full py-4 mt-2 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-black text-sm transition-transform active:scale-95 cursor-pointer shadow-md">GUARDAR</button>
-                  </div>
-               </div>
-            </div>
-          )}
+                       <div className="flex items-center gap-2 shrink-0">
+                          {g.isVip && (
+                             <button onClick={() => {
+                               navigator.clipboard.writeText(getQRLink(g.id));
+                               alert("Enlace copiado al portapapeles. Envíaselo al invitado por WhatsApp.");
+                             }} className="px-4 py-2 bg-green-50 text-green-700 font-bold rounded-xl text-xs flex items-center gap-2 hover:bg-green-100"><MessageCircle size={14}/> PASE</button>
+                          )}
+                          <button onClick={() => openGuestModal(g)} className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-colors ${isDark ? 'border-slate-600 hover:bg-slate-700' : 'border-slate-200 hover:bg-slate-50'}`}><Edit2 size={16}/></button>
+                       </div>
+                    </div>
+                  ))}
+                  {allGuests.length === 0 && (
+                     <div className="text-center py-16 opacity-50 border-2 border-dashed rounded-[2rem] border-slate-300 dark:border-slate-700">
+                        <Users size={40} className="mx-auto mb-3" />
+                        <p className="font-bold">Aún no hay invitados confirmados</p>
+                     </div>
+                  )}
+                </div>
+             </div>
+           )}
         </div>
       </div>
 
-      {/* ---------------- LA HOJA A4 PARA IMPRIMIR (DOBLE PLANTILLA) ---------------- */}
-      <div className="only-print">
-         {printMode !== 'invitados' ? (
-           <>
-             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #1e293b', paddingBottom: '24px', marginBottom: '32px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-                  {salonInfo?.logo ? <img src={salonInfo.logo} style={{ maxHeight: '96px', maxWidth: '200px', objectFit: 'contain' }} alt="Logo" /> : <div style={{ fontSize: '30px', fontWeight: '900', color: '#0f172a' }}>{user.name}</div>}
-                  <div>
-                    {salonInfo?.logo && <h1 style={{ fontSize: '20px', fontWeight: '900', color: '#0f172a', margin: '0 0 4px 0' }}>{user.name}</h1>}
-                    <p style={{ color: '#475569', fontSize: '14px', margin: 0 }}>{salonInfo?.address || 'Sin dirección registrada'}</p>
-                    <p style={{ color: '#475569', fontSize: '14px', margin: 0 }}>{salonInfo?.phone || 'Sin teléfono'}</p>
-                  </div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <h2 style={{ fontSize: '24px', fontWeight: '900', color: '#1e293b', letterSpacing: '2px', margin: '0 0 4px 0' }}>{printMode === 'presupuesto' ? 'PRESUPUESTO' : 'FICHA DE EVENTO'}</h2>
-                  <p style={{ fontSize: '14px', fontWeight: 'bold', color: '#64748b', background: '#f1f5f9', display: 'inline-block', padding: '4px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', margin: 0 }}>Ref: {liveEvent.id.split('-')[1]?.toUpperCase()}</p>
-                </div>
-             </div>
+      {editingGuest && (
+        <div className="fixed inset-0 z-[200] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+           <div className={`w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl relative ${isDark ? 'bg-slate-800 text-white' : 'bg-white'}`}>
+              <button onClick={() => setEditingGuest(null)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-600"><X size={20}/></button>
+              <h3 className="font-black text-xl mb-6">{editingGuest.isNew ? 'Nuevo Invitado' : 'Editar Invitado'}</h3>
+              
+              <Inp label="Nombre" value={gName} onChange={setGName} isDark={isDark} />
+              <Inp label="Apellidos / Familia" value={gLastname} onChange={setGLastname} isDark={isDark} />
+              
+              <div className="grid grid-cols-2 gap-4">
+                <Inp label="Cant. Personas" type="number" value={gPax} onChange={setGPax} isDark={isDark} />
+                {useTables && <Inp label="Número de Mesa" type="text" value={gTable} onChange={setGTable} isDark={isDark} placeholder="Ej: 5" />}
+              </div>
 
-             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', marginBottom: '32px' }}>
-                <div>
-                  <h3 style={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '2px', color: '#94a3b8', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px', marginBottom: '12px' }}>1. Detalles del Evento</h3>
-                  <div style={{ fontSize: '14px', lineHeight: '1.6' }}>
-                    <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Agasajado:</span> <span style={{ fontWeight: '900', fontSize: '18px' }}>{liveEvent.config?.honoreeName || liveEvent.title}</span></p>
-                    <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Tipo:</span> {liveEvent.internal_data?.eventType || '---'}</p>
-                    <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Fecha:</span> {formatDateSpanish(liveEvent.config?.date)}</p>
-                    <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Horario:</span> {liveEvent.config?.time || '---'} hs</p>
-                  </div>
-                </div>
-                <div>
-                  <h3 style={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '2px', color: '#94a3b8', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px', marginBottom: '12px' }}>2. Datos del Cliente</h3>
-                  <div style={{ fontSize: '14px', lineHeight: '1.6' }}>
-                    <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Nombre:</span> <span style={{ fontWeight: 'bold' }}>{liveEvent.internal_data?.clientName || '---'}</span></p>
-                    <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Teléfono:</span> {liveEvent.internal_data?.clientPhone || '---'}</p>
-                    <p style={{ margin: 0 }}><span style={{ fontWeight: 'bold', color: '#334155', display: 'inline-block', width: '96px' }}>Invitados:</span> {liveEvent.internal_data?.guestCount || '---'} personas</p>
-                  </div>
-                </div>
-             </div>
+              <div className="mb-6">
+                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Estado de Acceso</label>
+                <select value={gStatus} onChange={e => setGStatus(e.target.value)} className={`w-full py-3.5 px-4 rounded-xl text-sm font-bold border outline-none ${isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-200'}`}>
+                   <option value="Pendiente">⏳ Pendiente de ingreso</option>
+                   <option value="Ingresó">✅ Ingresó a la fiesta</option>
+                   <option value="Cancelado">❌ Canceló asistencia</option>
+                </select>
+              </div>
 
-             <div style={{ marginBottom: '32px' }}>
-                <h3 style={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '2px', color: '#94a3b8', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px', marginBottom: '12px' }}>3. Servicios Incluidos</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', fontSize: '14px' }}>
-                  <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}><p style={{ fontWeight: '900', color: '#334155', margin: '0 0 4px 0' }}>Servicios Solicitados:</p><p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{liveEvent.internal_data?.requestedServices || 'Ninguno especificado.'}</p></div>
-                  <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}><p style={{ fontWeight: '900', color: '#334155', margin: '0 0 4px 0' }}>Menús Especiales / Alergias:</p><p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{liveEvent.internal_data?.specialMenus || 'Ninguno especificado.'}</p></div>
-                </div>
-                {printMode === 'ficha' && <div style={{ marginTop: '16px', padding: '16px', border: '1px solid #cbd5e1', borderRadius: '12px', background: '#fefce8' }}><p style={{ fontWeight: '900', color: '#334155', margin: '0 0 4px 0' }}>Notas Internas del Salón:</p><p style={{ whiteSpace: 'pre-wrap', fontStyle: 'italic', color: '#475569', margin: 0 }}>{liveEvent.internal_data?.internalNotes || 'Sin observaciones.'}</p></div>}
-             </div>
+              <button onClick={handleSaveGuest} className="w-full py-4 bg-violet-600 text-white font-black rounded-xl shadow-lg hover:bg-violet-700">GUARDAR FICHA</button>
+              
+              {!editingGuest.isNew && (
+                 <button onClick={() => setDeleteGuestConfirm(editingGuest)} className="w-full py-4 mt-2 text-red-500 font-bold text-sm hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl">ELIMINAR INVITADO</button>
+              )}
+           </div>
+        </div>
+      )}
 
-             <div>
-                <h3 style={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '2px', color: '#94a3b8', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px', marginBottom: '12px' }}>{printMode === 'presupuesto' ? '4. Detalle de Valores' : '4. Estado Financiero Interno'}</h3>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                  <div style={{ textAlign: 'center' }}><p style={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', color: '#64748b', margin: '0 0 4px 0' }}>Valor Total</p><p style={{ fontSize: '24px', fontWeight: 'bold', color: '#1e293b', margin: 0 }}>${Number(liveEvent.internal_data?.totalBudget || 0).toLocaleString('es-AR')}</p></div>
-                  <div style={{ textAlign: 'center' }}><p style={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', color: '#64748b', margin: '0 0 4px 0' }}>Abonado / Seña</p><p style={{ fontSize: '24px', fontWeight: 'bold', color: '#15803d', margin: 0 }}>${Number(liveEvent.internal_data?.paymentAmount || 0).toLocaleString('es-AR')}</p></div>
-                  <div style={{ textAlign: 'center', background: '#1e293b', color: 'white', padding: '12px 24px', borderRadius: '12px' }}><p style={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', color: '#cbd5e1', margin: '0 0 4px 0' }}>Saldo Pendiente</p><p style={{ fontSize: '30px', fontWeight: '900', margin: 0 }}>${(Number(liveEvent.internal_data?.totalBudget || 0) - Number(liveEvent.internal_data?.paymentAmount || 0)).toLocaleString('es-AR')}</p></div>
-                </div>
+      {/* Modal de confirmación para eliminar invitado (DEUDA-02) */}
+      {deleteGuestConfirm && (
+        <div className="fixed inset-0 z-[250] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+           <div className={`w-full max-w-sm rounded-[2rem] p-8 shadow-2xl relative text-center anim-pop border-4 border-red-500 ${isDark ? 'bg-slate-800 text-white' : 'bg-white'}`}>
+             <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-red-500 text-white">
+                <Trash2 size={32}/>
              </div>
-             
-             <div style={{ marginTop: '64px', textAlign: 'center', fontSize: '12px', color: '#94a3b8', fontWeight: 'bold', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>{printMode === 'presupuesto' ? <p style={{ margin: 0 }}>Documento emitido el {getTodaySpanish()} • Los valores expresados pueden estar sujetos a modificaciones.</p> : <p style={{ margin: 0 }}>Hoja de ruta interna generada el {getTodaySpanish()}</p>}</div>
-           </>
-         ) : (
-           <>
-             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #1e293b', paddingBottom: '24px', marginBottom: '32px' }}>
-                <div>
-                  <h2 style={{ fontSize: '24px', fontWeight: '900', color: '#1e293b', letterSpacing: '2px', margin: '0 0 4px 0', textTransform: 'uppercase' }}>LISTA DE ACCESOS</h2>
-                  <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#475569', margin: '0 0 4px 0' }}>
-                    Evento: {liveEvent.config?.honoreeName || liveEvent.title}
-                  </p>
-                  <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>Fecha: {formatDateSpanish(liveEvent.config?.date)}</p>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <p style={{ fontSize: '30px', fontWeight: '900', color: '#7c3aed', margin: '0 0 4px 0' }}>{allGuests.reduce((acc, g) => acc + Number(g.guests || 0), 0)}</p>
-                  <p style={{ fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '2px', color: '#64748b', margin: 0 }}>Personas Totales</p>
-                </div>
+             <h2 className="text-xl font-black mb-2 uppercase tracking-widest">¿Borrar Invitado?</h2>
+             <p className="text-sm opacity-80 mb-6">Si eliminas a <b>{deleteGuestConfirm.name}</b>, su QR de acceso dejará de funcionar permanentemente.</p>
+             <div className="flex gap-3">
+               <button onClick={() => setDeleteGuestConfirm(null)} className="flex-1 py-3.5 rounded-xl font-black bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 transition-colors">CANCELAR</button>
+               <button onClick={handleDeleteGuest} className="flex-1 py-3.5 bg-red-500 text-white hover:bg-red-600 rounded-xl font-black shadow-lg">SÍ, BORRAR</button>
              </div>
+           </div>
+        </div>
+      )}
 
-             <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
-               <thead>
-                 <tr style={{ background: '#f1f5f9', fontSize: '10px', fontWeight: '900', color: '#64748b', textTransform: 'uppercase', letterSpacing: '2px', borderTop: '2px solid #cbd5e1', borderBottom: '2px solid #cbd5e1' }}>
-                   <th style={{ padding: '12px 8px' }}>ID Pase</th>
-                   <th style={{ padding: '12px 8px' }}>Nombre del Invitado</th>
-                   <th style={{ padding: '12px 8px', textAlign: 'center' }}>Personas</th>
-                   {useTables && <th style={{ padding: '12px 8px', textAlign: 'center' }}>Mesa</th>}
-                   <th style={{ padding: '12px 8px', textAlign: 'center' }}>Check-in (Firma)</th>
-                 </tr>
-               </thead>
-               <tbody>
-                 {allGuests.map((g) => (
-                   <tr key={g.id} style={{ borderBottom: '1px solid #e2e8f0', fontSize: '14px' }}>
-                     <td style={{ padding: '12px 8px', fontFamily: 'monospace', color: '#64748b' }}>{g.id.split('-').pop()}</td>
-                     <td style={{ padding: '12px 8px', fontWeight: 'bold', color: '#1e293b' }}>{g.name} {g.lastname}</td>
-                     <td style={{ padding: '12px 8px', textAlign: 'center', fontWeight: '900' }}>{g.guests}</td>
-                     {useTables && <td style={{ padding: '12px 8px', textAlign: 'center', fontWeight: '900', color: '#7c3aed' }}>{g.mesa || '-'}</td>}
-                     <td style={{ padding: '12px 8px', textAlign: 'center' }}>
-                       <div style={{ width: '24px', height: '24px', borderRadius: '4px', border: '2px solid #cbd5e1', margin: '0 auto' }}></div>
-                     </td>
-                   </tr>
-                 ))}
-               </tbody>
-             </table>
-             <div style={{ marginTop: '48px', textAlign: 'center', fontSize: '12px', color: '#94a3b8', fontWeight: 'bold' }}>Documento generado el {getTodaySpanish()} • {user.name}</div>
-           </>
-         )}
-      </div>
+      {/* Modal de confirmación para eliminar foto (DEUDA-02) */}
+      {deletePhotoConfirm && (
+        <div className="fixed inset-0 z-[250] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+           <div className={`w-full max-w-sm rounded-[2rem] p-8 shadow-2xl relative text-center anim-pop border-4 border-red-500 ${isDark ? 'bg-slate-800 text-white' : 'bg-white'}`}>
+             <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-red-500 text-white">
+                <ImageIcon size={32}/>
+             </div>
+             <h2 className="text-xl font-black mb-2 uppercase tracking-widest">¿Eliminar Foto?</h2>
+             <p className="text-sm opacity-80 mb-6">La foto desaparecerá de la galería en vivo y del proyector instantáneamente.</p>
+             <div className="flex gap-3">
+               <button onClick={() => setDeletePhotoConfirm(null)} className="flex-1 py-3.5 rounded-xl font-black bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 transition-colors">CANCELAR</button>
+               <button onClick={handleDeletePhoto} className="flex-1 py-3.5 bg-red-500 text-white hover:bg-red-600 rounded-xl font-black shadow-lg">SÍ, BORRAR</button>
+             </div>
+           </div>
+        </div>
+      )}
+
     </div>
   );
 };
