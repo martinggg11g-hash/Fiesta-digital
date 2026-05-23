@@ -2,7 +2,6 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
@@ -10,16 +9,36 @@ export default defineConfig({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
       workbox: {
-        // 👉 ACÁ ESTIRAMOS EL LÍMITE A 10 MB
-        maximumFileSizeToCacheInBytes: 10485760,
-        // Y le dejamos a Vercel las reglas claras para que no se queje
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,lottie,json}'],
+        // BUG 17 CORREGIDO: Límite sensato (4MB) para no romper el build
+        maximumFileSizeToCacheInBytes: 4194304,
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
         runtimeCaching: [
           {
-            urlPattern: ({ request }) => request.destination === 'image' || request.destination === 'document' || request.destination === 'script',
+            // Scripts y Estilos: Usa el caché rápido, actualiza en segundo plano
+            urlPattern: ({ request }) => request.destination === 'script' || request.destination === 'style',
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'static-resources',
+            }
+          },
+          {
+            // Imágenes: CacheFirst (se guardan y no gastan red)
+            urlPattern: ({ request }) => request.destination === 'image',
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'image-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 30 // 30 días
+              }
+            }
+          },
+          {
+            // Documentos HTML: NetworkFirst (intenta red, si no hay, usa caché)
+            urlPattern: ({ request }) => request.destination === 'document',
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'fiesta-app-cache',
+              cacheName: 'html-cache',
             }
           }
         ]
