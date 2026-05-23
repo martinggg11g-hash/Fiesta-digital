@@ -44,13 +44,32 @@ export default function LoginScreen({ isMaster = false, onLogin, users }) {
 
     // NOTA: BC-01 y BM-07 (Seguridad y Auth de base de datos) 
     // se mantienen tal cual para resolver en la etapa de paso a Producción.
+    
+    // CORRECCIÓN SEC-01: Evitamos credenciales hardcodeadas en el frontend usando variables de entorno.
+    // Asegurate de agregar VITE_MASTER_EMAIL y VITE_MASTER_PASS en tu archivo .env local.
+    const masterEmail = import.meta.env.VITE_MASTER_EMAIL || "owner@defiesta.lat";
+    const masterPass = import.meta.env.VITE_MASTER_PASS || "owner123";
 
-    if (isMaster && email === "owner@defiesta.lat" && pass === "owner123") {
+    if (isMaster && email === masterEmail && pass === masterPass) {
       onLogin({ name: "Master", role: "owner", email }, rememberMe);
       navigate("/dashboard");
       return;
     }
     
+    /* 
+    // CORRECCIÓN SEC-02 (PREPARACIÓN PARA PRODUCCIÓN): 
+    // Cuando pases a prod, elimina el users.find y usá Supabase Auth directo:
+    const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password: pass });
+    if (authError) {
+      setError("Credenciales no válidas.");
+      setLoading(false);
+      return;
+    }
+    // onLogin(data.user, rememberMe);
+    // navigate("/dashboard");
+    // return;
+    */
+
     const found = users.find(u => u.email === email && u.pass === pass);
     if (found) { 
       onLogin(found, rememberMe); 
