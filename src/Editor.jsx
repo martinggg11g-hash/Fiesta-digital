@@ -17,10 +17,10 @@ export const EditorScreen = ({ invitations, onSave }) => {
   const [previewAnim, setPreviewAnim] = useState(false); 
   const [mobileView, setMobileView] = useState('editor');
 
-  // 👉 BM-08: El flag que evita que Supabase nos pise los cambios si estamos editando
+  // Candado de seguridad (CRASH-01)
   const [isDirty, setIsDirty] = useState(false);
 
-  // Sincronizamos cuando las invitaciones globales llegan, PERO SOLAMENTE si no hay cambios locales sin guardar
+  // Sincronizamos cuando las invitaciones globales llegan, SOLAMENTE si el candado está abierto
   useEffect(() => {
     if (invitations && id && !isDirty) {
       const currentInv = invitations.find(i => i.id === id);
@@ -36,7 +36,7 @@ export const EditorScreen = ({ invitations, onSave }) => {
     try {
       await onSave(inv); 
       setSaveStatus('saved');
-      setIsDirty(false); // 👉 BM-08: Cuando guardamos, liberamos el candado
+      setIsDirty(false); // Liberamos el candado al guardar con éxito
       setTimeout(() => setSaveStatus('idle'), 2000);
     } catch (err) {
       console.error("Error guardando:", err);
@@ -45,17 +45,24 @@ export const EditorScreen = ({ invitations, onSave }) => {
     }
   };
 
+  // 👇 FIX CRASH-01: Interceptamos cualquier actualización directa al objeto inv para cerrar el candado
+  const handleSetInvWrapper = useCallback((valueOrUpdater) => {
+    setInv(valueOrUpdater);
+    setIsDirty(true);
+  }, []);
+
   const updateConfig = useCallback((key, val) => {
     setInv(prev => ({ 
         ...prev, 
         config: { ...(prev?.config || DEF_CONFIG), [key]: val } 
     }));
-    setIsDirty(true); // 👉 BM-08: Al primer cambio, trabamos el candado para que el realtime no pise
+    setIsDirty(true);
   }, []);
 
   if (!inv) {
     return (
-      <div className="w-screen h-screen flex flex-col items-center justify-center bg-[#0f172a] text-white">
+      // 👇 FIX MOB-01: h-[100dvh] en vez de h-screen
+      <div className="w-full h-[100dvh] flex flex-col items-center justify-center bg-[#0f172a] text-white">
         <Loader2 size={48} className="animate-spin text-violet-500 mb-4" />
         <p className="font-bold tracking-widest uppercase text-xs">Cargando editor...</p>
       </div>
@@ -63,7 +70,8 @@ export const EditorScreen = ({ invitations, onSave }) => {
   }
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-[#0f172a] relative">
+    // 👇 FIX MOB-01: El contenedor maestro usa 100dvh para no cortarse en iOS Safari
+    <div className="flex flex-col h-[100dvh] overflow-hidden bg-[#0f172a] relative">
       
       {previewAnim && (
         <div className="fixed inset-0 z-[99999] pointer-events-none flex items-center justify-center">
@@ -108,7 +116,7 @@ export const EditorScreen = ({ invitations, onSave }) => {
       <div className="flex-1 flex overflow-hidden relative">
         <EditorSidebar 
           inv={inv} 
-          setInv={setInv} 
+          setInv={handleSetInvWrapper} // 👇 FIX CRASH-01: Pasamos el wrapper seguro
           cfg={inv.config || DEF_CONFIG} 
           update={updateConfig} 
           setPreviewAnim={setPreviewAnim} 
