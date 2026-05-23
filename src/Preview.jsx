@@ -1,521 +1,661 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Camera, Download, MapPin, Music, Play, X, Calendar, Clock, Video, LayoutGrid, Smartphone, Gift, Link as LinkIcon } from "lucide-react";
+import { OpeningAnimation, LottieOverlay } from "./Lotties"; 
+import { Calendar, Clock, MapPin, Loader2, Camera, Lock, CheckCircle2, Download, ExternalLink } from "lucide-react";
+import { DEF_CONFIG, getSpotifyEmbed, getYouTubeId, formatToDDMMYYYY, PARTICLE_CATEGORIES } from "./config";
+import { CornerOrnament, DraggableItem, ParticleCanvas } from "./PreviewEffects";
+import { InstagramIcon, FacebookIcon, TiktokIcon, RenderSymbol, Countdown, GalleryCarousel, MapEmbed, InfoCard, SectionTitle, RsvpWidget } from "./PreviewWidgets";
 
-import { RsvpWidget, MapEmbed, SpotifyEmbed, DraggableItem, ParticleCanvas } from "./PreviewEffects";
-import { generateTicket, LottiePlayer, LOTTIE_MAP } from "./Lotties";
+const IMGBB_API_KEY = "904f81caf05efe58a799abdb1fedc2ce";
 
-const IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY || "904f81caf05efe58a799abdb1fedc2ce";
-
-const InstagramIcon = ({ size = 20 }) => (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>);
-const FacebookIcon = ({ size = 20 }) => (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>);
-const TiktokIcon = ({ size = 20 }) => (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path></svg>);
-
-export function InvitePreview({ 
-  cfg = {}, 
-  internalData = {}, 
-  guestData, 
-  update, 
-  onConfirmRSVP, 
-  onUploadLivePhoto, 
-  status, 
-  previewMode = false 
-}) {
-  const [playing, setPlaying] = useState(false);
-  const audioRef = useRef(null);
-  const [showCam, setShowCam] = useState(false);
-  
-  const config = cfg || {};
-  const theme = config.theme || 'dark';
-  const honoree = config.honoreeName || "Homenajeado";
-  const elements = internalData?.elements || [];
-  
-  const bgClass = theme === 'light' ? 'bg-white text-slate-800' : 'bg-[#0f0c1b] text-white';
-  const cardBg = theme === 'light' ? 'bg-slate-50 border-slate-200' : 'bg-white/5 border-white/10';
-
-  const getCardStyle = () => ({
-    boxShadow: config.cardGlow ? `0 0 ${config.cardGlow}px ${config.primary || config.borderColor || '#8b5cf6'}` : 'none',
-    borderColor: config.cardGlow && theme === 'dark' ? (config.primary || '#8b5cf6') : undefined
-  });
+// 👉 COMPONENTE MÁGICO DE TRANSICIÓN
+const ScrollReveal = ({ children }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const domRef = useRef(null);
 
   useEffect(() => {
-    const fonts = [
-       config.fontBody,
-       config.fontTitle,
-       config.honoreeFont,
-       config.eventTypeFont,
-       config.badgeFont
-    ].filter(Boolean);
-
-    const uniqueFonts = [...new Set(fonts)];
-
-    uniqueFonts.forEach(fontFamily => {
-       const fontName = fontFamily.replace(/ /g, '+');
-       const fontId = `font-${fontName}`;
-       if (!document.getElementById(fontId)) {
-          const link = document.createElement('link');
-          link.id = fontId;
-          link.href = `https://fonts.googleapis.com/css2?family=${fontName}:wght@300;400;600;700;900&display=swap`;
-          link.rel = 'stylesheet';
-          document.head.appendChild(link);
-       }
-    });
-  }, [config.fontBody, config.fontTitle, config.honoreeFont, config.eventTypeFont, config.badgeFont]);
-
-  const [cameraStatus, setCameraStatus] = useState("pending");
-
-  useEffect(() => {
-    if (previewMode) { setCameraStatus("active"); return; }
-    const eventDateStr = config?.date;
-    if (!eventDateStr) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1, rootMargin: "0px 0px -50px 0px" }
+    );
     
-    const parts = eventDateStr.split('-');
-    if(parts.length < 3) return;
+    if (domRef.current) observer.observe(domRef.current);
+    return () => observer.disconnect();
+  }, []);
 
-    const [year, month, day] = parts.map(Number);
-    const evDate = new Date(year, month - 1, day);
-    const now = new Date();
-    
-    const nextDay6AM = new Date(evDate);
-    nextDay6AM.setDate(nextDay6AM.getDate() + 1);
-    nextDay6AM.setHours(6, 0, 0, 0);
+  return (
+    <div
+      ref={domRef}
+      className={`transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
+      }`}
+    >
+      {children}
+    </div>
+  );
+};
 
-    if (now < evDate) {
-      setCameraStatus("pending"); 
-    } else if (now > nextDay6AM) {
-      setCameraStatus("closed"); 
+const AddToCalendarButton = ({ cfg, primary, cardC }) => {
+  const titulo = `Fiesta de ${cfg?.honoreeName || 'DeFiesta'}`;
+  const direccion = `${cfg?.locationName || ''} - ${cfg?.locationAddress || ''}`.trim() || 'Dirección del salón';
+  const detalles = `¡Te espero para festejar juntos! Mirá la invitación completa acá: ${window.location.href}`;
+  
+  const fechaClean = cfg?.dateText ? cfg.dateText.replace(/-/g, '') : '20260516';
+  const horaClean = cfg?.timeText ? cfg.timeText.replace(/:/g, '') + '00' : '210000';
+  
+  const startDateTime = `${fechaClean}T${horaClean}`;
+  const endDateTime = `${fechaClean}T235900`;
+
+  const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(titulo)}&dates=${startDateTime}/${endDateTime}&details=${encodeURIComponent(detalles)}&location=${encodeURIComponent(direccion)}`;
+
+  const icsContent = ['BEGIN:VCALENDAR','VERSION:2.0','BEGIN:VEVENT',`DTSTART:${startDateTime}`,`DTEND:${endDateTime}`,`SUMMARY:${titulo}`,`DESCRIPTION:${detalles}`,`LOCATION:${direccion}`,'END:VEVENT','END:VCALENDAR'].join('\n');
+  const appleCalendarUrl = `data:text/calendar;charset=utf-8,${encodeURIComponent(icsContent)}`;
+
+  const handleCalendarRedirect = () => {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (isIOS) {
+      const link = document.createElement('a'); link.href = appleCalendarUrl; link.download = 'evento.ics';
+      document.body.appendChild(link); link.click(); document.body.removeChild(link);
     } else {
-      setCameraStatus("active"); 
+      window.open(googleCalendarUrl, '_blank');
     }
-  }, [config?.date, previewMode]);
-
-  const [livePhotos, setLivePhotos] = useState([]);
-  
-  useEffect(() => {
-    if (internalData?.live_photos) {
-      setLivePhotos(internalData.live_photos);
-    }
-  }, [internalData?.live_photos]);
-
-  const toggleAudio = () => {
-    if (!audioRef.current) return;
-    if (playing) { audioRef.current.pause(); } 
-    else { audioRef.current.play().catch(e => console.log("Audio autoplay blocked", e)); }
-    setPlaying(!playing);
   };
 
-  const handleLivePhotoUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  return (
+    <button type="button" onClick={handleCalendarRedirect} className="w-full py-4 mt-1 rounded-[1.5rem] font-black text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg transition-transform active:scale-95 cursor-pointer relative overflow-hidden" style={{ background: cfg.accent || primary, color: cardC === '#000000' ? '#000' : '#fff' }}>
+      <Calendar size={18} /> Agendar Evento
+    </button>
+  );
+};
+
+const DraggableBanner = ({ cfg, primary, update }) => {
+  const containerRef = useRef(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const posRef = useRef({ startX: 0, startY: 0, initialX: 50, initialY: 50 });
+
+  const handleStart = (e) => {
+    if (!update) return; 
+    setIsDragging(true);
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    posRef.current = {
+      startX: clientX,
+      startY: clientY,
+      initialX: cfg.bannerOffsetX ?? 50,
+      initialY: cfg.bannerOffsetY ?? 50
+    };
+  };
+
+  const handleMove = (e) => {
+    if (!isDragging || !update || !containerRef.current) return;
     
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+    const dx = clientX - posRef.current.startX;
+    const dy = clientY - posRef.current.startY;
+
+    const rect = containerRef.current.getBoundingClientRect();
+    
+    const moveX = -(dx / rect.width) * 100 * 1.5;
+    const moveY = -(dy / rect.height) * 100 * 1.5;
+
+    let newX = posRef.current.initialX + moveX;
+    let newY = posRef.current.initialY + moveY;
+
+    newX = Math.max(0, Math.min(100, newX));
+    newY = Math.max(0, Math.min(100, newY));
+
+    update('bannerOffsetX', newX);
+    update('bannerOffsetY', newY);
+  };
+
+  const handleEnd = () => setIsDragging(false);
+
+  return (
+    <div
+      ref={containerRef}
+      className={`relative h-48 rounded-[2rem] overflow-hidden border shadow-lg ${update ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : ''}`}
+      style={{ borderColor: cfg.border || `${primary}44`, touchAction: update ? 'none' : 'auto' }}
+      onMouseDown={handleStart}
+      onMouseMove={handleMove}
+      onMouseUp={handleEnd}
+      onMouseLeave={handleEnd}
+      onTouchStart={handleStart}
+      onTouchMove={handleMove}
+      onTouchEnd={handleEnd}
+    >
+      <img 
+         src={cfg.bannerPhoto || DEF_CONFIG.bannerPhoto} 
+         className="w-full h-full object-cover pointer-events-none" 
+         style={{ objectPosition: `${cfg.bannerOffsetX ?? 50}% ${cfg.bannerOffsetY ?? 50}%` }} 
+         alt="Banner" 
+      />
+      <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+      <div className="absolute top-4 left-4 px-4 py-1.5 bg-black/40 backdrop-blur-md border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest text-white shadow-md pointer-events-none">
+         {cfg.bannerTitle}
+      </div>
+      
+      {update && (
+        <div className="absolute bottom-3 right-3 bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-full text-[9px] font-black text-white uppercase tracking-widest pointer-events-none border border-white/20 shadow-lg">
+           🖐 Arrastrá la foto
+        </div>
+      )}
+    </div>
+  );
+};
+
+export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, internalData, onUploadLivePhoto }) => {
+  if (!cfg) return null;
+
+  useEffect(() => {
+    const fontsToLoad = [
+      cfg.fontBody, cfg.fontTitle, cfg.eventTypeFont, 
+      cfg.honoreeFont, cfg.badgeFont
+    ].filter(Boolean);
+    
+    const uniqueFonts = [...new Set(fontsToLoad)];
+    
+    uniqueFonts.forEach(font => {
+      const fontId = `gfont-${font.replace(/\s+/g, '-')}`;
+      if (!document.getElementById(fontId)) {
+        const link = document.createElement("link");
+        link.id = fontId;
+        link.rel = "stylesheet";
+        link.href = `https://fonts.googleapis.com/css2?family=${font.replace(/\s+/g, '+')}:wght@300;400;600;700;900&display=swap`;
+        document.head.appendChild(link);
+      }
+    });
+  }, [cfg.fontBody, cfg.fontTitle, cfg.eventTypeFont, cfg.honoreeFont, cfg.badgeFont]);
+
+  const safeFont = (f) => f ? `"${f}", sans-serif` : "inherit";
+
+  // Valores por defecto seguros para los Temas
+  const primary = cfg.primary || "#8b5cf6";
+  const bg1 = cfg.bg1 || "#f8f7ff";
+  const bg2 = cfg.bg2 || "#e0dcfc";
+  const textC = cfg.text || "#1e1b4b";
+  const mutedC = cfg.muted || "#6b7280";
+  const cardC  = cfg.card  || "#ffffff";
+  const gradOpacity = cfg.showCoverGradient === false ? 0 : ((cfg.coverGradientIntensity ?? 50) / 100).toFixed(2);
+  
+  const eventTypeShadow = (cfg.eventTypeShadowSize > 0) 
+    ? `0px 4px ${cfg.eventTypeShadowSize}px ${cfg.eventTypeShadowColor || '#000000'}` 
+    : `0 2px 10px rgba(0,0,0,0.6), 0 0 20px rgba(255,255,255,0.4)`;
+
+  const honoreeShadow = (cfg.honoreeShadowSize > 0) 
+    ? `0px 4px ${cfg.honoreeShadowSize}px ${cfg.honoreeShadowColor || '#000000'}` 
+    : `0 2px 10px rgba(0,0,0,0.6), 0 0 20px rgba(255,255,255,0.4)`;
+
+  // Luz/Sombra en Tarjetas optimizada
+  const glowValue = cfg.cardGlow !== undefined ? cfg.cardGlow : 0;
+  const hexAlpha = Math.floor((glowValue / 100) * 255).toString(16).padStart(2, '0');
+  const dynamicShadow = glowValue === 0 ? '0 8px 30px rgba(0,0,0,0.05)' : `0 8px 30px rgba(0,0,0,0.05), 0 0 ${glowValue}px ${primary}${hexAlpha}`;
+
+  const glassContainerStyle = {
+    backgroundColor: cardC,
+    boxShadow: dynamicShadow,
+    border: cfg.border ? `1px solid ${cfg.border}` : `1px solid ${primary}33`,
+    backdropFilter: 'none',
+    WebkitBackdropFilter: 'none'
+  };
+  
+  const shineOverlay = cfg.shine && glowValue !== 0 ? <div className="absolute inset-0 pointer-events-none rounded-[inherit]" style={{ background: cfg.shine }}></div> : null;
+
+  let isLottieEffect = false;
+  let lottieUrl = null;
+  
+  if (cfg.particleEffect && cfg.particleEffect !== "none") {
+    for (const category of Object.values(PARTICLE_CATEGORIES || {})) {
+      const effect = category.find(e => e.id === cfg.particleEffect);
+      if (effect && effect.isLottie) {
+        isLottieEffect = true;
+        lottieUrl = effect.url;
+        break;
+      }
+    }
+  }
+
+  const ParticleLayer = () => (
+    <div 
+      className={`${cfg.particlesFullscreen ? 'fixed inset-0' : 'absolute inset-0'} pointer-events-none ${cfg.particlesFullscreen ? 'z-[999]' : 'z-20'} overflow-hidden flex items-start justify-center transition-opacity duration-200`} 
+      style={{ opacity: (cfg.effectOpacity ?? 100) / 100 }}
+    >
+       {isLottieEffect ? <LottieOverlay url={lottieUrl} /> : <ParticleCanvas effect={cfg.particleEffect || "none"} primary={primary} />}
+    </div>
+  );
+
+  let cameraStatus = 'active'; 
+  const eventDateStr = cfg.countdownDate || (cfg.dateText ? `${cfg.dateText}T00:00:00` : null);
+  
+  if (eventDateStr) {
+    const evDate = new Date(eventDateStr);
+    const now = new Date();
+    const msDiff = now.getTime() - evDate.getTime();
+    const hoursDiff = msDiff / (1000 * 60 * 60);
+
+    if (hoursDiff < -12) {
+      cameraStatus = 'locked'; 
+    } else if (hoursDiff > 24) {
+      cameraStatus = 'expired'; 
+    } else {
+      cameraStatus = 'active'; 
+    }
+  }
+
+  const [uploadingLive, setUploadingLive] = useState(false);
+  const livePhotos = internalData?.live_photos || [];
+
+  const handleLivePhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploadingLive(true);
     const formData = new FormData();
     formData.append("image", file);
     try {
       const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: "POST", body: formData });
       const data = await res.json();
-      if (data.success) {
-         const newPhoto = { url: data.data.url, date: new Date().toISOString() };
-         const updatedPhotos = [newPhoto, ...livePhotos];
-         setLivePhotos(updatedPhotos);
-         if (onUploadLivePhoto) {
-           onUploadLivePhoto(newPhoto);
-         }
+      if (data.success && onUploadLivePhoto) {
+        await onUploadLivePhoto(data.data.url);
+      } else if (!onUploadLivePhoto) {
+        alert("En el panel de edición, la foto no se guarda. Subí la web para probarlo.");
       }
-    } catch (err) { alert("Error al subir foto."); }
-  };
-
-  const AddToCalendarButton = () => {
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) || /Macintosh(.*?) FxiOS/.test(navigator.userAgent);
-    
-    const generateCalLink = () => {
-       if (!config.date) return "#";
-       const d = new Date(config.date);
-       if (isNaN(d.getTime())) return "#";
-
-       const start = d.toISOString().replace(/-|:|\.\d\d\d/g, "");
-       const end = new Date(d.getTime() + 4 * 60 * 60 * 1000).toISOString().replace(/-|:|\.\d\d\d/g, "");
-       
-       if (isIOS) {
-          return `data:text/calendar;charset=utf8,BEGIN:VCALENDAR%0AVERSION:2.0%0ABEGIN:VEVENT%0AURL:${window.location.href}%0ADTSTART:${start}%0ADTEND:${end}%0ASUMMARY:${honoree}%0ADESCRIPTION:Invitación digital%0ALOCATION:${config.locationName || ""}%0AEND:VEVENT%0AEND:VCALENDAR`;
-       } else {
-          return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(honoree)}&dates=${start}/${end}&details=${encodeURIComponent("Invitación a evento")}&location=${encodeURIComponent(config.locationName || "")}`;
-       }
-    };
-
-    return (
-      <a href={generateCalLink()} target="_blank" rel="noreferrer" className={`w-full py-4 rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 border shadow-lg mt-4 ${theme === 'light' ? 'bg-white border-slate-200 text-slate-800' : 'bg-white/10 border-white/20 text-white backdrop-blur-md'}`}>
-         AGENDAR DÍA
-      </a>
-    );
+    } catch (err) { alert("Error al subir foto"); }
+    setUploadingLive(false);
   };
 
   return (
-    <div className={`min-h-screen relative overflow-hidden flex flex-col font-sans ${bgClass}`} style={config.fontBody ? { fontFamily: config.fontBody } : {}}>
+    <div 
+      style={{ 
+        backgroundColor: bg1, 
+        backgroundImage: bg2?.includes('gradient') ? bg2 : `linear-gradient(180deg, ${bg1} 0%, ${bg2} 100%)`, 
+        fontFamily: safeFont(cfg.fontBody)
+      }} 
+      className="w-full min-h-[100dvh] pb-12 relative overflow-x-hidden flex flex-col"
+    >
       
-      {config.bgMusic && (
-        <div className="fixed top-6 right-6 z-50">
-          <button onClick={toggleAudio} className="w-12 h-12 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center text-white shadow-xl">
-             {playing ? <Music size={20} className="animate-pulse" /> : <Play size={20} className="ml-1" />}
-          </button>
-          <audio ref={audioRef} src={config.bgMusic} loop className="hidden" />
+      {cfg.showCoverBorders && cfg.selectedBorder && (
+        <div className="absolute inset-0 pointer-events-none z-[60] overflow-hidden">
+          {(cfg.borderPosition === 'both' || cfg.borderPosition === 'top') && (
+            <>
+              <DraggableItem id="topLeftBorder" cfg={cfg} update={update} className="top-0 left-0 pointer-events-auto">
+                <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} style={{ transform: `rotate(${cfg.borderRotationTop || 0}deg)` }} />
+              </DraggableItem>
+              <DraggableItem id="topRightBorder" cfg={cfg} update={update} className="top-0 right-0 pointer-events-auto">
+                <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} style={{ transform: `scaleX(-1) rotate(${cfg.borderRotationTop || 0}deg)` }} />
+              </DraggableItem>
+            </>
+          )}
+          {(cfg.borderPosition === 'both' || cfg.borderPosition === 'bottom') && (
+            <>
+               <DraggableItem id="bottomLeftBorder" cfg={cfg} update={update} className="bottom-0 left-0 pointer-events-auto">
+                 <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} style={{ transform: `scaleY(-1) rotate(${cfg.borderRotationBottom || 0}deg)` }} />
+               </DraggableItem>
+               <DraggableItem id="bottomRightBorder" cfg={cfg} update={update} className="bottom-0 right-0 pointer-events-auto">
+                 <CornerOrnament url={cfg.selectedBorder} color={cfg.borderColor || primary} size={cfg.ornamentSize || 150} style={{ transform: `scaleX(-1) scaleY(-1) rotate(${cfg.borderRotationBottom || 0}deg)` }} />
+               </DraggableItem>
+            </>
+          )}
         </div>
       )}
 
-      {config.particleEffect && config.particleEffect !== 'none' && ParticleCanvas && (
-         <div className="absolute inset-0 z-0 pointer-events-none">
-            <ParticleCanvas key={config.particleEffect} type={config.particleEffect} isDark={theme === 'dark'} />
-         </div>
-      )}
-
-      <div className={`relative min-h-[450px] h-[55vh] overflow-hidden shrink-0 ${!config.coverPhoto && 'bg-violet-900'}`}>
-        {config.coverPhoto && <img src={config.coverPhoto} className="absolute inset-0 w-full h-full object-cover" alt="" />}
+      {/* Portada Principal: Ahora super responsive */}
+      <div className="relative w-full min-h-[55dvh] md:min-h-[60dvh] overflow-hidden shrink-0 rounded-b-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex flex-col justify-end">
+        <img src={cfg.coverPhoto || DEF_CONFIG.coverPhoto} className="absolute inset-0 w-full h-full object-cover z-0" alt="Portada" />
+        <div className="absolute inset-0 z-10" style={{ background: `linear-gradient(to top, ${bg1} 5%, rgba(0,0,0,${gradOpacity}) 60%, transparent 100%)` }} />
         
-        {config.showCoverBorders && config.selectedBorder && (
-           <>
-              {(config.borderPosition === 'both' || config.borderPosition === 'top') && (
-                 <div className="absolute top-0 left-0 w-full pointer-events-none z-10" 
-                      style={{ 
-                        height: `${config.ornamentSize || 150}px`,
-                        backgroundColor: config.borderColor || config.primary || '#ffffff',
-                        maskImage: `url(${config.selectedBorder})`,
-                        WebkitMaskImage: `url(${config.selectedBorder})`,
-                        maskSize: 'contain',
-                        WebkitMaskSize: 'contain',
-                        maskPosition: 'center top',
-                        WebkitMaskPosition: 'center top',
-                        maskRepeat: 'no-repeat',
-                        WebkitMaskRepeat: 'no-repeat',
-                        transform: `rotate(${config.borderRotationTop || 0}deg)`
-                      }} 
-                 />
+        {!cfg.particlesFullscreen && <ParticleLayer />}
+
+        <div className="relative w-full p-8 pb-12 flex flex-col items-center z-30">
+          
+          <DraggableItem id="eventType" cfg={cfg} update={update} className="relative !static flex justify-center w-full px-4">
+            <div 
+              className="uppercase tracking-[0.3em] mb-4 text-center anim-pop font-black" 
+              style={{ 
+                color: cfg.eventTypeColor || '#ffffff', 
+                fontSize: `${cfg.eventTypeSize ?? 11}px`, 
+                fontFamily: safeFont(cfg.eventTypeFont || cfg.fontBody), 
+                textShadow: eventTypeShadow, 
+                lineHeight: 1.4,
+                animationDelay: "0.2s"
+              }}
+            >
+              {cfg.eventTypeEmoji && (
+                 <span className="inline-block align-middle mr-2 -mt-1">
+                    <RenderSymbol value={cfg.eventTypeEmoji} size={cfg.eventTypeSize ?? 11} color={cfg.eventTypeColor || '#ffffff'} />
+                 </span>
               )}
-              {(config.borderPosition === 'both' || config.borderPosition === 'bottom') && (
-                 <div className="absolute bottom-0 left-0 w-full pointer-events-none z-10" 
-                      style={{ 
-                        height: `${config.ornamentSize || 150}px`,
-                        backgroundColor: config.borderColor || config.primary || '#ffffff',
-                        maskImage: `url(${config.selectedBorder})`,
-                        WebkitMaskImage: `url(${config.selectedBorder})`,
-                        maskSize: 'contain',
-                        WebkitMaskSize: 'contain',
-                        maskPosition: 'center bottom',
-                        WebkitMaskPosition: 'center bottom',
-                        maskRepeat: 'no-repeat',
-                        WebkitMaskRepeat: 'no-repeat',
-                        transform: `rotate(${config.borderRotationBottom || 0}deg)`
-                      }} 
-                 />
-              )}
-           </>
+              <span className="align-middle">{cfg.eventType}</span>
+            </div>
+          </DraggableItem>
+          
+          <DraggableItem id="honoree" cfg={cfg} update={update} className="relative !static flex justify-center w-full">
+            <h1 className="anim-pop font-black" style={{ fontFamily: safeFont(cfg.honoreeFont || cfg.fontTitle), color: cfg.honoreeColor || '#ffffff', fontSize: `${cfg.honoreeSize ?? 48}px`, textShadow: honoreeShadow, textAlign: 'center', lineHeight: 1.1, animationDelay: "0.4s" }}>{cfg.honoreeName}</h1>
+          </DraggableItem>
+
+          {(cfg.showBadge ?? true) && (
+            <DraggableItem id="badge" cfg={cfg} update={update} className="relative !static flex justify-center mt-4 w-full">
+              <span className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full border border-white/20 backdrop-blur-md font-black shadow-lg anim-pop" style={{ background: cfg.badgeBgColor || 'rgba(0,0,0,0.5)', color: '#ffffff', fontSize: `${cfg.badgeSize ?? 12}px`, fontFamily: safeFont(cfg.badgeFont || cfg.fontBody), textTransform: 'uppercase', letterSpacing: '0.1em', animationDelay: "0.6s" }}>
+                <RenderSymbol value={cfg.badgeEmoji || "👑"} size={cfg.badgeSize ?? 14} color="#ffffff" />
+                {cfg.badgeText}
+              </span>
+            </DraggableItem>
+          )}
+        </div>
+      </div>
+
+      {/* Contenido Principal */}
+      <div className="px-5 -mt-8 relative z-30 space-y-5 flex-1 w-full max-w-lg mx-auto">
+        
+        {cfg.showCountdown && cfg.countdownDate && (
+          <ScrollReveal>
+            <div className="rounded-[2rem] relative overflow-hidden" style={glassContainerStyle}>
+              {shineOverlay}
+              <Countdown targetDate={cfg.countdownDate} primary={primary} text="Falta para el gran día" cfg={cfg} cardC={cardC} />
+            </div>
+          </ScrollReveal>
+        )}
+
+        {cfg.showBanner && (
+          <ScrollReveal>
+            <DraggableBanner cfg={cfg} primary={primary} update={update} />
+          </ScrollReveal>
+        )}
+
+        {cfg.showDate && (
+          <ScrollReveal>
+             <InfoCard icon={Calendar} label="¿Cuándo?" value={formatToDDMMYYYY(cfg.dateText)} fontSize={cfg.dateSize ?? 18} primary={primary} textC={textC} mutedC={mutedC} cardC={cardC} cfg={cfg} glassStyle={glassContainerStyle} shineOverlay={shineOverlay} />
+          </ScrollReveal>
         )}
         
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10 pointer-events-none" />
-        <div className="absolute inset-0 flex flex-col items-center justify-end pb-12 z-20 px-6 text-center">
-           
-           <span 
-             className="uppercase tracking-widest mb-4 flex items-center justify-center gap-2 drop-shadow-md"
-             style={{
-               fontFamily: config.eventTypeFont || config.fontBody || 'inherit',
-               color: config.eventTypeColor || '#ffffff',
-               fontSize: `${config.eventTypeSize || 11}px`,
-               textShadow: config.eventTypeShadowSize ? `0px 0px ${config.eventTypeShadowSize}px ${config.eventTypeShadowColor || '#000'}` : 'none'
-             }}
-           >
-             {config.eventTypeEmoji && <span>{config.eventTypeEmoji}</span>}
-             {config.eventType || "Estás invitado a..."}
-           </span>
-           
-           <h1 
-             className="font-black leading-none tracking-tight"
-             style={{
-               fontFamily: config.honoreeFont || config.fontTitle || 'inherit',
-               color: config.honoreeColor || '#ffffff',
-               fontSize: `${config.honoreeSize || 48}px`,
-               textShadow: config.honoreeShadowSize ? `0px 0px ${config.honoreeShadowSize}px ${config.honoreeShadowColor || '#000'}` : 'none'
-             }}
-           >
-             {honoree}
-           </h1>
+        {cfg.showTime && (
+          <ScrollReveal>
+             <InfoCard icon={Clock} label="Horario" value={cfg.timeText} fontSize={cfg.dateSize ?? 18} primary={primary} textC={textC} mutedC={mutedC} cardC={cardC} cfg={cfg} glassStyle={glassContainerStyle} shineOverlay={shineOverlay} />
+          </ScrollReveal>
+        )}
+        
+        {(cfg.showDate || cfg.showTime) && (
+           <ScrollReveal>
+             <AddToCalendarButton cfg={cfg} primary={primary} cardC={cardC} />
+           </ScrollReveal>
+        )}
 
-           {(config.showBadge ?? true) && (
-              <div 
-                className="mt-6 px-4 py-2 rounded-full shadow-xl flex items-center gap-2 border border-white/20"
-                style={{
-                  backgroundColor: config.badgeBgColor || '#000000',
-                  fontFamily: config.badgeFont || config.fontBody || 'inherit',
-                  fontSize: `${config.badgeSize || 14}px`,
-                  color: '#ffffff'
-                }}
-              >
-                <span>{config.badgeEmoji || "✨"}</span>
-                <span className="font-bold">{config.badgeText || "Mi Fiesta"}</span>
+        {cfg.showLocation && (
+          <ScrollReveal>
+            <div className="rounded-[2rem] overflow-hidden relative" style={glassContainerStyle}>
+              {shineOverlay}
+              <div className="p-4 flex items-center gap-4 relative z-10">
+                <div className="w-14 h-14 rounded-[1.2rem] flex items-center justify-center shrink-0 border border-white/20 shadow-sm" style={{ background: cfg.accent || primary }}><MapPin size={24} color={cardC === '#000000' ? '#000' : '#fff'} /></div>
+                <div className="text-left">
+                  <p className="text-[9px] uppercase font-black tracking-widest mb-0.5 opacity-80" style={{ color: mutedC }}>¿Dónde?</p>
+                  <p className="font-bold" style={{ color: textC, fontFamily: safeFont(cfg.fontBody), fontSize: `${cfg.locationSize ?? 18}px` }}>{cfg.locationName}</p>
+                  <p className="text-[11px] font-medium opacity-70 mt-0.5" style={{ color: mutedC, fontFamily: safeFont(cfg.fontBody) }}>{cfg.locationAddress}</p>
+                </div>
               </div>
-           )}
-
-        </div>
-      </div>
-
-      <div className="flex-1 px-5 sm:px-8 py-10 relative z-20 flex flex-col items-center max-w-md mx-auto w-full space-y-8">
-         
-         <div className="text-center w-full">
-            <h2 className="text-xl font-bold mb-2">¡Te invito a festejar!</h2>
-            <p className="opacity-70 text-sm mb-6 max-w-[280px] mx-auto">Preparate para una noche increíble. Acá tenés toda la info.</p>
-            <AddToCalendarButton />
-         </div>
-
-         {elements.map((el, idx) => (
-            <div key={idx} className="w-full relative group">
-               <DraggableItem type={el.type} src={el.src} text={el.text} style={el.style} isDark={theme === 'dark'} />
-            </div>
-         ))}
-
-         {config.showCountdown && config.date && (
-            <div className={`w-full p-6 rounded-[2rem] border text-center ${cardBg}`} style={getCardStyle()}>
-               <p className="text-[10px] uppercase font-black tracking-widest opacity-60 mb-4">Faltan</p>
-               <div className="flex justify-center gap-4">
-                 {[ {l: 'DÍAS', v: '12'}, {l: 'HRS', v: '05'}, {l: 'MIN', v: '30'} ].map((t, i) => (
-                    <div key={i} className="flex flex-col items-center">
-                       <span className="text-3xl font-black">{t.v}</span>
-                       <span className="text-[9px] font-black opacity-50">{t.l}</span>
-                    </div>
-                 ))}
-               </div>
-            </div>
-         )}
-
-         {(config.showDate || config.showTime) && (
-            <div className={`w-full p-6 rounded-[2rem] border text-center ${cardBg}`} style={getCardStyle()}>
-               <div className="w-12 h-12 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center mx-auto mb-4"><Calendar size={24}/></div>
-               <h3 className="font-bold mb-4">¿Cuándo?</h3>
-               {config.showDate && <p className="font-black mb-1" style={{fontSize: `${config.dateSize || 18}px`}}>{config.date}</p>}
-               {config.showTime && <p className="text-sm opacity-80">{config.time}</p>}
-            </div>
-         )}
-
-         {config.showLocation && (
-           <div className={`w-full p-6 rounded-[2rem] border text-center ${cardBg}`} style={getCardStyle()}>
-              <div className="w-12 h-12 rounded-full bg-violet-500/20 text-violet-400 flex items-center justify-center mx-auto mb-4"><MapPin size={24}/></div>
-              <h3 className="font-bold mb-1">{config.locationName || "Ubicación"}</h3>
-              {config.locationAddress && <p className="text-xs opacity-80 mb-4">{config.locationAddress}</p>}
-              
-              {config.showParking && (
-                 <div className="mb-6 inline-block bg-black/10 px-4 py-2 rounded-xl">
-                   <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Estacionamiento</p>
-                   <p className="text-xs font-bold mt-1">{config.parkingType === 'otro' ? config.customParking : config.parkingType}</p>
-                 </div>
-              )}
-
-              <a href={config.locationUrl || `https://maps.google.com/?q=${encodeURIComponent(config.locationAddress || config.locationName || "")}`} target="_blank" rel="noreferrer" className="w-full py-4 bg-violet-600 text-white rounded-xl font-black text-xs uppercase flex items-center justify-center shadow-lg">CÓMO LLEGAR</a>
-              
-              {config.locationEmbed && (
-                <div className="mt-6 rounded-xl overflow-hidden h-40">
-                  <MapEmbed url={config.locationEmbed} />
+              <div className="px-4 pb-2 relative z-10"><MapEmbed name={cfg.locationName} address={cfg.locationAddress} primary={primary} /></div>
+              {cfg.showParking && (
+                <div className="p-4 text-center border-t relative z-10" style={{ borderColor: `${primary}22` }}>
+                  <span className="text-[10px] font-black uppercase tracking-widest py-2 px-5 rounded-full inline-block border shadow-sm" style={{ background: `${primary}15`, color: primary, borderColor: `${primary}33`, fontFamily: safeFont(cfg.fontBody) }}>🚗 {cfg.parkingType === 'otro' ? cfg.customParking : cfg.parkingType}</span>
                 </div>
               )}
-           </div>
-         )}
+            </div>
+          </ScrollReveal>
+        )}
 
-         {config.showItinerary && config.itinerary && config.itinerary.length > 0 && (
-           <div className={`w-full p-6 rounded-[2rem] border text-center ${cardBg}`} style={getCardStyle()}>
-             <h3 className="font-bold mb-6">{config.itinerarySectionTitle || "¿Qué vamos a hacer?"}</h3>
-             <div className="space-y-6 relative">
-                <div className="absolute left-6 top-2 bottom-2 w-0.5 bg-violet-500/30"></div>
-                {config.itinerary.map((item, i) => (
-                  <div key={i} className="flex gap-4 items-start relative z-10 text-left">
-                    <div className="w-12 h-12 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center shrink-0 border-4 border-white shadow-sm text-xl">{item.emoji}</div>
-                    <div className="pt-2">
-                      <span className="text-[10px] font-black text-violet-500 bg-violet-50 px-2 py-0.5 rounded-full mb-1 inline-block">{item.time}</span>
-                      <h4 className="font-bold text-sm leading-tight">{item.title}</h4>
-                      {item.sub && <p className="text-xs opacity-70 mt-1">{item.sub}</p>}
+        {cfg.showVenueLogo && (
+          <ScrollReveal>
+            <div className="pt-4">
+              <div className="p-6 rounded-[2rem] text-center relative overflow-hidden flex flex-col items-center" style={glassContainerStyle}>
+                {shineOverlay}
+                {cfg.venueLogoUrl && <img src={cfg.venueLogoUrl} className="h-16 w-auto object-contain mb-4 relative z-10 drop-shadow-md" alt="Lugar" />}
+                <p className="text-[9px] uppercase font-black tracking-widest mb-1 opacity-80 relative z-10" style={{ color: mutedC }}>Celebrado en</p>
+                <h3 className="font-black text-xl mb-5 relative z-10" style={{ color: textC, fontFamily: safeFont(cfg.fontBody) }}>{cfg.venueName}</h3>
+                {cfg.venueLink && (
+                  <a href={cfg.venueLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-6 py-3 rounded-[1rem] font-black text-xs shadow-md transition-transform active:scale-95 uppercase tracking-widest relative z-10 border border-white/20" style={{ background: cfg.accent || primary, color: cardC === '#000000' ? '#000' : '#fff' }}>
+                    {cfg.venueLinkType === 'whatsapp' ? 'Hablar por WhatsApp' : 'Visitar Sitio Web'}
+                  </a>
+                )}
+              </div>
+            </div>
+          </ScrollReveal>
+        )}
+        
+        {cfg.showVideo && cfg.videoUrl && (
+          <ScrollReveal>
+            <div className="pt-4">
+              {cfg.videoTitle && <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={safeFont(cfg.fontBody)}>{cfg.videoTitle}</SectionTitle>}
+              <div className="rounded-[2rem] overflow-hidden shadow-lg relative p-2" style={glassContainerStyle}>
+                {shineOverlay}
+                <div className="rounded-[1.5rem] overflow-hidden relative z-10" style={{ paddingTop: '56.25%' }}>
+                  <iframe className="absolute inset-0 w-full h-full" src={`https://www.youtube.com/embed/${getYouTubeId(cfg.videoUrl)}`} title="YouTube" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen loading="lazy"></iframe>
+                </div>
+              </div>
+            </div>
+          </ScrollReveal>
+        )}
+
+        {cfg.showMusic && cfg.spotifyUrl && (
+          <ScrollReveal>
+            <div className="pt-4">
+              <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={safeFont(cfg.fontBody)}>Música para entrar en clima</SectionTitle>
+              <div className="rounded-[2rem] p-2 relative overflow-hidden shadow-lg" style={glassContainerStyle}>
+                {shineOverlay}
+                {/* Solucionado el problema de los bordes para deslizar en Spotify */}
+                <iframe className="relative z-10 rounded-[1.5rem]" style={{ border: 'none', overflow: 'hidden' }} src={getSpotifyEmbed(cfg.spotifyUrl)} width="100%" height="152" frameBorder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" scrolling="no"></iframe>
+              </div>
+            </div>
+          </ScrollReveal>
+        )}
+
+        {cfg.showItinerary && cfg.itinerary?.length > 0 && (
+          <ScrollReveal>
+            <div className="pt-4">
+              <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={safeFont(cfg.fontBody)}>{cfg.itinerarySectionTitle ?? "Programa del evento"}</SectionTitle>
+              <div className="relative pl-6 space-y-8 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5" style={{ '--tw-before-bg': `${primary}33` }}>
+                <div className="absolute left-[7px] top-2 bottom-2 w-[2px]" style={{ background: primary, opacity: 0.3 }} />
+                {cfg.itinerary.map((item, i) => (
+                  <div key={i} className="relative text-left p-4 rounded-3xl" style={glassContainerStyle}>
+                    {shineOverlay}
+                    <div className="absolute -left-[35px] top-[18px] w-8 h-8 rounded-full border-4 border-white z-20 flex items-center justify-center shadow-md bg-white">
+                       <RenderSymbol value={item.emoji || "✨"} size={16} color={primary} />
+                    </div>
+                    <div className="relative z-10">
+                      <p className="text-[10px] font-black mb-1 uppercase tracking-widest" style={{ color: primary }}>{item.time}</p>
+                      <p className="font-bold text-sm" style={{ color: textC, fontFamily: safeFont(cfg.fontBody) }}>{item.title}</p>
+                      {item.sub && <p className="text-xs font-medium opacity-70 mt-1" style={{ color: mutedC, fontFamily: safeFont(cfg.fontBody) }}>{item.sub}</p>}
                     </div>
                   </div>
                 ))}
-             </div>
-           </div>
-         )}
+              </div>
+            </div>
+          </ScrollReveal>
+        )}
 
-         {config.showMenu && config.menuItems && config.menuItems.length > 0 && (
-           <div className={`w-full p-6 rounded-[2rem] border text-center ${cardBg}`} style={getCardStyle()}>
-              <h3 className="font-bold mb-6">{config.menuSectionTitle || "¿Qué vamos a comer?"}</h3>
+        {cfg.showMenu && cfg.menuItems?.length > 0 && (
+          <ScrollReveal>
+            <div className="pt-4">
+              <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={safeFont(cfg.fontBody)}>{cfg.menuSectionTitle ?? "¿Qué vamos a comer?"}</SectionTitle>
               <div className="grid grid-cols-2 gap-3">
-                {config.menuItems.map((m, i) => (
-                  <div key={i} className="p-3 bg-black/5 rounded-xl flex flex-col items-center">
-                    <span className="text-2xl mb-2">{m.emoji}</span>
-                    <span className="text-xs font-bold leading-tight text-center">{m.label}</span>
+                {cfg.menuItems.map((m, i) => (
+                  <div key={i} className="p-5 rounded-[2rem] text-center relative overflow-hidden flex flex-col items-center" style={glassContainerStyle}>
+                    {shineOverlay}
+                    <span className="mb-3 flex justify-center items-center h-12 w-12 rounded-2xl relative z-10 border shadow-sm" style={{ background: `${primary}15`, borderColor: `${primary}22` }}>
+                       <RenderSymbol value={m.emoji} size={24} color={primary} />
+                    </span>
+                    <span className="text-xs font-bold relative z-10" style={{ color: textC, fontFamily: safeFont(cfg.fontBody) }}>{m.label}</span>
                   </div>
                 ))}
               </div>
-           </div>
-         )}
+            </div>
+          </ScrollReveal>
+        )}
 
-         {(config.showDressCode || config.showGifts) && (
-           <div className={`w-full p-6 rounded-[2rem] border text-center ${cardBg}`} style={getCardStyle()}>
-             <h3 className="font-bold mb-6">{config.notesSectionTitle || "A tener en cuenta"}</h3>
-             <div className="space-y-8">
-               {config.showDressCode && (
-                 <div className="flex flex-col items-center">
-                   <div className="text-3xl mb-2">{config.dressCodeIcon || "👔"}</div>
-                   <h4 className="font-bold text-sm">Código de Vestimenta</h4>
-                   <p className="text-xs opacity-70 mt-1">{config.dressCodeText}</p>
-                 </div>
-               )}
-               {config.showDressCode && config.showGifts && <div className="w-16 h-[1px] bg-white/10 mx-auto"></div>}
-               {config.showGifts && (
-                 <div className="flex flex-col items-center">
-                   <div className="text-3xl mb-2">{config.giftIcon || "🎁"}</div>
-                   <h4 className="font-bold text-sm">{config.giftLabel || "Regalos"}</h4>
-                   <p className="text-xs opacity-70 mt-1">{config.giftText}</p>
-                   
-                   {config.showGiftNote && config.giftNoteText && (
-                     <p className="mt-4 p-3 bg-black/5 rounded-xl w-full" style={{
-                       color: config.giftNoteColor || config.primary || '#8b5cf6',
-                       fontSize: `${config.giftNoteSize || 11}px`,
-                       whiteSpace: 'pre-wrap'
-                     }}>
-                       {config.giftNoteText}
-                     </p>
-                   )}
-
-                   {config.giftLinks && config.giftLinks.length > 0 && (
-                     <div className="w-full mt-4 space-y-2">
-                       {config.giftLinks.map((link, i) => (
-                          <a key={i} href={link.url} target="_blank" rel="noreferrer" className="w-full py-3 bg-violet-600/10 text-violet-400 rounded-xl font-black text-xs uppercase flex items-center justify-center border border-violet-500/20">
-                            {link.label || "Link de Regalo"}
-                          </a>
-                       ))}
+        {cfg.showLiveCamera && (
+          <ScrollReveal>
+            <div className="pt-6">
+              <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={safeFont(cfg.fontBody)}>{cfg.liveCameraTitle ?? "Álbum Colaborativo"}</SectionTitle>
+              <div className="relative overflow-hidden rounded-[2rem] text-center p-6 border shadow-lg" style={glassContainerStyle}>
+                {shineOverlay}
+                <div className="relative z-10 flex flex-col items-center">
+                   {cameraStatus === 'locked' && (
+                     <div className="py-6 flex flex-col items-center opacity-70">
+                       <Lock size={40} className="mb-4" style={{ color: primary }} />
+                       <p className="text-xs font-black uppercase tracking-widest" style={{ color: textC }}>Álbum Bloqueado</p>
+                       <p className="text-[10px] mt-2 font-bold max-w-[200px]" style={{ color: mutedC }}>La cámara se habilitará el día del evento para que compartas tus fotos.</p>
                      </div>
                    )}
-                 </div>
-               )}
-             </div>
-           </div>
-         )}
+                   {cameraStatus === 'expired' && (
+                     <div className="py-6 flex flex-col items-center opacity-70">
+                       <CheckCircle2 size={40} className="mb-4 text-slate-400" />
+                       <p className="text-xs font-black uppercase tracking-widest" style={{ color: textC }}>Álbum Cerrado</p>
+                       <p className="text-[10px] mt-2 font-bold max-w-[200px]" style={{ color: mutedC }}>El evento finalizó y las fotos se han eliminado por privacidad.</p>
+                     </div>
+                   )}
+                   {cameraStatus === 'active' && (
+                     <div className="w-full">
+                       <p className="text-[10px] font-black uppercase tracking-widest mb-4 opacity-80" style={{ color: mutedC }}>Capturá el momento</p>
+                       <label className={`w-full py-5 rounded-[1.5rem] flex items-center justify-center gap-2 font-black shadow-lg text-white uppercase tracking-widest transition-transform ${uploadingLive ? 'opacity-50 cursor-not-allowed' : 'active:scale-95 cursor-pointer hover:brightness-110'}`} style={{ background: cfg.accent || primary }}>
+                          {uploadingLive ? <Loader2 size={20} className="animate-spin" /> : <Camera size={20} />}
+                          {uploadingLive ? "SUBIENDO..." : "SUBIR FOTO"}
+                          <input type="file" accept="image/*" capture="environment" onChange={handleLivePhotoUpload} disabled={uploadingLive} className="hidden" />
+                       </label>
+                       <p className="text-[9px] font-bold mt-3 opacity-60" style={{ color: textC }}>Las fotos se borrarán 24hs después del evento.</p>
+                       
+                       {livePhotos.length > 0 && (
+                         <div className="grid grid-cols-2 gap-2 mt-6">
+                           {livePhotos.map((url, i) => (
+                             <div key={i} className="aspect-square rounded-2xl overflow-hidden shadow-sm border border-white/10 relative group">
+                               <img src={url} alt={`Foto ${i}`} className="w-full h-full object-cover" />
+                               <a href={url} download target="_blank" rel="noreferrer" className="absolute bottom-2 right-2 p-2 bg-black/50 text-white rounded-xl backdrop-blur-md opacity-0 group-hover:opacity-100 transition-opacity">
+                                 <Download size={14} />
+                               </a>
+                             </div>
+                           ))}
+                         </div>
+                       )}
+                     </div>
+                   )}
+                </div>
+              </div>
+            </div>
+          </ScrollReveal>
+        )}
 
-         {config.showGallery && config.galleryPhotos && config.galleryPhotos.length > 0 && (
-           <div className={`w-full p-6 rounded-[2rem] border text-center ${cardBg}`} style={getCardStyle()}>
-             <h3 className="font-bold mb-6">{config.galleryTitle || "Galería"}</h3>
-             <div className={config.galleryLayout === 'grid' ? "grid grid-cols-2 gap-2" : "flex gap-2 overflow-x-auto pb-4 snap-x"}>
-               {config.galleryPhotos.map((p, i) => (
-                 <div key={i} className={config.galleryLayout === 'grid' ? "aspect-square rounded-xl overflow-hidden" : "w-48 h-64 shrink-0 snap-center rounded-xl overflow-hidden"}>
-                    <img src={p} className="w-full h-full object-cover" alt="" />
-                 </div>
-               ))}
-             </div>
-           </div>
-         )}
+        {(cfg.showDressCode || cfg.showGifts) && (
+          <ScrollReveal>
+            <div className="pt-6">
+              <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={safeFont(cfg.fontBody)}>{cfg.notesSectionTitle ?? "A tener en cuenta"}</SectionTitle>
+              <div className="grid grid-cols-2 gap-3">
+                {cfg.showDressCode && (
+                  <div className="p-6 rounded-[2rem] text-center relative overflow-hidden flex flex-col items-center" style={glassContainerStyle}>
+                    {shineOverlay}
+                    <span className="mb-3 flex justify-center items-center h-14 w-14 rounded-[1.2rem] relative z-10 border shadow-sm" style={{ background: cfg.accent || primary, borderColor: 'rgba(255,255,255,0.2)' }}>
+                      <RenderSymbol value={cfg.dressCodeIcon || "👔"} size={26} color={cardC === '#000000' ? '#000' : '#fff'} />
+                    </span>
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em] mb-1.5 opacity-80 relative z-10" style={{ color: mutedC }}>Vestimenta</p>
+                    <p className="font-bold text-xs relative z-10" style={{ color: textC, fontFamily: safeFont(cfg.fontBody) }}>{cfg.dressCodeText}</p>
+                  </div>
+                )}
+                {cfg.showGifts && (
+                  <div className="p-6 rounded-[2rem] text-center relative overflow-hidden flex flex-col items-center" style={glassContainerStyle}>
+                    {shineOverlay}
+                    <span className="mb-3 flex justify-center items-center h-14 w-14 rounded-[1.2rem] relative z-10 border shadow-sm" style={{ background: cfg.accent || primary, borderColor: 'rgba(255,255,255,0.2)' }}>
+                      <RenderSymbol value={cfg.giftIcon || "🎁"} size={26} color={cardC === '#000000' ? '#000' : '#fff'} />
+                    </span>
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em] mb-1.5 opacity-80 relative z-10" style={{ color: mutedC }}>{cfg.giftLabel}</p>
+                    <p className="font-bold text-xs relative z-10" style={{ color: textC, fontFamily: safeFont(cfg.fontBody) }}>{cfg.giftText}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </ScrollReveal>
+        )}
 
-         {config.showRsvp && (
-           <RsvpWidget 
-             theme={theme} 
-             date={config.date} 
-             isPreview={previewMode}
-             guestData={guestData}
-             onConfirmRSVP={onConfirmRSVP}
-             status={status}
-           />
-         )}
-
-         {config.showMusic && config.spotifyUrl && (
-           <div className={`w-full p-6 rounded-[2rem] border text-center ${cardBg}`} style={getCardStyle()}>
-              <div className="w-12 h-12 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center mx-auto mb-4"><Music size={24}/></div>
-              <h3 className="font-bold mb-1">Playlist de la Fiesta</h3>
-              <p className="text-xs opacity-60 mb-6">¡Andá escuchando estos temazos!</p>
-              <SpotifyEmbed url={config.spotifyUrl} />
-           </div>
-         )}
-
-         {config.showVideo && config.videoUrl && (
-           <div className={`w-full p-6 rounded-[2rem] border text-center ${cardBg}`} style={getCardStyle()}>
-             <h3 className="font-bold mb-4">{config.videoTitle || "Video Especial"}</h3>
-             <div className="aspect-video rounded-xl overflow-hidden bg-black">
-                <iframe className="w-full h-full" src={config.videoUrl.replace("watch?v=", "embed/")} frameBorder="0" allowFullScreen></iframe>
-             </div>
-           </div>
-         )}
-
-         {config.showLiveCamera && (
-           <div className={`w-full p-6 rounded-[2rem] border text-center ${cardBg}`} style={getCardStyle()}>
-              <div className="w-12 h-12 rounded-full bg-pink-500/20 text-pink-400 flex items-center justify-center mx-auto mb-4"><Camera size={24}/></div>
-              <h3 className="font-bold mb-1">{config.liveCameraTitle || "Cámara en Vivo"}</h3>
-              <p className="text-xs opacity-60 mb-6">Compartí tus fotos durante la fiesta.</p>
-              
-              {cameraStatus === "pending" && (
-                 <div className="py-6 px-4 bg-black/20 rounded-xl border border-white/10">
-                   <p className="text-sm font-bold opacity-70">La cámara se habilitará el día del evento.</p>
-                 </div>
+        {cfg.showGifts && (
+          <ScrollReveal>
+            <div className="pt-2">
+              {cfg.showGiftNote && cfg.giftNoteText && (
+                <div className="text-center mb-5 relative overflow-hidden rounded-[2rem]" style={glassContainerStyle}>
+                  {shineOverlay}
+                  <div className="p-6 relative z-10">
+                    <span className="block font-bold whitespace-pre-wrap leading-relaxed" style={{ color: cfg.giftNoteColor || primary, fontSize: `${cfg.giftNoteSize || 12}px`, fontFamily: safeFont(cfg.fontBody) }}>
+                      {cfg.giftNoteText}
+                    </span>
+                  </div>
+                </div>
               )}
-              
-              {cameraStatus === "closed" && (
-                 <div className="py-6 px-4 bg-black/20 rounded-xl border border-white/10">
-                   <p className="text-sm font-bold opacity-70">El evento ya finalizó. ¡Gracias por las fotos!</p>
-                 </div>
+              {cfg.giftLinks && cfg.giftLinks.length > 0 && (
+                <div className="flex flex-col gap-3">
+                  {cfg.giftLinks.map((link, i) => (
+                    <a key={i} href={link.url} target="_blank" rel="noopener noreferrer" className="py-4 px-6 rounded-[1.5rem] flex justify-between items-center transition-transform active:scale-95 relative overflow-hidden group" style={glassContainerStyle}>
+                      {shineOverlay}
+                      <span className="font-black text-sm relative z-10" style={{ color: textC }}>{link.label}</span>
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center relative z-10 transition-transform group-hover:scale-110" style={{ background: `${primary}15` }}>
+                        <ExternalLink size={14} style={{ color: primary }} />
+                      </div>
+                    </a>
+                  ))}
+                </div>
               )}
+            </div>
+          </ScrollReveal>
+        )}
 
-              {cameraStatus === "active" && (
-                 <button onClick={() => setShowCam(true)} className="w-full py-4 bg-pink-600 text-white rounded-xl font-black text-xs uppercase flex items-center justify-center gap-2 shadow-lg">
-                   <Camera size={18}/> ABRIR CÁMARA
-                 </button>
+        {cfg.showGallery && cfg.galleryPhotos?.length > 0 && (
+          <ScrollReveal>
+            <div className="pt-4">
+              <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={safeFont(cfg.fontBody)}>{cfg.galleryTitle}</SectionTitle>
+              {cfg.galleryLayout === 'grid' ? (
+                <div className="grid grid-cols-2 gap-3">
+                  {cfg.galleryPhotos.map((p, i) => p && <div key={i} className="rounded-3xl p-1 relative overflow-hidden" style={glassContainerStyle}>{shineOverlay}<img src={p} className="w-full h-48 rounded-[1.2rem] object-cover relative z-10" alt={`Galeria ${i}`} /></div>)}
+                </div>
+              ) : (
+                <GalleryCarousel photos={cfg.galleryPhotos} />
               )}
+            </div>
+          </ScrollReveal>
+        )}
 
-              {livePhotos.length > 0 && (
-                 <div className="mt-6">
-                   <h4 className="text-[10px] font-black uppercase tracking-widest opacity-50 mb-4 text-left">Fotos Recientes</h4>
-                   <div className="grid grid-cols-2 gap-2">
-                      {livePhotos.slice(0, 4).map((p, i) => (
-                        <div key={i} className="aspect-square rounded-xl overflow-hidden relative group">
-                          <img src={p.url} className="w-full h-full object-cover" alt="" />
-                          <a href={p.url} download className="absolute bottom-2 right-2 w-8 h-8 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"><Download size={14}/></a>
-                        </div>
-                      ))}
-                   </div>
-                   {livePhotos.length > 4 && <button className="w-full py-3 mt-4 text-xs font-bold opacity-70 border rounded-xl">VER TODAS ({livePhotos.length})</button>}
-                 </div>
+        <ScrollReveal>
+           <RsvpWidget cfg={cfg} primary={primary} textC={textC} cardC={cardC} mutedC={mutedC} onConfirmRSVP={onConfirmRSVP} guestData={guestData} glassStyle={glassContainerStyle} shineOverlay={shineOverlay} />
+        </ScrollReveal>
+            
+        {(cfg.showInstagram || cfg.showFacebook || cfg.showTiktok) && (
+          <ScrollReveal>
+            <div className="flex justify-center gap-5 mt-10 relative z-[50]">
+              {cfg.showInstagram && cfg.instagramUrl && (
+                <a href={cfg.instagramUrl} target="_blank" rel="noopener noreferrer" className="w-14 h-14 rounded-full flex items-center justify-center transition-transform hover:scale-110 relative overflow-hidden group" style={glassContainerStyle}>
+                  {shineOverlay}
+                  <InstagramIcon size={22} color={primary} className="relative z-10 group-hover:text-pink-500 transition-colors" />
+                </a>
               )}
-           </div>
-         )}
-
-         {config.showVenueLogo && (
-           <div className={`w-full p-6 rounded-[2rem] border text-center ${cardBg}`} style={getCardStyle()}>
-             {config.venueLogoUrl && <img src={config.venueLogoUrl} className="w-20 h-20 mx-auto rounded-full object-cover mb-4 shadow-md bg-white p-1" alt="Venue" />}
-             <h3 className="font-bold">{config.venueName || "Nuestro Salón"}</h3>
-             {config.venueLink && (
-               <a href={config.venueLink} target="_blank" rel="noreferrer" className="w-full py-3 mt-4 bg-violet-600 text-white rounded-xl font-black text-xs uppercase flex items-center justify-center gap-2">
-                 {config.venueLinkType === 'whatsapp' ? 'Contactar por WhatsApp' : 'Visitar Web'}
-               </a>
-             )}
-           </div>
-         )}
-
+              {cfg.showFacebook && cfg.facebookUrl && (
+                <a href={cfg.facebookUrl} target="_blank" rel="noopener noreferrer" className="w-14 h-14 rounded-full flex items-center justify-center transition-transform hover:scale-110 relative overflow-hidden group" style={glassContainerStyle}>
+                  {shineOverlay}
+                  <FacebookIcon size={22} color={primary} className="relative z-10 group-hover:text-blue-600 transition-colors" />
+                </a>
+              )}
+              {cfg.showTiktok && cfg.tiktokUrl && (
+                <a href={cfg.tiktokUrl} target="_blank" rel="noopener noreferrer" className="w-14 h-14 rounded-full flex items-center justify-center transition-transform hover:scale-110 relative overflow-hidden group" style={glassContainerStyle}>
+                  {shineOverlay}
+                  <TiktokIcon size={22} color={primary} className="relative z-10 group-hover:text-black transition-colors" />
+                </a>
+              )}
+            </div>
+          </ScrollReveal>
+        )}
+        
+        <p className="text-center text-[10px] font-black uppercase tracking-widest opacity-50 mt-10 pb-12 relative z-[50]" style={{ color: mutedC }}>
+          Invitación creada con <strong className="text-violet-500">defiesta.lat</strong>
+        </p>
       </div>
 
-      {(config.showInstagram || config.showFacebook || config.showTiktok) && (
-        <div className="flex justify-center gap-4 py-8 relative z-20">
-           {config.showInstagram && <a href={config.instagramUrl} target="_blank" rel="noreferrer" className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md hover:bg-white/20 transition-colors"><InstagramIcon size={20}/></a>}
-           {config.showFacebook && <a href={config.facebookUrl} target="_blank" rel="noreferrer" className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md hover:bg-white/20 transition-colors"><FacebookIcon size={20}/></a>}
-           {config.showTiktok && <a href={config.tiktokUrl} target="_blank" rel="noreferrer" className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md hover:bg-white/20 transition-colors"><TiktokIcon size={20}/></a>}
-        </div>
-      )}
-
-      {showCam && (
-        <div className="fixed inset-0 z-[200] bg-black flex flex-col">
-           <div className="h-20 flex items-center justify-between px-6 bg-gradient-to-b from-black/80 to-transparent absolute top-0 w-full z-10">
-               <button onClick={() => setShowCam(false)} className="text-white p-2"><X size={24}/></button>
-              <span className="text-white text-xs font-black tracking-widest uppercase bg-red-500 px-3 py-1 rounded-full flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-white animate-pulse"></div> EN VIVO</span>
-           </div>
-           <div className="flex-1 flex items-center justify-center">
-              <div className="text-center text-white/50">
-                 <Camera size={48} className="mx-auto mb-4 opacity-50" />
-                 <p className="text-sm">Activando cámara...</p>
-                 <input type="file" accept="image/*" capture="environment" onChange={(e) => { handleLivePhotoUpload(e); setShowCam(false); }} className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-20" />
-              </div>
-           </div>
-           <div className="h-32 bg-black flex items-center justify-center relative z-30">
-              <div className="w-16 h-16 rounded-full border-4 border-white flex items-center justify-center p-1 pointer-events-none">
-                 <div className="w-full h-full bg-white rounded-full"></div>
-              </div>
-           </div>
-        </div>
-      )}
-
+      {/* Partículas Fullscreen separadas y con z-index alto pero sin colapsar layout */}
+      {cfg.particlesFullscreen && <ParticleLayer />}
     </div>
   );
-}
+};
