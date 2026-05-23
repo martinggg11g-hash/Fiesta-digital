@@ -9,22 +9,15 @@ import { Inp, FileUpload, Toast, QRScannerModal } from "./DashboardUI";
 import { MasterPanel } from "./MasterPanel";
 import { CrmModal } from "./CrmModal";
 
+// BUG 12 CORREGIDO: Importamos la función centralizada desde config.js
+import { formatDateSpanish } from "./config";
+
 // CORRECCIÓN LOG-01: Normalización de tildes y caracteres especiales en el slugify
 const slugify = (text) => text?.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') || 'salon';
 
-const formatDateSpanish = (dateStr) => {
-  if (!dateStr) return 'Sin fecha';
-  if (dateStr.includes('-')) {
-    const [y, m, d] = dateStr.split('-');
-    const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-    return `${parseInt(d, 10)} de ${months[parseInt(m, 10) - 1]} de ${y}`;
-  }
-  return dateStr;
-};
-
-// CORRECCIÓN SEC-04: Tokens protegidos por variables de entorno para Producción
-const TELEGRAM_BOT_TOKEN = import.meta.env.VITE_TELEGRAM_BOT_TOKEN || "8613978258:AAHC2F6xe9mwNxc3JFCBWWQen4CIGEqGvW8"; 
-const TELEGRAM_CHAT_ID = import.meta.env.VITE_TELEGRAM_CHAT_ID || "5121261948";
+// BUG 02 CORREGIDO: Tokens de Telegram protegidos, sin hardcodes expuestos en el JS público
+const TELEGRAM_BOT_TOKEN = import.meta.env.VITE_TELEGRAM_BOT_TOKEN; 
+const TELEGRAM_CHAT_ID = import.meta.env.VITE_TELEGRAM_CHAT_ID;
 
 export default function DashboardScreen({ user, onLogout, users, onUpdateUser, onCreateSalon, onDeleteSalon, invitations, onCreateInv, onDeleteInv, onUpdateInternal, onUpdateConfig, globalAlert, onUpdateAlert }) {
   const navigate = useNavigate();
@@ -34,7 +27,7 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
   const [filterType, setFilterType] = useState("all"); 
   
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const mobileMenuRef = useRef(null); // Ref para el menú móvil (MOB-06)
+  const mobileMenuRef = useRef(null); 
 
   const [activeCrmId, setActiveCrmId] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -42,7 +35,7 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [supportMessage, setSupportMessage] = useState("");
   
-  const [deleteConfirm, setDeleteConfirm] = useState(null); // Estado para confirmación de borrado (DEUDA-02)
+  const [deleteConfirm, setDeleteConfirm] = useState(null); 
 
   const [scanningEvent, setScanningEvent] = useState(null);
   const [validationResult, setValidationResult] = useState(null);
@@ -131,15 +124,12 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
     return true;
   });
 
-  // CORRECCIÓN BUG-04: Lógica de escaneo con soporte para VIPs en BD
   const processQRScan = (qrString) => {
     let isVIP = false;
     
-    // 1. Buscamos primero en los invitados cargados manualmente
     let guestDb = scanningEvent.internal_data?.guests?.find(g => g.id === qrString) || 
                   scanningEvent.internal_data?.guests?.find(g => qrString.includes(g.id));
 
-    // 2. Si no está en manual, buscamos en los invitados VIP que vienen de la DB
     if (!guestDb && scanningEvent.invitados) {
       guestDb = scanningEvent.invitados.find(g => g.id === qrString);
       if (guestDb) isVIP = true;
@@ -148,7 +138,7 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
     if (!guestDb) {
       setValidationResult({ status: 'error', title: 'Pase Inválido', desc: 'Este QR no pertenece a este evento o es falso.' });
     } else if (guestDb.status === 'Ingresó') {
-      const nameToShow = guestDb.name || guestDb.nombre; // Compatible con VIPs (nombre) o manual (name)
+      const nameToShow = guestDb.name || guestDb.nombre; 
       setValidationResult({ status: 'warning', title: 'Pase Usado', desc: `${nameToShow} ya ingresó.`, data: { ...guestDb, isVIP } });
     } else {
       setValidationResult({ status: 'success', title: 'Acceso Permitido', desc: 'Pase verificado correctamente.', data: { ...guestDb, isVIP } });
@@ -159,14 +149,11 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
     const { isVIP, id } = validationResult.data;
     
     if (isVIP) {
-      // Para VIPs: Se prepara la actualización a la tabla de Supabase (se resolverá en pase a Prod)
       console.log(`[PRODUCCIÓN]: Hacer supabase.from('invitados').update({status:'Ingresó'}).eq('id', '${id}')`);
-      // Update optimista local si es necesario
       if (scanningEvent.invitados) {
         scanningEvent.invitados = scanningEvent.invitados.map(g => g.id === id ? { ...g, status: 'Ingresó' } : g);
       }
     } else {
-      // Para manuales: Funciona como siempre
       const updated = scanningEvent.internal_data.guests.map(g => g.id === id ? { ...g, status: 'Ingresó' } : g);
       onUpdateInternal(scanningEvent.id, 'guests', updated);
     }
@@ -177,6 +164,11 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
 
   const handleSendReceipt = async () => {
     if (!receiptFile) return alert("Por favor, seleccioná una foto del comprobante primero.");
+    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+      alert("Error de configuración: La integración con Telegram no está definida en el entorno.");
+      return;
+    }
+
     setSendingReceipt(true);
     try {
       const formData = new FormData();
@@ -197,13 +189,16 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
     const chatArray = [...(salonInfo?.support_chat || []), newMsg];
     setSupportMessage(""); 
     await onUpdateUser(user.email, { support_chat: chatArray });
-    try {
-      const formData = new FormData();
-      formData.append("chat_id", TELEGRAM_CHAT_ID);
-      formData.append("text", `🆘 *NUEVO MENSAJE DE SOPORTE*\n🏢 Salón: ${user.name}\n\n💬 Mensaje:\n_${newMsg.text}_\n\n📲 _Entrá al Master Panel para responderle._`);
-      formData.append("parse_mode", "Markdown");
-      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, { method: "POST", body: formData });
-    } catch (e) { console.error("Error enviando notificación a Telegram:", e); }
+    
+    if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
+      try {
+        const formData = new FormData();
+        formData.append("chat_id", TELEGRAM_CHAT_ID);
+        formData.append("text", `🆘 *NUEVO MENSAJE DE SOPORTE*\n🏢 Salón: ${user.name}\n\n💬 Mensaje:\n_${newMsg.text}_\n\n📲 _Entrá al Master Panel para responderle._`);
+        formData.append("parse_mode", "Markdown");
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, { method: "POST", body: formData });
+      } catch (e) { console.error("Error enviando notificación a Telegram:", e); }
+    }
   };
 
   if (isOwner) {
@@ -268,7 +263,6 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
         </div>
       </nav>
 
-      {/* Aplicamos la Ref al contenedor del menú */}
       {mobileMenuOpen && (
         <div ref={mobileMenuRef} className={`md:hidden absolute left-0 right-0 border-b shadow-2xl z-30 flex flex-col p-4 gap-3 anim-pop ${themeCard}`} style={{ top: globalAlert?.activo && globalAlert?.mensaje ? '7.25rem' : '5rem', transformOrigin: 'top' }}>
             <button onClick={() => { setShowPaymentModal(true); setMobileMenuOpen(false); }} className={`w-full px-4 py-3.5 rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 border shadow-sm ${isDark ? 'border-amber-500/30 text-amber-400 bg-amber-500/10' : 'border-amber-200 text-amber-600 bg-amber-50'}`}><CreditCard size={18}/> Abonar Suscripción</button>
@@ -337,7 +331,6 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
                       <span className="px-3 py-1 rounded-full text-xs font-black border border-white/20 backdrop-blur-md bg-black/40 text-white">{confGuests}</span>
                     </div>
                   </div>
-                  {/* Reemplazo de window.confirm por el modal personalizado */}
                   <button onClick={() => setDeleteConfirm(inv.id)} className="absolute top-4 right-4 w-9 h-9 bg-red-500/90 text-white rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer"><Trash2 size={16}/></button>
                 </div>
                 <div className="p-6">
@@ -357,7 +350,6 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
         </div>
       </main>
 
-      {/* Modal de confirmación de borrado */}
       {deleteConfirm && (
         <div className="fixed inset-0 z-[130] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
            <div className={`w-full max-w-sm rounded-[2rem] p-8 shadow-2xl relative text-center anim-pop border-4 border-red-500 ${isDark ? 'bg-slate-800 text-white' : 'bg-white'}`}>
