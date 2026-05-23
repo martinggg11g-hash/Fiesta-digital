@@ -138,7 +138,13 @@ export function InvitePreview({
        }
     };
 
-  // CORRECCIÓN: Usamos config.fontBody para el contenedor principal en vez de fontFamily
+    return (
+      <a href={generateCalLink()} target="_blank" rel="noreferrer" className={`w-full py-4 rounded-xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 border shadow-lg mt-4 ${theme === 'light' ? 'bg-white border-slate-200 text-slate-800' : 'bg-white/10 border-white/20 text-white backdrop-blur-md'}`}>
+         AGENDAR DÍA
+      </a>
+    );
+  };
+
   return (
     <div className={`min-h-screen relative overflow-hidden flex flex-col font-sans ${bgClass}`} style={config.fontBody ? { fontFamily: config.fontBody } : {}}>
       
