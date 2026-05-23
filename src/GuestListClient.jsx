@@ -49,32 +49,21 @@ export const GuestListClient = () => {
   useEffect(() => {
     fetchData();
 
-    // 👇 FIX CRASH-03: Agregamos filter estricto al realtime para no ahogar la base de datos
+    // 👉 FIX REALTIME: Filtramos adentro del payload por slug o uuid en lugar de en la config del canal para no ahogarlo
     const channel = supabase.channel(`client-room-${id}`)
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'invitaciones',
-        filter: `id=eq.${id}` // Filtro clave para el evento exacto
-      }, (payload) => {
-        if (payload.new) {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'invitaciones' }, (payload) => {
+        if (payload.new && (payload.new.id === id || payload.new.slug === id || (event && payload.new.id === event.id))) {
           setEvent(payload.new);
           setManualGuests(payload.new.internal_data?.guests || []);
         }
       })
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'invitados',
-        // Asumiendo que el ID del evento que se usa en invitados es el mismo 'id' de la ruta
-        filter: `evento_id=eq.${id}` 
-      }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'invitados' }, () => {
         fetchData();
       })
       .subscribe();
 
     return () => supabase.removeChannel(channel);
-  }, [id]);
+  }, [id, event?.id]);
 
   const allGuests = [
     ...manualGuests,
@@ -100,6 +89,8 @@ export const GuestListClient = () => {
 
   const updateInternalGuests = async (newList) => {
     const newData = { ...event.internal_data, guests: newList };
+    // Optimistic UI
+    setEvent(prev => ({ ...prev, internal_data: newData }));
     await supabase.from('invitaciones').update({ internal_data: newData }).eq('id', event.id);
   };
 
@@ -138,6 +129,9 @@ export const GuestListClient = () => {
         const fakeId = `MANUAL-${crypto.randomUUID()}`;
         newList.push({ id: fakeId, name: gName, lastname: gLastname, guests: Number(gPax), mesa: finalTable, status: gStatus, timestamp: new Date().toISOString() });
       }
+      
+      // Optimistic UI
+      setManualGuests(newList);
       await updateInternalGuests(newList);
     }
     setShowModal(false);
@@ -146,9 +140,13 @@ export const GuestListClient = () => {
   const deleteGuest = async (g) => {
     if(!window.confirm("¿Seguro que querés eliminar a este invitado?")) return;
     if (g.isVip) {
+      // Optimistic UI
+      setVipGuests(prev => prev.filter(v => v.id !== g.id));
       await supabase.from('invitados').delete().eq('id', g.id);
     } else {
       const newList = manualGuests.filter(mg => mg.id !== g.id);
+      // Optimistic UI
+      setManualGuests(newList);
       await updateInternalGuests(newList);
     }
   };
@@ -248,7 +246,6 @@ export const GuestListClient = () => {
       </div>
 
       {showModal && (
-        // 👇 FIX MOB-04: overflow-y-auto en el overlay fixed para que el teclado de iOS empuje el contenido y permita hacer scroll
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
            <div className="w-full sm:max-w-md bg-white sm:rounded-[2rem] rounded-t-[2rem] p-6 shadow-2xl relative text-center anim-pop mt-auto sm:mt-0 mb-0">
               <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200"><X size={16}/></button>
