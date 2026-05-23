@@ -26,7 +26,6 @@ export function InvitePreview({
   const config = cfg || {};
   const theme = config.theme || 'dark';
   const honoree = config.honoreeName || "Homenajeado";
-  const dateText = config.dateText || "";
   const location = config.locationName || "";
 
   const elements = internalData?.elements || [];
@@ -34,19 +33,29 @@ export function InvitePreview({
   const bgClass = theme === 'light' ? 'bg-white text-slate-800' : 'bg-[#0f0c1b] text-white';
   const cardBg = theme === 'light' ? 'bg-slate-50 border-slate-200' : 'bg-white/5 border-white/10';
 
+  // CORRECCIÓN: Cargar dinámicamente TODAS las tipografías seleccionadas en el editor
   useEffect(() => {
-    if (config.fontFamily) {
-      const fontName = config.fontFamily.replace(/ /g, '+');
-      const fontId = `font-${fontName}`;
-      if (!document.getElementById(fontId)) {
-        const link = document.createElement('link');
-        link.id = fontId;
-        link.href = `https://fonts.googleapis.com/css2?family=${fontName}:wght@300;400;600;700;900&display=swap`;
-        link.rel = 'stylesheet';
-        document.head.appendChild(link);
-      }
-    }
-  }, [config.fontFamily]);
+    const fonts = [
+       config.fontBody,
+       config.honoreeFont,
+       config.eventTypeFont,
+       config.badgeFont
+    ].filter(Boolean);
+
+    const uniqueFonts = [...new Set(fonts)];
+
+    uniqueFonts.forEach(fontFamily => {
+       const fontName = fontFamily.replace(/ /g, '+');
+       const fontId = `font-${fontName}`;
+       if (!document.getElementById(fontId)) {
+          const link = document.createElement('link');
+          link.id = fontId;
+          link.href = `https://fonts.googleapis.com/css2?family=${fontName}:wght@300;400;600;700;900&display=swap`;
+          link.rel = 'stylesheet';
+          document.head.appendChild(link);
+       }
+    });
+  }, [config.fontBody, config.honoreeFont, config.eventTypeFont, config.badgeFont]);
 
   const [cameraStatus, setCameraStatus] = useState("pending");
 
@@ -137,7 +146,8 @@ export function InvitePreview({
   };
 
   return (
-    <div className={`min-h-screen relative overflow-hidden flex flex-col font-sans ${bgClass}`} style={config.fontFamily ? { fontFamily: config.fontFamily } : {}}>
+    {/* CORRECCIÓN: Usamos config.fontBody para el contenedor principal en vez de fontFamily */}
+    <div className={`min-h-screen relative overflow-hidden flex flex-col font-sans ${bgClass}`} style={config.fontBody ? { fontFamily: config.fontBody } : {}}>
       
       {config.bgMusic && (
         <div className="fixed top-6 right-6 z-50">
@@ -148,24 +158,73 @@ export function InvitePreview({
         </div>
       )}
 
+      {/* CORRECCIÓN: Añadido key={config.particleEffect} para que react actualice el canvas */}
       {config.particleEffect && config.particleEffect !== 'none' && (
-         <ParticleCanvas type={config.particleEffect} isDark={theme === 'dark'} />
+         <ParticleCanvas key={config.particleEffect} type={config.particleEffect} isDark={theme === 'dark'} />
       )}
 
       {/* CORRECCIÓN MOB-08: Portada responsiva (min-h-[450px] h-[55vh]) */}
       <div className={`relative min-h-[450px] h-[55vh] overflow-hidden shrink-0 ${!config.coverPhoto && 'bg-violet-900'}`}>
         {config.coverPhoto && <img src={config.coverPhoto} className="absolute inset-0 w-full h-full object-cover" alt="" />}
         
-        {config.borderStyle && config.borderStyle !== 'none' && (
-           <img src={`/borders/${config.borderStyle}.png`} className="absolute inset-0 w-full h-full object-cover pointer-events-none z-10" alt="" />
+        {/* Lógica de bordes dinámicos */}
+        {config.showCoverBorders && config.selectedBorder && (
+           <>
+              {(config.borderPosition === 'both' || config.borderPosition === 'top') && (
+                 <img src={config.selectedBorder} className="absolute top-0 left-0 w-full object-contain pointer-events-none z-10 opacity-90" style={{ height: `${config.ornamentSize || 150}px`, transform: `rotate(${config.borderRotationTop || 0}deg)` }} alt="" />
+              )}
+              {(config.borderPosition === 'both' || config.borderPosition === 'bottom') && (
+                 <img src={config.selectedBorder} className="absolute bottom-0 left-0 w-full object-contain pointer-events-none z-10 opacity-90" style={{ height: `${config.ornamentSize || 150}px`, transform: `rotate(${config.borderRotationBottom || 0}deg)` }} alt="" />
+              )}
+           </>
         )}
         
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10" />
         <div className="absolute inset-0 flex flex-col items-center justify-end pb-12 z-20 px-6 text-center">
-           <span className="px-4 py-1.5 rounded-full border border-white/30 bg-white/10 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-widest mb-4">
-             {dateText || "Pronto"}
+           
+           {/* CORRECCIÓN: Frase Superior Dinámica (eventType) */}
+           <span 
+             className="px-4 py-1.5 rounded-full border border-white/30 bg-white/10 backdrop-blur-md uppercase tracking-widest mb-4 flex items-center gap-2"
+             style={{
+               fontFamily: config.eventTypeFont || config.fontBody || 'inherit',
+               color: config.eventTypeColor || '#ffffff',
+               fontSize: `${config.eventTypeSize || 11}px`,
+               textShadow: config.eventTypeShadowSize ? `0px 0px ${config.eventTypeShadowSize}px ${config.eventTypeShadowColor || '#000'}` : 'none'
+             }}
+           >
+             {config.eventTypeEmoji && <span>{config.eventTypeEmoji}</span>}
+             {config.eventType || "Estás invitado a..."}
            </span>
-           <h1 className="text-5xl sm:text-6xl font-black text-white leading-none tracking-tight drop-shadow-xl">{honoree}</h1>
+           
+           {/* CORRECCIÓN: Nombre Principal Dinámico (honoree) */}
+           <h1 
+             className="font-black leading-none tracking-tight drop-shadow-xl"
+             style={{
+               fontFamily: config.honoreeFont || 'inherit',
+               color: config.honoreeColor || '#ffffff',
+               fontSize: `${config.honoreeSize || 48}px`,
+               textShadow: config.honoreeShadowSize ? `0px 0px ${config.honoreeShadowSize}px ${config.honoreeShadowColor || '#000'}` : 'none'
+             }}
+           >
+             {honoree}
+           </h1>
+
+           {/* CORRECCIÓN: Medalla Flotante (Badge) */}
+           {(config.showBadge ?? true) && (
+              <div 
+                className="mt-6 px-4 py-2 rounded-full shadow-xl flex items-center gap-2 border border-white/20"
+                style={{
+                  backgroundColor: config.badgeBgColor || '#000000',
+                  fontFamily: config.badgeFont || config.fontBody || 'inherit',
+                  fontSize: `${config.badgeSize || 14}px`,
+                  color: '#ffffff'
+                }}
+              >
+                <span>{config.badgeEmoji || "✨"}</span>
+                <span className="font-bold">{config.badgeText || "Mi Fiesta"}</span>
+              </div>
+           )}
+
         </div>
       </div>
 
@@ -251,7 +310,7 @@ export function InvitePreview({
 
             {cameraStatus === "active" && (
                <button onClick={() => setShowCam(true)} className="w-full py-4 bg-pink-600 text-white rounded-xl font-black text-xs uppercase flex items-center justify-center gap-2 shadow-lg">
-                 <Camera size={18}/> ABRIR CÁMARARA
+                 <Camera size={18}/> ABRIR CÁMARA
                </button>
             )}
 
