@@ -6,7 +6,8 @@ import { InvitePreview } from './Preview';
 import { DEF_CONFIG } from './config';
 import { OpeningAnimation } from './Lotties';
 
-export const EditorScreen = ({ invitations, onSave }) => {
+// CORRECCIÓN BUG-09: Agregamos onUpdateInternal y onUpdateConfig a la firma
+export const EditorScreen = ({ invitations, onSave, onUpdateInternal, onUpdateConfig }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   
@@ -131,6 +132,7 @@ export const EditorScreen = ({ invitations, onSave }) => {
                 cfg={inv.config || DEF_CONFIG} 
                 update={updateConfig}
                 internalData={inv.internal_data || {}}
+                previewMode={true}
               />
             </div>
           </div>
