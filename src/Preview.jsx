@@ -5,7 +5,7 @@ import { RsvpWidget, MapEmbed, SpotifyEmbed, generateTicket, LottiePlayer, LOTTI
 // CORRECCIÓN SEC-03: Variable de entorno
 const IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY || "904f81caf05efe58a799abdb1fedc2ce";
 
-export default function InvitePreview({ inv, previewMode = false }) {
+export function InvitePreview({ inv, previewMode = false }) {
   const [playing, setPlaying] = useState(false);
   const audioRef = useRef(null);
   const [showQr, setShowQr] = useState(false);
