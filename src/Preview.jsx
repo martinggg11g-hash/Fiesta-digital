@@ -47,7 +47,8 @@ const ScrollReveal = ({ children }) => {
           observer.disconnect(); 
         }
       },
-      { threshold: 0.1, rootMargin: "0px 0px -50px 0px" } 
+      // 👇 FIX MOB-08: Reducido a -20px para que las animaciones se vean en pantallas chicas (iPhone SE)
+      { threshold: 0.1, rootMargin: "0px 0px -20px 0px" } 
     );
     
     if (domRef.current) observer.observe(domRef.current);
@@ -372,7 +373,8 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
             <div className="rounded-[2rem] relative overflow-hidden" style={glassContainerStyle}>
               {shineOverlay}
               <Countdown
-                targetDate={cfg.date ? `${cfg.date}T${extractStartTime(cfg.time)}:00` : null}
+                // 👇 FIX MOB-07: Parseo robusto para Safari (YYYY/MM/DD HH:MM:SS) 
+                targetDate={cfg.date ? `${cfg.date.replace(/-/g, '/')} ${extractStartTime(cfg.time)}:00` : null}
                 primary={primary}
                 text="Falta para el gran día"
                 cfg={cfg}
@@ -566,7 +568,8 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
                        <label className={`w-full py-5 rounded-[1.5rem] flex items-center justify-center gap-2 font-black shadow-lg text-white uppercase tracking-widest transition-transform ${uploadingLive ? 'opacity-50 cursor-not-allowed' : 'active:scale-95 cursor-pointer hover:brightness-110'}`} style={{ background: cfg.accent || primary }}>
                          {uploadingLive ? <Loader2 size={20} className="animate-spin" /> : <Camera size={20} />}
                          {uploadingLive ? "SUBIENDO..." : "SUBIR FOTO"}
-                         <input type="file" accept="image/*" capture="environment" onChange={handleLivePhotoUpload} disabled={uploadingLive} className="hidden" />
+                         {/* 👇 FIX MOB-05: Removido el capture="environment" para permitir usar fotos de la galería en iOS */}
+                         <input type="file" accept="image/*" onChange={handleLivePhotoUpload} disabled={uploadingLive} className="hidden" />
                        </label>
                        <p className="text-[9px] font-bold mt-3 opacity-60" style={{ color: textC }}>Las fotos se borrarán 24hs después del evento.</p>
                        
