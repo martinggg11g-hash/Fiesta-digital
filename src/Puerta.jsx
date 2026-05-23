@@ -71,6 +71,12 @@ export default function PuertaScreen() {
   const [scanning, setScanning] = useState(false);
   const [validationResult, setValidationResult] = useState(null);
 
+  // 👇 FIX BP-05: Referencia fresca para el closure del escáner
+  const invitadosRef = useRef(invitados);
+  useEffect(() => {
+    invitadosRef.current = invitados;
+  }, [invitados]);
+
   const fetchLiveGuests = async () => {
     const { data: eventData } = await supabase.from('invitaciones').select('title').eq('id', id).single();
     if (eventData) setEventTitle(eventData.title);
@@ -86,13 +92,15 @@ export default function PuertaScreen() {
     const channel = supabase
       .channel('puerta-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'invitados' }, (payload) => {
-        if (payload.new && payload.new.evento_id !== id && payload.eventType !== 'DELETE') return;
+        // 👇 FIX BN-01: Condición de seguridad estricta. Si es un INSERT/UPDATE de otra fiesta, lo ignoramos.
+        if (payload.new && payload.new.evento_id !== id) return;
 
         if (payload.eventType === 'INSERT') {
           setInvitados(prev => [payload.new, ...prev]);
         } else if (payload.eventType === 'UPDATE') {
           setInvitados(prev => prev.map(g => g.id === payload.new.id ? payload.new : g));
         } else if (payload.eventType === 'DELETE') {
+          // El ID viejo se captura en payload.old para eventos DELETE
           setInvitados(prev => prev.filter(g => g.id !== payload.old.id));
         }
       })
@@ -116,11 +124,13 @@ export default function PuertaScreen() {
 
     const [tId, tName, tLast, tPax] = qrString.split('|');
 
-    let guestDb = invitados.find(g => g.id === tId);
+    // 👇 FIX BP-05: Usamos la ref en lugar del estado directo para que tenga la versión más actualizada
+    const currentInvitados = invitadosRef.current;
+    let guestDb = currentInvitados.find(g => g.id === tId);
 
     if (!guestDb && tName) {
       const qrFullName = `${tName} ${tLast || ''}`.trim().toLowerCase();
-      guestDb = invitados.find(g => (g.nombre_completo || '').trim().toLowerCase() === qrFullName);
+      guestDb = currentInvitados.find(g => (g.nombre_completo || '').trim().toLowerCase() === qrFullName);
     }
 
     if (!guestDb) {
