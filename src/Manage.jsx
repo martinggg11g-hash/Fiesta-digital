@@ -69,8 +69,8 @@ const ProjectorScreen = ({ eventSlug }) => {
 // ==========================================
 // 👔 PANEL DE GESTIÓN PRINCIPAL
 // ==========================================
-export const ManageScreen = () => {
-  // 👉 BM-02: Uso de hooks de React Router en lugar de window.location
+// 👇 FIX BN-02: Recibimos onUpdateConfig como prop para mantener el estado global sincronizado
+export const ManageScreen = ({ onUpdateConfig }) => {
   const { id: eventSlug } = useParams();
   const [searchParams] = useSearchParams();
   const isProjectorMode = searchParams.get('mode') === 'projector';
@@ -93,7 +93,6 @@ export const ManageScreen = () => {
   const [maxPaxPorMesa, setMaxPaxPorMesa] = useState(10);
   const [totalMesas, setTotalMesas] = useState(10);
 
-  // 👉 MC-03: Sistema de Toast local para reemplazar los alert()
   const [toast, setToast] = useState(null);
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -256,15 +255,24 @@ export const ManageScreen = () => {
 
   const handleSaveWaTemplate = async () => {
     setSavingMsg(true);
-    const updatedConfig = { ...eventData.config, whatsappMsg: waTemplate };
-    const { error } = await supabase.from('invitaciones').update({ config: updatedConfig }).eq('id', eventSlug);
     
-    if (error) {
-      showToast(`Error al guardar la plantilla: ${error.message}`, 'error');
-    } else {
-      setEventData({ ...eventData, config: updatedConfig });
+    // 👇 FIX BN-02: Usar onUpdateConfig si está disponible (desde App.jsx), sino fallback a BD directa.
+    if (onUpdateConfig) {
+      await onUpdateConfig(eventSlug, 'whatsappMsg', waTemplate);
+      setEventData(prev => ({ ...prev, config: { ...prev.config, whatsappMsg: waTemplate } }));
       showToast("¡Plantilla guardada con éxito!", 'success');
+    } else {
+      const updatedConfig = { ...eventData.config, whatsappMsg: waTemplate };
+      const { error } = await supabase.from('invitaciones').update({ config: updatedConfig }).eq('id', eventSlug);
+      
+      if (error) {
+        showToast(`Error al guardar la plantilla: ${error.message}`, 'error');
+      } else {
+        setEventData({ ...eventData, config: updatedConfig });
+        showToast("¡Plantilla guardada con éxito!", 'success');
+      }
     }
+    
     setSavingMsg(false);
   };
 
@@ -462,6 +470,9 @@ export const ManageScreen = () => {
                  {opcionesMesas.map((mesaNombre) => {
                     const invitadosMesa = invitados.filter(i => i.asistencia_confirmada && (i.mesa === mesaNombre || (!i.mesa && mesaNombre === 'Sin Asignar')));
                     
+                    // 👇 FIX BN-03: Calculamos paxTotal en lugar de invitadosMesa.length para contemplar acompañantes
+                    const paxTotal = invitadosMesa.reduce((acc, i) => acc + 1 + (i.acompanantes_confirmados || 0), 0);
+
                     if (mesaNombre !== 'Sin Asignar' && invitadosMesa.length === 0) {
                        return (
                           <div key={mesaNombre} onDragOver={e => e.preventDefault()} onDrop={e => handleDrop(e, mesaNombre)} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 border-dashed opacity-50 hover:opacity-100 transition-opacity min-h-[150px]">
@@ -475,7 +486,8 @@ export const ManageScreen = () => {
                       <div key={mesaNombre} onDragOver={e => e.preventDefault()} onDrop={e => handleDrop(e, mesaNombre)} className={`p-4 rounded-2xl border min-h-[150px] transition-colors ${mesaNombre === 'Sin Asignar' ? 'bg-orange-50 border-orange-200' : 'bg-violet-50 border-violet-200'}`}>
                         <div className="flex justify-between items-center mb-4">
                           <h3 className={`text-xs font-black uppercase tracking-widest ${mesaNombre === 'Sin Asignar' ? 'text-orange-700' : 'text-violet-700'}`}>{mesaNombre}</h3>
-                          <span className="text-[10px] font-bold bg-white px-2 py-0.5 rounded-md shadow-sm">{invitadosMesa.length} Pax</span>
+                          {/* 👇 FIX BN-03: Renderizamos el paxTotal correcto */}
+                          <span className="text-[10px] font-bold bg-white px-2 py-0.5 rounded-md shadow-sm">{paxTotal} Pax</span>
                         </div>
                         
                         <div className="space-y-2">
