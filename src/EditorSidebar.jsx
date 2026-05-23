@@ -51,7 +51,8 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
   };
 
   return (
-    <aside className={`w-[100vw] md:w-[420px] h-full shrink-0 bg-[#f8f7ff] overflow-y-auto p-6 pb-24 md:pb-6 border-r border-gray-100 z-10 fd-sb ${mobileView === 'editor' ? 'block' : 'hidden md:block'}`}>
+    // 👇 FIX MOB-03: max-h forzado descontando header, overflow-y-auto estricto y pb-32 para esquivar el nav inferior móvil.
+    <aside className={`w-[100vw] md:w-[420px] h-full max-h-[calc(100dvh-64px)] shrink-0 bg-[#f8f7ff] overflow-y-auto overflow-x-hidden p-6 pb-32 md:pb-6 border-r border-gray-100 z-10 fd-sb ${mobileView === 'editor' ? 'block' : 'hidden md:block'}`}>
       <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 text-left">Flujo de Edición</h3>
 
       <Acc title="🎨 Diseño Base y Animación" icon={Palette} iconColor="#6366f1">
@@ -93,14 +94,14 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
               
               <div className="mt-4 border-t border-pink-100 pt-4">
                  <label className="flex justify-between items-center text-[9px] font-black text-pink-600 uppercase mb-2">
-                    <span>Rotación Arriba</span>
-                    <span className="bg-pink-200 px-2 py-0.5 rounded-full">{cfg.borderRotationTop || 0}°</span>
+                   <span>Rotación Arriba</span>
+                   <span className="bg-pink-200 px-2 py-0.5 rounded-full">{cfg.borderRotationTop || 0}°</span>
                  </label>
                  <input type="range" min={0} max={360} value={cfg.borderRotationTop || 0} onChange={e => update("borderRotationTop", Number(e.target.value))} className="w-full accent-pink-600 cursor-pointer mb-4" />
 
                  <label className="flex justify-between items-center text-[9px] font-black text-pink-600 uppercase mb-2">
-                    <span>Rotación Abajo</span>
-                    <span className="bg-pink-200 px-2 py-0.5 rounded-full">{cfg.borderRotationBottom || 0}°</span>
+                   <span>Rotación Abajo</span>
+                   <span className="bg-pink-200 px-2 py-0.5 rounded-full">{cfg.borderRotationBottom || 0}°</span>
                  </label>
                  <input type="range" min={0} max={360} value={cfg.borderRotationBottom || 0} onChange={e => update("borderRotationBottom", Number(e.target.value))} className="w-full accent-pink-600 cursor-pointer" />
               </div>
