@@ -6,8 +6,9 @@ import { CheckCircle2, X, AlertTriangle, ScanBarcode, Users, Loader2, Check } fr
 
 // ESCÁNER ULTRA RÁPIDO Y ESTABLE (Anti-Pantalla Blanca)
 const FastScanner = ({ onClose, onScan }) => {
-  // Anclamos la función de escaneo para que no reinicie la cámara
   const onScanRef = useRef(onScan);
+  // 👇 FIX MOB-02: Referencia mutable para que el cleanup no quede atrapado en el closure
+  const isStartingRef = useRef(true);
 
   useEffect(() => {
     onScanRef.current = onScan;
@@ -15,7 +16,8 @@ const FastScanner = ({ onClose, onScan }) => {
 
   useEffect(() => {
     const scanner = new Html5Qrcode("reader");
-    let isStarting = true;
+    // 👇 FIX MOB-02: Bandera extra para saber si el componente "murió" durante la promesa
+    let unmounted = false; 
 
     scanner.start(
       { facingMode: "environment" }, 
@@ -28,20 +30,25 @@ const FastScanner = ({ onClose, onScan }) => {
       },
       (err) => { /* Ignoramos errores de enfoque de luz */ }
     ).then(() => {
-      isStarting = false;
+      isStartingRef.current = false;
+      // 👇 FIX MOB-02: Si se desmontó MIENTRAS la cámara arrancaba, la apagamos de inmediato
+      if (unmounted) {
+         scanner.stop().catch(console.error);
+      }
     }).catch(err => {
       console.error("Error iniciando cámara:", err);
-      isStarting = false;
-      alert("No se pudo iniciar la cámara. Verificá los permisos del navegador.");
+      isStartingRef.current = false;
+      if (!unmounted) alert("No se pudo iniciar la cámara. Verificá los permisos del navegador.");
     });
 
-    // Limpieza segura al desmontar (cuando cerrás el escáner)
+    // Limpieza segura al desmontar
     return () => {
-      if (!isStarting && scanner.isScanning) {
+      unmounted = true; // Avisamos que el componente se cerró
+      if (!isStartingRef.current && scanner.isScanning) {
         scanner.stop().catch(console.error);
       }
     };
-  }, []); // El array vacío es la clave: asegura que la cámara prenda 1 sola vez
+  }, []); 
 
   return (
     <div className="fixed inset-0 z-[120] bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-4">
@@ -76,11 +83,9 @@ export default function PuertaScreen() {
   useEffect(() => {
     fetchLiveGuests();
 
-    // 👉 BM-03: Canal Realtime para sincronizar la puerta entre múltiples dispositivos
     const channel = supabase
       .channel('puerta-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'invitados' }, (payload) => {
-        // Solo reaccionamos a cambios de este evento específico
         if (payload.new && payload.new.evento_id !== id && payload.eventType !== 'DELETE') return;
 
         if (payload.eventType === 'INSERT') {
@@ -102,7 +107,7 @@ export default function PuertaScreen() {
   const total = invitados.reduce((acc, g) => acc + (1 + (g.max_acompanantes || 0)), 0);
 
   const processQRScan = (qrString) => {
-    setScanning(false); // Escondemos la cámara apenas lee
+    setScanning(false);
 
     if (!qrString || !qrString.includes('|')) {
       setValidationResult({ status: 'error', title: 'QR Inválido', desc: 'Este código no pertenece a nuestra plataforma o está mal formateado.' });
@@ -113,7 +118,6 @@ export default function PuertaScreen() {
 
     let guestDb = invitados.find(g => g.id === tId);
 
-    // Fallback por nombre si no coincide el ID pero el formato es válido
     if (!guestDb && tName) {
       const qrFullName = `${tName} ${tLast || ''}`.trim().toLowerCase();
       guestDb = invitados.find(g => (g.nombre_completo || '').trim().toLowerCase() === qrFullName);
@@ -129,14 +133,12 @@ export default function PuertaScreen() {
   };
 
   const confirmAccess = async () => {
-    // Si la BD falla silenciosamente, el UI igual debe notificar
     const { error } = await supabase.from('invitados').update({ status: 'Ingresó' }).eq('id', validationResult.data.id);
     
     if (error) {
       alert("Error al registrar ingreso en la BD: " + error.message);
     } else {
       setValidationResult(null);
-      // No llamamos a fetchLiveGuests() acá porque el canal realtime ya se encarga de actualizar el UI
     }
   };
 
@@ -144,7 +146,6 @@ export default function PuertaScreen() {
     if (window.confirm(`¿Querés marcar el ingreso manual de ${guestName}?`)) {
       const { error } = await supabase.from('invitados').update({ status: 'Ingresó' }).eq('id', guestId);
       if (error) alert("Error: " + error.message);
-      // Tampoco llamamos fetchLiveGuests() porque el realtime lo maneja
     }
   };
 
