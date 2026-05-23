@@ -5,19 +5,28 @@ import { RsvpWidget, MapEmbed, SpotifyEmbed, generateTicket, LottiePlayer, LOTTI
 // CORRECCIÓN SEC-03: Variable de entorno
 const IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY || "904f81caf05efe58a799abdb1fedc2ce";
 
-export function InvitePreview({ inv, previewMode = false }) {
+export function InvitePreview({ 
+  cfg = {}, 
+  internalData = {}, 
+  guestData, 
+  update, 
+  onConfirmRSVP, 
+  onUploadLivePhoto, 
+  status, 
+  previewMode = false 
+}) {
   const [playing, setPlaying] = useState(false);
   const audioRef = useRef(null);
   const [showQr, setShowQr] = useState(false);
   const [showCam, setShowCam] = useState(false);
   
-  const config = inv?.config || {};
+  const config = cfg || {};
   const theme = config.theme || 'dark';
   const honoree = config.honoreeName || "Homenajeado";
   const dateText = config.dateText || "";
   const location = config.locationName || "";
 
-  const elements = inv?.internal_data?.elements || [];
+  const elements = internalData?.elements || [];
   
   const bgClass = theme === 'light' ? 'bg-white text-slate-800' : 'bg-[#0f0c1b] text-white';
   const cardBg = theme === 'light' ? 'bg-slate-50 border-slate-200' : 'bg-white/5 border-white/10';
@@ -40,7 +49,7 @@ export function InvitePreview({ inv, previewMode = false }) {
 
   useEffect(() => {
     if (previewMode) { setCameraStatus("active"); return; }
-    const eventDateStr = inv?.config?.date;
+    const eventDateStr = config?.date;
     if (!eventDateStr) return;
     
     // CORRECCIÓN BUG-01: Evitamos el parseo YYYY-MM-DD que devuelve NaN en Safari
@@ -60,15 +69,15 @@ export function InvitePreview({ inv, previewMode = false }) {
     } else {
       setCameraStatus("active"); // Está ocurriendo
     }
-  }, [inv?.config?.date, previewMode]);
+  }, [config?.date, previewMode]);
 
   const [livePhotos, setLivePhotos] = useState([]);
   
   useEffect(() => {
-    if (inv?.internal_data?.live_photos) {
-      setLivePhotos(inv.internal_data.live_photos);
+    if (internalData?.live_photos) {
+      setLivePhotos(internalData.live_photos);
     }
-  }, [inv?.internal_data?.live_photos]);
+  }, [internalData?.live_photos]);
 
   const toggleAudio = () => {
     if (!audioRef.current) return;
@@ -81,7 +90,7 @@ export function InvitePreview({ inv, previewMode = false }) {
     const file = e.target.files?.[0];
     if (!file) return;
     
-    // Lógica real de subida a ImgBB (como en editor)
+    // Lógica real de subida a ImgBB
     const formData = new FormData();
     formData.append("image", file);
     try {
@@ -91,7 +100,11 @@ export function InvitePreview({ inv, previewMode = false }) {
          const newPhoto = { url: data.data.url, date: new Date().toISOString() };
          const updatedPhotos = [newPhoto, ...livePhotos];
          setLivePhotos(updatedPhotos);
-         // En entorno real, acá se dispararía onUpdateInternal para guardar en BD
+         
+         // Notificamos al componente padre si la prop existe
+         if (onUploadLivePhoto) {
+           onUploadLivePhoto(newPhoto);
+         }
       }
     } catch (err) { alert("Error al subir foto."); }
   };
@@ -182,7 +195,14 @@ export function InvitePreview({ inv, previewMode = false }) {
          )}
 
          {config.showRsvp && (
-           <RsvpWidget theme={theme} date={config.date} isPreview={previewMode} />
+           <RsvpWidget 
+             theme={theme} 
+             date={config.date} 
+             isPreview={previewMode}
+             guestData={guestData}
+             onConfirmRSVP={onConfirmRSVP}
+             status={status}
+           />
          )}
 
          {config.locationUrl && (
