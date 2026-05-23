@@ -76,8 +76,11 @@ const LiveInviteScreen = () => {
              }
           }} 
           onUploadLivePhoto={async (url) => {
-             const updatedPhotos = [url, ...(inv.internal_data?.live_photos || [])];
-             const updatedInternal = { ...inv.internal_data, live_photos: updatedPhotos };
+             // Operación segura: leemos el estado fresco antes de guardar (previene borrado de datos cruzados)
+             const { data: latest } = await supabase.from('invitaciones').select('internal_data').eq('id', inv.id).single();
+             const currentPhotos = latest?.internal_data?.live_photos || inv.internal_data?.live_photos || [];
+             
+             const updatedInternal = { ...inv.internal_data, ...(latest?.internal_data || {}), live_photos: [url, ...currentPhotos] };
              await supabase.from('invitaciones').update({ internal_data: updatedInternal }).eq('id', inv.id);
              setInv({ ...inv, internal_data: updatedInternal });
           }}
@@ -107,7 +110,9 @@ const PublicInviteScreen = ({ invitations, onConfirmRSVP, onUpdateInternal }) =>
           status={inv.internal_data?.eventStatus} 
           onConfirmRSVP={(guestData) => onConfirmRSVP(inv.id, guestData, inv.evento_id || inv.id)} 
           onUploadLivePhoto={async (url) => {
-             await onUpdateInternal(inv.id, 'live_photos', [url, ...(inv.internal_data?.live_photos || [])]);
+             // Se maneja a través de onUpdateInternal para evitar concurrencia
+             const currentPhotos = inv.internal_data?.live_photos || [];
+             await onUpdateInternal(inv.id, 'live_photos', [url, ...currentPhotos]);
           }}
         />
       </div>
@@ -141,6 +146,7 @@ export default function App() {
     sessionStorage.removeItem("fiesta_user"); 
   }, []);
 
+  // Fetch inicial aislado (CRASH-04 mitigado)
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -160,6 +166,7 @@ export default function App() {
     fetchData();
   }, []);
 
+  // Canal realtime aislado (CRASH-04 mitigado)
   useEffect(() => {
     const channel = supabase
       .channel('fiesta-realtime')
@@ -188,39 +195,44 @@ export default function App() {
     };
   }, []);
 
-  // 👉 FIX CRÍTICO DEL PANTALLAZO BLANCO: Quitamos el .catch() e implementamos una función async interna
-  const handleUpdateInternal = useCallback((id, f, v) => {
+  // 👇 FIX CRÍTICO CRASH-02: Evitamos race conditions aislando la db del React state
+  const handleUpdateInternal = useCallback(async (id, f, v) => {
+    // 1. UI Optimista (se siente instantáneo para el usuario)
     setInvitations(prev => {
       const inv = prev.find(i => i.id === id);
       if (!inv) return prev;
-      
-      const newInternal = { ...inv.internal_data, [f]: v };
-      
-      const saveToDb = async () => {
-        const { error } = await supabase.from('invitaciones').update({ internal_data: newInternal }).eq('id', id);
-        if (error) console.error("Error al guardar internal_data:", error);
-      };
-      saveToDb();
-        
-      return prev.map(i => i.id === id ? { ...i, internal_data: newInternal } : i);
+      return prev.map(i => i.id === id ? { ...i, internal_data: { ...inv.internal_data, [f]: v } } : i);
     });
+
+    // 2. Base de datos: Consultar lo último antes de pisar el objeto
+    try {
+      const { data: latest } = await supabase.from('invitaciones').select('internal_data').eq('id', id).single();
+      const mergedInternal = latest && latest.internal_data ? { ...latest.internal_data, [f]: v } : { [f]: v };
+      
+      const { error } = await supabase.from('invitaciones').update({ internal_data: mergedInternal }).eq('id', id);
+      if (error) console.error("Error al guardar internal_data:", error);
+    } catch (err) {
+      console.error("Error crítico de concurrencia guardando internal:", err);
+    }
   }, []);
 
-  const handleUpdateConfig = useCallback((id, key, value) => {
+  // 👇 FIX CRÍTICO CRASH-02: Misma protección para config
+  const handleUpdateConfig = useCallback(async (id, key, value) => {
     setInvitations(prev => {
       const inv = prev.find(i => i.id === id);
       if (!inv) return prev;
-      
-      const newConfig = { ...inv.config, [key]: value };
-      
-      const saveToDb = async () => {
-        const { error } = await supabase.from('invitaciones').update({ config: newConfig }).eq('id', id);
-        if (error) console.error("Error al guardar config:", error);
-      };
-      saveToDb();
-        
-      return prev.map(i => i.id === id ? { ...i, config: newConfig } : i);
+      return prev.map(i => i.id === id ? { ...i, config: { ...inv.config, [key]: value } } : i);
     });
+
+    try {
+      const { data: latest } = await supabase.from('invitaciones').select('config').eq('id', id).single();
+      const mergedConfig = latest && latest.config ? { ...latest.config, [key]: value } : { [key]: value };
+      
+      const { error } = await supabase.from('invitaciones').update({ config: mergedConfig }).eq('id', id);
+      if (error) console.error("Error al guardar config:", error);
+    } catch (err) {
+      console.error("Error crítico de concurrencia guardando config:", err);
+    }
   }, []);
 
   const handleUpdateUser = useCallback(async (email, updates) => {
