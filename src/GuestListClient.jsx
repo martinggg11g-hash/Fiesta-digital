@@ -23,7 +23,6 @@ export const GuestListClient = () => {
   const [gStatus, setGStatus] = useState("Pendiente");
   const [gTable, setGTable] = useState("");
   
-  // 👉 MC-03: Estado para manejar errores sin usar window.alert()
   const [formError, setFormError] = useState("");
 
   const fetchData = async () => {
@@ -50,17 +49,26 @@ export const GuestListClient = () => {
   useEffect(() => {
     fetchData();
 
-    // LA ANTENA REALTIME PARA EL CLIENTE
+    // 👇 FIX CRASH-03: Agregamos filter estricto al realtime para no ahogar la base de datos
     const channel = supabase.channel(`client-room-${id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'invitaciones' }, (payload) => {
-        // Si el salón edita la ficha o los invitados manuales, se refleja acá
-        if (payload.new && (payload.new.id === id || payload.new.slug === id)) {
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'invitaciones',
+        filter: `id=eq.${id}` // Filtro clave para el evento exacto
+      }, (payload) => {
+        if (payload.new) {
           setEvent(payload.new);
           setManualGuests(payload.new.internal_data?.guests || []);
         }
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'invitados' }, () => {
-        // Si alguien confirma asistencia (QR) o el salón borra un VIP, recargamos silenciosamente
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'invitados',
+        // Asumiendo que el ID del evento que se usa en invitados es el mismo 'id' de la ruta
+        filter: `evento_id=eq.${id}` 
+      }, () => {
         fetchData();
       })
       .subscribe();
@@ -98,19 +106,18 @@ export const GuestListClient = () => {
   const openNewGuest = () => {
     setEditingGuest(null);
     setGName(""); setGLastname(""); setGPax(1); setGStatus("Pendiente"); setGTable("");
-    setFormError(""); // Limpiamos errores previos
+    setFormError(""); 
     setShowModal(true);
   };
   
   const openEditGuest = (g) => {
     setEditingGuest(g);
     setGName(g.name); setGLastname(g.lastname); setGPax(g.guests); setGStatus(g.status); setGTable(g.mesa || "");
-    setFormError(""); // Limpiamos errores previos
+    setFormError(""); 
     setShowModal(true);
   };
 
   const saveGuest = async () => {
-    // MC-03: Reemplazado alert por estado local
     if(!gName && !editingGuest?.isVip) {
       setFormError("Por favor ingresá un nombre.");
       return;
@@ -128,7 +135,6 @@ export const GuestListClient = () => {
       if (editingGuest) {
         newList = newList.map(g => g.id === editingGuest.id ? { ...g, name: gName, lastname: gLastname, guests: Number(gPax), status: gStatus, mesa: finalTable } : g);
       } else {
-        // 👉 BM-05 & MC-04: ID robusto sin deprecaciones ni colisiones
         const fakeId = `MANUAL-${crypto.randomUUID()}`;
         newList.push({ id: fakeId, name: gName, lastname: gLastname, guests: Number(gPax), mesa: finalTable, status: gStatus, timestamp: new Date().toISOString() });
       }
@@ -211,7 +217,6 @@ export const GuestListClient = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filteredGuests.map((g) => (
-              /* 👉 MC-02: Usamos g.id real en lugar del index para no romper el diffing de React */
               <div key={g.id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
@@ -243,8 +248,9 @@ export const GuestListClient = () => {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-           <div className="w-full sm:max-w-md bg-white sm:rounded-[2rem] rounded-t-[2rem] p-6 shadow-2xl relative text-center anim-pop">
+        // 👇 FIX MOB-04: overflow-y-auto en el overlay fixed para que el teclado de iOS empuje el contenido y permita hacer scroll
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
+           <div className="w-full sm:max-w-md bg-white sm:rounded-[2rem] rounded-t-[2rem] p-6 shadow-2xl relative text-center anim-pop mt-auto sm:mt-0 mb-0">
               <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200"><X size={16}/></button>
               <h3 className="font-black text-xl mb-6 text-slate-800">{editingGuest ? 'Editar Invitado' : 'Nuevo Invitado'}</h3>
               
