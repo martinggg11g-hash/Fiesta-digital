@@ -19,22 +19,39 @@ export const DEF_CONFIG = {
   fontBody: "Montserrat",
   fontTitle: "Playfair Display",
   
+  // Basicos
   date: "2026-12-15",
   time: "21:00 a 05:00 hs",
-  
   coverPhoto: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=800&q=80",
+  useGiphyCover: false,
+  
+  // Homenajeado
+  honoreeName: "Valentina",
+  honoreeFont: "Playfair Display",
+  honoreeSize: "6xl",
+  honoreeColor: "#ffffff",
+  honoreeShadowColor: "rgba(0,0,0,0.5)",
+  honoreeShadowSize: "10px",
+  
+  // Tipo de Evento
   eventTypeEmoji: "✨",
   eventType: "Mis Dulces 15",
-  honoreeName: "Valentina",
+  eventTypeFont: "Montserrat",
+  eventTypeSize: "xl",
+  eventTypeColor: "#ffffff",
+  eventTypeShadowColor: "rgba(0,0,0,0.5)",
+  eventTypeShadowSize: "5px",
+  
+  // Badge
   showBadge: true,
   badgeEmoji: "👑",
   badgeText: "La gran noche",
   badgeBgColor: "rgba(0,0,0,0.5)",
+  badgeFont: "Montserrat",
+  badgeSize: "sm",
   
+  // Secciones a mostrar
   showCountdown: true,
-  showBanner: false,
-  bannerOffsetX: 50,
-  bannerOffsetY: 50,
   showDate: true,
   showTime: true,
   showLocation: true,
@@ -47,27 +64,88 @@ export const DEF_CONFIG = {
   showDressCode: true,
   showGifts: true,
   showGallery: true,
+  showLiveCamera: true,
+  showInstagram: false,
+  showFacebook: false,
+  showTiktok: false,
   
-  parkingType: "Estacionamiento privado cubierto",
+  // Ubicacion y Estacionamiento
+  locationName: "Salón de Eventos",
+  locationAddress: "Calle Falsa 123",
+  venueName: "Salón",
   venueLinkType: "web",
   venueLink: "https://defiesta.lat",
-  spotifyUrl: "https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT",
+  venueLogoUrl: "",
+  parkingType: "Estacionamiento privado",
+  customParking: "",
   
-  showInstagram: false,
-  instagramUrl: "",
-  showFacebook: false,
-  facebookUrl: "",
-  showTiktok: false,
-  tiktokUrl: "",
-
+  // Fechas y RSVP
   showRsvpDeadline: false,
   rsvpDeadline: "",
   isPrivateList: false,
-  clientPin: "", 
-
-  effectOpacity: 100,
+  maxGuestsPerFamily: 5,
+  clientPin: "",
+  whatsappNumber: "",
+  whatsappMessage: "¡Hola! Confirmo mi asistencia",
+  
+  // Redes
+  instagramUrl: "",
+  facebookUrl: "",
+  tiktokUrl: "",
+  
+  // Multimedia
+  spotifyUrl: "",
+  videoUrl: "",
+  videoTitle: "Nuestro Video",
+  liveCameraTitle: "Cámara en Vivo",
+  
+  // Itinerario
+  itinerarySectionTitle: "Itinerario",
+  itinerary: [
+    { time: "21:00", text: "Recepción", icon: "🥂" },
+    { time: "22:00", text: "Cena", icon: "🍽️" },
+    { time: "00:00", text: "Fiesta", icon: "🪩" }
+  ],
+  
+  // Menu
+  menuSectionTitle: "Menú",
+  menuItems: [
+    { name: "Entrada", desc: "Tabla de fiambres", icon: "🧀" },
+    { name: "Plato Principal", desc: "Asado con papas", icon: "🥩" },
+    { name: "Postre", desc: "Helado", icon: "🍦" }
+  ],
+  
+  // Dress Code
+  dressCodeIcon: "icon-dress",
+  dressCodeText: "Elegante Sport",
+  
+  // Regalos
+  giftIcon: "icon-gift",
+  giftLabel: "Mesa de Regalos",
+  giftText: "El mejor regalo es tu presencia. Si deseas, puedes ayudarnos con nuestra luna de miel.",
+  showGiftNote: false,
+  giftNoteText: "",
+  giftNoteColor: "#6b7280",
+  giftNoteSize: "sm",
+  giftLinks: [],
+  
+  // Galeria
+  galleryTitle: "Nuestros Momentos",
+  galleryLayout: "grid",
+  galleryPhotos: [],
+  
+  // Notas extras
+  notesSectionTitle: "Notas Importantes",
+  
+  // Efectos y Animaciones
+  particleEffect: "none",
+  particlesFullscreen: false,
+  openingAnimation: "envelope",
+  animationTransition: "fade",
   animationDuration: 3,
-
+  cardGlow: false,
+  
+  // Bordes
   showCoverBorders: false,
   selectedBorder: "/borders/1-Photoroom.png", 
   borderPosition: "both",
