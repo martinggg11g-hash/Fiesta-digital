@@ -3,7 +3,7 @@ import {
   X, ClipboardList, Users, FileText, Printer, UserCheck, MessageCircle, 
   PartyPopper, CalendarClock, Clock, Receipt, Smartphone, 
   Copy, Plus, FileDown, Edit2, Trash2, FileSpreadsheet,
-  MonitorPlay, Image as ImageIcon, AlertTriangle
+  MonitorPlay, Image as ImageIcon, AlertTriangle, Send
 } from "lucide-react";
 import { Inp, Toggle } from "./DashboardUI";
 import { formatDateSpanish } from "./config";
@@ -39,22 +39,20 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
 
   const [vipGuests, setVipGuests] = useState([]);
   
-  // Modales de confirmación para eliminar (DEUDA-02)
+  // Modales de confirmación para eliminar
   const [deleteGuestConfirm, setDeleteGuestConfirm] = useState(null);
   const [deletePhotoConfirm, setDeletePhotoConfirm] = useState(null);
 
-  // Hook unificado para Suscripción Realtime (OPT-01 confirmada)
+  // Hook unificado para Suscripción Realtime 
   useEffect(() => {
     let isMounted = true;
     let channel;
     const targetId = activeInv?.id;
 
     if (targetId) {
-      // 1. Carga inicial
       supabase.from('invitados').select('*').eq('evento_id', targetId).order('created_at', { ascending: false })
       .then(({data}) => { if (isMounted && data) setVipGuests(data); });
 
-      // 2. Antena Realtime con Filtro (OPT-01)
       channel = supabase.channel(`crm-modal-vips-${targetId}`)
         .on('postgres_changes', { 
            event: '*', 
@@ -62,7 +60,6 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
            table: 'invitados', 
            filter: `evento_id=eq.${targetId}` 
         }, () => {
-           // Refetch optimizado
            supabase.from('invitados').select('*').eq('evento_id', targetId).order('created_at', { ascending: false })
              .then(({data}) => { if (isMounted && data) setVipGuests(data); });
         })
@@ -84,7 +81,7 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
        name: vg.nombre,
        lastname: vg.apellidos || '',
        phone: vg.telefono || '',
-       guests: 1, // Por ahora el flujo VIP asume 1 pase por fila
+       guests: 1, 
        status: vg.status,
        mesa: vg.mesa || '',
        isVip: true,
@@ -122,7 +119,6 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
       await supabase.from('invitados').update({
          nombre: gName, apellidos: gLastname, status: gStatus, mesa: finalTable 
       }).eq('id', editingGuest.id);
-      // Actualizamos UI optimista
       setVipGuests(vipGuests.map(v => v.id === editingGuest.id ? { ...v, nombre: gName, apellidos: gLastname, status: gStatus, mesa: finalTable } : v));
     } else {
       let newList = manualGuests.map(g => g.id === editingGuest.id ? { ...g, name: gName, lastname: gLastname, guests: Number(gPax), status: gStatus, mesa: finalTable } : g);
@@ -133,7 +129,6 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
     setDbStatus("synced");
   };
 
-  // Reemplazo de window.confirm
   const handleDeleteGuest = async () => {
     setDbStatus("saving");
     if (deleteGuestConfirm.isVip) {
@@ -148,11 +143,9 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
     setDbStatus("synced");
   };
 
-  // Reemplazo de window.confirm para borrar fotos
   const handleDeletePhoto = async () => {
     const newList = livePhotos.filter(p => p !== deletePhotoConfirm);
     setLivePhotos(newList);
-    // En caso de que se haya guardado como string o como objeto
     const toSave = activeInv?.internal_data?.live_photos?.filter(p => (typeof p === 'string' ? p : p.url) !== deletePhotoConfirm) || [];
     await onUpdateInternal(activeInv.id, 'live_photos', toSave);
     setDeletePhotoConfirm(null);
@@ -172,11 +165,18 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
     link.click();
   };
 
+  // CORRECCIÓN: Link correcto hacia la vista LiveInviteScreen
   const getQRLink = (guestId) => {
-    return `${window.location.origin}/vip/${activeInv.id}?t=${guestId}`;
+    return `${window.location.origin}/invite/${activeInv.id}?guest=${guestId}`;
   };
 
-  // Si pasamos a modo impresión
+  // NUEVA FUNCIÓN: Enviar pase directo por WhatsApp
+  const handleShareWhatsApp = (g) => {
+    const link = getQRLink(g.id);
+    const text = encodeURIComponent(`¡Hola ${g.name}! Acá tenés tu pase VIP para mi evento. Mostrá el código QR en la puerta para ingresar:\n\n${link}`);
+    window.open(`https://wa.me/?text=${text}`, '_blank');
+  };
+
   if (showPrint) {
     return (
       <div className="fixed inset-0 bg-white z-[9999] overflow-y-auto print:p-0 p-8 text-black" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
@@ -231,8 +231,9 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
   }
 
   return (
-    <div className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-md flex justify-end">
-      <div className={`w-full max-w-3xl h-full shadow-2xl flex flex-col anim-slide-left ${isDark ? 'bg-slate-900 text-white' : 'bg-[#f8f9fc] text-slate-800'}`}>
+    // CORRECCIÓN: Modal centrado con fondo blur
+    <div className="fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-6">
+      <div className={`w-full max-w-5xl h-full max-h-[90vh] rounded-[2.5rem] shadow-2xl flex flex-col anim-pop overflow-hidden ${isDark ? 'bg-slate-900 text-white' : 'bg-[#f8f9fc] text-slate-800'}`}>
         
         <div className={`shrink-0 px-6 py-5 border-b flex items-center justify-between z-10 ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-white border-slate-200'}`}>
           <div className="flex items-center gap-4">
@@ -251,10 +252,10 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
            <button onClick={() => setActiveTab('fotos')} className={`py-2 px-1 text-sm font-black uppercase tracking-widest border-b-2 whitespace-nowrap transition-colors flex items-center gap-2 ${activeTab === 'fotos' ? 'border-violet-500 text-violet-500' : 'border-transparent opacity-50'}`}>Cámara / Fotos <span className="bg-pink-100 text-pink-600 px-2 py-0.5 rounded-full text-[10px]">{livePhotos.length}</span></button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 md:p-8">
+        <div className="flex-1 overflow-y-auto p-6 md:p-8 relative">
            
            {activeTab === 'resumen' && (
-             <div className="space-y-6 max-w-2xl mx-auto pb-20">
+             <div className="space-y-6 max-w-3xl mx-auto pb-10">
                 <div className={`p-6 rounded-[2rem] border grid grid-cols-2 md:grid-cols-4 gap-6 ${themeCard}`}>
                    <div className="col-span-2 md:col-span-4 border-b pb-4 mb-2">
                      <p className="text-[10px] uppercase font-black text-slate-400 tracking-widest mb-1">Cliente / Homenajeado</p>
@@ -283,23 +284,23 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                      <h3 className="font-black flex items-center gap-2 mb-1"><MonitorPlay size={18} className="text-violet-500"/> Proyector en Vivo</h3>
                      <p className="text-sm opacity-70">Enviá este link a la DJ o técnica para proyectar las fotos que suban los invitados.</p>
                    </div>
-                   <button onClick={() => window.open(`${window.location.origin}/proyector/${activeInv.id}`)} className="px-6 py-3 rounded-xl bg-violet-600 text-white font-black text-xs uppercase tracking-widest hover:bg-violet-700 shadow-md">ABRIR PROYECTOR</button>
+                   <button onClick={() => window.open(`${window.location.origin}/proyector/${activeInv.id}`)} className="px-6 py-3 rounded-xl bg-violet-600 text-white font-black text-xs uppercase tracking-widest hover:bg-violet-700 shadow-md transition-colors cursor-pointer">ABRIR PROYECTOR</button>
                 </div>
              </div>
            )}
 
            {activeTab === 'fotos' && (
-             <div className="max-w-4xl mx-auto pb-20">
+             <div className="max-w-5xl mx-auto pb-10">
                 <div className={`p-6 rounded-[2rem] border mb-6 flex flex-col md:flex-row items-center justify-between gap-4 ${themeCard}`}>
                    <div>
                      <h3 className="text-lg font-black mb-1">Fotos en Vivo ({livePhotos.length})</h3>
                      <p className="text-sm opacity-70">Acá aparecen las fotos que los invitados suben desde su celular.</p>
                    </div>
-                   <button onClick={() => window.open(`${window.location.origin}/proyector/${activeInv.id}`)} className="px-6 py-3 rounded-xl bg-violet-600 text-white font-black text-xs uppercase tracking-widest shadow-md flex items-center gap-2"><MonitorPlay size={16}/> MODO PROYECTOR</button>
+                   <button onClick={() => window.open(`${window.location.origin}/proyector/${activeInv.id}`)} className="px-6 py-3 rounded-xl bg-violet-600 text-white font-black text-xs uppercase tracking-widest shadow-md flex items-center gap-2 transition-colors cursor-pointer"><MonitorPlay size={16}/> MODO PROYECTOR</button>
                 </div>
 
                 {livePhotos.length === 0 ? (
-                   <div className="text-center py-20 opacity-50">
+                   <div className="text-center py-20 opacity-50 border-2 border-dashed rounded-[2rem] border-slate-300 dark:border-slate-700">
                      <ImageIcon size={48} className="mx-auto mb-4" />
                      <p className="text-lg font-bold">Aún no hay fotos</p>
                      <p className="text-sm">Las fotos aparecerán acá automáticamente.</p>
@@ -309,7 +310,7 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                    {livePhotos.map((url, i) => (
                       <div key={`photo-${i}`} className="relative group aspect-square bg-slate-100 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                          <img src={url} alt="Foto del evento" className="w-full h-full object-cover" />
-                         <button onClick={() => setDeletePhotoConfirm(url)} className="absolute top-2 right-2 w-8 h-8 bg-red-500/90 text-white rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={14}/></button>
+                         <button onClick={() => setDeletePhotoConfirm(url)} className="absolute top-2 right-2 w-8 h-8 bg-red-500/90 text-white rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"><Trash2 size={14}/></button>
                          <a href={url} target="_blank" rel="noreferrer" className="absolute bottom-2 right-2 w-8 h-8 bg-black/50 backdrop-blur-sm text-white rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><FileDown size={14}/></a>
                       </div>
                    ))}
@@ -319,7 +320,7 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
            )}
 
            {activeTab === 'invitados' && (
-             <div className="max-w-4xl mx-auto pb-20">
+             <div className="max-w-4xl mx-auto pb-10">
                 <div className={`p-6 rounded-[2rem] border mb-6 flex flex-col md:flex-row items-center justify-between gap-6 ${themeCard}`}>
                    <div className="flex items-center gap-4">
                      <div className="p-3 bg-violet-500/10 text-violet-600 rounded-xl"><UserCheck size={24}/></div>
@@ -329,9 +330,9 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                      </div>
                    </div>
                    <div className="flex items-center gap-3">
-                     <button onClick={() => setShowPrint(true)} className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-colors ${isDark ? 'border-slate-600 hover:bg-slate-700' : 'border-slate-200 hover:bg-slate-100'}`}><Printer size={20}/></button>
-                     <button onClick={exportExcel} className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-colors ${isDark ? 'border-slate-600 hover:bg-slate-700' : 'border-slate-200 hover:bg-slate-100'}`}><FileSpreadsheet size={20}/></button>
-                     <button onClick={() => openGuestModal()} className="px-6 py-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-black text-xs uppercase tracking-widest shadow-md flex items-center gap-2"><Plus size={16}/> AGREGAR</button>
+                     <button onClick={() => setShowPrint(true)} className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-colors cursor-pointer ${isDark ? 'border-slate-600 hover:bg-slate-700' : 'border-slate-200 hover:bg-slate-100'}`} title="Imprimir Planilla"><Printer size={20}/></button>
+                     <button onClick={exportExcel} className={`w-12 h-12 rounded-xl flex items-center justify-center border transition-colors cursor-pointer ${isDark ? 'border-slate-600 hover:bg-slate-700' : 'border-slate-200 hover:bg-slate-100'}`} title="Descargar Excel"><FileSpreadsheet size={20}/></button>
+                     <button onClick={() => openGuestModal()} className="px-6 py-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-black text-xs uppercase tracking-widest shadow-md flex items-center gap-2 cursor-pointer transition-colors"><Plus size={16}/> AGREGAR</button>
                    </div>
                 </div>
 
@@ -361,14 +362,14 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                             </p>
                           </div>
                        </div>
-                       <div className="flex items-center gap-2 shrink-0">
+                       <div className="flex flex-wrap items-center gap-2 shrink-0">
                           {g.isVip && (
-                             <button onClick={() => {
-                               navigator.clipboard.writeText(getQRLink(g.id));
-                               alert("Enlace copiado al portapapeles. Envíaselo al invitado por WhatsApp.");
-                             }} className="px-4 py-2 bg-green-50 text-green-700 font-bold rounded-xl text-xs flex items-center gap-2 hover:bg-green-100"><MessageCircle size={14}/> PASE</button>
+                             <div className="flex gap-2">
+                               <button onClick={() => { navigator.clipboard.writeText(getQRLink(g.id)); alert("Enlace copiado."); }} className="p-2 bg-slate-100 text-slate-600 font-bold rounded-xl flex items-center justify-center hover:bg-slate-200 transition-colors cursor-pointer" title="Copiar Link"><Copy size={16}/></button>
+                               <button onClick={() => handleShareWhatsApp(g)} className="px-4 py-2 bg-green-50 text-green-700 font-bold rounded-xl text-xs flex items-center gap-2 hover:bg-green-100 transition-colors cursor-pointer"><Send size={14}/> WHATSAPP</button>
+                             </div>
                           )}
-                          <button onClick={() => openGuestModal(g)} className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-colors ${isDark ? 'border-slate-600 hover:bg-slate-700' : 'border-slate-200 hover:bg-slate-50'}`}><Edit2 size={16}/></button>
+                          <button onClick={() => openGuestModal(g)} className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-colors cursor-pointer ${isDark ? 'border-slate-600 hover:bg-slate-700' : 'border-slate-200 hover:bg-slate-50'}`}><Edit2 size={16}/></button>
                        </div>
                     </div>
                   ))}
@@ -387,7 +388,7 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
       {editingGuest && (
         <div className="fixed inset-0 z-[200] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
            <div className={`w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl relative ${isDark ? 'bg-slate-800 text-white' : 'bg-white'}`}>
-              <button onClick={() => setEditingGuest(null)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-600"><X size={20}/></button>
+              <button onClick={() => setEditingGuest(null)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 cursor-pointer"><X size={20}/></button>
               <h3 className="font-black text-xl mb-6">{editingGuest.isNew ? 'Nuevo Invitado' : 'Editar Invitado'}</h3>
               
               <Inp label="Nombre" value={gName} onChange={setGName} isDark={isDark} />
@@ -400,23 +401,22 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
 
               <div className="mb-6">
                 <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Estado de Acceso</label>
-                <select value={gStatus} onChange={e => setGStatus(e.target.value)} className={`w-full py-3.5 px-4 rounded-xl text-sm font-bold border outline-none ${isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-200'}`}>
+                <select value={gStatus} onChange={e => setGStatus(e.target.value)} className={`w-full py-3.5 px-4 rounded-xl text-sm font-bold border outline-none cursor-pointer ${isDark ? 'bg-slate-700 border-slate-600 text-white' : 'bg-gray-50 border-gray-200'}`}>
                    <option value="Pendiente">⏳ Pendiente de ingreso</option>
                    <option value="Ingresó">✅ Ingresó a la fiesta</option>
                    <option value="Cancelado">❌ Canceló asistencia</option>
                 </select>
               </div>
 
-              <button onClick={handleSaveGuest} className="w-full py-4 bg-violet-600 text-white font-black rounded-xl shadow-lg hover:bg-violet-700">GUARDAR FICHA</button>
+              <button onClick={handleSaveGuest} className="w-full py-4 bg-violet-600 text-white font-black rounded-xl shadow-lg hover:bg-violet-700 transition-colors cursor-pointer">GUARDAR FICHA</button>
               
               {!editingGuest.isNew && (
-                 <button onClick={() => setDeleteGuestConfirm(editingGuest)} className="w-full py-4 mt-2 text-red-500 font-bold text-sm hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl">ELIMINAR INVITADO</button>
+                 <button onClick={() => setDeleteGuestConfirm(editingGuest)} className="w-full py-4 mt-2 text-red-500 font-bold text-sm hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-colors cursor-pointer">ELIMINAR INVITADO</button>
               )}
            </div>
         </div>
       )}
 
-      {/* Modal de confirmación para eliminar invitado (DEUDA-02) */}
       {deleteGuestConfirm && (
         <div className="fixed inset-0 z-[250] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
            <div className={`w-full max-w-sm rounded-[2rem] p-8 shadow-2xl relative text-center anim-pop border-4 border-red-500 ${isDark ? 'bg-slate-800 text-white' : 'bg-white'}`}>
@@ -424,16 +424,15 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                 <Trash2 size={32}/>
              </div>
              <h2 className="text-xl font-black mb-2 uppercase tracking-widest">¿Borrar Invitado?</h2>
-             <p className="text-sm opacity-80 mb-6">Si eliminas a <b>{deleteGuestConfirm.name}</b>, su QR de acceso dejará de funcionar permanentemente.</p>
+             <p className="text-sm opacity-80 mb-6">Si eliminas a <b>{deleteGuestConfirm.name}</b>, su pase dejará de funcionar permanentemente.</p>
              <div className="flex gap-3">
-               <button onClick={() => setDeleteGuestConfirm(null)} className="flex-1 py-3.5 rounded-xl font-black bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 transition-colors">CANCELAR</button>
-               <button onClick={handleDeleteGuest} className="flex-1 py-3.5 bg-red-500 text-white hover:bg-red-600 rounded-xl font-black shadow-lg">SÍ, BORRAR</button>
+               <button onClick={() => setDeleteGuestConfirm(null)} className="flex-1 py-3.5 rounded-xl font-black bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 transition-colors cursor-pointer">CANCELAR</button>
+               <button onClick={handleDeleteGuest} className="flex-1 py-3.5 bg-red-500 text-white hover:bg-red-600 rounded-xl font-black shadow-lg transition-colors cursor-pointer">SÍ, BORRAR</button>
              </div>
            </div>
         </div>
       )}
 
-      {/* Modal de confirmación para eliminar foto (DEUDA-02) */}
       {deletePhotoConfirm && (
         <div className="fixed inset-0 z-[250] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
            <div className={`w-full max-w-sm rounded-[2rem] p-8 shadow-2xl relative text-center anim-pop border-4 border-red-500 ${isDark ? 'bg-slate-800 text-white' : 'bg-white'}`}>
@@ -443,8 +442,8 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
              <h2 className="text-xl font-black mb-2 uppercase tracking-widest">¿Eliminar Foto?</h2>
              <p className="text-sm opacity-80 mb-6">La foto desaparecerá de la galería en vivo y del proyector instantáneamente.</p>
              <div className="flex gap-3">
-               <button onClick={() => setDeletePhotoConfirm(null)} className="flex-1 py-3.5 rounded-xl font-black bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 transition-colors">CANCELAR</button>
-               <button onClick={handleDeletePhoto} className="flex-1 py-3.5 bg-red-500 text-white hover:bg-red-600 rounded-xl font-black shadow-lg">SÍ, BORRAR</button>
+               <button onClick={() => setDeletePhotoConfirm(null)} className="flex-1 py-3.5 rounded-xl font-black bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 transition-colors cursor-pointer">CANCELAR</button>
+               <button onClick={handleDeletePhoto} className="flex-1 py-3.5 bg-red-500 text-white hover:bg-red-600 rounded-xl font-black shadow-lg transition-colors cursor-pointer">SÍ, BORRAR</button>
              </div>
            </div>
         </div>
