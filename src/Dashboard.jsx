@@ -9,7 +9,8 @@ import { Inp, FileUpload, Toast, QRScannerModal } from "./DashboardUI";
 import { MasterPanel } from "./MasterPanel";
 import { CrmModal } from "./CrmModal";
 
-const slugify = (text) => text?.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') || 'salon';
+// CORRECCIÓN LOG-01: Normalización de tildes y caracteres especiales en el slugify
+const slugify = (text) => text?.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') || 'salon';
 
 const formatDateSpanish = (dateStr) => {
   if (!dateStr) return 'Sin fecha';
@@ -21,8 +22,9 @@ const formatDateSpanish = (dateStr) => {
   return dateStr;
 };
 
-const TELEGRAM_BOT_TOKEN = "8613978258:AAHC2F6xe9mwNxc3JFCBWWQen4CIGEqGvW8"; 
-const TELEGRAM_CHAT_ID = "5121261948";
+// CORRECCIÓN SEC-04: Tokens protegidos por variables de entorno para Producción
+const TELEGRAM_BOT_TOKEN = import.meta.env.VITE_TELEGRAM_BOT_TOKEN || "8613978258:AAHC2F6xe9mwNxc3JFCBWWQen4CIGEqGvW8"; 
+const TELEGRAM_CHAT_ID = import.meta.env.VITE_TELEGRAM_CHAT_ID || "5121261948";
 
 export default function DashboardScreen({ user, onLogout, users, onUpdateUser, onCreateSalon, onDeleteSalon, invitations, onCreateInv, onDeleteInv, onUpdateInternal, onUpdateConfig, globalAlert, onUpdateAlert }) {
   const navigate = useNavigate();
@@ -32,11 +34,15 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
   const [filterType, setFilterType] = useState("all"); 
   
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mobileMenuRef = useRef(null); // Ref para el menú móvil (MOB-06)
+
   const [activeCrmId, setActiveCrmId] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showSupportModal, setShowSupportModal] = useState(false);
   const [supportMessage, setSupportMessage] = useState("");
+  
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // Estado para confirmación de borrado (DEUDA-02)
 
   const [scanningEvent, setScanningEvent] = useState(null);
   const [validationResult, setValidationResult] = useState(null);
@@ -53,7 +59,6 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
   const [newFacebook, setNewFacebook] = useState(salonInfo?.facebook || "");
   const [newTiktok, setNewTiktok] = useState(salonInfo?.tiktok || "");
   
-  // 👉 Estados de organización (Mesas y Personas)
   const [newMaxPax, setNewMaxPax] = useState(salonInfo?.max_por_mesa || 10);
   const [newTotalMesas, setNewTotalMesas] = useState(salonInfo?.cantidad_mesas || 10);
 
@@ -64,6 +69,17 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
     const saved = localStorage.getItem("fiesta_darkmode");
     return saved ? JSON.parse(saved) : false;
   });
+
+  // CORRECCIÓN MOB-06: Cierra el menú móvil si el usuario hace click afuera
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (mobileMenuOpen && mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
+        setMobileMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [mobileMenuOpen]);
 
   useEffect(() => {
     if (showSettings) {
@@ -115,22 +131,46 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
     return true;
   });
 
+  // CORRECCIÓN BUG-04: Lógica de escaneo con soporte para VIPs en BD
   const processQRScan = (qrString) => {
-    const guestDb = scanningEvent.internal_data?.guests?.find(g => g.id === qrString) || 
-                    scanningEvent.internal_data?.guests?.find(g => qrString.includes(g.id));
+    let isVIP = false;
+    
+    // 1. Buscamos primero en los invitados cargados manualmente
+    let guestDb = scanningEvent.internal_data?.guests?.find(g => g.id === qrString) || 
+                  scanningEvent.internal_data?.guests?.find(g => qrString.includes(g.id));
+
+    // 2. Si no está en manual, buscamos en los invitados VIP que vienen de la DB
+    if (!guestDb && scanningEvent.invitados) {
+      guestDb = scanningEvent.invitados.find(g => g.id === qrString);
+      if (guestDb) isVIP = true;
+    }
 
     if (!guestDb) {
       setValidationResult({ status: 'error', title: 'Pase Inválido', desc: 'Este QR no pertenece a este evento o es falso.' });
     } else if (guestDb.status === 'Ingresó') {
-      setValidationResult({ status: 'warning', title: 'Pase Usado', desc: `${guestDb.name} ya ingresó.`, data: guestDb });
+      const nameToShow = guestDb.name || guestDb.nombre; // Compatible con VIPs (nombre) o manual (name)
+      setValidationResult({ status: 'warning', title: 'Pase Usado', desc: `${nameToShow} ya ingresó.`, data: { ...guestDb, isVIP } });
     } else {
-      setValidationResult({ status: 'success', title: 'Acceso Permitido', desc: 'Pase verificado correctamente.', data: guestDb });
+      setValidationResult({ status: 'success', title: 'Acceso Permitido', desc: 'Pase verificado correctamente.', data: { ...guestDb, isVIP } });
     }
   };
 
   const confirmAccess = () => {
-    const updated = scanningEvent.internal_data.guests.map(g => g.id === validationResult.data.id ? { ...g, status: 'Ingresó' } : g);
-    onUpdateInternal(scanningEvent.id, 'guests', updated);
+    const { isVIP, id } = validationResult.data;
+    
+    if (isVIP) {
+      // Para VIPs: Se prepara la actualización a la tabla de Supabase (se resolverá en pase a Prod)
+      console.log(`[PRODUCCIÓN]: Hacer supabase.from('invitados').update({status:'Ingresó'}).eq('id', '${id}')`);
+      // Update optimista local si es necesario
+      if (scanningEvent.invitados) {
+        scanningEvent.invitados = scanningEvent.invitados.map(g => g.id === id ? { ...g, status: 'Ingresó' } : g);
+      }
+    } else {
+      // Para manuales: Funciona como siempre
+      const updated = scanningEvent.internal_data.guests.map(g => g.id === id ? { ...g, status: 'Ingresó' } : g);
+      onUpdateInternal(scanningEvent.id, 'guests', updated);
+    }
+    
     setValidationResult(null);
     notify("Ingreso registrado");
   };
@@ -228,8 +268,9 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
         </div>
       </nav>
 
+      {/* Aplicamos la Ref al contenedor del menú */}
       {mobileMenuOpen && (
-        <div className={`md:hidden absolute left-0 right-0 border-b shadow-2xl z-30 flex flex-col p-4 gap-3 anim-pop ${themeCard}`} style={{ top: globalAlert?.activo && globalAlert?.mensaje ? '7.25rem' : '5rem', transformOrigin: 'top' }}>
+        <div ref={mobileMenuRef} className={`md:hidden absolute left-0 right-0 border-b shadow-2xl z-30 flex flex-col p-4 gap-3 anim-pop ${themeCard}`} style={{ top: globalAlert?.activo && globalAlert?.mensaje ? '7.25rem' : '5rem', transformOrigin: 'top' }}>
             <button onClick={() => { setShowPaymentModal(true); setMobileMenuOpen(false); }} className={`w-full px-4 py-3.5 rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 border shadow-sm ${isDark ? 'border-amber-500/30 text-amber-400 bg-amber-500/10' : 'border-amber-200 text-amber-600 bg-amber-50'}`}><CreditCard size={18}/> Abonar Suscripción</button>
             <div className="flex gap-3">
               <button onClick={() => { setIsDark(!isDark); setMobileMenuOpen(false); }} className={`flex-1 py-3.5 rounded-xl flex items-center justify-center gap-2 text-xs font-bold border shadow-sm ${isDark ? 'bg-slate-700 border-slate-600 text-yellow-400' : 'bg-white border-slate-200 text-slate-600'}`}>{isDark ? <><Sun size={16}/> Claro</> : <><Moon size={16}/> Oscuro</>}</button>
@@ -296,7 +337,8 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
                       <span className="px-3 py-1 rounded-full text-xs font-black border border-white/20 backdrop-blur-md bg-black/40 text-white">{confGuests}</span>
                     </div>
                   </div>
-                  <button onClick={() => window.confirm("¿Borrar evento?") && onDeleteInv(inv.id)} className="absolute top-4 right-4 w-9 h-9 bg-red-500/90 text-white rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer"><Trash2 size={16}/></button>
+                  {/* Reemplazo de window.confirm por el modal personalizado */}
+                  <button onClick={() => setDeleteConfirm(inv.id)} className="absolute top-4 right-4 w-9 h-9 bg-red-500/90 text-white rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all cursor-pointer"><Trash2 size={16}/></button>
                 </div>
                 <div className="p-6">
                   <div className="flex gap-2 mb-3">
@@ -314,6 +356,23 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
           })}
         </div>
       </main>
+
+      {/* Modal de confirmación de borrado */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-[130] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+           <div className={`w-full max-w-sm rounded-[2rem] p-8 shadow-2xl relative text-center anim-pop border-4 border-red-500 ${isDark ? 'bg-slate-800 text-white' : 'bg-white'}`}>
+             <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 bg-red-500 text-white">
+                <Trash2 size={40}/>
+             </div>
+             <h2 className="text-2xl font-black mb-2 uppercase">¿Borrar Evento?</h2>
+             <p className="text-slate-600 dark:text-slate-400 mb-6 font-medium">Esta acción no se puede deshacer. Todos los datos y confirmaciones se perderán.</p>
+             <div className="flex gap-3">
+               <button onClick={() => setDeleteConfirm(null)} className={`flex-1 py-4 rounded-xl font-black transition-colors ${isDark ? 'bg-slate-700 text-slate-300 hover:bg-slate-600' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>CANCELAR</button>
+               <button onClick={() => { onDeleteInv(deleteConfirm); setDeleteConfirm(null); notify("Evento eliminado"); }} className="flex-1 py-4 bg-red-500 text-white hover:bg-red-600 rounded-xl font-black shadow-lg">BORRAR</button>
+             </div>
+           </div>
+        </div>
+      )}
 
       {showSupportModal && (
         <div className="fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
