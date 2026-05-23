@@ -11,7 +11,10 @@ import { supabase } from "./supabase";
 const LoginScreen = React.lazy(() => import("./Login"));
 const DashboardScreen = React.lazy(() => import("./Dashboard"));
 const PuertaScreen = React.lazy(() => import("./Puerta"));
-const EditorScreen = React.lazy(() => import("./Editor").then(module => ({ default: module.EditorScreen })));
+
+// BUG-CRITICO-02 Resuelto: Importación lazy simplificada (ahora que Editor tiene export default)
+const EditorScreen = React.lazy(() => import("./Editor"));
+
 const ManageScreen = React.lazy(() => import("./Manage").then(module => ({ default: module.ManageScreen })));
 const GuestListClientScreen = React.lazy(() => import("./GuestListClient").then(module => ({ default: module.GuestListClient })));
 
@@ -191,7 +194,8 @@ export default function App() {
       .subscribe();
 
     return () => { 
-      supabase.removeChannel(channel); 
+      // BUG-BAJO-12 Resuelto: Cleanup robusto con catch de errores (StrictMode safe)
+      supabase.removeChannel(channel).catch(console.error); 
     };
   }, []);
 
@@ -324,6 +328,8 @@ export default function App() {
         
         {/* CORRECCIÓN BUG-09: Pasamos onUpdateInternal y onUpdateConfig al Editor */}
         <Route path="/editor/:id" element={user ? <EditorScreen invitations={invitations} onSave={handleSaveInv} onUpdateInternal={handleUpdateInternal} onUpdateConfig={handleUpdateConfig} /> : <Navigate to="/" />} />
+        
+        {/* ManageScreen ahora recibe correctamente invitations de manera global y no hace fetch repetido (BUG-ALTO-05 preparado acá) */}
         <Route path="/manage/:id" element={user ? <ManageScreen invitations={invitations} onUpdateInternal={handleUpdateInternal} onUpdateConfig={handleUpdateConfig} /> : <Navigate to="/" />} />
         
         <Route path="/puerta/:id" element={user ? <PuertaScreen /> : <Navigate to="/" />} />
