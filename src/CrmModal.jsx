@@ -3,7 +3,7 @@ import {
   X, ClipboardList, Users, FileText, Printer, UserCheck, MessageCircle, 
   PartyPopper, CalendarClock, Clock, Receipt, Smartphone, 
   Copy, Plus, FileDown, Edit2, Trash2, FileSpreadsheet,
-  MonitorPlay, Image as ImageIcon, Send
+  MonitorPlay, Image as ImageIcon
 } from "lucide-react";
 import { Inp, Toggle } from "./DashboardUI";
 import { supabase } from "./supabase";
@@ -41,7 +41,6 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
   
   const [liveEvent, setLiveEvent] = useState(activeInv); 
 
-  // 👉 FIX: El "Espejo" mágico. 
   useEffect(() => {
     setLiveEvent(activeInv);
   }, [activeInv]);
@@ -83,7 +82,13 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
 
     fetchVipGuests();
 
-    const channel = supabase.channel(`crm-modal-vips-${activeInv.id}`)
+    // 👉 REACTIVADA LA ANTENA DE INVITACIONES: Para ver en vivo lo que hace el cliente
+    const channel = supabase.channel(`crm-modal-sync-${activeInv.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'invitaciones' }, (payload) => {
+        if (isMounted && payload.new && (payload.new.id === activeInv.id || payload.new.slug === activeInv.id)) {
+          setLiveEvent(payload.new);
+        }
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'invitados' }, () => {
         if (isMounted) fetchVipGuests();
       })
@@ -113,16 +118,6 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
     navigator.clipboard.writeText(url);
     setCopiedStates(prev => ({ ...prev, [id]: true }));
     setTimeout(() => { setCopiedStates(prev => ({ ...prev, [id]: false })); }, 2000);
-  };
-
-  const getQRLink = (guestId) => {
-    return `${window.location.origin}/invite/${activeInv.id}?guest=${guestId}`;
-  };
-
-  const handleShareWhatsApp = (g) => {
-    const link = getQRLink(g.id);
-    const text = encodeURIComponent(`¡Hola ${g.name}! Acá tenés tu pase VIP para mi evento. Mostrá el código QR en la puerta para ingresar:\n\n${link}`);
-    window.open(`https://wa.me/?text=${text}`, '_blank');
   };
 
   const handlePrint = (mode) => {
@@ -156,8 +151,9 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
     }
     
     if (editingGuest?.isVip) {
+      // Optimistic UI
+      setVipGuests(prev => prev.map(v => v.id === editingGuest.id ? { ...v, mesa: finalTable } : v));
       await supabase.from('invitados').update({ mesa: finalTable }).eq('id', editingGuest.id);
-      setVipGuests(vipGuests.map(v => v.id === editingGuest.id ? { ...v, mesa: finalTable } : v));
     } else {
       let newList = [...manualGuests];
       if (editingGuest) {
@@ -166,6 +162,9 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
         const fakeId = `MANUAL-${crypto.randomUUID()}`;
         newList.push({ id: fakeId, name: gName, lastname: gLastname, guests: Number(gPax), mesa: finalTable, status: gStatus, timestamp: new Date().toISOString() });
       }
+      
+      // Optimistic UI
+      setLiveEvent(prev => ({ ...prev, internal_data: { ...prev.internal_data, guests: newList } }));
       onUpdateInternal(activeInv.id, 'guests', newList);
     }
     setShowGuestModal(false);
@@ -174,10 +173,13 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
   const deleteGuest = async (g) => {
     if(!window.confirm("¿Seguro que querés borrar a este invitado? El QR dejará de funcionar.")) return;
     if (g.isVip) {
+      // Optimistic UI (Se borra al instante de la pantalla)
+      setVipGuests(prev => prev.filter(v => v.id !== g.id));
       await supabase.from('invitados').delete().eq('id', g.id);
-      setVipGuests(vipGuests.filter(v => v.id !== g.id));
     } else {
       const newList = manualGuests.filter(mg => mg.id !== g.id);
+      // Optimistic UI
+      setLiveEvent(prev => ({ ...prev, internal_data: { ...prev.internal_data, guests: newList } }));
       onUpdateInternal(activeInv.id, 'guests', newList);
     }
   };
@@ -185,6 +187,7 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
   const handleDeletePhoto = (photoUrl) => {
     if(!window.confirm("¿Seguro que querés eliminar esta foto? Desaparecerá de la galería y del proyector.")) return;
     const updatedPhotos = livePhotos.filter(url => url !== photoUrl);
+    setLiveEvent(prev => ({ ...prev, internal_data: { ...prev.internal_data, live_photos: updatedPhotos } }));
     onUpdateInternal(activeInv.id, 'live_photos', updatedPhotos);
   };
 
@@ -511,12 +514,7 @@ export const CrmModal = ({ activeInv, onClose, user, salonInfo, onUpdateInternal
                             <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${g.status === 'Confirmado' || g.status === 'Ingresó' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{g.status}</span>
                           </td>
                           <td className="p-4 text-right flex justify-end gap-2">
-                             {g.isVip && (
-                               <>
-                                 <button onClick={() => { navigator.clipboard.writeText(getQRLink(g.id)); showToast("Enlace VIP copiado.", "success"); }} className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100 cursor-pointer" title="Copiar Pase VIP"><Copy size={14}/></button>
-                                 <button onClick={() => handleShareWhatsApp(g)} className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors bg-green-50 text-green-600 hover:bg-green-100 cursor-pointer" title="Enviar Pase por WhatsApp"><Send size={14}/></button>
-                               </>
-                             )}
+                             {/* 👉 FIX: Eliminados los botones de WhatsApp y Copiar VIP. Solo queda Editar y Borrar */}
                              <button onClick={() => openEditGuest(g)} className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors bg-slate-100 text-slate-600 hover:bg-violet-100 hover:text-violet-600 cursor-pointer" title="Editar"><Edit2 size={14}/></button>
                              <button onClick={() => deleteGuest(g)} className="w-8 h-8 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 flex items-center justify-center cursor-pointer transition-colors"><Trash2 size={14}/></button>
                           </td>
