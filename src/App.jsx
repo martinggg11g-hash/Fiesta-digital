@@ -322,6 +322,7 @@ export default function App() {
           /> : <Navigate to="/" />
         } />
         
+        {/* CORRECCIÓN BUG-09: Pasamos onUpdateInternal y onUpdateConfig al Editor */}
         <Route path="/editor/:id" element={user ? <EditorScreen invitations={invitations} onSave={handleSaveInv} onUpdateInternal={handleUpdateInternal} onUpdateConfig={handleUpdateConfig} /> : <Navigate to="/" />} />
         <Route path="/manage/:id" element={user ? <ManageScreen invitations={invitations} onUpdateInternal={handleUpdateInternal} onUpdateConfig={handleUpdateConfig} /> : <Navigate to="/" />} />
         
