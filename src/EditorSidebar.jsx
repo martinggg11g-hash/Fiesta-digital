@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useParams } from "react-router-dom"; // CORRECCIÓN BUG-08: Importamos useParams
 import { Palette, Star, Image as ImageIcon, Layout, List, Trash2, Video, Link as LinkIcon, LayoutGrid, Smartphone, Calendar, Clock, CheckCircle2, MessageCircle, Plus, Edit2, RefreshCcw, Copy, ExternalLink, Sparkles, Camera } from "lucide-react";
 import { GiphySearch, Inp, MiniInp, SelectInp, TypoControl, FontSelector, FileUpload, Toggle, EmojiPicker, Acc, BordersGallery, Tooltip } from "./EditorUI";
 import { ANIMATION_CATEGORIES, THEMES, TRANSITION_OPTS, PARTICLE_CATEGORIES, FONTS } from "./config";
@@ -11,7 +12,9 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
   const [animCat, setAnimCategory] = useState("infantil");
   const [partCat, setPartCat] = useState("Clásicos");
 
-  const eventId = window.location.pathname.split('/').pop();
+  // CORRECCIÓN BUG-08: Extraemos el ID del router de forma segura
+  const { id } = useParams();
+  const eventId = id || window.location.pathname.split('/').filter(Boolean).pop(); // Fallback por las dudas
   const hostManageLink = `${window.location.origin}/manage/${eventId}`;
 
   const [salonProfile] = useState(() => {
