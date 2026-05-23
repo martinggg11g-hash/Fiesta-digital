@@ -89,7 +89,8 @@ export const EditorScreen = ({ invitations, onSave, onUpdateInternal, onUpdateCo
             }} className="p-2 hover:bg-white/10 rounded-xl transition-colors cursor-pointer">
             <ArrowLeft size={20} />
           </button>
-          <h1 className="font-black text-sm uppercase tracking-widest hidden md:block flex items-center gap-2">
+          {/* BUG-ALTO-06 Resuelto: Se cambió 'hidden md:block flex' por 'hidden md:flex' */}
+          <h1 className="font-black text-sm uppercase tracking-widest hidden md:flex items-center gap-2">
             Editando: <span className="text-violet-400">{inv.title || "Evento"}</span>
             {isDirty && <span className="w-2 h-2 bg-amber-400 rounded-full" title="Hay cambios sin guardar"></span>}
           </h1>
@@ -147,3 +148,6 @@ export const EditorScreen = ({ invitations, onSave, onUpdateInternal, onUpdateCo
     </div>
   );
 };
+
+// BUG-CRITICO-02 Resuelto: Faltaba el export default para el React.lazy
+export default EditorScreen;
