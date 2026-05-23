@@ -5,7 +5,6 @@ import {
   Search, Sun, Moon, Settings, CreditCard, Send, Eye, Filter, ScanBarcode, Smartphone, AlertTriangle, AlertCircle, ImageIcon, Loader2, X, MessageCircle, Menu
 } from "lucide-react";
 
-// 👉 FIX 1: Quitamos FileUpload de la importación porque estaba causando la pantalla blanca al no existir
 import { Inp, Toast, QRScannerModal } from "./DashboardUI";
 import { MasterPanel } from "./MasterPanel";
 import { CrmModal } from "./CrmModal";
@@ -145,6 +144,7 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
     const { isVIP, id } = validationResult.data;
     
     if (isVIP) {
+      console.log(`[PRODUCCIÓN]: Hacer supabase.from('invitados').update({status:'Ingresó'}).eq('id', '${id}')`);
       if (scanningEvent.invitados) {
         scanningEvent.invitados = scanningEvent.invitados.map(g => g.id === id ? { ...g, status: 'Ingresó' } : g);
       }
@@ -160,7 +160,6 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
   const handleSendReceipt = async () => {
     if (!receiptFile) return alert("Por favor, seleccioná una foto del comprobante primero.");
     
-    // 👉 FIX 2: MODO SANDBOX PARA QUE NO TE TRABE EL TESTING SI FALTAN VARIABLES DE ENTORNO
     if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
       console.warn("Modo Sandbox: Simulando envío de comprobante porque no hay tokens de Telegram.");
       setSendingReceipt(true);
@@ -354,6 +353,7 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
         </div>
       </main>
 
+      {/* MODALES RECUPERADOS */}
       {deleteConfirm && (
         <div className="fixed inset-0 z-[130] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
            <div className={`w-full max-w-sm rounded-[2rem] p-8 shadow-2xl relative text-center anim-pop border-4 border-red-500 ${isDark ? 'bg-slate-800 text-white' : 'bg-white'}`}>
@@ -423,12 +423,40 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
         </div>
       )}
 
+      {activeCrmId && (
+        <CrmModal 
+          key={activeCrmId} 
+          activeInv={myInvs.find(i => i.id === activeCrmId)} 
+          onClose={() => setActiveCrmId(null)} 
+          user={user} 
+          salonInfo={salonInfo} 
+          onUpdateInternal={onUpdateInternal} 
+          onUpdateConfig={onUpdateConfig} 
+          isDark={isDark} 
+        />
+      )}
+
+      {scanningEvent && !validationResult && <QRScannerModal onClose={() => setScanningEvent(null)} onScan={processQRScan} />}
+      
+      {validationResult && (
+        <div className="fixed inset-0 z-[130] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+           <div className="w-full max-w-sm bg-white rounded-[2rem] p-8 shadow-2xl relative text-center anim-pop border-4" style={{ borderColor: validationResult.status === 'success' ? '#22c55e' : (validationResult.status === 'error' ? '#ef4444' : '#f59e0b') }}>
+             <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 text-white" style={{ background: validationResult.status === 'success' ? '#22c55e' : (validationResult.status === 'error' ? '#ef4444' : '#f59e0b') }}>
+                {validationResult.status === 'success' && <CheckCircle2 size={40}/>}{validationResult.status === 'error' && <Trash2 size={40}/>}{validationResult.status === 'warning' && <AlertTriangle size={40}/>}
+             </div>
+             <h2 className="text-2xl font-black mb-2 uppercase">{validationResult.title}</h2>
+             <p className="text-slate-600 mb-6">{validationResult.desc}</p>
+             {validationResult.status === 'success' && <button onClick={confirmAccess} className="w-full py-4 bg-green-500 text-white rounded-xl font-black shadow-lg mb-2">REGISTRAR INGRESO</button>}
+             <button onClick={() => setValidationResult(null)} className="w-full py-4 bg-slate-100 text-slate-700 rounded-xl font-black">CERRAR</button>
+           </div>
+        </div>
+      )}
+
       {showSettings && (
         <div className="fixed inset-0 z-[110] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
            <div className={`w-full max-w-sm rounded-[2rem] p-8 shadow-2xl relative text-center ${isDark ? 'bg-slate-800 text-white' : 'bg-white'}`}>
              <h2 className="text-xl font-black mb-6">Ajustes del Salón</h2>
              <div className="max-h-[60vh] overflow-y-auto px-2 fd-sb">
-               {/* 👉 FIX: Cambiado el componente fantasma FileUpload por un Inp seguro para URL */}
                <Inp label="URL del Logo (Opcional)" placeholder="https://..." value={newLogo} onChange={setNewLogo} isDark={isDark} />
                <Inp label="Teléfono (WhatsApp)" placeholder="Ej: +54 9 11 1234-5678" value={newPhone} onChange={setNewPhone} isDark={isDark} />
                
