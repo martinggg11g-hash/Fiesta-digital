@@ -531,3 +531,10 @@ export const BORDERS = [
   { id: 'b15', name: 'Neon', url: '/borders/15-Photoroom.png' },
   { id: 'b16', name: 'Líneas', url: '/borders/16-Photoroom.png' }
 ];
+export const formatToDDMMYYYY = (dateString) => {
+  if (!dateString) return "";
+  const parts = dateString.split('-');
+  if (parts.length !== 3) return dateString;
+  const [year, month, day] = parts;
+  return `${day}/${month}/${year}`;
+};
