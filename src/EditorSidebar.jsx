@@ -9,7 +9,6 @@ const FacebookIcon = ({ size = 20 }) => (<svg width={size} height={size} viewBox
 const TiktokIcon = ({ size = 20 }) => (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"></path></svg>);
 
 export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim, mobileView }) {
-  // 👉 CORRECCIÓN DEL ESTADO INICIAL
   const [animCat, setAnimCategory] = useState(Object.keys(ANIMATION_CATEGORIES)[0]);
   const [partCat, setPartCat] = useState("Clásicos");
 
@@ -55,7 +54,17 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
 
   return (
     <aside className={`w-[100vw] md:w-[420px] h-full max-h-[calc(100dvh-64px)] shrink-0 bg-[#f8f7ff] overflow-y-auto overflow-x-hidden p-6 pb-32 md:pb-6 border-r border-gray-100 z-10 fd-sb ${mobileView === 'editor' ? 'block' : 'hidden md:block'}`}>
-      <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-6 text-left">Flujo de Edición</h3>
+      
+      {/* FD-005: Usamos el salonProfile para darle más contexto visual al editor */}
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] text-left">Flujo de Edición</h3>
+        {salonProfile && (
+           <div className="flex items-center gap-2">
+             {salonProfile.logo && <img src={salonProfile.logo} alt="Logo" className="w-5 h-5 rounded-full object-cover" />}
+             <span className="text-[9px] font-bold text-violet-600 bg-violet-100 px-2 py-1 rounded-md truncate max-w-[120px]">{salonProfile.name || "Mi Salón"}</span>
+           </div>
+        )}
+      </div>
 
       <Acc title="🎨 Diseño Base y Animación" icon={Palette} iconColor="#6366f1">
          <div className="flex items-center justify-between mb-4 bg-gray-50 p-2 rounded-xl border border-gray-200">
@@ -64,8 +73,6 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
          </div>
          {cfg.openingAnimation !== 'none' && (
            <div className="mb-6 border-b border-gray-100 pb-4">
-             
-             {/* 👉 GRID DE CATEGORÍAS */}
              <div className="flex gap-2 overflow-x-auto fd-sb pb-2 mb-4">
                {Object.keys(ANIMATION_CATEGORIES || {}).map(c => (
                  <button 
@@ -78,8 +85,6 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
                  </button>
                ))}
              </div>
-             
-             {/* 👉 GRID DE BOTONES LOTTIE */}
              <div className="grid grid-cols-2 gap-2 mb-4">
                {ANIMATION_CATEGORIES[animCat]?.map(anim => (
                  <button 
@@ -184,7 +189,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
       <Acc title="1️⃣ Portada Principal" icon={ImageIcon} defaultOpen iconColor="#ec4899">
         <div className="mb-6 bg-gray-50 p-3 rounded-xl border border-gray-200"><div className="flex items-center justify-between mb-2"><span className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center">¿Fondo GIF Animado?</span><Toggle checked={cfg.useGiphyCover || false} onChange={v => update("useGiphyCover", v)} /></div>{cfg.useGiphyCover ? (<GiphySearch onSelect={url => update("coverPhoto", url)} placeholder="Ej: brillos, spiderman..." />) : (<FileUpload value={cfg.coverPhoto} onChange={v => update("coverPhoto", v)} />)}</div>
         
-        {/* 👉 NUEVO BLOQUE: CONTROLES DEL BANNER INTERACTIVO */}
+        {/* FD-002: BLOQUE: CONTROLES DEL BANNER INTERACTIVO CON TOGGLE PARA GIF */}
         <div className="mb-6 p-4 rounded-xl border border-pink-100 bg-pink-50/30">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[10px] font-black text-pink-600 uppercase tracking-widest flex items-center">Banner Interactivo <Tooltip text="Habilita un banner destacado interactivo en la portada principal." /></span>
@@ -193,7 +198,17 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
           {cfg.showBanner && (
             <div className="mt-4 pt-4 border-t border-pink-100 space-y-4">
               <Inp label="Título del Banner" value={cfg.bannerTitle || ""} onChange={v => update("bannerTitle", v)} placeholder="Ej: ¡Bienvenidos a mi fiesta!" />
-              <FileUpload label="Foto del Banner" value={cfg.bannerPhoto || ""} onChange={v => update("bannerPhoto", v)} />
+              
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center">¿Fondo GIF Animado?</span>
+                <Toggle checked={cfg.useGiphyBanner || false} onChange={v => update("useGiphyBanner", v)} />
+              </div>
+              
+              {cfg.useGiphyBanner ? (
+                <GiphySearch onSelect={url => update("bannerPhoto", url)} placeholder="Ej: fiesta, brillos..." />
+              ) : (
+                <FileUpload label="Foto o GIF del Banner" value={cfg.bannerPhoto || ""} onChange={v => update("bannerPhoto", v)} />
+              )}
             </div>
           )}
         </div>
