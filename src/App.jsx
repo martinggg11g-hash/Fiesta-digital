@@ -7,14 +7,10 @@ import { DEF_CONFIG } from "./config";
 import { OpeningAnimation } from "./Lotties";
 import { supabase } from "./supabase"; 
 
-// LAZY LOADING
 const LoginScreen = React.lazy(() => import("./Login"));
 const DashboardScreen = React.lazy(() => import("./Dashboard"));
 const PuertaScreen = React.lazy(() => import("./Puerta"));
-
-// BUG-CRITICO-02 Resuelto: Importación lazy simplificada (ahora que Editor tiene export default)
 const EditorScreen = React.lazy(() => import("./Editor"));
-
 const ManageScreen = React.lazy(() => import("./Manage").then(module => ({ default: module.ManageScreen })));
 const GuestListClientScreen = React.lazy(() => import("./GuestListClient").then(module => ({ default: module.GuestListClient })));
 
@@ -79,7 +75,6 @@ const LiveInviteScreen = () => {
              }
           }} 
           onUploadLivePhoto={async (url) => {
-             // Operación segura: leemos el estado fresco antes de guardar (previene borrado de datos cruzados)
              const { data: latest } = await supabase.from('invitaciones').select('internal_data').eq('id', inv.id).single();
              const currentPhotos = latest?.internal_data?.live_photos || inv.internal_data?.live_photos || [];
              
@@ -113,7 +108,6 @@ const PublicInviteScreen = ({ invitations, onConfirmRSVP, onUpdateInternal }) =>
           status={inv.internal_data?.eventStatus} 
           onConfirmRSVP={(guestData) => onConfirmRSVP(inv.id, guestData, inv.evento_id || inv.id)} 
           onUploadLivePhoto={async (url) => {
-             // Se maneja a través de onUpdateInternal para evitar concurrencia
              const currentPhotos = inv.internal_data?.live_photos || [];
              await onUpdateInternal(inv.id, 'live_photos', [url, ...currentPhotos]);
           }}
@@ -149,7 +143,6 @@ export default function App() {
     sessionStorage.removeItem("fiesta_user"); 
   }, []);
 
-  // Fetch inicial aislado (CRASH-04 mitigado)
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -169,7 +162,6 @@ export default function App() {
     fetchData();
   }, []);
 
-  // Canal realtime aislado (CRASH-04 mitigado)
   useEffect(() => {
     const channel = supabase
       .channel('fiesta-realtime')
@@ -194,21 +186,17 @@ export default function App() {
       .subscribe();
 
     return () => { 
-      // BUG-BAJO-12 Resuelto: Cleanup robusto con catch de errores (StrictMode safe)
       supabase.removeChannel(channel).catch(console.error); 
     };
   }, []);
 
-  // 👇 FIX CRÍTICO CRASH-02: Evitamos race conditions aislando la db del React state
   const handleUpdateInternal = useCallback(async (id, f, v) => {
-    // 1. UI Optimista (se siente instantáneo para el usuario)
     setInvitations(prev => {
       const inv = prev.find(i => i.id === id);
       if (!inv) return prev;
       return prev.map(i => i.id === id ? { ...i, internal_data: { ...inv.internal_data, [f]: v } } : i);
     });
 
-    // 2. Base de datos: Consultar lo último antes de pisar el objeto
     try {
       const { data: latest } = await supabase.from('invitaciones').select('internal_data').eq('id', id).single();
       const mergedInternal = latest && latest.internal_data ? { ...latest.internal_data, [f]: v } : { [f]: v };
@@ -220,7 +208,6 @@ export default function App() {
     }
   }, []);
 
-  // 👇 FIX CRÍTICO CRASH-02: Misma protección para config
   const handleUpdateConfig = useCallback(async (id, key, value) => {
     setInvitations(prev => {
       const inv = prev.find(i => i.id === id);
@@ -326,10 +313,8 @@ export default function App() {
           /> : <Navigate to="/" />
         } />
         
-        {/* CORRECCIÓN BUG-09: Pasamos onUpdateInternal y onUpdateConfig al Editor */}
         <Route path="/editor/:id" element={user ? <EditorScreen invitations={invitations} onSave={handleSaveInv} onUpdateInternal={handleUpdateInternal} onUpdateConfig={handleUpdateConfig} /> : <Navigate to="/" />} />
         
-        {/* ManageScreen ahora recibe correctamente invitations de manera global y no hace fetch repetido (BUG-ALTO-05 preparado acá) */}
         <Route path="/manage/:id" element={user ? <ManageScreen invitations={invitations} onUpdateInternal={handleUpdateInternal} onUpdateConfig={handleUpdateConfig} /> : <Navigate to="/" />} />
         
         <Route path="/puerta/:id" element={user ? <PuertaScreen /> : <Navigate to="/" />} />
