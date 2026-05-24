@@ -2,31 +2,15 @@ import React, { useState, useEffect, useRef } from "react";
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import { ANIMATION_CATEGORIES } from "./config"; 
 
-// URLS DE CADA ANIMACIÓN CON ENLACES ÚNICOS (Mapeo corregido)
-export const LOTTIE_MAP = {
-  envelope: "https://lottie.host/76b80717-c64a-474b-b5dc-9853881dac0b/B0nOPSiMVc.lottie", // Jessica Rabbit
-  cake: "https://lottie.host/4ca06831-d568-4cd6-9b2a-32ea586857f2/nec4jxiwSC.lottie", // Pastel
-  chest: "https://lottie.host/da469562-9122-4062-a1c2-6fd71b51f250/TltkNEXlQE.lottie", // Regalo explosivo
-  gift: "https://lottie.host/dd720199-18c7-434b-93a5-bc8da9f299a1/z4TZTEwNbS.lottie", // Ojos
-  rings: "https://lottie.host/80e309cc-3b32-475c-af7a-c80c05cd9c76/N3kKx5w2j7.lottie", // Anillos
-  dove: "https://lottie.host/a61c4de4-7a31-4ec4-9b21-81f1cd1217e6/QYpIqWbJ3P.lottie", // Paloma
-  crown: "https://lottie.host/d8112081-66aa-4001-9a22-c4e1fc0b5551/JOr2rqdpCv.lottie", // Corona
-  balloon: "https://lottie.host/8036e685-ae19-4783-870f-6a03f84113d4/C4CJJDF4zM.lottie", // Globo
-  flower: "https://lottie.host/3e8c9735-e106-4b68-8098-b807b1a03f47/6N2jQo9sXk.lottie", // Flor
-  butterfly: "https://lottie.host/e2c347f8-cf90-4c3e-b83c-623e1f57e0b5/8kNjXpT3R2.lottie", // Mariposa
-  stars: "https://lottie.host/43af906f-7e7f-4f8c-b305-f86280e4f39a/oOwCUkBzz7.lottie", // Estrellas
-  mickey: "https://lottie.host/91e2b5d7-1354-41d3-a55e-04983f4f6e3c/W5j1kR3P2t.lottie", // Mickey
-  minnie: "https://lottie.host/28a64e1d-7e11-43f8-b339-54bd7fa7562f/Ad6KGTk3EL.lottie", // Minnie Asomando
-  cars: "https://lottie.host/d27e41e2-ebc9-4c56-9baf-6be124d2618e/3d4UlzGIRS.lottie", // Cars
-  cheers: "https://lottie.host/acee53c4-e205-4381-a8d6-6c81e546936e/FGryvHLT7G.lottie", // Brindis
-  disco: "https://lottie.host/57a7d4d8-795a-493e-af4c-4e894676bebb/EIf4Lw3T5C.lottie" // Bola de Disco
-};
-
+// Mapeo de transiciones a clases de Tailwind (coincide con TRANSITION_OPTS en config.js)
 const TRANSITIONS = {
-  fade: "opacity-0",
-  slideUp: "opacity-0 -translate-y-full",
-  zoomOut: "opacity-0 scale-150 blur-xl",
-  zoomIn: "opacity-0 scale-50 blur-md"
+  "fade": "opacity-0",
+  "slide-up": "opacity-0 -translate-y-full",
+  "slide-left": "opacity-0 -translate-x-full",
+  "slide-right": "opacity-0 translate-x-full",
+  "zoom": "opacity-0 scale-50 blur-md",
+  "flip": "opacity-0 rotate-y-90",
+  "bounce": "opacity-0 translate-y-full"
 };
 
 export const OpeningAnimation = ({ cfg, onOpen, isPreview = false }) => {
@@ -39,7 +23,7 @@ export const OpeningAnimation = ({ cfg, onOpen, isPreview = false }) => {
     onOpenRef.current = onOpen;
   }, [onOpen]);
   
-  const type = cfg?.openingAnimation || "envelope";
+  const type = cfg?.openingAnimation || "none";
   
   useEffect(() => {
     if (type === "none") {
@@ -65,18 +49,19 @@ export const OpeningAnimation = ({ cfg, onOpen, isPreview = false }) => {
     }, durationMs);
 
     return () => clearTimeout(exitTimer);
-  }, [type, cfg?.animationDuration]); 
+  }, [type, cfg?.animationDuration]);
 
   if (type === "none") return null;
 
-  let finalUrl = LOTTIE_MAP[type] || LOTTIE_MAP.envelope; 
-  if (ANIMATION_CATEGORIES) {
-    for (const cat of Object.keys(ANIMATION_CATEGORIES)) {
-      const found = ANIMATION_CATEGORIES[cat]?.find(a => a.id === type);
-      if (found && found.url) {
-        finalUrl = found.url;
-        break;
-      }
+  // 👉 LECTURA DINÁMICA DESDE CONFIG.JS
+  // Fallback de seguridad en caso de que el ID guardado no se encuentre
+  let finalUrl = "https://lottie.host/76b80717-c64a-474b-b5dc-9853881dac0b/B0nOPSiMVc.lottie"; 
+  
+  for (const cat of Object.values(ANIMATION_CATEGORIES)) {
+    const found = cat.find(a => a.id === type);
+    if (found && found.url) {
+      finalUrl = found.url;
+      break;
     }
   }
 
