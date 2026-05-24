@@ -27,18 +27,43 @@ export const Countdown = ({ targetDate, primary, text, cfg, cardC }) => {
   const [expired, setExpired] = useState(false);
   
   useEffect(() => {
-    if(!targetDate) return;
+    // Parseo inteligente: Toma targetDate o cae de forma segura a cfg.date
+    const baseDate = targetDate || cfg?.date;
+    if (!baseDate) return;
+
     const calc = () => {
-      const target = new Date(targetDate).getTime();
+      let finalDateStr = baseDate;
+      
+      // Si el usuario configuró una hora en el editor (ej: "18:00 a 20:00"), extraemos la hora inicial para el reloj
+      if (cfg?.time) {
+        const timeMatch = cfg.time.match(/\d{2}:\d{2}/);
+        if (timeMatch && !finalDateStr.includes('T')) {
+          finalDateStr = `${finalDateStr}T${timeMatch[0]}:00`;
+        } else if (!finalDateStr.includes('T')) {
+          finalDateStr = `${finalDateStr}T00:00:00`;
+        }
+      } else if (!finalDateStr.includes('T')) {
+        finalDateStr = `${finalDateStr}T00:00:00`;
+      }
+
+      const target = new Date(finalDateStr).getTime();
       if (isNaN(target)) return;
+
       const dist = target - Date.now();
       if(dist <= 0) { setExpired(true); return; }
-      setTimeLeft({ d: Math.floor(dist / 86400000), h: Math.floor((dist % 86400000) / 3600000), m: Math.floor((dist % 3600000) / 60000), s: Math.floor((dist % 60000) / 1000) });
+      setTimeLeft({ 
+        d: Math.floor(dist / 86400000), 
+        h: Math.floor((dist % 86400000) / 3600000), 
+        m: Math.floor((dist % 3600000) / 60000), 
+        s: Math.floor((dist % 60000) / 1000) 
+      });
     };
-    calc(); const id = setInterval(calc, 1000); return () => clearInterval(id);
-  }, [targetDate]);
+    calc(); 
+    const id = setInterval(calc, 1000); 
+    return () => clearInterval(id);
+  }, [targetDate, cfg?.date, cfg?.time]);
   
-  if(!targetDate || isNaN(new Date(targetDate).getTime())) return null;
+  if(!(targetDate || cfg?.date)) return null;
   const labels = { d:"días", h:"horas", m:"min", s:"seg" };
   
   return (
@@ -50,8 +75,8 @@ export const Countdown = ({ targetDate, primary, text, cfg, cardC }) => {
         <div className="flex justify-center gap-3">
           {Object.entries(timeLeft).map(([unit, val]) => (
             <div key={unit} className="flex flex-col items-center gap-1">
-              <div className="w-[54px] h-[54px] rounded-2xl flex items-center justify-center text-xl font-black shadow-lg relative overflow-hidden border" style={{ background: cfg.accent || primary, color: cardC === '#000000' ? '#000' : '#fff', borderColor: 'rgba(255,255,255,0.2)' }}>
-                {cfg.shine && <div className="absolute inset-0 pointer-events-none" style={{ background: cfg.shine }}></div>}
+              <div className="w-[54px] h-[54px] rounded-2xl flex items-center justify-center text-xl font-black shadow-lg relative overflow-hidden border" style={{ background: cfg?.accent || primary, color: cardC === '#000000' ? '#000' : '#fff', borderColor: 'rgba(255,255,255,0.2)' }}>
+                {cfg?.shine && <div className="absolute inset-0 pointer-events-none" style={{ background: cfg.shine }}></div>}
                 <span className="relative z-10">{(val || 0).toString().padStart(2, '0')}</span>
               </div>
               <span className="text-[10px] font-bold opacity-70 uppercase tracking-widest" style={{ color: primary }}>{labels[unit]}</span>
@@ -253,7 +278,6 @@ export const RsvpWidget = ({ cfg, primary, textC, cardC, mutedC, onConfirmRSVP, 
               Recuerda generar solo un pase por persona para asegurar tu ingreso rápido.
             </p>
 
-            {/* 👉 ATRIBUTOS EN ESPAÑOL AÑADIDOS A LOS INPUTS */}
             <input 
               type="text" 
               placeholder="Tu Nombre" 
