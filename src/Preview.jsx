@@ -44,9 +44,18 @@ const AddToCalendarButton = ({ cfg, primary, cardC }) => {
   const direccion = `${cfg?.locationName || ''} - ${cfg?.locationAddress || ''}`.trim() || 'Dirección del salón';
   const detalles = `¡Te espero para festejar juntos! Mirá la invitación completa acá: ${window.location.href}`;
   
-  const fechaClean = cfg?.dateText ? cfg.dateText.replace(/-/g, '') : '20260516';
-  const horaClean = cfg?.timeText ? cfg.timeText.replace(/:/g, '') + '00' : '210000';
+  // 👉 MEJORA: Toma cfg.date o cfg.dateText
+  const rawDate = cfg?.date || cfg?.dateText || '2026-05-16';
+  const fechaClean = rawDate.replace(/-/g, '');
   
+  // 👉 MEJORA: Extrae solo la hora si viene con texto (ej "16:00 a 20:00")
+  let horaClean = '210000';
+  const rawTime = cfg?.time || cfg?.timeText || '';
+  const timeMatch = rawTime.match(/\d{2}:\d{2}/);
+  if (timeMatch) {
+    horaClean = timeMatch[0].replace(/:/g, '') + '00';
+  }
+
   const startDateTime = `${fechaClean}T${horaClean}`;
   const endDateTime = `${fechaClean}T235900`;
 
@@ -229,7 +238,9 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
   );
 
   let cameraStatus = 'active'; 
-  const eventDateStr = cfg.countdownDate || (cfg.dateText ? `${cfg.dateText}T00:00:00` : null);
+  
+  // 👉 ARREGLO: Ahora lee correctamente la fecha (cfg.date)
+  const eventDateStr = cfg.countdownDate || cfg.date || (cfg.dateText ? `${cfg.dateText}T00:00:00` : null);
   
   if (eventDateStr) {
     const evDate = new Date(eventDateStr);
@@ -348,11 +359,12 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
 
       <div className="px-5 -mt-8 relative z-30 space-y-5 flex-1 w-full max-w-lg mx-auto">
         
-        {cfg.showCountdown && cfg.countdownDate && (
+        {/* 👉 ARREGLO: Ahora el renderizado condiciona cfg.countdownDate O cfg.date */}
+        {cfg.showCountdown && (cfg.countdownDate || cfg.date) && (
           <ScrollReveal>
             <div className="rounded-[2rem] relative overflow-hidden" style={glassContainerStyle}>
               {shineOverlay}
-              <Countdown targetDate={cfg.countdownDate} primary={primary} text="Falta para el gran día" cfg={cfg} cardC={cardC} />
+              <Countdown targetDate={cfg.countdownDate || cfg.date} primary={primary} text="Falta para el gran día" cfg={cfg} cardC={cardC} />
             </div>
           </ScrollReveal>
         )}
@@ -365,13 +377,15 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
 
         {cfg.showDate && (
           <ScrollReveal>
-             <InfoCard icon={Calendar} label="¿Cuándo?" value={formatToDDMMYYYY(cfg.dateText)} fontSize={cfg.dateSize ?? 18} primary={primary} textC={textC} mutedC={mutedC} cardC={cardC} cfg={cfg} glassStyle={glassContainerStyle} shineOverlay={shineOverlay} />
+             {/* 👉 ARREGLO VISUAL: Si no hay dateText (viejo), usa cfg.date para mostrar la fecha */}
+             <InfoCard icon={Calendar} label="¿Cuándo?" value={formatToDDMMYYYY(cfg.dateText || cfg.date)} fontSize={cfg.dateSize ?? 18} primary={primary} textC={textC} mutedC={mutedC} cardC={cardC} cfg={cfg} glassStyle={glassContainerStyle} shineOverlay={shineOverlay} />
           </ScrollReveal>
         )}
         
         {cfg.showTime && (
           <ScrollReveal>
-             <InfoCard icon={Clock} label="Horario" value={cfg.timeText} fontSize={cfg.dateSize ?? 18} primary={primary} textC={textC} mutedC={mutedC} cardC={cardC} cfg={cfg} glassStyle={glassContainerStyle} shineOverlay={shineOverlay} />
+             {/* 👉 ARREGLO VISUAL: Si no hay timeText (viejo), usa cfg.time */}
+             <InfoCard icon={Clock} label="Horario" value={cfg.timeText || cfg.time} fontSize={cfg.dateSize ?? 18} primary={primary} textC={textC} mutedC={mutedC} cardC={cardC} cfg={cfg} glassStyle={glassContainerStyle} shineOverlay={shineOverlay} />
           </ScrollReveal>
         )}
         
