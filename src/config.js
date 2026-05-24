@@ -508,17 +508,33 @@ export const TRANSITION_OPTS = [
   { value: "slide-right", label: "Deslizar Derecha" }
 ];
 
-// AQUÍ ESTÁ EL CAMBIO PRINCIPAL: Ahora tiene la estructura que el sidebar necesita.
 export const ANIMATION_CATEGORIES = {
   "Clásicas": [
     { id: "none", name: "Ninguna", emoji: "🚫", url: "" },
-    { id: "envelope", name: "Sobre", emoji: "✉️", url: "https://lottie.host/TU_ENLACE_AQUI/envelope.json" },
-    { id: "rings", name: "Anillos", emoji: "💍", url: "https://lottie.host/TU_ENLACE_AQUI/rings.json" },
-    { id: "heart", name: "Corazón", emoji: "❤️", url: "https://lottie.host/TU_ENLACE_AQUI/heart.json" }
+    { id: "envelope", name: "Jessica Rabbit", emoji: "✉️", url: "https://lottie.host/76b80717-c64a-474b-b5dc-9853881dac0b/B0nOPSiMVc.lottie" },
+    { id: "rings", name: "Anillos", emoji: "💍", url: "https://lottie.host/76b80717-c64a-474b-b5dc-9853881dac0b/B0nOPSiMVc.lottie" },
+    { id: "dove", name: "Palomas", emoji: "🕊️", url: "https://lottie.host/76b80717-c64a-474b-b5dc-9853881dac0b/B0nOPSiMVc.lottie" }
   ],
-  "Infantil": [
-    { id: "cake", name: "Pastel", emoji: "🎂", url: "https://lottie.host/TU_ENLACE_AQUI/cake.json" },
-    { id: "magic", name: "Magia", emoji: "🪄", url: "https://lottie.host/TU_ENLACE_AQUI/magic.json" }
+  "Fiesta": [
+    { id: "cake", name: "Pastel", emoji: "🎂", url: "https://lottie.host/4ca06831-d568-4cd6-9b2a-32ea586857f2/nec4jxiwSC.lottie" },
+    { id: "cheers", name: "Brindis", emoji: "🥂", url: "https://lottie.host/acee53c4-e205-4381-a8d6-6c81e546936e/FGryvHLT7G.lottie" },
+    { id: "disco", name: "Disco", emoji: "🪩", url: "https://lottie.host/d8112081-66aa-4001-9a22-c4e1fc0b5551/JOr2rqdpCv.lottie" },
+    { id: "balloon", name: "Globos", emoji: "🎈", url: "https://lottie.host/8036e685-ae19-4783-870f-6a03f84113d4/C4CJJDF4zM.lottie" }
+  ],
+  "Regalos y Magia": [
+    { id: "chest", name: "Regalo", emoji: "🎁", url: "https://lottie.host/da469562-9122-4062-a1c2-6fd71b51f250/TltkNEXlQE.lottie" },
+    { id: "gift", name: "Ojos", emoji: "👀", url: "https://lottie.host/dd720199-18c7-434b-93a5-bc8da9f299a1/z4TZTEwNbS.lottie" },
+    { id: "stars", name: "Estrellas", emoji: "⭐", url: "https://lottie.host/43af906f-7e7f-4f8c-b305-f86280e4f39a/oOwCUkBzz7.lottie" },
+    { id: "crown", name: "Corona", emoji: "👑", url: "https://lottie.host/d8112081-66aa-4001-9a22-c4e1fc0b5551/JOr2rqdpCv.lottie" }
+  ],
+  "Infantiles": [
+    { id: "mickey", name: "Mickey", emoji: "🐭", url: "https://lottie.host/da469562-9122-4062-a1c2-6fd71b51f250/TltkNEXlQE.lottie" },
+    { id: "minnie", name: "Minnie", emoji: "🎀", url: "https://lottie.host/28a64e1d-7e11-43f8-b339-54bd7fa7562f/Ad6KGTk3EL.lottie" },
+    { id: "cars", name: "Cars", emoji: "🚗", url: "https://lottie.host/d27e41e2-ebc9-4c56-9baf-6be124d2618e/3d4UlzGIRS.lottie" }
+  ],
+  "Naturaleza": [
+    { id: "flower", name: "Flor", emoji: "🌸", url: "https://lottie.host/dd720199-18c7-434b-93a5-bc8da9f299a1/z4TZTEwNbS.lottie" },
+    { id: "butterfly", name: "Mariposa", emoji: "🦋", url: "https://lottie.host/dd720199-18c7-434b-93a5-bc8da9f299a1/z4TZTEwNbS.lottie" }
   ]
 };
 
