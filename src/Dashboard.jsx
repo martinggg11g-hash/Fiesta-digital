@@ -9,6 +9,8 @@ import { Inp, Toast, QRScannerModal } from "./DashboardUI";
 import { MasterPanel } from "./MasterPanel";
 import { CrmModal } from "./CrmModal";
 import { formatDateSpanish } from "./config";
+import { FileUpload } from "./EditorUI"; // FD-001: Importado para reemplazar el Inp de Logo
+import { supabase } from "./supabase"; // FD-004: Importado para hacer el update real (ajustá la ruta si es necesario)
 
 const slugify = (text) => text?.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '') || 'salon';
 
@@ -140,17 +142,39 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
     }
   };
 
-  const confirmAccess = () => {
+  // FD-004 y FD-006: Función convertida a async, update real en Supabase y mutación evitada
+  const confirmAccess = async () => {
     const { isVIP, id } = validationResult.data;
     
     if (isVIP) {
-      console.log(`[PRODUCCIÓN]: Hacer supabase.from('invitados').update({status:'Ingresó'}).eq('id', '${id}')`);
-      if (scanningEvent.invitados) {
-        scanningEvent.invitados = scanningEvent.invitados.map(g => g.id === id ? { ...g, status: 'Ingresó' } : g);
+      try {
+        // FD-004: Llamada real a producción en Supabase
+        await supabase.from('invitados').update({ status: 'Ingresó' }).eq('id', id);
+        
+        // FD-006: Evitar mutar `scanningEvent.invitados` directamente
+        if (scanningEvent.invitados) {
+          setScanningEvent(prev => ({
+            ...prev,
+            invitados: prev.invitados.map(g => g.id === id ? { ...g, status: 'Ingresó' } : g)
+          }));
+        }
+      } catch (error) {
+        console.error("Error al actualizar invitado VIP:", error);
+        notify("Error al registrar el ingreso VIP");
+        return; // Salir temprano si hay error
       }
     } else {
       const updated = scanningEvent.internal_data.guests.map(g => g.id === id ? { ...g, status: 'Ingresó' } : g);
       onUpdateInternal(scanningEvent.id, 'guests', updated);
+      
+      // Actualizamos el estado local también de forma inmutable por consistencia visual
+      setScanningEvent(prev => ({
+        ...prev,
+        internal_data: {
+          ...prev.internal_data,
+          guests: updated
+        }
+      }));
     }
     
     setValidationResult(null);
@@ -457,7 +481,10 @@ export default function DashboardScreen({ user, onLogout, users, onUpdateUser, o
            <div className={`w-full max-w-sm rounded-[2rem] p-8 shadow-2xl relative text-center ${isDark ? 'bg-slate-800 text-white' : 'bg-white'}`}>
              <h2 className="text-xl font-black mb-6">Ajustes del Salón</h2>
              <div className="max-h-[60vh] overflow-y-auto px-2 fd-sb">
-               <Inp label="URL del Logo (Opcional)" placeholder="https://..." value={newLogo} onChange={setNewLogo} isDark={isDark} />
+               
+               {/* FD-001: Reemplazado <Inp> por <FileUpload> */}
+               <FileUpload label="Logo del Salón" value={newLogo} onChange={setNewLogo} isDark={isDark} />
+               
                <Inp label="Teléfono (WhatsApp)" placeholder="Ej: +54 9 11 1234-5678" value={newPhone} onChange={setNewPhone} isDark={isDark} />
                
                <div className="pt-4 mt-4 border-t border-slate-200 dark:border-slate-700">
