@@ -52,7 +52,8 @@ export const DEF_CONFIG = {
   
   // Secciones a mostrar
   showCountdown: true,
-  showBanner: false,
+  showBanner: true, // FD-003: Activado por defecto
+  useGiphyBanner: false, // FD-002: Flag para usar GIF en el Banner
   bannerOffsetX: 50,
   bannerOffsetY: 50,
   showDate: true,
