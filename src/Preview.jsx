@@ -191,7 +191,6 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
     ? `0px 4px ${cfg.honoreeShadowSize}px ${cfg.honoreeShadowColor || '#000000'}` 
     : `0 2px 10px rgba(0,0,0,0.6), 0 0 20px rgba(255,255,255,0.4)`;
 
-  // Luz/Sombra en Tarjetas optimizada
   const glowValue = cfg.cardGlow !== undefined ? cfg.cardGlow : 0;
   const hexAlpha = Math.floor((glowValue / 100) * 255).toString(16).padStart(2, '0');
   const dynamicShadow = glowValue === 0 ? '0 8px 30px rgba(0,0,0,0.05)' : `0 8px 30px rgba(0,0,0,0.05), 0 0 ${glowValue}px ${primary}${hexAlpha}`;
@@ -211,7 +210,7 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
   
   if (cfg.particleEffect && cfg.particleEffect !== "none") {
     for (const category of Object.values(PARTICLE_CATEGORIES || {})) {
-      const effect = category.find(e => e.id === cfg.particleEffect);
+      const effect = category?.find(e => e.id === cfg.particleEffect);
       if (effect && effect.isLottie) {
         isLottieEffect = true;
         lottieUrl = effect.url;
@@ -303,7 +302,6 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
         </div>
       )}
 
-      {/* Portada Principal: Ahora super responsive */}
       <div className="relative w-full min-h-[55dvh] md:min-h-[60dvh] overflow-hidden shrink-0 rounded-b-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex flex-col justify-end">
         <img src={cfg.coverPhoto || DEF_CONFIG.coverPhoto} className="absolute inset-0 w-full h-full object-cover z-0" alt="Portada" />
         <div className="absolute inset-0 z-10" style={{ background: `linear-gradient(to top, ${bg1} 5%, rgba(0,0,0,${gradOpacity}) 60%, transparent 100%)` }} />
@@ -348,7 +346,6 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
         </div>
       </div>
 
-      {/* Contenido Principal */}
       <div className="px-5 -mt-8 relative z-30 space-y-5 flex-1 w-full max-w-lg mx-auto">
         
         {cfg.showCountdown && cfg.countdownDate && (
@@ -444,7 +441,6 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
               <SectionTitle mutedC={mutedC} size={cfg.titlesSize} font={safeFont(cfg.fontBody)}>Música para entrar en clima</SectionTitle>
               <div className="rounded-[2rem] p-2 relative overflow-hidden shadow-lg" style={glassContainerStyle}>
                 {shineOverlay}
-                {/* Solucionado el problema de los bordes para deslizar en Spotify */}
                 <iframe className="relative z-10 rounded-[1.5rem]" style={{ border: 'none', overflow: 'hidden' }} src={getSpotifyEmbed(cfg.spotifyUrl)} width="100%" height="152" frameBorder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" scrolling="no"></iframe>
               </div>
             </div>
@@ -654,7 +650,6 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
         </p>
       </div>
 
-      {/* Partículas Fullscreen separadas y con z-index alto pero sin colapsar layout */}
       {cfg.particlesFullscreen && <ParticleLayer />}
     </div>
   );
