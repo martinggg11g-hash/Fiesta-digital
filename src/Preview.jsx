@@ -359,6 +359,13 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
 
       <div className="px-5 -mt-8 relative z-30 space-y-5 flex-1 w-full max-w-lg mx-auto">
         
+        {/* FD-007: BANNER ANTES DE LA CUENTA REGRESIVA */}
+        {cfg.showBanner && (
+          <ScrollReveal>
+            <DraggableBanner cfg={cfg} primary={primary} update={update} />
+          </ScrollReveal>
+        )}
+
         {/* 👉 ARREGLO: Ahora el renderizado condiciona cfg.countdownDate O cfg.date */}
         {cfg.showCountdown && (cfg.countdownDate || cfg.date) && (
           <ScrollReveal>
@@ -366,12 +373,6 @@ export const InvitePreview = ({ cfg, status, update, onConfirmRSVP, guestData, i
               {shineOverlay}
               <Countdown targetDate={cfg.countdownDate || cfg.date} primary={primary} text="Falta para el gran día" cfg={cfg} cardC={cardC} />
             </div>
-          </ScrollReveal>
-        )}
-
-        {cfg.showBanner && (
-          <ScrollReveal>
-            <DraggableBanner cfg={cfg} primary={primary} update={update} />
           </ScrollReveal>
         )}
 
