@@ -59,7 +59,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
 
       <Acc title="🎨 Diseño Base y Animación" icon={Palette} iconColor="#6366f1">
          <div className="flex items-center justify-between mb-4 bg-gray-50 p-2 rounded-xl border border-gray-200">
-           <span className="text-xs font-bold text-slate-600 ml-2 flex items-center">¿Animación de Entrada? <Tooltip text="Crea un efecto de apertura antes de ver la invitación." /></span>
+           <span className="text-xs font-bold text-slate-600 ml-2 flex items-center">¿Animación de Entrada? <Tooltip text="Crea un effecto de apertura antes de ver la invitación." /></span>
            <Toggle checked={cfg.openingAnimation !== 'none'} onChange={v => update("openingAnimation", v ? "envelope" : "none")} />
          </div>
          {cfg.openingAnimation !== 'none' && (
@@ -184,6 +184,20 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
       <Acc title="1️⃣ Portada Principal" icon={ImageIcon} defaultOpen iconColor="#ec4899">
         <div className="mb-6 bg-gray-50 p-3 rounded-xl border border-gray-200"><div className="flex items-center justify-between mb-2"><span className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center">¿Fondo GIF Animado?</span><Toggle checked={cfg.useGiphyCover || false} onChange={v => update("useGiphyCover", v)} /></div>{cfg.useGiphyCover ? (<GiphySearch onSelect={url => update("coverPhoto", url)} placeholder="Ej: brillos, spiderman..." />) : (<FileUpload value={cfg.coverPhoto} onChange={v => update("coverPhoto", v)} />)}</div>
         
+        {/* 👉 NUEVO BLOQUE: CONTROLES DEL BANNER INTERACTIVO */}
+        <div className="mb-6 p-4 rounded-xl border border-pink-100 bg-pink-50/30">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-black text-pink-600 uppercase tracking-widest flex items-center">Banner Interactivo <Tooltip text="Habilita un banner destacado interactivo en la portada principal." /></span>
+            <Toggle checked={cfg.showBanner || false} onChange={v => update("showBanner", v)} />
+          </div>
+          {cfg.showBanner && (
+            <div className="mt-4 pt-4 border-t border-pink-100 space-y-4">
+              <Inp label="Título del Banner" value={cfg.bannerTitle || ""} onChange={v => update("bannerTitle", v)} placeholder="Ej: ¡Bienvenidos a mi fiesta!" />
+              <FileUpload label="Foto del Banner" value={cfg.bannerPhoto || ""} onChange={v => update("bannerPhoto", v)} />
+            </div>
+          )}
+        </div>
+
         <div className="flex gap-2 z-[9999] relative mt-2 pt-4 border-t border-gray-200 overflow-visible">
           <EmojiPicker value={cfg.eventTypeEmoji || "✨"} onSelect={v => update("eventTypeEmoji", v)} />
           <div className="flex-1">
