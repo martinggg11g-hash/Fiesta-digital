@@ -508,10 +508,18 @@ export const TRANSITION_OPTS = [
   { value: "slide-right", label: "Deslizar Derecha" }
 ];
 
+// AQUÍ ESTÁ EL CAMBIO PRINCIPAL: Ahora tiene la estructura que el sidebar necesita.
 export const ANIMATION_CATEGORIES = {
-  "Sutiles": ["fade", "zoom"],
-  "Deslizamientos": ["slide-up", "slide-left", "slide-right"],
-  "Divertidas": ["bounce", "flip"]
+  "Clásicas": [
+    { id: "none", name: "Ninguna", emoji: "🚫", url: "" },
+    { id: "envelope", name: "Sobre", emoji: "✉️", url: "https://lottie.host/TU_ENLACE_AQUI/envelope.json" },
+    { id: "rings", name: "Anillos", emoji: "💍", url: "https://lottie.host/TU_ENLACE_AQUI/rings.json" },
+    { id: "heart", name: "Corazón", emoji: "❤️", url: "https://lottie.host/TU_ENLACE_AQUI/heart.json" }
+  ],
+  "Infantil": [
+    { id: "cake", name: "Pastel", emoji: "🎂", url: "https://lottie.host/TU_ENLACE_AQUI/cake.json" },
+    { id: "magic", name: "Magia", emoji: "🪄", url: "https://lottie.host/TU_ENLACE_AQUI/magic.json" }
+  ]
 };
 
 export const BORDERS = [
