@@ -1,27 +1,10 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "./supabase";
 import { 
   Users, Search, Plus, Edit2, Trash2, CheckCircle2, 
-  Clock, X, PartyPopper, UserCheck, Smartphone, Lock 
+  Clock, X, PartyPopper, UserCheck, Smartphone, Lock
 } from "lucide-react";
-
-// 🛡️ SUPER STORAGE: Inmune a bugs de llaves, guiones o caracteres raros.
-const getAuthMap = () => {
-  try { return JSON.parse(localStorage.getItem('defiesta_auth_map') || '{}'); } 
-  catch (e) { return {}; }
-};
-
-const saveAuthMap = (key) => {
-  if (!key) return;
-  try {
-    const map = getAuthMap();
-    map[String(key)] = true;
-    localStorage.setItem('defiesta_auth_map', JSON.stringify(map));
-  } catch (e) {}
-};
-
-const hasAuth = (key) => !!getAuthMap()[String(key)];
 
 export const GuestListClient = () => {
   const { id } = useParams();
@@ -41,17 +24,11 @@ export const GuestListClient = () => {
   const [gTable, setGTable] = useState("");
   
   const [formError, setFormError] = useState("");
-  const realEventIdRef = useRef(null); 
 
-  // 🚀 INICIALIZACIÓN BLINDADA
-  const [isUnlocked, setIsUnlocked] = useState(() => hasAuth(id));
-  const [pinInput, setPinInput] = useState('');
-  const [pinError, setPinError] = useState('');
-
-  // 🛡️ DOBLE CHEQUEO POST-RENDER: Si la lectura inicial falló, lo forzamos apenas carga.
-  useEffect(() => {
-    if (hasAuth(id)) setIsUnlocked(true);
-  }, [id]);
+  // --- FIX 1: Estado del PIN ---
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [pinInput, setPinInput] = useState("");
+  const [pinError, setPinError] = useState("");
 
   const fetchData = async () => {
     try {
@@ -62,13 +39,13 @@ export const GuestListClient = () => {
       }
 
       if (eventData) {
-        realEventIdRef.current = eventData.id; 
         setEvent(eventData);
         setManualGuests(eventData.internal_data?.guests || []);
 
-        // Si el UUID real tiene acceso en el disco, abrimos las puertas
-        if (hasAuth(eventData.id)) {
-          saveAuthMap(id); // Sincronizamos slug con UUID por las dudas
+        // 🚀 FIX 1 (El secreto de la persistencia): 
+        // Apenas tenemos el UUID real, miramos el disco. Si la llave está, abrimos.
+        // Como pasa ANTES de quitar el loading, no hay saltos ni parpadeos.
+        if (localStorage.getItem(`defiesta_pin_auth_${eventData.id}`) === 'true') {
           setIsUnlocked(true);
         }
 
@@ -83,21 +60,11 @@ export const GuestListClient = () => {
 
   useEffect(() => {
     fetchData();
-  }, [id]);
 
-  useEffect(() => {
-    if (!id) return;
-
+    // Filtramos adentro del payload por slug o uuid en lugar de en la config del canal para no ahogarlo
     const channel = supabase.channel(`client-room-${id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'invitaciones' }, (payload) => {
-        const isMyEvent = payload.new && (
-          payload.new.id === id ||
-          payload.new.slug === id ||
-          (realEventIdRef.current && payload.new.id === realEventIdRef.current)
-        );
-        
-        if (isMyEvent) {
-          realEventIdRef.current = payload.new.id;
+        if (payload.new && (payload.new.id === id || payload.new.slug === id || (event && payload.new.id === event.id))) {
           setEvent(payload.new);
           setManualGuests(payload.new.internal_data?.guests || []);
         }
@@ -108,30 +75,28 @@ export const GuestListClient = () => {
       .subscribe();
 
     return () => supabase.removeChannel(channel);
-  }, [id]); 
+  }, [id, event?.id]);
 
   const handlePinSubmit = () => {
     const requiresPin = event?.config?.clientPin || event?.internal_data?.pin || '';
-
-    // Convertimos a string y borramos espacios por seguridad
+    
+    // Convertimos a String para evitar bugs si el JSON lo guardó como número
     if (!requiresPin || String(pinInput).trim() === String(requiresPin).trim()) {
-      saveAuthMap(id);
-      if (event?.id) saveAuthMap(event.id);
-      
+      localStorage.setItem(`defiesta_pin_auth_${event.id}`, 'true');
+      setIsUnlocked(true);
       setPinError('');
-      setIsUnlocked(true); // Cambiamos el estado de React y desbloqueamos
     } else {
       setPinError('PIN incorrecto. Intentá nuevamente.');
     }
   };
 
   const allGuests = [
-    ...manualGuests.map(mg => ({ ...mg, isVip: false })),
+    ...manualGuests,
     ...vipGuests.map(vg => ({
       id: vg.id,
       name: vg.nombre_completo,
       lastname: vg.apodo ? `(${vg.apodo})` : '',
-      guests: vg.acompanantes_confirmados > 0 ? vg.acompanantes_confirmados : (vg.max_acompanantes || 0),
+      guests: vg.acompanantes_confirmados > 0 ? vg.acompanantes_confirmados : vg.max_acompanantes,
       status: vg.asistencia_confirmada ? 'Confirmado' : 'Pendiente',
       mesa: vg.mesa || '',
       timestamp: vg.created_at,
@@ -143,37 +108,26 @@ export const GuestListClient = () => {
     `${g.name} ${g.lastname} ${g.mesa}`.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // --- FIX 2: Cálculo correcto (1 Titular + N Adicionales) ---
   const totalGuests = allGuests.reduce((acc, g) => acc + 1 + Number(g.guests || 0), 0);
   const confirmedGuests = allGuests.filter(g => g.status === 'Confirmado' || g.status === 'Ingresó').reduce((acc, g) => acc + 1 + Number(g.guests || 0), 0);
   const pendingGuests = allGuests.filter(g => g.status === 'Pendiente').reduce((acc, g) => acc + 1 + Number(g.guests || 0), 0);
 
+  // --- FIX 3: Proteger los datos del CRM al guardar ---
   const updateInternalGuests = async (newList) => {
-    const eventId = realEventIdRef.current || event?.id;
+    const eventId = event?.id;
     if (!eventId) return;
-    
-    setEvent(prev => ({
-      ...prev,
-      internal_data: { ...prev.internal_data, guests: newList }
-    }));
+
+    // Actualización instantánea en la interfaz
+    setEvent(prev => ({ ...prev, internal_data: { ...prev.internal_data, guests: newList } }));
     
     try {
-      const { data: latest } = await supabase
-        .from('invitaciones')
-        .select('internal_data')
-        .eq('id', eventId)
-        .single();
-      
-      const merged = {
-        ...(latest?.internal_data || {}),
-        guests: newList
-      };
-      
-      await supabase
-        .from('invitaciones')
-        .update({ internal_data: merged })
-        .eq('id', eventId);
+      // Traemos la info fresca para no pisar cambios que el salón haya hecho desde el Dashboard
+      const { data: latest } = await supabase.from('invitaciones').select('internal_data').eq('id', eventId).single();
+      const merged = { ...(latest?.internal_data || {}), guests: newList };
+      await supabase.from('invitaciones').update({ internal_data: merged }).eq('id', eventId);
     } catch (err) {
-      console.error('Error actualizando invitados:', err);
+      console.error('Error al sincronizar:', err);
     }
   };
 
@@ -203,8 +157,8 @@ export const GuestListClient = () => {
     }
     
     if (editingGuest?.isVip) {
-      setVipGuests(prev => prev.map(v => v.id === editingGuest.id ? { ...v, mesa: finalTable } : v));
       await supabase.from('invitados').update({ mesa: finalTable }).eq('id', editingGuest.id);
+      setVipGuests(prev => prev.map(v => v.id === editingGuest.id ? { ...v, mesa: finalTable } : v)); // Optimistic
     } else {
       let newList = [...manualGuests];
       if (editingGuest) {
@@ -232,22 +186,17 @@ export const GuestListClient = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
-        <div className="w-12 h-12 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin mb-4"></div>
-        <p className="text-violet-600 font-black text-xs tracking-widest uppercase animate-pulse mt-2">
-          Cargando Lista...
-        </p>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
+      <div className="w-12 h-12 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin mb-4"></div>
+      <p className="text-violet-600 font-black text-xs tracking-widest uppercase animate-pulse">Cargando Lista...</p>
+    </div>
+  );
 
   if (!event) return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-bold">No se encontró el evento.</div>;
 
+  // --- COMPUERTA DE SEGURIDAD ---
   const requiresPin = event?.config?.clientPin || event?.internal_data?.pin || '';
-  
-  // COMPUERTA DE SEGURIDAD. Si requiere PIN y NO está desbloqueado, frenamos todo.
   if (requiresPin && !isUnlocked) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
@@ -398,6 +347,7 @@ export const GuestListClient = () => {
                          <input 
                             type="number" 
                             min="0" 
+                            /* FIX 4 (El de los ceros): Evitamos que el 0 se concatene como 01 */
                             value={gPax === 0 ? '' : gPax} 
                             onChange={e => {
                                 const val = parseInt(e.target.value, 10);
