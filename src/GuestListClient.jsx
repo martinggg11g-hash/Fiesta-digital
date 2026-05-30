@@ -6,15 +6,13 @@ import {
   Clock, X, PartyPopper, UserCheck, Smartphone, Lock 
 } from "lucide-react";
 
-// 🛡️ FIX: Helpers de Cookies BULLETPROOF (Sin RegExp y con SameSite)
+// 🛡️ Helpers de Cookies BULLETPROOF (Sin RegExp y con SameSite)
 const setCookie = (name, value, days = 30) => {
   const maxAge = days * 24 * 60 * 60;
-  // SameSite=Lax evita que el navegador bloquee la cookie al recargar (F5)
   document.cookie = `${name}=${value};max-age=${maxAge};path=/;SameSite=Lax`;
 };
 
 const getCookie = (name) => {
-  // El método split es 100% inmune a guiones o caracteres especiales en el slug/UUID
   const cookies = document.cookie.split(';');
   for (let i = 0; i < cookies.length; i++) {
     const cookie = cookies[i].trim();
@@ -45,8 +43,8 @@ export const GuestListClient = () => {
   const [formError, setFormError] = useState("");
   const realEventIdRef = useRef(null); 
 
-  // Estado mínimo solo para forzar a React a re-dibujar la pantalla tras validar
-  const [forceRender, setForceRender] = useState(0);
+  // FIX DEFINITIVO: Estado real de React para el desbloqueo
+  const [isUnlocked, setIsUnlocked] = useState(false);
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
 
@@ -76,6 +74,17 @@ export const GuestListClient = () => {
     fetchData();
   }, [id]);
 
+  // FIX DEFINITIVO: Evaluar cookies SOLO DESPUÉS de que el evento exista
+  useEffect(() => {
+    if (!event) return;
+    
+    const unlocked = 
+      getCookie(`pin_auth_${id}`) === 'true' || 
+      (event.id && getCookie(`pin_auth_${event.id}`) === 'true');
+      
+    setIsUnlocked(unlocked);
+  }, [event, id]);
+
   useEffect(() => {
     if (!id) return;
 
@@ -101,24 +110,19 @@ export const GuestListClient = () => {
     return () => supabase.removeChannel(channel);
   }, [id]); 
 
-  // 1. Determinamos si el evento requiere PIN
   const requiresPin = event?.config?.clientPin || event?.internal_data?.pin || '';
-
-  // 2. FIX SECUNDARIO: Evaluamos el acceso buscando SIEMPRE por las dos llaves (Slug y UUID real)
-  const isUnlocked = 
-    getCookie(`pin_auth_${id}`) === 'true' || 
-    (event?.id && getCookie(`pin_auth_${event.id}`) === 'true');
 
   const handlePinSubmit = () => {
     if (!requiresPin || String(pinInput).trim() === String(requiresPin).trim()) {
-      // FIX SECUNDARIO: Guardamos la sesión en el disco con AMBAS llaves
+      // Guardar cookies
       setCookie(`pin_auth_${id}`, 'true');
       if (event?.id) {
         setCookie(`pin_auth_${event.id}`, 'true');
       }
       
+      // FIX DEFINITIVO: Actualizar el estado real de React
       setPinError('');
-      setForceRender(prev => prev + 1); // Forzamos a React a leer isUnlocked de nuevo
+      setIsUnlocked(true); 
     } else {
       setPinError('PIN incorrecto. Intentá nuevamente.');
     }
@@ -244,7 +248,7 @@ export const GuestListClient = () => {
 
   if (!event) return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-bold">No se encontró el evento.</div>;
 
-  // Intercepción: Validamos de forma inmutable contra la cookie directamente.
+  // Intercepción: Validamos de forma segura con nuestro state reactivo.
   if (requiresPin && !isUnlocked) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
