@@ -1,33 +1,23 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom"; // <-- IMPORTANTE
 import { supabase } from "./supabase";
 import { 
   Users, Search, Plus, Edit2, Trash2, CheckCircle2, 
   Clock, X, PartyPopper, UserCheck, Smartphone, Lock 
 } from "lucide-react";
 
-// 🛡️ TRIPLE BLINDAJE DE ALMACENAMIENTO
-const saveAccess = (key) => {
-  try { localStorage.setItem(key, 'GRANTED'); } catch(e) {}
-  try { sessionStorage.setItem(key, 'GRANTED'); } catch(e) {}
-  try { document.cookie = `${key}=GRANTED; path=/; max-age=31536000; SameSite=Lax`; } catch(e) {}
-};
-
-// 🚀 FIX MAESTRO: Lectura sincrónica con match exacto
-const checkAccess = (key) => {
-  try { if (localStorage.getItem(key) === 'GRANTED') return true; } catch(e) {}
-  try { if (sessionStorage.getItem(key) === 'GRANTED') return true; } catch(e) {}
-  try { 
-    const cookies = document.cookie.split(';');
-    for (let i = 0; i < cookies.length; i++) {
-      if (cookies[i].trim() === `${key}=GRANTED`) return true;
-    }
-  } catch(e) {}
-  return false;
-};
-
 export const GuestListClient = () => {
   const { id } = useParams();
+  
+  // 🛡️ MAGIA NUCLEAR: Controlamos la sesión por la URL
+  const [searchParams, setSearchParams] = useSearchParams();
+  const hasUrlAccess = searchParams.get("acceso") === "permitido";
+  
+  const [localAccess, setLocalAccess] = useState(() => localStorage.getItem(`pin_${id}`) === 'true');
+  
+  // Si tiene el token en la URL o en el disco, está desbloqueado
+  const isUnlocked = hasUrlAccess || localAccess;
+
   const [loading, setLoading] = useState(true);
   const [event, setEvent] = useState(null);
   
@@ -46,9 +36,6 @@ export const GuestListClient = () => {
   const [formError, setFormError] = useState("");
   const realEventIdRef = useRef(null); 
 
-  // Lectura en el milisegundo cero, antes de que nada pueda romper la memoria
-  const [isUnlocked, setIsUnlocked] = useState(() => checkAccess(`fiesta_pin_${id}`));
-  
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
 
@@ -79,14 +66,6 @@ export const GuestListClient = () => {
   }, [id]);
 
   useEffect(() => {
-    if (!event || isUnlocked) return;
-    
-    if (checkAccess(`fiesta_pin_${event.id}`)) {
-      setIsUnlocked(true);
-    }
-  }, [event, id, isUnlocked]);
-
-  useEffect(() => {
     if (!id) return;
 
     const channel = supabase.channel(`client-room-${id}`)
@@ -115,13 +94,18 @@ export const GuestListClient = () => {
     const requiresPin = event?.config?.clientPin || event?.internal_data?.pin || '';
 
     if (!requiresPin || String(pinInput).trim() === String(requiresPin).trim()) {
-      saveAccess(`fiesta_pin_${id}`);
-      if (event?.id) {
-        saveAccess(`fiesta_pin_${event.id}`);
-      }
+      // 1. Guardamos en disco por si acaso
+      localStorage.setItem(`pin_${id}`, 'true');
+      if (event?.id) localStorage.setItem(`pin_${event.id}`, 'true');
+      setLocalAccess(true);
+
+      // 2. 🚀 INYECCIÓN EN URL: Atamos la sesión al navegador directamente.
+      setSearchParams((prev) => {
+        prev.set("acceso", "permitido");
+        return prev;
+      }, { replace: true });
       
       setPinError('');
-      setIsUnlocked(true); 
     } else {
       setPinError('PIN incorrecto. Intentá nuevamente.');
     }
@@ -249,6 +233,7 @@ export const GuestListClient = () => {
 
   const requiresPin = event?.config?.clientPin || event?.internal_data?.pin || '';
   
+  // Condición de bloqueo. La URL manda.
   if (requiresPin && !isUnlocked) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
