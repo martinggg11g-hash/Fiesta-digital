@@ -25,9 +25,9 @@ export const GuestListClient = () => {
   
   const [formError, setFormError] = useState("");
 
-  // Estado persistente para el PIN
+  // Estado persistente para el PIN usando localStorage
   const [isPinValid, setIsPinValid] = useState(() => {
-    return sessionStorage.getItem(`auth_lista_${id}`) === 'true';
+    return localStorage.getItem(`auth_lista_${id}`) === 'true';
   });
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
@@ -83,7 +83,7 @@ export const GuestListClient = () => {
     // Si no hay PIN configurado en el evento o coincide, dejamos pasar
     if (!requiredPin || pinInput === requiredPin) {
       setIsPinValid(true);
-      sessionStorage.setItem(`auth_lista_${id}`, 'true');
+      localStorage.setItem(`auth_lista_${id}`, 'true');
     } else {
       setPinError('PIN incorrecto. Intentá nuevamente.');
     }
