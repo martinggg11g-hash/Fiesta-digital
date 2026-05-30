@@ -24,11 +24,11 @@ export const GuestListClient = () => {
   const [gTable, setGTable] = useState("");
   
   const [formError, setFormError] = useState("");
-  
   const realEventIdRef = useRef(null); 
 
-  // FIX DEFINITIVO 1: Arrancamos en false. No confiamos en el estado inicial porque el "id" puede no estar listo.
-  const [isPinValid, setIsPinValid] = useState(false);
+  // FIX ABSOLUTO: Eliminamos isPinValid del useState. 
+  // Solo usamos esto para forzar a React a re-dibujar la pantalla al darle al Enter.
+  const [forceRender, setForceRender] = useState(0);
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
 
@@ -58,19 +58,6 @@ export const GuestListClient = () => {
     fetchData();
   }, [id]);
 
-  // FIX DEFINITIVO 2: Cuando el evento carga, validamos usando su UUID inmutable (event.id).
-  // Esto garantiza que React vuelva a chequear el localStorage cuando los datos de BD estén listos.
-  useEffect(() => {
-    if (event?.id) {
-      const hasPinByUuid = localStorage.getItem(`pin_auth_evt_${event.id}`) === 'true';
-      const hasPinBySlug = localStorage.getItem(`pin_auth_evt_${id}`) === 'true';
-      
-      if (hasPinByUuid || hasPinBySlug) {
-        setIsPinValid(true);
-      }
-    }
-  }, [event?.id, id]);
-
   useEffect(() => {
     if (!id) return;
 
@@ -96,14 +83,26 @@ export const GuestListClient = () => {
     return () => supabase.removeChannel(channel);
   }, [id]); 
 
+  // Evaluamos si el evento requiere PIN
+  const requiresPin = event?.config?.clientPin || event?.internal_data?.pin || '';
+
+  // Evaluamos el acceso leyendo el disco EN VIVO en cada renderizado.
+  // Buscamos tanto por el ID de la URL como por el UUID real.
+  const isUnlocked = 
+    localStorage.getItem(`pin_auth_evt_${id}`) === 'true' || 
+    (event?.id && localStorage.getItem(`pin_auth_evt_${event.id}`) === 'true');
+
   const handlePinSubmit = () => {
-    const requiredPin = event?.config?.clientPin || event?.internal_data?.pin || '';
-    
-    // FIX DEFINITIVO 3: Forzamos String para evitar bugs si el JSON guarda el PIN como Int y el input es String.
-    if (!requiredPin || String(pinInput).trim() === String(requiredPin).trim()) {
-      // Guardamos atado al UUID de la base de datos, así no importa si le cambian la URL (slug) mañana.
-      localStorage.setItem(`pin_auth_evt_${event?.id}`, 'true');
-      setIsPinValid(true);
+    // Forzamos String para que no falle si el PIN se guardó como número en Supabase
+    if (!requiresPin || String(pinInput).trim() === String(requiresPin).trim()) {
+      // Grabamos doble validación: por slug y por UUID.
+      localStorage.setItem(`pin_auth_evt_${id}`, 'true');
+      if (event?.id) {
+        localStorage.setItem(`pin_auth_evt_${event.id}`, 'true');
+      }
+      
+      setPinError('');
+      setForceRender(prev => prev + 1); // Disparamos el re-render manual
     } else {
       setPinError('PIN incorrecto. Intentá nuevamente.');
     }
@@ -229,8 +228,8 @@ export const GuestListClient = () => {
 
   if (!event) return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-bold">No se encontró el evento.</div>;
 
-  const requiresPin = event?.config?.clientPin || event?.internal_data?.pin || '';
-  if (requiresPin && !isPinValid) {
+  // Intercepción: Validamos directamente contra isUnlocked
+  if (requiresPin && !isUnlocked) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
         <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100 text-center max-w-sm w-full anim-pop">
