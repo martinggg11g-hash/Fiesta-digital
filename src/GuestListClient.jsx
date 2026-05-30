@@ -6,18 +6,23 @@ import {
   Clock, X, PartyPopper, UserCheck, Smartphone, Lock 
 } from "lucide-react";
 
-// 🛡️ MEMORIA GLOBAL (INMUNE A REACT)
-// Sobrevive a los desmontajes violentos de Suspense cuando el Realtime actualiza App.jsx
-const unlockedCache = new Set();
-
-const checkStorage = (key) => {
-  try { return localStorage.getItem(key) === 'true' || sessionStorage.getItem(key) === 'true'; } 
-  catch (e) { return false; }
+// 🛡️ FIX: Helpers de Cookies BULLETPROOF (Sin RegExp y con SameSite)
+const setCookie = (name, value, days = 30) => {
+  const maxAge = days * 24 * 60 * 60;
+  // SameSite=Lax evita que el navegador bloquee la cookie al recargar (F5)
+  document.cookie = `${name}=${value};max-age=${maxAge};path=/;SameSite=Lax`;
 };
 
-const saveStorage = (key) => {
-  try { localStorage.setItem(key, 'true'); sessionStorage.setItem(key, 'true'); } 
-  catch (e) {}
+const getCookie = (name) => {
+  // El método split es 100% inmune a guiones o caracteres especiales en el slug/UUID
+  const cookies = document.cookie.split(';');
+  for (let i = 0; i < cookies.length; i++) {
+    const cookie = cookies[i].trim();
+    if (cookie.startsWith(`${name}=`)) {
+      return cookie.substring(name.length + 1);
+    }
+  }
+  return null;
 };
 
 export const GuestListClient = () => {
@@ -40,10 +45,10 @@ export const GuestListClient = () => {
   const [formError, setFormError] = useState("");
   const realEventIdRef = useRef(null); 
 
-  // Truco para forzar el re-render sin depender de estados que se borran
+  // Estado mínimo solo para forzar a React a re-dibujar la pantalla tras validar
   const [forceRender, setForceRender] = useState(0);
-  const [pinInput, setPinInput] = useState("");
-  const [pinError, setPinError] = useState("");
+  const [pinInput, setPinInput] = useState('');
+  const [pinError, setPinError] = useState('');
 
   const fetchData = async () => {
     try {
@@ -81,6 +86,7 @@ export const GuestListClient = () => {
           payload.new.slug === id ||
           (realEventIdRef.current && payload.new.id === realEventIdRef.current)
         );
+        
         if (isMyEvent) {
           realEventIdRef.current = payload.new.id;
           setEvent(payload.new);
@@ -93,29 +99,26 @@ export const GuestListClient = () => {
       .subscribe();
 
     return () => supabase.removeChannel(channel);
-  }, [id]);
+  }, [id]); 
 
-  // Evaluamos acceso leyendo nuestra Memoria Global Inmune + Discos duros
+  // 1. Determinamos si el evento requiere PIN
+  const requiresPin = event?.config?.clientPin || event?.internal_data?.pin || '';
+
+  // 2. FIX SECUNDARIO: Evaluamos el acceso buscando SIEMPRE por las dos llaves (Slug y UUID real)
   const isUnlocked = 
-    unlockedCache.has(id) || 
-    (event?.id && unlockedCache.has(event.id)) || 
-    checkStorage(`pin_${id}`) || 
-    (event?.id && checkStorage(`pin_${event.id}`));
+    getCookie(`pin_auth_${id}`) === 'true' || 
+    (event?.id && getCookie(`pin_auth_${event.id}`) === 'true');
 
   const handlePinSubmit = () => {
-    const requiredPin = event?.config?.clientPin || event?.internal_data?.pin || '';
-    
-    if (!requiredPin || String(pinInput).trim() === String(requiredPin).trim()) {
-      // 1. Guardamos en la memoria indestructible
-      unlockedCache.add(id);
-      if (event?.id) unlockedCache.add(event.id);
-      
-      // 2. Guardamos en el disco por si recargan la página con F5
-      saveStorage(`pin_${id}`);
-      if (event?.id) saveStorage(`pin_${event.id}`);
+    if (!requiresPin || String(pinInput).trim() === String(requiresPin).trim()) {
+      // FIX SECUNDARIO: Guardamos la sesión en el disco con AMBAS llaves
+      setCookie(`pin_auth_${id}`, 'true');
+      if (event?.id) {
+        setCookie(`pin_auth_${event.id}`, 'true');
+      }
       
       setPinError('');
-      setForceRender(prev => prev + 1); // Quita el candado al instante
+      setForceRender(prev => prev + 1); // Forzamos a React a leer isUnlocked de nuevo
     } else {
       setPinError('PIN incorrecto. Intentá nuevamente.');
     }
@@ -146,24 +149,24 @@ export const GuestListClient = () => {
   const updateInternalGuests = async (newList) => {
     const eventId = realEventIdRef.current || event?.id;
     if (!eventId) return;
-
+    
     setEvent(prev => ({
       ...prev,
       internal_data: { ...prev.internal_data, guests: newList }
     }));
-
+    
     try {
       const { data: latest } = await supabase
         .from('invitaciones')
         .select('internal_data')
         .eq('id', eventId)
         .single();
-
+      
       const merged = {
         ...(latest?.internal_data || {}),
         guests: newList
       };
-
+      
       await supabase
         .from('invitaciones')
         .update({ internal_data: merged })
@@ -241,8 +244,7 @@ export const GuestListClient = () => {
 
   if (!event) return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-bold">No se encontró el evento.</div>;
 
-  // Intercepción final de PIN basada en nuestra Memoria Global
-  const requiresPin = event?.config?.clientPin || event?.internal_data?.pin || '';
+  // Intercepción: Validamos de forma inmutable contra la cookie directamente.
   if (requiresPin && !isUnlocked) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
