@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { supabase } from "./supabase";
 import { 
   Users, Search, Plus, Edit2, Trash2, CheckCircle2, 
-  Clock, X, PartyPopper, UserCheck, Smartphone 
+  Clock, X, PartyPopper, UserCheck, Smartphone, Lock 
 } from "lucide-react";
 
 export const GuestListClient = () => {
@@ -19,11 +19,18 @@ export const GuestListClient = () => {
   const [editingGuest, setEditingGuest] = useState(null);
   const [gName, setGName] = useState("");
   const [gLastname, setGLastname] = useState("");
-  const [gPax, setGPax] = useState(1);
+  const [gPax, setGPax] = useState(0);
   const [gStatus, setGStatus] = useState("Pendiente");
   const [gTable, setGTable] = useState("");
   
   const [formError, setFormError] = useState("");
+
+  // Estado persistente para el PIN
+  const [isPinValid, setIsPinValid] = useState(() => {
+    return sessionStorage.getItem(`auth_lista_${id}`) === 'true';
+  });
+  const [pinInput, setPinInput] = useState('');
+  const [pinError, setPinError] = useState('');
 
   const fetchData = async () => {
     try {
@@ -46,32 +53,50 @@ export const GuestListClient = () => {
     setLoading(false);
   };
 
+  // Carga inicial
   useEffect(() => {
     fetchData();
+  }, [id]);
 
-    // 👉 FIX REALTIME: Filtramos adentro del payload por slug o uuid en lugar de en la config del canal para no ahogarlo
-    const channel = supabase.channel(`client-room-${id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'invitaciones' }, (payload) => {
-        if (payload.new && (payload.new.id === id || payload.new.slug === id || (event && payload.new.id === event.id))) {
+  // Suscripción Realtime exacta
+  useEffect(() => {
+    if (!event?.id) return;
+
+    const channel = supabase.channel(`client-room-${event.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'invitaciones', filter: `id=eq.${event.id}` }, (payload) => {
+        if (payload.new) {
           setEvent(payload.new);
           setManualGuests(payload.new.internal_data?.guests || []);
         }
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'invitados' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'invitados', filter: `evento_id=eq.${event.id}` }, () => {
         fetchData();
       })
       .subscribe();
 
     return () => supabase.removeChannel(channel);
-  }, [id, event?.id]);
+  }, [event?.id]);
+
+  const handlePinSubmit = () => {
+    const requiredPin = event?.internal_data?.pin || event?.config?.pin || '';
+    
+    // Si no hay PIN configurado en el evento o coincide, dejamos pasar
+    if (!requiredPin || pinInput === requiredPin) {
+      setIsPinValid(true);
+      sessionStorage.setItem(`auth_lista_${id}`, 'true');
+    } else {
+      setPinError('PIN incorrecto. Intentá nuevamente.');
+    }
+  };
 
   const allGuests = [
-    ...manualGuests,
+    ...manualGuests.map(mg => ({ ...mg, isVip: false })),
     ...vipGuests.map(vg => ({
       id: vg.id,
       name: vg.nombre_completo,
       lastname: vg.apodo ? `(${vg.apodo})` : '',
-      guests: vg.acompanantes_confirmados > 0 ? vg.acompanantes_confirmados : vg.max_acompanantes,
+      // Solo tomamos los acompañantes adicionales
+      guests: vg.acompanantes_confirmados > 0 ? vg.acompanantes_confirmados : (vg.max_acompanantes || 0),
       status: vg.asistencia_confirmada ? 'Confirmado' : 'Pendiente',
       mesa: vg.mesa || '',
       timestamp: vg.created_at,
@@ -83,27 +108,27 @@ export const GuestListClient = () => {
     `${g.name} ${g.lastname} ${g.mesa}`.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const totalGuests = allGuests.reduce((acc, g) => acc + Number(g.guests || 0), 0);
-  const confirmedGuests = allGuests.filter(g => g.status === 'Confirmado' || g.status === 'Ingresó').reduce((acc, g) => acc + Number(g.guests || 0), 0);
-  const pendingGuests = allGuests.filter(g => g.status === 'Pendiente').reduce((acc, g) => acc + Number(g.guests || 0), 0);
+  // Cálculo: 1 (Titular) + Acompañantes adicionales
+  const totalGuests = allGuests.reduce((acc, g) => acc + 1 + Number(g.guests || 0), 0);
+  const confirmedGuests = allGuests.filter(g => g.status === 'Confirmado' || g.status === 'Ingresó').reduce((acc, g) => acc + 1 + Number(g.guests || 0), 0);
+  const pendingGuests = allGuests.filter(g => g.status === 'Pendiente').reduce((acc, g) => acc + 1 + Number(g.guests || 0), 0);
 
   const updateInternalGuests = async (newList) => {
     const newData = { ...event.internal_data, guests: newList };
-    // Optimistic UI
     setEvent(prev => ({ ...prev, internal_data: newData }));
     await supabase.from('invitaciones').update({ internal_data: newData }).eq('id', event.id);
   };
 
   const openNewGuest = () => {
     setEditingGuest(null);
-    setGName(""); setGLastname(""); setGPax(1); setGStatus("Pendiente"); setGTable("");
+    setGName(""); setGLastname(""); setGPax(0); setGStatus("Pendiente"); setGTable("");
     setFormError(""); 
     setShowModal(true);
   };
   
   const openEditGuest = (g) => {
     setEditingGuest(g);
-    setGName(g.name); setGLastname(g.lastname); setGPax(g.guests); setGStatus(g.status); setGTable(g.mesa || "");
+    setGName(g.name); setGLastname(g.lastname); setGPax(Number(g.guests) || 0); setGStatus(g.status); setGTable(g.mesa || "");
     setFormError(""); 
     setShowModal(true);
   };
@@ -130,7 +155,6 @@ export const GuestListClient = () => {
         newList.push({ id: fakeId, name: gName, lastname: gLastname, guests: Number(gPax), mesa: finalTable, status: gStatus, timestamp: new Date().toISOString() });
       }
       
-      // Optimistic UI
       setManualGuests(newList);
       await updateInternalGuests(newList);
     }
@@ -140,12 +164,10 @@ export const GuestListClient = () => {
   const deleteGuest = async (g) => {
     if(!window.confirm("¿Seguro que querés eliminar a este invitado?")) return;
     if (g.isVip) {
-      // Optimistic UI
       setVipGuests(prev => prev.filter(v => v.id !== g.id));
       await supabase.from('invitados').delete().eq('id', g.id);
     } else {
       const newList = manualGuests.filter(mg => mg.id !== g.id);
-      // Optimistic UI
       setManualGuests(newList);
       await updateInternalGuests(newList);
     }
@@ -153,6 +175,34 @@ export const GuestListClient = () => {
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-violet-600 font-bold">Cargando tu lista...</div>;
   if (!event) return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-bold">No se encontró el evento.</div>;
+
+  // Intercepción: Pantalla de PIN si el evento lo requiere y no está validado
+  const requiresPin = event.internal_data?.pin || event.config?.pin;
+  if (requiresPin && !isPinValid) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+        <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100 text-center max-w-sm w-full anim-pop">
+          <div className="w-16 h-16 bg-violet-100 text-violet-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Lock size={32} />
+          </div>
+          <h2 className="text-2xl font-black text-slate-800 mb-2">Acceso Protegido</h2>
+          <p className="text-sm text-slate-500 mb-6 font-medium">Ingresá el PIN del evento para acceder a la lista nominal.</p>
+          <input 
+            type="password" 
+            value={pinInput} 
+            onChange={(e) => setPinInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handlePinSubmit()}
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-4 text-center text-xl tracking-[0.5em] font-black outline-none focus:border-violet-500 mb-4"
+            placeholder="****"
+          />
+          {pinError && <p className="text-red-500 text-xs font-bold mb-4">{pinError}</p>}
+          <button onClick={handlePinSubmit} className="w-full bg-violet-600 hover:bg-violet-700 text-white rounded-xl py-4 font-black transition-transform active:scale-95 shadow-lg shadow-violet-600/30">
+            INGRESAR
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const honoree = event.config?.honoreeName || event.title;
   const useTables = event.internal_data?.useTables || false;
@@ -170,7 +220,7 @@ export const GuestListClient = () => {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 md:px-8 -mt-8 relative z-10">
-        <div className="grid grid-cols-3 gap-3 md:gap-6 mb-8">
+        <div className="grid grid-cols-3 gap-3 md:gap-6 mb-2">
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 text-center flex flex-col items-center justify-center">
             <Users size={20} className="text-violet-500 mb-2"/>
             <span className="text-2xl md:text-3xl font-black text-slate-800">{totalGuests}</span>
@@ -187,6 +237,10 @@ export const GuestListClient = () => {
             <span className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-wider mt-1">Pendientes</span>
           </div>
         </div>
+
+        <p className="text-center text-xs text-slate-500 mb-6 font-medium">
+          <span className="font-bold text-violet-600">Nota:</span> El cálculo asume 1 persona (titular) + la cantidad de acompañantes adicionales.
+        </p>
 
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="relative flex-1">
@@ -223,7 +277,7 @@ export const GuestListClient = () => {
                   </div>
                   <div className="flex flex-wrap items-center gap-2 mt-2">
                     <span className="bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md">
-                      {g.guests} {g.guests === 1 ? 'PERS' : 'PERS'}
+                      {g.guests > 0 ? `+${g.guests} ADIC` : 'SOLO TITULAR'}
                     </span>
                     <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md ${g.status === 'Confirmado' || g.status === 'Ingresó' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
                       {g.status}
@@ -261,7 +315,7 @@ export const GuestListClient = () => {
                  {!editingGuest?.isVip ? (
                    <>
                      <div>
-                       <label className="block text-[10px] font-black uppercase mb-1.5 text-slate-500">Nombre</label>
+                       <label className="block text-[10px] font-black uppercase mb-1.5 text-slate-500">Nombre del Titular</label>
                        <input type="text" value={gName} onChange={e => setGName(e.target.value)} className={`w-full bg-slate-50 border ${formError && !gName ? 'border-red-300' : 'border-slate-200'} rounded-xl px-4 py-3 outline-none focus:border-violet-500 focus:bg-white`} />
                      </div>
                      <div>
@@ -270,8 +324,19 @@ export const GuestListClient = () => {
                      </div>
                      <div className="grid grid-cols-2 gap-3">
                        <div>
-                         <label className="block text-[10px] font-black uppercase mb-1.5 text-slate-500">Cantidad</label>
-                         <input type="number" min="1" value={gPax} onChange={e => setGPax(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-violet-500 focus:bg-white" />
+                         <label className="block text-[10px] font-black uppercase mb-1.5 text-slate-500" title="No contar al titular">Acompañantes Adic.</label>
+                         <input 
+                            type="number" 
+                            min="0" 
+                            // Evita el 0 fijo: si es 0 muestra vacío, permitiendo tipeo limpio
+                            value={gPax === 0 ? '' : gPax} 
+                            onChange={e => {
+                                const val = parseInt(e.target.value, 10);
+                                setGPax(isNaN(val) ? 0 : val);
+                            }} 
+                            placeholder="0"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-violet-500 focus:bg-white" 
+                         />
                        </div>
                        <div>
                          <label className="block text-[10px] font-black uppercase mb-1.5 text-slate-500">Estado</label>
