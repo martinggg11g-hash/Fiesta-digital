@@ -6,6 +6,20 @@ import {
   Clock, X, PartyPopper, UserCheck, Smartphone, Lock 
 } from "lucide-react";
 
+// 🛡️ MEMORIA GLOBAL (INMUNE A REACT)
+// Sobrevive a los desmontajes violentos de Suspense cuando el Realtime actualiza App.jsx
+const unlockedCache = new Set();
+
+const checkStorage = (key) => {
+  try { return localStorage.getItem(key) === 'true' || sessionStorage.getItem(key) === 'true'; } 
+  catch (e) { return false; }
+};
+
+const saveStorage = (key) => {
+  try { localStorage.setItem(key, 'true'); sessionStorage.setItem(key, 'true'); } 
+  catch (e) {}
+};
+
 export const GuestListClient = () => {
   const { id } = useParams();
   const [loading, setLoading] = useState(true);
@@ -26,9 +40,8 @@ export const GuestListClient = () => {
   const [formError, setFormError] = useState("");
   const realEventIdRef = useRef(null); 
 
-  // FIX DEFINITIVO: El estado arranca en false. 
-  // No chequeamos el localStorage hasta no tener el UUID seguro.
-  const [accessGranted, setAccessGranted] = useState(false);
+  // Truco para forzar el re-render sin depender de estados que se borran
+  const [forceRender, setForceRender] = useState(0);
   const [pinInput, setPinInput] = useState("");
   const [pinError, setPinError] = useState("");
 
@@ -45,15 +58,6 @@ export const GuestListClient = () => {
         setEvent(eventData);
         setManualGuests(eventData.internal_data?.guests || []);
 
-        // AQUÍ ESTÁ LA MAGIA: Chequeamos el acceso justo cuando tenemos TODOS los datos.
-        // Verificamos tanto por ID de la URL como por UUID de la base de datos.
-        const isSavedById = localStorage.getItem(`pin_${id}`) === 'true';
-        const isSavedByUuid = localStorage.getItem(`pin_${eventData.id}`) === 'true';
-        
-        if (isSavedById || isSavedByUuid) {
-          setAccessGranted(true);
-        }
-
         const { data: vipData } = await supabase.from('invitados').select('*').eq('evento_id', eventData.id).order('created_at', { ascending: false });
         if (vipData) setVipGuests(vipData);
       }
@@ -65,6 +69,10 @@ export const GuestListClient = () => {
 
   useEffect(() => {
     fetchData();
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
 
     const channel = supabase.channel(`client-room-${id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'invitaciones' }, (payload) => {
@@ -87,18 +95,27 @@ export const GuestListClient = () => {
     return () => supabase.removeChannel(channel);
   }, [id]);
 
+  // Evaluamos acceso leyendo nuestra Memoria Global Inmune + Discos duros
+  const isUnlocked = 
+    unlockedCache.has(id) || 
+    (event?.id && unlockedCache.has(event.id)) || 
+    checkStorage(`pin_${id}`) || 
+    (event?.id && checkStorage(`pin_${event.id}`));
+
   const handlePinSubmit = () => {
     const requiredPin = event?.config?.clientPin || event?.internal_data?.pin || '';
     
-    // Forzamos conversión a texto (String) por si la base de datos lo guarda como número entero
     if (!requiredPin || String(pinInput).trim() === String(requiredPin).trim()) {
-      // Guardamos la llave con candado doble (por si mañana le cambian el slug)
-      localStorage.setItem(`pin_${id}`, 'true');
-      if (event?.id) {
-        localStorage.setItem(`pin_${event.id}`, 'true');
-      }
-      setAccessGranted(true);
+      // 1. Guardamos en la memoria indestructible
+      unlockedCache.add(id);
+      if (event?.id) unlockedCache.add(event.id);
+      
+      // 2. Guardamos en el disco por si recargan la página con F5
+      saveStorage(`pin_${id}`);
+      if (event?.id) saveStorage(`pin_${event.id}`);
+      
       setPinError('');
+      setForceRender(prev => prev + 1); // Quita el candado al instante
     } else {
       setPinError('PIN incorrecto. Intentá nuevamente.');
     }
@@ -130,14 +147,12 @@ export const GuestListClient = () => {
     const eventId = realEventIdRef.current || event?.id;
     if (!eventId) return;
 
-    // Optimistic UI
     setEvent(prev => ({
       ...prev,
       internal_data: { ...prev.internal_data, guests: newList }
     }));
 
     try {
-      // Pedimos el latest a Supabase antes de guardar para no pisar cambios del CRM
       const { data: latest } = await supabase
         .from('invitaciones')
         .select('internal_data')
@@ -226,9 +241,9 @@ export const GuestListClient = () => {
 
   if (!event) return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-bold">No se encontró el evento.</div>;
 
-  // Intercepción final de PIN
+  // Intercepción final de PIN basada en nuestra Memoria Global
   const requiresPin = event?.config?.clientPin || event?.internal_data?.pin || '';
-  if (requiresPin && !accessGranted) {
+  if (requiresPin && !isUnlocked) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
         <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100 text-center max-w-sm w-full anim-pop">
