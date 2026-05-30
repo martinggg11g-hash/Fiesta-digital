@@ -14,7 +14,7 @@ export default function EditorSidebar({ inv, setInv, cfg, update, setPreviewAnim
 
   const { id } = useParams();
   const eventId = id || window.location.pathname.split('/').filter(Boolean).pop();
-  const hostManageLink = `${window.location.origin}/manage/${eventId}`;
+  const hostManageLink = `${window.location.origin}/lista/${eventId}`;
 
   const [salonProfile] = useState(() => {
     try {
