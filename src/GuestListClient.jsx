@@ -7,18 +7,22 @@ import {
 } from "lucide-react";
 
 // 🛡️ TRIPLE BLINDAJE DE ALMACENAMIENTO
-// Guardamos en 3 lugares distintos para sobrevivir si App.jsx hace localStorage.clear()
 const saveAccess = (key) => {
   try { localStorage.setItem(key, 'GRANTED'); } catch(e) {}
   try { sessionStorage.setItem(key, 'GRANTED'); } catch(e) {}
   try { document.cookie = `${key}=GRANTED; path=/; max-age=31536000; SameSite=Lax`; } catch(e) {}
 };
 
-// Leemos de forma sincrónica. Si cualquiera de los 3 sobrevive, damos acceso.
+// 🚀 FIX MAESTRO: Lectura sincrónica con match exacto
 const checkAccess = (key) => {
   try { if (localStorage.getItem(key) === 'GRANTED') return true; } catch(e) {}
   try { if (sessionStorage.getItem(key) === 'GRANTED') return true; } catch(e) {}
-  try { if (document.cookie.includes(`${key}=GRANTED`)) return true; } catch(e) {}
+  try { 
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      if (cookies[i].trim() === `${key}=GRANTED`) return true;
+    }
+  } catch(e) {}
   return false;
 };
 
@@ -42,8 +46,7 @@ export const GuestListClient = () => {
   const [formError, setFormError] = useState("");
   const realEventIdRef = useRef(null); 
 
-  // 🚀 FIX MAESTRO: Lectura sincrónica. 
-  // Al hacerlo acá, le ganamos de mano a cualquier script que intente limpiar el storage.
+  // Lectura en el milisegundo cero, antes de que nada pueda romper la memoria
   const [isUnlocked, setIsUnlocked] = useState(() => checkAccess(`fiesta_pin_${id}`));
   
   const [pinInput, setPinInput] = useState('');
@@ -75,7 +78,6 @@ export const GuestListClient = () => {
     fetchData();
   }, [id]);
 
-  // Si el slug no tenía acceso, pero el UUID sí (o viceversa), lo revalidamos cuando el evento carga
   useEffect(() => {
     if (!event || isUnlocked) return;
     
@@ -113,7 +115,6 @@ export const GuestListClient = () => {
     const requiresPin = event?.config?.clientPin || event?.internal_data?.pin || '';
 
     if (!requiresPin || String(pinInput).trim() === String(requiresPin).trim()) {
-      // Guardamos con triple blindaje tanto para el ID de la URL como para el UUID
       saveAccess(`fiesta_pin_${id}`);
       if (event?.id) {
         saveAccess(`fiesta_pin_${event.id}`);
