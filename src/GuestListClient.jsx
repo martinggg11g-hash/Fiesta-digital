@@ -25,9 +25,9 @@ export const GuestListClient = () => {
   
   const [formError, setFormError] = useState("");
 
-  // Estado persistente para el PIN usando localStorage
+  // FIX SESIÓN: Llave simplificada en localStorage
   const [isPinValid, setIsPinValid] = useState(() => {
-    return localStorage.getItem(`auth_lista_${id}`) === 'true';
+    return localStorage.getItem(`auth_${id}`) === 'true';
   });
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
@@ -58,32 +58,34 @@ export const GuestListClient = () => {
     fetchData();
   }, [id]);
 
-  // Suscripción Realtime exacta
+  // FIX REALTIME: Volvemos a tu patrón original de suscripción amplia + validación en el callback
   useEffect(() => {
-    if (!event?.id) return;
+    if (!id) return;
 
-    const channel = supabase.channel(`client-room-${event.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'invitaciones', filter: `id=eq.${event.id}` }, (payload) => {
-        if (payload.new) {
+    const channel = supabase.channel(`room-client-${id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'invitaciones' }, (payload) => {
+        if (payload.new && (payload.new.id === id || payload.new.slug === id || (event && payload.new.id === event.id))) {
           setEvent(payload.new);
           setManualGuests(payload.new.internal_data?.guests || []);
+        } else {
+          fetchData(); // Fallback de seguridad
         }
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'invitados', filter: `evento_id=eq.${event.id}` }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'invitados' }, () => {
+        // Al haber cambios en cualquier invitado, recargamos la lista
         fetchData();
       })
       .subscribe();
 
     return () => supabase.removeChannel(channel);
-  }, [event?.id]);
+  }, [id, event?.id]);
 
   const handlePinSubmit = () => {
     const requiredPin = event?.internal_data?.pin || event?.config?.pin || '';
     
-    // Si no hay PIN configurado en el evento o coincide, dejamos pasar
     if (!requiredPin || pinInput === requiredPin) {
       setIsPinValid(true);
-      localStorage.setItem(`auth_lista_${id}`, 'true');
+      localStorage.setItem(`auth_${id}`, 'true'); // Guardado permanente en navegador
     } else {
       setPinError('PIN incorrecto. Intentá nuevamente.');
     }
@@ -95,7 +97,6 @@ export const GuestListClient = () => {
       id: vg.id,
       name: vg.nombre_completo,
       lastname: vg.apodo ? `(${vg.apodo})` : '',
-      // Solo tomamos los acompañantes adicionales
       guests: vg.acompanantes_confirmados > 0 ? vg.acompanantes_confirmados : (vg.max_acompanantes || 0),
       status: vg.asistencia_confirmada ? 'Confirmado' : 'Pendiente',
       mesa: vg.mesa || '',
@@ -108,7 +109,6 @@ export const GuestListClient = () => {
     `${g.name} ${g.lastname} ${g.mesa}`.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Cálculo: 1 (Titular) + Acompañantes adicionales
   const totalGuests = allGuests.reduce((acc, g) => acc + 1 + Number(g.guests || 0), 0);
   const confirmedGuests = allGuests.filter(g => g.status === 'Confirmado' || g.status === 'Ingresó').reduce((acc, g) => acc + 1 + Number(g.guests || 0), 0);
   const pendingGuests = allGuests.filter(g => g.status === 'Pendiente').reduce((acc, g) => acc + 1 + Number(g.guests || 0), 0);
@@ -145,8 +145,11 @@ export const GuestListClient = () => {
     }
     
     if (editingGuest?.isVip) {
+      // FIX INMEDIATEZ: Actualización Optimista para Invitados VIP
+      setVipGuests(prev => prev.map(v => v.id === editingGuest.id ? { ...v, mesa: finalTable } : v));
       await supabase.from('invitados').update({ mesa: finalTable }).eq('id', editingGuest.id);
     } else {
+      // Actualización Optimista para Invitados Manuales
       let newList = [...manualGuests];
       if (editingGuest) {
         newList = newList.map(g => g.id === editingGuest.id ? { ...g, name: gName, lastname: gLastname, guests: Number(gPax), status: gStatus, mesa: finalTable } : g);
@@ -164,9 +167,11 @@ export const GuestListClient = () => {
   const deleteGuest = async (g) => {
     if(!window.confirm("¿Seguro que querés eliminar a este invitado?")) return;
     if (g.isVip) {
+      // FIX INMEDIATEZ: Borrado Optimista para VIP
       setVipGuests(prev => prev.filter(v => v.id !== g.id));
       await supabase.from('invitados').delete().eq('id', g.id);
     } else {
+      // Borrado Optimista para Manual
       const newList = manualGuests.filter(mg => mg.id !== g.id);
       setManualGuests(newList);
       await updateInternalGuests(newList);
@@ -183,9 +188,9 @@ export const GuestListClient = () => {
       </div>
     );
   }
+
   if (!event) return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-bold">No se encontró el evento.</div>;
 
-  // Intercepción: Pantalla de PIN si el evento lo requiere y no está validado
   const requiresPin = event.internal_data?.pin || event.config?.pin;
   if (requiresPin && !isPinValid) {
     return (
@@ -337,7 +342,6 @@ export const GuestListClient = () => {
                          <input 
                             type="number" 
                             min="0" 
-                            // Evita el 0 fijo: si es 0 muestra vacío, permitiendo tipeo limpio
                             value={gPax === 0 ? '' : gPax} 
                             onChange={e => {
                                 const val = parseInt(e.target.value, 10);
