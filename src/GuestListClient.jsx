@@ -173,7 +173,16 @@ export const GuestListClient = () => {
     }
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-violet-600 font-bold">Cargando tu lista...</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
+        <div className="w-12 h-12 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin mb-4"></div>
+        <p className="text-violet-600 font-black text-xs tracking-widest uppercase animate-pulse">
+          Cargando Lista...
+        </p>
+      </div>
+    );
+  }
   if (!event) return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-bold">No se encontró el evento.</div>;
 
   // Intercepción: Pantalla de PIN si el evento lo requiere y no está validado
