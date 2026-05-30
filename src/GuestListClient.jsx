@@ -6,6 +6,11 @@ import {
   Clock, X, PartyPopper, UserCheck, Smartphone, Lock 
 } from "lucide-react";
 
+// Helpers limpios fuera del ciclo de vida de React
+const getPinKey   = (id) => `pin_auth_${id}`;
+const isPinStored = (id) => localStorage.getItem(getPinKey(id)) === 'true';
+const storePinOk  = (id) => localStorage.setItem(getPinKey(id), 'true');
+
 export const GuestListClient = () => {
   const { id } = useParams();
   const [loading, setLoading] = useState(true);
@@ -25,12 +30,12 @@ export const GuestListClient = () => {
   
   const [formError, setFormError] = useState("");
   
-  // FIX BUG-01 & BUG-03: Ref para el ID real (no slug) del evento
+  // FIX 2: Ref para el ID real y evitar race conditions
   const realEventIdRef = useRef(null); 
 
-  const [isPinValid, setIsPinValid] = useState(() => {
-    return localStorage.getItem(`auth_${id}`) === 'true';
-  });
+  // Mantenemos el state solo para forzar el re-render al meter el PIN, 
+  // pero lo inicializamos con tu helper robusto.
+  const [isPinValid, setIsPinValid] = useState(() => isPinStored(id));
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
 
@@ -43,7 +48,7 @@ export const GuestListClient = () => {
       }
 
       if (eventData) {
-        realEventIdRef.current = eventData.id; // Guardar ID real en ref
+        realEventIdRef.current = eventData.id; 
         setEvent(eventData);
         setManualGuests(eventData.internal_data?.guests || []);
 
@@ -60,7 +65,6 @@ export const GuestListClient = () => {
     fetchData();
   }, [id]);
 
-  // FIX BUG-01 & BUG-03: Realtime robusto sin fallback fetchData
   useEffect(() => {
     if (!id) return;
 
@@ -73,7 +77,7 @@ export const GuestListClient = () => {
         );
         
         if (isMyEvent) {
-          realEventIdRef.current = payload.new.id; // Actualizar ref si estaba vacío
+          realEventIdRef.current = payload.new.id;
           setEvent(payload.new);
           setManualGuests(payload.new.internal_data?.guests || []);
         }
@@ -84,15 +88,15 @@ export const GuestListClient = () => {
       .subscribe();
 
     return () => supabase.removeChannel(channel);
-  }, [id]); // Solo re-suscribir cuando cambia el id de la URL
+  }, [id]); 
 
-  // FIX BUG-01: Invertir orden de persistencia
   const handlePinSubmit = () => {
-    const requiredPin = event?.internal_data?.pin || event?.config?.pin || '';
+    // FIX 1: Lectura de la llave correcta descubierta
+    const requiredPin = event?.config?.clientPin || event?.internal_data?.pin || '';
     
     if (!requiredPin || pinInput === requiredPin) {
-      localStorage.setItem(`auth_${id}`, 'true'); // Primero persistir
-      setIsPinValid(true);                        // Luego actualizar state
+      storePinOk(id);       // Persistencia pura en disco
+      setIsPinValid(true);  // Disparador visual para que React quite el candado al instante
     } else {
       setPinError('PIN incorrecto. Intentá nuevamente.');
     }
@@ -120,26 +124,23 @@ export const GuestListClient = () => {
   const confirmedGuests = allGuests.filter(g => g.status === 'Confirmado' || g.status === 'Ingresó').reduce((acc, g) => acc + 1 + Number(g.guests || 0), 0);
   const pendingGuests = allGuests.filter(g => g.status === 'Pendiente').reduce((acc, g) => acc + 1 + Number(g.guests || 0), 0);
 
-  // FIX BUG-02: SELECT + Merge para no pisar datos del CRM
+  // FIX 3: Merge antes de guardar
   const updateInternalGuests = async (newList) => {
     const eventId = realEventIdRef.current || event?.id;
     if (!eventId) return;
     
-    // Actualización optimista en UI
     setEvent(prev => ({
       ...prev,
       internal_data: { ...prev.internal_data, guests: newList }
     }));
     
     try {
-      // Fetch del latest para no sobreescribir cambios concurrentes del CRM
       const { data: latest } = await supabase
         .from('invitaciones')
         .select('internal_data')
         .eq('id', eventId)
         .single();
       
-      // Merge: preservar todos los campos del latest, solo reemplazar 'guests'
       const merged = {
         ...(latest?.internal_data || {}),
         guests: newList
@@ -222,7 +223,7 @@ export const GuestListClient = () => {
 
   if (!event) return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-bold">No se encontró el evento.</div>;
 
-  const requiresPin = event.internal_data?.pin || event.config?.pin;
+  const requiresPin = event?.config?.clientPin || event?.internal_data?.pin || '';
   if (requiresPin && !isPinValid) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
