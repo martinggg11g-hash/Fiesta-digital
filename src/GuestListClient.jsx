@@ -6,6 +6,18 @@ import {
   Clock, X, PartyPopper, UserCheck, Smartphone, Lock 
 } from "lucide-react";
 
+// Helpers para manejar Cookies (inmunes al localStorage.clear de App.jsx)
+const setCookie = (name, value, days = 30) => {
+  const d = new Date();
+  d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
+  document.cookie = `${name}=${value};expires=${d.toUTCString()};path=/`;
+};
+
+const getCookie = (name) => {
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  return match ? match[2] : null;
+};
+
 export const GuestListClient = () => {
   const { id } = useParams();
   const [loading, setLoading] = useState(true);
@@ -26,8 +38,7 @@ export const GuestListClient = () => {
   const [formError, setFormError] = useState("");
   const realEventIdRef = useRef(null); 
 
-  // FIX ABSOLUTO: Eliminamos isPinValid del useState. 
-  // Solo usamos esto para forzar a React a re-dibujar la pantalla al darle al Enter.
+  // Estado mínimo solo para forzar el re-render al validar
   const [forceRender, setForceRender] = useState(0);
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
@@ -83,26 +94,24 @@ export const GuestListClient = () => {
     return () => supabase.removeChannel(channel);
   }, [id]); 
 
-  // Evaluamos si el evento requiere PIN
+  // Determinamos si requiere PIN
   const requiresPin = event?.config?.clientPin || event?.internal_data?.pin || '';
 
-  // Evaluamos el acceso leyendo el disco EN VIVO en cada renderizado.
-  // Buscamos tanto por el ID de la URL como por el UUID real.
+  // Evaluamos el acceso leyendo las cookies EN VIVO en cada renderizado
   const isUnlocked = 
-    localStorage.getItem(`pin_auth_evt_${id}`) === 'true' || 
-    (event?.id && localStorage.getItem(`pin_auth_evt_${event.id}`) === 'true');
+    getCookie(`pin_auth_${id}`) === 'true' || 
+    (event?.id && getCookie(`pin_auth_${event.id}`) === 'true');
 
   const handlePinSubmit = () => {
-    // Forzamos String para que no falle si el PIN se guardó como número en Supabase
     if (!requiresPin || String(pinInput).trim() === String(requiresPin).trim()) {
-      // Grabamos doble validación: por slug y por UUID.
-      localStorage.setItem(`pin_auth_evt_${id}`, 'true');
+      // Guardamos la cookie atada a la URL y al UUID
+      setCookie(`pin_auth_${id}`, 'true');
       if (event?.id) {
-        localStorage.setItem(`pin_auth_evt_${event.id}`, 'true');
+        setCookie(`pin_auth_${event.id}`, 'true');
       }
       
       setPinError('');
-      setForceRender(prev => prev + 1); // Disparamos el re-render manual
+      setForceRender(prev => prev + 1); // Dispara el render, evaluando isUnlocked como true
     } else {
       setPinError('PIN incorrecto. Intentá nuevamente.');
     }
@@ -228,7 +237,7 @@ export const GuestListClient = () => {
 
   if (!event) return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-bold">No se encontró el evento.</div>;
 
-  // Intercepción: Validamos directamente contra isUnlocked
+  // Renderiza el PIN si es requerido y la cookie NO existe
   if (requiresPin && !isUnlocked) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
