@@ -6,11 +6,6 @@ import {
   Clock, X, PartyPopper, UserCheck, Smartphone, Lock 
 } from "lucide-react";
 
-// Helpers limpios fuera del ciclo de vida de React
-const getPinKey   = (id) => `pin_auth_${id}`;
-const isPinStored = (id) => localStorage.getItem(getPinKey(id)) === 'true';
-const storePinOk  = (id) => localStorage.setItem(getPinKey(id), 'true');
-
 export const GuestListClient = () => {
   const { id } = useParams();
   const [loading, setLoading] = useState(true);
@@ -30,12 +25,10 @@ export const GuestListClient = () => {
   
   const [formError, setFormError] = useState("");
   
-  // FIX 2: Ref para el ID real y evitar race conditions
   const realEventIdRef = useRef(null); 
 
-  // Mantenemos el state solo para forzar el re-render al meter el PIN, 
-  // pero lo inicializamos con tu helper robusto.
-  const [isPinValid, setIsPinValid] = useState(() => isPinStored(id));
+  // FIX DEFINITIVO 1: Arrancamos en false. No confiamos en el estado inicial porque el "id" puede no estar listo.
+  const [isPinValid, setIsPinValid] = useState(false);
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
 
@@ -65,6 +58,19 @@ export const GuestListClient = () => {
     fetchData();
   }, [id]);
 
+  // FIX DEFINITIVO 2: Cuando el evento carga, validamos usando su UUID inmutable (event.id).
+  // Esto garantiza que React vuelva a chequear el localStorage cuando los datos de BD estén listos.
+  useEffect(() => {
+    if (event?.id) {
+      const hasPinByUuid = localStorage.getItem(`pin_auth_evt_${event.id}`) === 'true';
+      const hasPinBySlug = localStorage.getItem(`pin_auth_evt_${id}`) === 'true';
+      
+      if (hasPinByUuid || hasPinBySlug) {
+        setIsPinValid(true);
+      }
+    }
+  }, [event?.id, id]);
+
   useEffect(() => {
     if (!id) return;
 
@@ -91,12 +97,13 @@ export const GuestListClient = () => {
   }, [id]); 
 
   const handlePinSubmit = () => {
-    // FIX 1: Lectura de la llave correcta descubierta
     const requiredPin = event?.config?.clientPin || event?.internal_data?.pin || '';
     
-    if (!requiredPin || pinInput === requiredPin) {
-      storePinOk(id);       // Persistencia pura en disco
-      setIsPinValid(true);  // Disparador visual para que React quite el candado al instante
+    // FIX DEFINITIVO 3: Forzamos String para evitar bugs si el JSON guarda el PIN como Int y el input es String.
+    if (!requiredPin || String(pinInput).trim() === String(requiredPin).trim()) {
+      // Guardamos atado al UUID de la base de datos, así no importa si le cambian la URL (slug) mañana.
+      localStorage.setItem(`pin_auth_evt_${event?.id}`, 'true');
+      setIsPinValid(true);
     } else {
       setPinError('PIN incorrecto. Intentá nuevamente.');
     }
@@ -124,7 +131,6 @@ export const GuestListClient = () => {
   const confirmedGuests = allGuests.filter(g => g.status === 'Confirmado' || g.status === 'Ingresó').reduce((acc, g) => acc + 1 + Number(g.guests || 0), 0);
   const pendingGuests = allGuests.filter(g => g.status === 'Pendiente').reduce((acc, g) => acc + 1 + Number(g.guests || 0), 0);
 
-  // FIX 3: Merge antes de guardar
   const updateInternalGuests = async (newList) => {
     const eventId = realEventIdRef.current || event?.id;
     if (!eventId) return;
