@@ -6,7 +6,7 @@ import {
   Clock, X, PartyPopper, UserCheck, Smartphone, Lock 
 } from "lucide-react";
 
-// 🛡️ Helpers de Cookies BULLETPROOF (Sin RegExp y con SameSite)
+// 🛡️ Helpers de Cookies BULLETPROOF
 const setCookie = (name, value, days = 30) => {
   const maxAge = days * 24 * 60 * 60;
   document.cookie = `${name}=${value};max-age=${maxAge};path=/;SameSite=Lax`;
@@ -43,7 +43,6 @@ export const GuestListClient = () => {
   const [formError, setFormError] = useState("");
   const realEventIdRef = useRef(null); 
 
-  // FIX DEFINITIVO: Estado real de React para el desbloqueo
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
@@ -74,16 +73,17 @@ export const GuestListClient = () => {
     fetchData();
   }, [id]);
 
-  // FIX DEFINITIVO: Evaluar cookies SOLO DESPUÉS de que el evento exista
+  // FIX DEFINITIVO Y FINAL: Latch de una sola vía.
+  // Si ya está desbloqueado, ignoramos cualquier cambio en el 'event'.
   useEffect(() => {
-    if (!event) return;
+    if (!event || isUnlocked) return;
     
     const unlocked = 
       getCookie(`pin_auth_${id}`) === 'true' || 
       (event.id && getCookie(`pin_auth_${event.id}`) === 'true');
       
-    setIsUnlocked(unlocked);
-  }, [event, id]);
+    if (unlocked) setIsUnlocked(true);
+  }, [event, id, isUnlocked]);
 
   useEffect(() => {
     if (!id) return;
@@ -114,13 +114,11 @@ export const GuestListClient = () => {
 
   const handlePinSubmit = () => {
     if (!requiresPin || String(pinInput).trim() === String(requiresPin).trim()) {
-      // Guardar cookies
       setCookie(`pin_auth_${id}`, 'true');
       if (event?.id) {
         setCookie(`pin_auth_${event.id}`, 'true');
       }
       
-      // FIX DEFINITIVO: Actualizar el estado real de React
       setPinError('');
       setIsUnlocked(true); 
     } else {
@@ -248,7 +246,6 @@ export const GuestListClient = () => {
 
   if (!event) return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-bold">No se encontró el evento.</div>;
 
-  // Intercepción: Validamos de forma segura con nuestro state reactivo.
   if (requiresPin && !isUnlocked) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
