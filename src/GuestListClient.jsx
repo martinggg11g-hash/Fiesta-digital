@@ -6,18 +6,6 @@ import {
   Clock, X, PartyPopper, UserCheck, Smartphone, Lock 
 } from "lucide-react";
 
-// Helpers para manejar Cookies (inmunes al localStorage.clear de App.jsx)
-const setCookie = (name, value, days = 30) => {
-  const d = new Date();
-  d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
-  document.cookie = `${name}=${value};expires=${d.toUTCString()};path=/`;
-};
-
-const getCookie = (name) => {
-  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-  return match ? match[2] : null;
-};
-
 export const GuestListClient = () => {
   const { id } = useParams();
   const [loading, setLoading] = useState(true);
@@ -38,10 +26,11 @@ export const GuestListClient = () => {
   const [formError, setFormError] = useState("");
   const realEventIdRef = useRef(null); 
 
-  // Estado mínimo solo para forzar el re-render al validar
-  const [forceRender, setForceRender] = useState(0);
-  const [pinInput, setPinInput] = useState('');
-  const [pinError, setPinError] = useState('');
+  // FIX DEFINITIVO: El estado arranca en false. 
+  // No chequeamos el localStorage hasta no tener el UUID seguro.
+  const [accessGranted, setAccessGranted] = useState(false);
+  const [pinInput, setPinInput] = useState("");
+  const [pinError, setPinError] = useState("");
 
   const fetchData = async () => {
     try {
@@ -56,6 +45,15 @@ export const GuestListClient = () => {
         setEvent(eventData);
         setManualGuests(eventData.internal_data?.guests || []);
 
+        // AQUÍ ESTÁ LA MAGIA: Chequeamos el acceso justo cuando tenemos TODOS los datos.
+        // Verificamos tanto por ID de la URL como por UUID de la base de datos.
+        const isSavedById = localStorage.getItem(`pin_${id}`) === 'true';
+        const isSavedByUuid = localStorage.getItem(`pin_${eventData.id}`) === 'true';
+        
+        if (isSavedById || isSavedByUuid) {
+          setAccessGranted(true);
+        }
+
         const { data: vipData } = await supabase.from('invitados').select('*').eq('evento_id', eventData.id).order('created_at', { ascending: false });
         if (vipData) setVipGuests(vipData);
       }
@@ -67,19 +65,14 @@ export const GuestListClient = () => {
 
   useEffect(() => {
     fetchData();
-  }, [id]);
 
-  useEffect(() => {
-    if (!id) return;
-
-    const channel = supabase.channel(`room-client-${id}`)
+    const channel = supabase.channel(`client-room-${id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'invitaciones' }, (payload) => {
         const isMyEvent = payload.new && (
           payload.new.id === id ||
           payload.new.slug === id ||
           (realEventIdRef.current && payload.new.id === realEventIdRef.current)
         );
-        
         if (isMyEvent) {
           realEventIdRef.current = payload.new.id;
           setEvent(payload.new);
@@ -92,26 +85,20 @@ export const GuestListClient = () => {
       .subscribe();
 
     return () => supabase.removeChannel(channel);
-  }, [id]); 
-
-  // Determinamos si requiere PIN
-  const requiresPin = event?.config?.clientPin || event?.internal_data?.pin || '';
-
-  // Evaluamos el acceso leyendo las cookies EN VIVO en cada renderizado
-  const isUnlocked = 
-    getCookie(`pin_auth_${id}`) === 'true' || 
-    (event?.id && getCookie(`pin_auth_${event.id}`) === 'true');
+  }, [id]);
 
   const handlePinSubmit = () => {
-    if (!requiresPin || String(pinInput).trim() === String(requiresPin).trim()) {
-      // Guardamos la cookie atada a la URL y al UUID
-      setCookie(`pin_auth_${id}`, 'true');
+    const requiredPin = event?.config?.clientPin || event?.internal_data?.pin || '';
+    
+    // Forzamos conversión a texto (String) por si la base de datos lo guarda como número entero
+    if (!requiredPin || String(pinInput).trim() === String(requiredPin).trim()) {
+      // Guardamos la llave con candado doble (por si mañana le cambian el slug)
+      localStorage.setItem(`pin_${id}`, 'true');
       if (event?.id) {
-        setCookie(`pin_auth_${event.id}`, 'true');
+        localStorage.setItem(`pin_${event.id}`, 'true');
       }
-      
+      setAccessGranted(true);
       setPinError('');
-      setForceRender(prev => prev + 1); // Dispara el render, evaluando isUnlocked como true
     } else {
       setPinError('PIN incorrecto. Intentá nuevamente.');
     }
@@ -142,24 +129,26 @@ export const GuestListClient = () => {
   const updateInternalGuests = async (newList) => {
     const eventId = realEventIdRef.current || event?.id;
     if (!eventId) return;
-    
+
+    // Optimistic UI
     setEvent(prev => ({
       ...prev,
       internal_data: { ...prev.internal_data, guests: newList }
     }));
-    
+
     try {
+      // Pedimos el latest a Supabase antes de guardar para no pisar cambios del CRM
       const { data: latest } = await supabase
         .from('invitaciones')
         .select('internal_data')
         .eq('id', eventId)
         .single();
-      
+
       const merged = {
         ...(latest?.internal_data || {}),
         guests: newList
       };
-      
+
       await supabase
         .from('invitaciones')
         .update({ internal_data: merged })
@@ -228,7 +217,7 @@ export const GuestListClient = () => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
         <div className="w-12 h-12 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin mb-4"></div>
-        <p className="text-violet-600 font-black text-xs tracking-widest uppercase animate-pulse">
+        <p className="text-violet-600 font-black text-xs tracking-widest uppercase animate-pulse mt-2">
           Cargando Lista...
         </p>
       </div>
@@ -237,8 +226,9 @@ export const GuestListClient = () => {
 
   if (!event) return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-bold">No se encontró el evento.</div>;
 
-  // Renderiza el PIN si es requerido y la cookie NO existe
-  if (requiresPin && !isUnlocked) {
+  // Intercepción final de PIN
+  const requiresPin = event?.config?.clientPin || event?.internal_data?.pin || '';
+  if (requiresPin && !accessGranted) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
         <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100 text-center max-w-sm w-full anim-pop">
