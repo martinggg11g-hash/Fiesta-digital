@@ -6,21 +6,20 @@ import {
   Clock, X, PartyPopper, UserCheck, Smartphone, Lock 
 } from "lucide-react";
 
-// 🛡️ Helpers de Cookies BULLETPROOF
-const setCookie = (name, value, days = 30) => {
-  const maxAge = days * 24 * 60 * 60;
-  document.cookie = `${name}=${value};max-age=${maxAge};path=/;SameSite=Lax`;
+// 🛡️ TRIPLE BLINDAJE DE ALMACENAMIENTO
+// Guardamos en 3 lugares distintos para sobrevivir si App.jsx hace localStorage.clear()
+const saveAccess = (key) => {
+  try { localStorage.setItem(key, 'GRANTED'); } catch(e) {}
+  try { sessionStorage.setItem(key, 'GRANTED'); } catch(e) {}
+  try { document.cookie = `${key}=GRANTED; path=/; max-age=31536000; SameSite=Lax`; } catch(e) {}
 };
 
-const getCookie = (name) => {
-  const cookies = document.cookie.split(';');
-  for (let i = 0; i < cookies.length; i++) {
-    const cookie = cookies[i].trim();
-    if (cookie.startsWith(`${name}=`)) {
-      return cookie.substring(name.length + 1);
-    }
-  }
-  return null;
+// Leemos de forma sincrónica. Si cualquiera de los 3 sobrevive, damos acceso.
+const checkAccess = (key) => {
+  try { if (localStorage.getItem(key) === 'GRANTED') return true; } catch(e) {}
+  try { if (sessionStorage.getItem(key) === 'GRANTED') return true; } catch(e) {}
+  try { if (document.cookie.includes(`${key}=GRANTED`)) return true; } catch(e) {}
+  return false;
 };
 
 export const GuestListClient = () => {
@@ -43,7 +42,10 @@ export const GuestListClient = () => {
   const [formError, setFormError] = useState("");
   const realEventIdRef = useRef(null); 
 
-  const [isUnlocked, setIsUnlocked] = useState(false);
+  // 🚀 FIX MAESTRO: Lectura sincrónica. 
+  // Al hacerlo acá, le ganamos de mano a cualquier script que intente limpiar el storage.
+  const [isUnlocked, setIsUnlocked] = useState(() => checkAccess(`fiesta_pin_${id}`));
+  
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
 
@@ -73,16 +75,13 @@ export const GuestListClient = () => {
     fetchData();
   }, [id]);
 
-  // FIX DEFINITIVO Y FINAL: Latch de una sola vía.
-  // Si ya está desbloqueado, ignoramos cualquier cambio en el 'event'.
+  // Si el slug no tenía acceso, pero el UUID sí (o viceversa), lo revalidamos cuando el evento carga
   useEffect(() => {
     if (!event || isUnlocked) return;
     
-    const unlocked = 
-      getCookie(`pin_auth_${id}`) === 'true' || 
-      (event.id && getCookie(`pin_auth_${event.id}`) === 'true');
-      
-    if (unlocked) setIsUnlocked(true);
+    if (checkAccess(`fiesta_pin_${event.id}`)) {
+      setIsUnlocked(true);
+    }
   }, [event, id, isUnlocked]);
 
   useEffect(() => {
@@ -110,13 +109,14 @@ export const GuestListClient = () => {
     return () => supabase.removeChannel(channel);
   }, [id]); 
 
-  const requiresPin = event?.config?.clientPin || event?.internal_data?.pin || '';
-
   const handlePinSubmit = () => {
+    const requiresPin = event?.config?.clientPin || event?.internal_data?.pin || '';
+
     if (!requiresPin || String(pinInput).trim() === String(requiresPin).trim()) {
-      setCookie(`pin_auth_${id}`, 'true');
+      // Guardamos con triple blindaje tanto para el ID de la URL como para el UUID
+      saveAccess(`fiesta_pin_${id}`);
       if (event?.id) {
-        setCookie(`pin_auth_${event.id}`, 'true');
+        saveAccess(`fiesta_pin_${event.id}`);
       }
       
       setPinError('');
@@ -246,6 +246,8 @@ export const GuestListClient = () => {
 
   if (!event) return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-bold">No se encontró el evento.</div>;
 
+  const requiresPin = event?.config?.clientPin || event?.internal_data?.pin || '';
+  
   if (requiresPin && !isUnlocked) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
