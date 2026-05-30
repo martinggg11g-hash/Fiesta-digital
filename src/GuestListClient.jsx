@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "./supabase";
 import { 
@@ -24,8 +24,10 @@ export const GuestListClient = () => {
   const [gTable, setGTable] = useState("");
   
   const [formError, setFormError] = useState("");
+  
+  // FIX BUG-01 & BUG-03: Ref para el ID real (no slug) del evento
+  const realEventIdRef = useRef(null); 
 
-  // FIX SESIÓN: Llave simplificada en localStorage
   const [isPinValid, setIsPinValid] = useState(() => {
     return localStorage.getItem(`auth_${id}`) === 'true';
   });
@@ -41,6 +43,7 @@ export const GuestListClient = () => {
       }
 
       if (eventData) {
+        realEventIdRef.current = eventData.id; // Guardar ID real en ref
         setEvent(eventData);
         setManualGuests(eventData.internal_data?.guests || []);
 
@@ -53,39 +56,43 @@ export const GuestListClient = () => {
     setLoading(false);
   };
 
-  // Carga inicial
   useEffect(() => {
     fetchData();
   }, [id]);
 
-  // FIX REALTIME: Volvemos a tu patrón original de suscripción amplia + validación en el callback
+  // FIX BUG-01 & BUG-03: Realtime robusto sin fallback fetchData
   useEffect(() => {
     if (!id) return;
 
     const channel = supabase.channel(`room-client-${id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'invitaciones' }, (payload) => {
-        if (payload.new && (payload.new.id === id || payload.new.slug === id || (event && payload.new.id === event.id))) {
+        const isMyEvent = payload.new && (
+          payload.new.id === id ||
+          payload.new.slug === id ||
+          (realEventIdRef.current && payload.new.id === realEventIdRef.current)
+        );
+        
+        if (isMyEvent) {
+          realEventIdRef.current = payload.new.id; // Actualizar ref si estaba vacío
           setEvent(payload.new);
           setManualGuests(payload.new.internal_data?.guests || []);
-        } else {
-          fetchData(); // Fallback de seguridad
         }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'invitados' }, () => {
-        // Al haber cambios en cualquier invitado, recargamos la lista
         fetchData();
       })
       .subscribe();
 
     return () => supabase.removeChannel(channel);
-  }, [id, event?.id]);
+  }, [id]); // Solo re-suscribir cuando cambia el id de la URL
 
+  // FIX BUG-01: Invertir orden de persistencia
   const handlePinSubmit = () => {
     const requiredPin = event?.internal_data?.pin || event?.config?.pin || '';
     
     if (!requiredPin || pinInput === requiredPin) {
-      setIsPinValid(true);
-      localStorage.setItem(`auth_${id}`, 'true'); // Guardado permanente en navegador
+      localStorage.setItem(`auth_${id}`, 'true'); // Primero persistir
+      setIsPinValid(true);                        // Luego actualizar state
     } else {
       setPinError('PIN incorrecto. Intentá nuevamente.');
     }
@@ -113,10 +120,38 @@ export const GuestListClient = () => {
   const confirmedGuests = allGuests.filter(g => g.status === 'Confirmado' || g.status === 'Ingresó').reduce((acc, g) => acc + 1 + Number(g.guests || 0), 0);
   const pendingGuests = allGuests.filter(g => g.status === 'Pendiente').reduce((acc, g) => acc + 1 + Number(g.guests || 0), 0);
 
+  // FIX BUG-02: SELECT + Merge para no pisar datos del CRM
   const updateInternalGuests = async (newList) => {
-    const newData = { ...event.internal_data, guests: newList };
-    setEvent(prev => ({ ...prev, internal_data: newData }));
-    await supabase.from('invitaciones').update({ internal_data: newData }).eq('id', event.id);
+    const eventId = realEventIdRef.current || event?.id;
+    if (!eventId) return;
+    
+    // Actualización optimista en UI
+    setEvent(prev => ({
+      ...prev,
+      internal_data: { ...prev.internal_data, guests: newList }
+    }));
+    
+    try {
+      // Fetch del latest para no sobreescribir cambios concurrentes del CRM
+      const { data: latest } = await supabase
+        .from('invitaciones')
+        .select('internal_data')
+        .eq('id', eventId)
+        .single();
+      
+      // Merge: preservar todos los campos del latest, solo reemplazar 'guests'
+      const merged = {
+        ...(latest?.internal_data || {}),
+        guests: newList
+      };
+      
+      await supabase
+        .from('invitaciones')
+        .update({ internal_data: merged })
+        .eq('id', eventId);
+    } catch (err) {
+      console.error('Error actualizando invitados:', err);
+    }
   };
 
   const openNewGuest = () => {
@@ -145,11 +180,9 @@ export const GuestListClient = () => {
     }
     
     if (editingGuest?.isVip) {
-      // FIX INMEDIATEZ: Actualización Optimista para Invitados VIP
       setVipGuests(prev => prev.map(v => v.id === editingGuest.id ? { ...v, mesa: finalTable } : v));
       await supabase.from('invitados').update({ mesa: finalTable }).eq('id', editingGuest.id);
     } else {
-      // Actualización Optimista para Invitados Manuales
       let newList = [...manualGuests];
       if (editingGuest) {
         newList = newList.map(g => g.id === editingGuest.id ? { ...g, name: gName, lastname: gLastname, guests: Number(gPax), status: gStatus, mesa: finalTable } : g);
@@ -167,11 +200,9 @@ export const GuestListClient = () => {
   const deleteGuest = async (g) => {
     if(!window.confirm("¿Seguro que querés eliminar a este invitado?")) return;
     if (g.isVip) {
-      // FIX INMEDIATEZ: Borrado Optimista para VIP
       setVipGuests(prev => prev.filter(v => v.id !== g.id));
       await supabase.from('invitados').delete().eq('id', g.id);
     } else {
-      // Borrado Optimista para Manual
       const newList = manualGuests.filter(mg => mg.id !== g.id);
       setManualGuests(newList);
       await updateInternalGuests(newList);
