@@ -1,23 +1,30 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useParams, useSearchParams } from "react-router-dom"; // <-- IMPORTANTE
+import { useParams } from "react-router-dom";
 import { supabase } from "./supabase";
 import { 
   Users, Search, Plus, Edit2, Trash2, CheckCircle2, 
   Clock, X, PartyPopper, UserCheck, Smartphone, Lock 
 } from "lucide-react";
 
+// 🛡️ SUPER STORAGE: Inmune a bugs de llaves, guiones o caracteres raros.
+const getAuthMap = () => {
+  try { return JSON.parse(localStorage.getItem('defiesta_auth_map') || '{}'); } 
+  catch (e) { return {}; }
+};
+
+const saveAuthMap = (key) => {
+  if (!key) return;
+  try {
+    const map = getAuthMap();
+    map[String(key)] = true;
+    localStorage.setItem('defiesta_auth_map', JSON.stringify(map));
+  } catch (e) {}
+};
+
+const hasAuth = (key) => !!getAuthMap()[String(key)];
+
 export const GuestListClient = () => {
   const { id } = useParams();
-  
-  // 🛡️ MAGIA NUCLEAR: Controlamos la sesión por la URL
-  const [searchParams, setSearchParams] = useSearchParams();
-  const hasUrlAccess = searchParams.get("acceso") === "permitido";
-  
-  const [localAccess, setLocalAccess] = useState(() => localStorage.getItem(`pin_${id}`) === 'true');
-  
-  // Si tiene el token en la URL o en el disco, está desbloqueado
-  const isUnlocked = hasUrlAccess || localAccess;
-
   const [loading, setLoading] = useState(true);
   const [event, setEvent] = useState(null);
   
@@ -36,8 +43,15 @@ export const GuestListClient = () => {
   const [formError, setFormError] = useState("");
   const realEventIdRef = useRef(null); 
 
+  // 🚀 INICIALIZACIÓN BLINDADA
+  const [isUnlocked, setIsUnlocked] = useState(() => hasAuth(id));
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState('');
+
+  // 🛡️ DOBLE CHEQUEO POST-RENDER: Si la lectura inicial falló, lo forzamos apenas carga.
+  useEffect(() => {
+    if (hasAuth(id)) setIsUnlocked(true);
+  }, [id]);
 
   const fetchData = async () => {
     try {
@@ -51,6 +65,12 @@ export const GuestListClient = () => {
         realEventIdRef.current = eventData.id; 
         setEvent(eventData);
         setManualGuests(eventData.internal_data?.guests || []);
+
+        // Si el UUID real tiene acceso en el disco, abrimos las puertas
+        if (hasAuth(eventData.id)) {
+          saveAuthMap(id); // Sincronizamos slug con UUID por las dudas
+          setIsUnlocked(true);
+        }
 
         const { data: vipData } = await supabase.from('invitados').select('*').eq('evento_id', eventData.id).order('created_at', { ascending: false });
         if (vipData) setVipGuests(vipData);
@@ -93,19 +113,13 @@ export const GuestListClient = () => {
   const handlePinSubmit = () => {
     const requiresPin = event?.config?.clientPin || event?.internal_data?.pin || '';
 
+    // Convertimos a string y borramos espacios por seguridad
     if (!requiresPin || String(pinInput).trim() === String(requiresPin).trim()) {
-      // 1. Guardamos en disco por si acaso
-      localStorage.setItem(`pin_${id}`, 'true');
-      if (event?.id) localStorage.setItem(`pin_${event.id}`, 'true');
-      setLocalAccess(true);
-
-      // 2. 🚀 INYECCIÓN EN URL: Atamos la sesión al navegador directamente.
-      setSearchParams((prev) => {
-        prev.set("acceso", "permitido");
-        return prev;
-      }, { replace: true });
+      saveAuthMap(id);
+      if (event?.id) saveAuthMap(event.id);
       
       setPinError('');
+      setIsUnlocked(true); // Cambiamos el estado de React y desbloqueamos
     } else {
       setPinError('PIN incorrecto. Intentá nuevamente.');
     }
@@ -233,7 +247,7 @@ export const GuestListClient = () => {
 
   const requiresPin = event?.config?.clientPin || event?.internal_data?.pin || '';
   
-  // Condición de bloqueo. La URL manda.
+  // COMPUERTA DE SEGURIDAD. Si requiere PIN y NO está desbloqueado, frenamos todo.
   if (requiresPin && !isUnlocked) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
