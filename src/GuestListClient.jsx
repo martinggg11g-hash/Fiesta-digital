@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { supabase } from "./supabase";
 import { 
   Users, Search, Plus, Edit2, Trash2, CheckCircle2, 
-  Clock, X, PartyPopper, UserCheck, Smartphone, Lock
+  Clock, X, PartyPopper, UserCheck, Smartphone, Lock // <-- Solo agregué Lock acá
 } from "lucide-react";
 
 export const GuestListClient = () => {
@@ -19,16 +19,44 @@ export const GuestListClient = () => {
   const [editingGuest, setEditingGuest] = useState(null);
   const [gName, setGName] = useState("");
   const [gLastname, setGLastname] = useState("");
-  const [gPax, setGPax] = useState(0);
+  const [gPax, setGPax] = useState(1);
   const [gStatus, setGStatus] = useState("Pendiente");
   const [gTable, setGTable] = useState("");
   
   const [formError, setFormError] = useState("");
 
-  // --- FIX 1: Estado del PIN ---
-  const [isUnlocked, setIsUnlocked] = useState(false);
-  const [pinInput, setPinInput] = useState("");
-  const [pinError, setPinError] = useState("");
+  // ==========================================
+  // 🛡️ INYECTAMOS LA SEGURIDAD DEL PIN AQUÍ
+  // ==========================================
+  const [isUnlocked, setIsUnlocked] = useState(() => {
+    try {
+      return localStorage.getItem(`defiesta_pin_${id}`) === 'true' || 
+             sessionStorage.getItem(`defiesta_pin_${id}`) === 'true';
+    } catch (e) {
+      return false;
+    }
+  });
+  const [pinInput, setPinInput] = useState('');
+  const [pinError, setPinError] = useState('');
+
+  const handlePinSubmit = () => {
+    const requiresPin = event?.config?.clientPin || event?.internal_data?.pin || '';
+    if (!requiresPin || String(pinInput).trim() === String(requiresPin).trim()) {
+      try {
+        localStorage.setItem(`defiesta_pin_${id}`, 'true');
+        sessionStorage.setItem(`defiesta_pin_${id}`, 'true');
+        if (event?.id) {
+          localStorage.setItem(`defiesta_pin_${event.id}`, 'true');
+          sessionStorage.setItem(`defiesta_pin_${event.id}`, 'true');
+        }
+      } catch (e) {}
+      setPinError('');
+      setIsUnlocked(true); 
+    } else {
+      setPinError('PIN incorrecto. Intentá nuevamente.');
+    }
+  };
+  // ==========================================
 
   const fetchData = async () => {
     try {
@@ -42,12 +70,13 @@ export const GuestListClient = () => {
         setEvent(eventData);
         setManualGuests(eventData.internal_data?.guests || []);
 
-        // 🚀 FIX 1 (El secreto de la persistencia): 
-        // Apenas tenemos el UUID real, miramos el disco. Si la llave está, abrimos.
-        // Como pasa ANTES de quitar el loading, no hay saltos ni parpadeos.
-        if (localStorage.getItem(`defiesta_pin_auth_${eventData.id}`) === 'true') {
-          setIsUnlocked(true);
-        }
+        // 🛡️ Verificamos si el UUID ya estaba desbloqueado
+        try {
+          if (localStorage.getItem(`defiesta_pin_${eventData.id}`) === 'true' || 
+              sessionStorage.getItem(`defiesta_pin_${eventData.id}`) === 'true') {
+            setIsUnlocked(true);
+          }
+        } catch(e) {}
 
         const { data: vipData } = await supabase.from('invitados').select('*').eq('evento_id', eventData.id).order('created_at', { ascending: false });
         if (vipData) setVipGuests(vipData);
@@ -61,7 +90,7 @@ export const GuestListClient = () => {
   useEffect(() => {
     fetchData();
 
-    // Filtramos adentro del payload por slug o uuid en lugar de en la config del canal para no ahogarlo
+    // 👉 FIX REALTIME: Filtramos adentro del payload por slug o uuid en lugar de en la config del canal para no ahogarlo
     const channel = supabase.channel(`client-room-${id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'invitaciones' }, (payload) => {
         if (payload.new && (payload.new.id === id || payload.new.slug === id || (event && payload.new.id === event.id))) {
@@ -76,19 +105,6 @@ export const GuestListClient = () => {
 
     return () => supabase.removeChannel(channel);
   }, [id, event?.id]);
-
-  const handlePinSubmit = () => {
-    const requiresPin = event?.config?.clientPin || event?.internal_data?.pin || '';
-    
-    // Convertimos a String para evitar bugs si el JSON lo guardó como número
-    if (!requiresPin || String(pinInput).trim() === String(requiresPin).trim()) {
-      localStorage.setItem(`defiesta_pin_auth_${event.id}`, 'true');
-      setIsUnlocked(true);
-      setPinError('');
-    } else {
-      setPinError('PIN incorrecto. Intentá nuevamente.');
-    }
-  };
 
   const allGuests = [
     ...manualGuests,
@@ -108,39 +124,27 @@ export const GuestListClient = () => {
     `${g.name} ${g.lastname} ${g.mesa}`.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // --- FIX 2: Cálculo correcto (1 Titular + N Adicionales) ---
-  const totalGuests = allGuests.reduce((acc, g) => acc + 1 + Number(g.guests || 0), 0);
-  const confirmedGuests = allGuests.filter(g => g.status === 'Confirmado' || g.status === 'Ingresó').reduce((acc, g) => acc + 1 + Number(g.guests || 0), 0);
-  const pendingGuests = allGuests.filter(g => g.status === 'Pendiente').reduce((acc, g) => acc + 1 + Number(g.guests || 0), 0);
+  const totalGuests = allGuests.reduce((acc, g) => acc + Number(g.guests || 0), 0);
+  const confirmedGuests = allGuests.filter(g => g.status === 'Confirmado' || g.status === 'Ingresó').reduce((acc, g) => acc + Number(g.guests || 0), 0);
+  const pendingGuests = allGuests.filter(g => g.status === 'Pendiente').reduce((acc, g) => acc + Number(g.guests || 0), 0);
 
-  // --- FIX 3: Proteger los datos del CRM al guardar ---
   const updateInternalGuests = async (newList) => {
-    const eventId = event?.id;
-    if (!eventId) return;
-
-    // Actualización instantánea en la interfaz
-    setEvent(prev => ({ ...prev, internal_data: { ...prev.internal_data, guests: newList } }));
-    
-    try {
-      // Traemos la info fresca para no pisar cambios que el salón haya hecho desde el Dashboard
-      const { data: latest } = await supabase.from('invitaciones').select('internal_data').eq('id', eventId).single();
-      const merged = { ...(latest?.internal_data || {}), guests: newList };
-      await supabase.from('invitaciones').update({ internal_data: merged }).eq('id', eventId);
-    } catch (err) {
-      console.error('Error al sincronizar:', err);
-    }
+    const newData = { ...event.internal_data, guests: newList };
+    // Optimistic UI
+    setEvent(prev => ({ ...prev, internal_data: newData }));
+    await supabase.from('invitaciones').update({ internal_data: newData }).eq('id', event.id);
   };
 
   const openNewGuest = () => {
     setEditingGuest(null);
-    setGName(""); setGLastname(""); setGPax(0); setGStatus("Pendiente"); setGTable("");
+    setGName(""); setGLastname(""); setGPax(1); setGStatus("Pendiente"); setGTable("");
     setFormError(""); 
     setShowModal(true);
   };
   
   const openEditGuest = (g) => {
     setEditingGuest(g);
-    setGName(g.name); setGLastname(g.lastname); setGPax(Number(g.guests) || 0); setGStatus(g.status); setGTable(g.mesa || "");
+    setGName(g.name); setGLastname(g.lastname); setGPax(g.guests); setGStatus(g.status); setGTable(g.mesa || "");
     setFormError(""); 
     setShowModal(true);
   };
@@ -158,7 +162,6 @@ export const GuestListClient = () => {
     
     if (editingGuest?.isVip) {
       await supabase.from('invitados').update({ mesa: finalTable }).eq('id', editingGuest.id);
-      setVipGuests(prev => prev.map(v => v.id === editingGuest.id ? { ...v, mesa: finalTable } : v)); // Optimistic
     } else {
       let newList = [...manualGuests];
       if (editingGuest) {
@@ -168,6 +171,7 @@ export const GuestListClient = () => {
         newList.push({ id: fakeId, name: gName, lastname: gLastname, guests: Number(gPax), mesa: finalTable, status: gStatus, timestamp: new Date().toISOString() });
       }
       
+      // Optimistic UI
       setManualGuests(newList);
       await updateInternalGuests(newList);
     }
@@ -177,25 +181,23 @@ export const GuestListClient = () => {
   const deleteGuest = async (g) => {
     if(!window.confirm("¿Seguro que querés eliminar a este invitado?")) return;
     if (g.isVip) {
+      // Optimistic UI
       setVipGuests(prev => prev.filter(v => v.id !== g.id));
       await supabase.from('invitados').delete().eq('id', g.id);
     } else {
       const newList = manualGuests.filter(mg => mg.id !== g.id);
+      // Optimistic UI
       setManualGuests(newList);
       await updateInternalGuests(newList);
     }
   };
 
-  if (loading) return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
-      <div className="w-12 h-12 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin mb-4"></div>
-      <p className="text-violet-600 font-black text-xs tracking-widest uppercase animate-pulse">Cargando Lista...</p>
-    </div>
-  );
-
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-violet-600 font-bold">Cargando tu lista...</div>;
   if (!event) return <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-500 font-bold">No se encontró el evento.</div>;
 
-  // --- COMPUERTA DE SEGURIDAD ---
+  // ==========================================
+  // 🛡️ PANTALLA DE CANDADO ANTES DE TU DISEÑO
+  // ==========================================
   const requiresPin = event?.config?.clientPin || event?.internal_data?.pin || '';
   if (requiresPin && !isUnlocked) {
     return (
@@ -222,6 +224,7 @@ export const GuestListClient = () => {
       </div>
     );
   }
+  // ==========================================
 
   const honoree = event.config?.honoreeName || event.title;
   const useTables = event.internal_data?.useTables || false;
@@ -239,7 +242,7 @@ export const GuestListClient = () => {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 md:px-8 -mt-8 relative z-10">
-        <div className="grid grid-cols-3 gap-3 md:gap-6 mb-2">
+        <div className="grid grid-cols-3 gap-3 md:gap-6 mb-8">
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 text-center flex flex-col items-center justify-center">
             <Users size={20} className="text-violet-500 mb-2"/>
             <span className="text-2xl md:text-3xl font-black text-slate-800">{totalGuests}</span>
@@ -256,10 +259,6 @@ export const GuestListClient = () => {
             <span className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-wider mt-1">Pendientes</span>
           </div>
         </div>
-
-        <p className="text-center text-xs text-slate-500 mb-6 font-medium">
-          <span className="font-bold text-violet-600">Nota:</span> El cálculo asume 1 persona (titular) + la cantidad de acompañantes adicionales.
-        </p>
 
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="relative flex-1">
@@ -296,7 +295,7 @@ export const GuestListClient = () => {
                   </div>
                   <div className="flex flex-wrap items-center gap-2 mt-2">
                     <span className="bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md">
-                      {g.guests > 0 ? `+${g.guests} ADIC` : 'SOLO TITULAR'}
+                      {g.guests} {g.guests === 1 ? 'PERS' : 'PERS'}
                     </span>
                     <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md ${g.status === 'Confirmado' || g.status === 'Ingresó' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
                       {g.status}
@@ -334,7 +333,7 @@ export const GuestListClient = () => {
                  {!editingGuest?.isVip ? (
                    <>
                      <div>
-                       <label className="block text-[10px] font-black uppercase mb-1.5 text-slate-500">Nombre del Titular</label>
+                       <label className="block text-[10px] font-black uppercase mb-1.5 text-slate-500">Nombre</label>
                        <input type="text" value={gName} onChange={e => setGName(e.target.value)} className={`w-full bg-slate-50 border ${formError && !gName ? 'border-red-300' : 'border-slate-200'} rounded-xl px-4 py-3 outline-none focus:border-violet-500 focus:bg-white`} />
                      </div>
                      <div>
@@ -343,19 +342,8 @@ export const GuestListClient = () => {
                      </div>
                      <div className="grid grid-cols-2 gap-3">
                        <div>
-                         <label className="block text-[10px] font-black uppercase mb-1.5 text-slate-500" title="No contar al titular">Acompañantes Adic.</label>
-                         <input 
-                            type="number" 
-                            min="0" 
-                            /* FIX 4 (El de los ceros): Evitamos que el 0 se concatene como 01 */
-                            value={gPax === 0 ? '' : gPax} 
-                            onChange={e => {
-                                const val = parseInt(e.target.value, 10);
-                                setGPax(isNaN(val) ? 0 : val);
-                            }} 
-                            placeholder="0"
-                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-violet-500 focus:bg-white" 
-                         />
+                         <label className="block text-[10px] font-black uppercase mb-1.5 text-slate-500">Cantidad</label>
+                         <input type="number" min="1" value={gPax} onChange={e => setGPax(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-violet-500 focus:bg-white" />
                        </div>
                        <div>
                          <label className="block text-[10px] font-black uppercase mb-1.5 text-slate-500">Estado</label>
